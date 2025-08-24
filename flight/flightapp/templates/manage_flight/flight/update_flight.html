@@ -1,0 +1,33 @@
+{% extends 'master.html' %}
+
+{% block content %}
+<div class="max-w-lg mx-auto bg-white shadow-md rounded-lg p-6">
+    <h2 class="text-2xl font-bold mb-4">Edit Flight</h2>
+    <form method="post">
+        {% csrf_token %}
+        <label class="block mb-2">Flight Number:</label>
+        <input type="text" name="flight_number" value="{{ flight.flight_number }}"
+               class="w-full border border-gray-300 rounded px-3 py-2 mb-4">
+
+        <label class="block mb-2">Airline:</label>
+        <input type="text" name="airline" value="{{ flight.airline }}"
+               class="w-full border border-gray-300 rounded px-3 py-2 mb-4">
+
+        <label class="block mb-2">Aircraft:</label>
+        <input type="text" name="aircraft" value="{{ flight.aircraft }}"
+               class="w-full border border-gray-300 rounded px-3 py-2 mb-4">
+
+        <label class="block mb-2">Route:</label>
+        <input type="text" name="route" value="{{ flight.route }}"
+               class="w-full border border-gray-300 rounded px-3 py-2 mb-4">
+
+        <div class="flex justify-between">
+            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
+                Update
+            </button>
+            <a href="{% url 'flight' %}" class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">Cancel</a>
+        </div>
+
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "master.html" %}
+
+{% block content %}
+<div class="max-w-lg mx-auto bg-white shadow-md rounded-lg p-6">
+    <h2 class="text-2xl font-bold mb-4">Add Flight</h2>
+    <form method="post">
+        {% csrf_token %}
+        
+        <label class="block mb-2 font-semibold">Flight Number:</label>
+        <input type="text" name="flight_number" class="w-full border rounded px-3 py-2 mb-4" required>
+
+        <label class="block mb-2 font-semibold">Airline:</label>
+        <select name="airline" class="w-full border rounded px-3 py-2 mb-4" required>
+            <option value="">-- Select Airline --</option>
+            {% for airline in airlines %}
+                <option value="{{ airline.id }}">{{ airline.code }} - {{ airline.name }}</option>
+            {% endfor %}
+        </select>
+
+        <label class="block mb-2 font-semibold">Aircraft:</label>
+        <select name="aircraft" class="w-full border rounded px-3 py-2 mb-4" required>
+            <option value="">-- Select Aircraft --</option>
+            {% for a in aircrafts %}
+                <option value="{{ a.id }}">{{ a.model }} ({{ a.type }})</option>
+            {% endfor %}
+        </select>
+
+        <label class="block mb-2 font-semibold">Route:</label>
+        <select name="route" class="w-full border rounded px-3 py-2 mb-4" required>
+            <option value="">-- Select Route --</option>
+            {% for r in routes %}
+                <option value="{{ r.id }}">{{ r.departure_airport }} → {{ r.arrival_airport }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            Save Flight
+        </button>
+    </form>
+</div>
+{% endblock %}

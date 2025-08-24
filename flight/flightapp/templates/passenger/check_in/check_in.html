@@ -1,0 +1,50 @@
+{% extends "master.html" %}
+{% block content %}
+<div class="items-center mb-5">
+    <h1 class="text-2xl font-bold mb-5">Check-In Table</h1>
+    <a href="{% url 'add_checkin' %}" class="bg-green-800 hover:bg-green-900 text-white py-2 px-4 rounded">
+        <i class="fas fa-plus mr-2"></i>
+        Add Check-In
+    </a>
+</div>
+
+<table class="table-auto border-collapse border border-gray-400 w-full">
+    <thead>
+        <tr class="bg-gray-200">
+            <th class="border border-gray-400 px-4 py-2">ID</th>
+            <th class="border border-gray-400 px-4 py-2">Booking</th>
+            <th class="border border-gray-400 px-4 py-2">Check-In Time</th>
+            <th class="border border-gray-400 px-4 py-2">Boarding Pass</th>
+            <th class="border border-gray-400 px-4 py-2">Baggage Count</th>
+            <th class="border border-gray-400 px-4 py-2">Baggage Weight (kg)</th>
+            <th class="border border-gray-400 px-4 py-2">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for c in checkins %}
+        <tr>
+            <td class="border border-gray-400 px-4 py-2">{{ c.id }}</td>
+            <td class="border border-gray-400 px-4 py-2">Booking {{ c.booking.id }}</td>
+            <td class="border border-gray-400 px-4 py-2">{{ c.check_in_time }}</td>
+            <td class="border border-gray-400 px-4 py-2">{{ c.boarding_pass }}</td>
+            <td class="border border-gray-400 px-4 py-2">{{ c.baggage_count }}</td>
+            <td class="border border-gray-400 px-4 py-2">{{ c.baggage_weight }}</td>
+            <td class="border border-gray-400 px-4 py-2 text-center space-x-2">
+                <a href="{% url 'update_checkin' c.id %}"  
+                   class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm inline-flex items-center">
+                    <i class="fas fa-edit mr-1"></i>Edit
+                </a>
+                <a href="{% url 'delete_checkin' c.id %}"  
+                   class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-sm inline-flex items-center">
+                    <i class="fas fa-trash-alt mr-1"></i>Delete
+                </a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7" class="text-center py-4">No check-in records available</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

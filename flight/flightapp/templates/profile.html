@@ -1,0 +1,24 @@
+{% extends "master.html" %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-10 p-6 bg-white shadow-md rounded-md">
+    <h2 class="text-2xl font-semibold mb-6 text-green-900">My Profile</h2>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <label class="block mb-2 text-gray-700 font-medium">Full Name:</label>
+        <input type="text" name="full_name" value="{{ user.username }}" 
+               class="w-full border border-gray-300 rounded-md p-3 mb-4 bg-gray-100 focus:outline-none focus:ring-1 focus:ring-green-600 shadow-inner">
+
+        <label class="block mb-2 text-gray-700 font-medium">Password:</label>
+        <input type="password" name="password" placeholder="Enter new password" 
+               class="w-full border border-gray-300 rounded-md p-3 mb-6 bg-gray-100 focus:outline-none focus:ring-1 focus:ring-green-600 shadow-inner">
+
+        <button type="submit" 
+                class="w-full bg-green-900 text-white font-medium py-3 rounded-md hover:bg-green-800 transition duration-200">
+            Save Changes
+        </button>
+    </form>
+</div>
+{% endblock %}

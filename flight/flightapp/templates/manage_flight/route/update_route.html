@@ -1,0 +1,56 @@
+{% extends 'master.html' %}
+
+{% block content %}
+<div class="max-w-lg mx-auto bg-white shadow-lg rounded-lg p-6">
+    <h2 class="text-2xl font-bold mb-6">Update Route</h2>
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+
+        <div>
+            <label class="block font-semibold mb-1">Origin:</label>
+            <input type="text" name="origin" value="{{ route.origin }}"
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-1">Destination:</label>
+            <input type="text" name="destination" value="{{ route.destination }}"
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-1">Distance (km):</label>
+            <input type="number" name="distance" value="{{ route.distance }}"
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-1">Duration (mins):</label>
+            <input type="number" name="duration" value="{{ route.duration }}"
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-1">Airline:</label>
+            <input type="text" name="airline" value="{{ route.airline }}"
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-1">Aircraft:</label>
+            <input type="text" name="aircraft" value="{{ route.aircraft }}"
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+        </div>
+
+        <div class="flex items-center justify-between mt-6">
+            <button type="submit"
+                class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded">
+                Update Route
+            </button>
+            <a href="{% url 'route' %}" class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
