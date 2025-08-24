@@ -1,0 +1,28 @@
+{% extends "master.html" %}
+{% block content %}
+<div class="max-w-lg mx-auto bg-white shadow-md rounded-lg p-6">
+  <h2 class="text-2xl font-bold mb-4">Add Aircraft</h2>
+  <form method="post">
+    {% csrf_token %}
+    
+    <label class="block mb-2">Model:</label>
+    <input type="text" name="model" class="w-full border p-2 rounded mb-4" required>
+
+    <label class="block mb-2">Capacity:</label>
+    <input type="number" name="capacity" class="w-full border p-2 rounded mb-4" required>
+
+    <label class="block mb-2">Type:</label>
+    <input type="text" name="type" class="w-full border p-2 rounded mb-4" required>
+
+    <label class="block mb-2">Airline:</label>
+    <select name="airline" class="w-full border p-2 rounded mb-4" required>
+      <option value="">-- Select Airline --</option>
+      {% for airline in airlines %}
+        <option value="{{ airline.id }}">{{ airline.name }}</option>
+      {% endfor %}
+    </select>
+
+    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+  </form>
+</div>
+{% endblock %}

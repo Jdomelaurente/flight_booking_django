@@ -1,0 +1,49 @@
+{% extends "master.html" %}
+
+{% block content %}
+<div class="max-w-lg mx-auto bg-white shadow-md rounded-lg p-6">
+    <h2 class="text-2xl font-bold mb-4">Update Seat</h2>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <label class="block mb-2">Schedule:</label>
+        <select name="schedule" class="w-full border border-gray-300 rounded px-3 py-2 mb-4">
+            {% for schedule in schedules %}
+            <option value="{{ schedule.id }}" {% if seat.schedule.id == schedule.id %}selected{% endif %}>
+                {{ schedule.flight.flight_number }} - {{ schedule.departure_time }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <label class="block mb-2">Seat Number:</label>
+        <input type="text" name="seat_number" value="{{ seat.seat_number }}" 
+               class="w-full border border-gray-300 rounded px-3 py-2 mb-4" required>
+
+        <label class="block mb-2">Seat Class:</label>
+        <select name="seat_class" class="w-full border border-gray-300 rounded px-3 py-2 mb-4">
+            <option value="Economy" {% if seat.seat_class == "Economy" %}selected{% endif %}>Economy</option>
+            <option value="Business" {% if seat.seat_class == "Business" %}selected{% endif %}>Business</option>
+            <option value="First" {% if seat.seat_class == "First" %}selected{% endif %}>First</option>
+        </select>
+
+        <label class="block mb-2">Available:</label>
+        <input type="checkbox" name="available" {% if seat.available %}checked{% endif %} class="mb-4">
+
+        <label class="block mb-2">Price:</label>
+        <input type="number" step="0.01" name="price" value="{{ seat.price }}" 
+               class="w-full border border-gray-300 rounded px-3 py-2 mb-4" required>
+
+        <div class="flex justify-between mt-4">
+            <button type="submit" 
+                    class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
+                Update
+            </button>
+            <a href="{% url 'seat' %}" 
+               class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

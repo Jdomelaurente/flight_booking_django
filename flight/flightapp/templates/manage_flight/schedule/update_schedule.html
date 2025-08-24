@@ -1,0 +1,44 @@
+{% extends "master.html" %}
+{% block content %}
+<div class="max-w-lg mx-auto bg-white shadow-md rounded-lg p-6">
+    <h2 class="text-2xl font-bold mb-4">Edit Flight Schedule</h2>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <!-- Flight -->
+        <label class="block mb-2 font-semibold">Flight:</label>
+        <select name="flight_id" required
+                class="w-full border border-gray-300 rounded px-3 py-2 mb-4 focus:outline-none focus:border-blue-500">
+            {% for flight in flights %}
+            <option value="{{ flight.id }}" {% if flight.id == schedule.flight.id %}selected{% endif %}>
+                {{ flight.flight_number }} ({{ flight.origin }} → {{ flight.destination }})
+            </option>
+            {% endfor %}
+        </select>
+
+        <!-- Departure Time -->
+        <label class="block mb-2 font-semibold">Departure Time:</label>
+        <input type="datetime-local" name="departure_time" required
+               value="{{ schedule.departure_time|date:'Y-m-d\\TH:i' }}"
+               class="w-full border border-gray-300 rounded px-3 py-2 mb-4 focus:outline-none focus:border-blue-500">
+
+        <!-- Arrival Time -->
+        <label class="block mb-2 font-semibold">Arrival Time:</label>
+        <input type="datetime-local" name="arrival_time" required
+               value="{{ schedule.arrival_time|date:'Y-m-d\\TH:i' }}"
+               class="w-full border border-gray-300 rounded px-3 py-2 mb-4 focus:outline-none focus:border-blue-500">
+
+        <div class="flex justify-between">
+            <button type="submit" 
+                    class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
+                Update
+            </button>
+            <a href="{% url 'schedule' %}" 
+               class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "master.html" %}
+{% block content %}
+<div class="max-w-lg mx-auto bg-white shadow-md rounded-lg p-6">
+    <h2 class="text-2xl font-bold mb-4">Edit Airline</h2>
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+
+        <div>
+            <label class="block font-semibold mb-1">Code:</label>
+            <input type="text" name="code" value="{{ airline.code }}"
+                   class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-1">Name:</label>
+            <input type="text" name="name" value="{{ airline.name }}"
+                   class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
+        </div>
+
+        <div class="flex justify-between mt-6">
+            <button type="submit" 
+                    class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
+                Update
+            </button>
+            <a href="{% url 'airline' %}" 
+               class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "master.html" %}
+{% block content %}
+<div class="max-w-lg mx-auto bg-white shadow-md rounded-lg p-6">
+    <h2 class="text-2xl font-bold mb-4">Edit Payment</h2>
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+
+        <div>
+            <label class="block font-semibold mb-1">Booking:</label>
+            <select name="booking" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                {% for b in bookings %}
+                <option value="{{ b.id }}" {% if b.id == payment.booking.id %}selected{% endif %}>
+                    Booking {{ b.id }} - {{ b.student }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-1">Amount:</label>
+            <input type="number" step="0.01" name="amount" value="{{ payment.amount }}"
+                   class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-1">Method:</label>
+            <select name="method" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                <option value="GCash" {% if payment.method == "GCash" %}selected{% endif %}>GCash</option>
+                <option value="Credit Card" {% if payment.method == "Credit Card" %}selected{% endif %}>Credit Card</option>
+                <option value="Cash" {% if payment.method == "Cash" %}selected{% endif %}>Cash</option>
+                <option value="Paypal" {% if payment.method == "Paypal" %}selected{% endif %}>Paypal</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-1">Transaction ID:</label>
+            <input type="text" name="transaction_id" value="{{ payment.transaction_id }}"
+                   class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-1">Status:</label>
+            <select name="status" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                <option value="Pending" {% if payment.status == "Pending" %}selected{% endif %}>Pending</option>
+                <option value="Completed" {% if payment.status == "Completed" %}selected{% endif %}>Completed</option>
+                <option value="Failed" {% if payment.status == "Failed" %}selected{% endif %}>Failed</option>
+            </select>
+        </div>
+
+        <div class="flex justify-between">
+            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
+                Update
+            </button>
+            <a href="{% url 'payment' %}" class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
