@@ -17,11 +17,11 @@ from .models import Airport
 from .models import Airline
 from .models import Aircraft
 from .models import SeatClass
-from .models import Booking
 from .models import BookingDetail
 from .models import Payment
 from .models import CheckInDetail
 from .models import Student
+from .models import PassengerInfo
 
 # main
 def main(request):
@@ -586,57 +586,6 @@ def delete_seat_class(request, seat_class_id):
     seat_class.delete()
     return redirect("seat_class")
 
-# ---------------------------
-# Booking
-# ---------------------------
-
-def booking_view(request):
-    bookings = Booking.objects.all()
-    return render(request, 'booking/booking/booking.html', {"bookings": bookings})
-
-
-# Add booking
-import random
-import string
-
-def generate_reference():
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
-
-def add_booking(request):
-    if request.method == "POST":
-        student_id = request.POST["student"]
-        status = request.POST["status"]
-
-        student = Student.objects.get(id=student_id)
-
-        Booking.objects.create(
-            student=student,
-            reference=generate_reference(),  # auto-generate unique reference
-            status=status
-        )
-        return redirect("booking")
-
-    students = Student.objects.all()
-    return render(request, "booking/booking/add_booking.html", {"students": students})
-
-
-
-# Update booking
-def update_booking(request, booking_id):
-    booking = get_object_or_404(Booking, id=booking_id)
-    if request.method == "POST":
-        booking.student = request.POST["student"]
-        booking.booking_date = request.POST["booking_date"]
-        booking.status = request.POST["status"]
-        booking.save()
-        return redirect("booking")
-    return render(request, "booking/booking/update_booking.html", {"booking": booking})
-
-# Delete booking
-def delete_booking(request, booking_id):
-    booking = get_object_or_404(Booking, id=booking_id)
-    booking.delete()
-    return redirect("booking")
 
 # ---------------------------
 # Booking_detail
@@ -752,7 +701,7 @@ def delete_payment(request, payment_id):
 # ---------------------------
 def check_in_view(request):
     checkins = CheckInDetail.objects.all()
-    return render(request, "passenger/check_in/check_in.html", {"checkins": checkins})
+    return render(request, "passenger_info/check_in/check_in.html", {"checkins": checkins})
 
 # Add
 def add_checkin(request):
@@ -771,7 +720,7 @@ def add_checkin(request):
         return redirect("check_in")
 
     bookings = Booking.objects.all()
-    return render(request, "passenger/check_in/add_check_in.html", {"bookings": bookings})
+    return render(request, "passenger_info/check_in/add_check_in.html", {"bookings": bookings})
 
 # Update
 def update_checkin(request, checkin_id):
@@ -785,7 +734,7 @@ def update_checkin(request, checkin_id):
         return redirect("check_in")
 
     bookings = Booking.objects.all()
-    return render(request, "passenger/check_in/update_check_in.html", {"checkin": checkin, "bookings": bookings})
+    return render(request, "passenger_info/check_in/update_check_in.html", {"checkin": checkin, "bookings": bookings})
 
 # Delete
 def delete_checkin(request, checkin_id):
@@ -798,7 +747,7 @@ def delete_checkin(request, checkin_id):
 # ---------------------------
 def student_view(request):
     students = Student.objects.all()
-    return render(request, "passenger/student/student.html", {"students": students})
+    return render(request, "student_info/student/student.html", {"students": students})
 
 # Add
 def add_student(request):
@@ -820,7 +769,7 @@ def add_student(request):
         )
         return redirect("student")
 
-    return render(request, "passenger/student/add_student.html")
+    return render(request, "student_info/student/add_student.html")
 
 # Update
 def update_student(request, student_id):
@@ -833,7 +782,7 @@ def update_student(request, student_id):
         student.save()
         return redirect("student")
 
-    return render(request, "passenger/student/update_student.html", {"student": student})
+    return render(request, "student_info/student/update_student.html", {"student": student})
 
 # Delete
 def delete_student(request, student_id):
@@ -841,3 +790,74 @@ def delete_student(request, student_id):
     student.delete()
     return redirect("student")
 
+
+# ---------------------------
+# Passenger
+# ---------------------------
+def passenger_view(request):
+    passengers = PassengerInfo.objects.all()
+    return render(request, "passenger_info/passenger/passenger.html", {"passengers": passengers})
+ 
+
+# Add Passenger
+def add_passenger(request):
+    booking_details = BookingDetail.objects.all()
+
+    if request.method == "POST":
+        # booking_detail_id = request.POST["booking_detail"]
+        first_name = request.POST["first_name"]
+        last_name = request.POST["last_name"]
+        middle_name = request.POST.get("middle_name", "")
+        gender = request.POST["gender"]
+        date_of_birth = request.POST["date_of_birth"]
+        phone = request.POST.get("phone", "")
+        email = request.POST.get("email", "")
+        passport_number = request.POST.get("passport_number", "")
+
+        PassengerInfo.objects.create(
+            # booking_detail_id=booking_detail_id,
+            first_name=first_name,
+            last_name=last_name,
+            middle_name=middle_name,
+            gender=gender,
+            date_of_birth=date_of_birth,
+            phone=phone,
+            email=email,
+            passport_number=passport_number
+        )
+        return redirect("passenger")
+
+    return render(request, "passenger_info/passenger/add_passenger.html", {
+        "booking_details": booking_details
+    })
+
+
+# Update Passenger
+def update_passenger(request, id):
+    passenger = get_object_or_404(PassengerInfo, id=id)
+    booking_details = BookingDetail.objects.all()   
+
+    if request.method == "POST":
+        passenger.booking_detail_id = request.POST["booking_detail"]
+        passenger.first_name = request.POST["first_name"]
+        passenger.last_name = request.POST["last_name"]
+        passenger.middle_name = request.POST.get("middle_name", "")
+        passenger.gender = request.POST["gender"]
+        passenger.date_of_birth = request.POST["date_of_birth"]
+        passenger.phone = request.POST.get("phone", "")
+        passenger.email = request.POST.get("email", "")
+        passenger.passport_number = request.POST.get("passport_number", "")
+        passenger.save()
+        return redirect("passenger_list")
+
+    return render(request, "passenger_info/passenger/update_passenger.html", {
+        "passenger": passenger,
+        "booking_details": booking_details
+    })
+
+
+# Delete Passenger
+def delete_passenger(request, id):
+    passenger = get_object_or_404(PassengerInfo, id=id)
+    passenger.delete()
+    return redirect("passenger")

@@ -1,0 +1,45 @@
+{% extends "master.html" %}
+{% block content %}
+<h2 class="text-2xl font-bold mb-4">Passenger Information</h2>
+
+<a href="{% url 'add_passenger' %}" class="bg-blue-600 text-white px-3 py-2 rounded">+ Add Passenger</a>
+
+<table class="table-auto border-collapse border border-gray-400 w-full mt-4">
+    <thead>
+        <tr class="bg-gray-100">
+            <th class="border px-4 py-2">ID</th>
+            <th class="border px-4 py-2">Booking</th>
+            <th class="border px-4 py-2">Name</th>
+            <th class="border px-4 py-2">Gender</th>
+            <th class="border px-4 py-2">Date of Birth</th>
+            <th class="border px-4 py-2">Phone</th>
+            <th class="border px-4 py-2">Email</th>
+            <th class="border px-4 py-2">Passport</th>
+            <th class="border px-4 py-2">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for passenger in passengers %}
+        <tr>
+            <td class="border px-4 py-2">{{ passenger.id }}</td>
+            <td class="border px-4 py-2">{{ passenger.booking_detail.booking.reference }}</td>
+            <td class="border px-4 py-2">{{ passenger.first_name }} {{ passenger.last_name }}</td>
+            <td class="border px-4 py-2">{{ passenger.gender }}</td>
+            <td class="border px-4 py-2">{{ passenger.date_of_birth }}</td>
+            <td class="border px-4 py-2">{{ passenger.phone }}</td>
+            <td class="border px-4 py-2">{{ passenger.email }}</td>
+            <td class="border px-4 py-2">{{ passenger.passport_number }}</td>
+            <td class="border px-4 py-2">
+                <a href="{% url 'update_passenger' passenger.id %}" class="text-blue-600">Edit</a> |
+                <a href="{% url 'delete_passenger' passenger.id %}" class="text-red-600"
+                   onclick="return confirm('Are you sure you want to delete this passenger?');">Delete</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="9" class="text-center py-4">No passengers found.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

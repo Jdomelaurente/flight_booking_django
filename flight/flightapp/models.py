@@ -5,6 +5,7 @@ from datetime import timedelta
 from django.utils import timezone
 
 
+
 # ---------------------------
 # Custom User (optional)
 # ---------------------------
@@ -78,6 +79,7 @@ class Flight(models.Model):
     aircraft = models.ForeignKey(Aircraft, on_delete=models.CASCADE, related_name="flights")
     route = models.ForeignKey(Route, on_delete=models.CASCADE, related_name="flights")
 
+
     def __str__(self):
         return f"{self.flight_number} - {self.airline.code}"
 
@@ -125,11 +127,10 @@ class Seat(models.Model):
     seat_number = models.CharField(max_length=10)
     seat_class = models.ForeignKey(SeatClass, on_delete=models.CASCADE, related_name="seats")
     available = models.BooleanField(default=True)
-    price = models.DecimalField(max_digits=8, decimal_places=2)
 
     def __str__(self):
         return f"{self.seat_number} ({self.schedule.flight.flight_number})"
-
+   
 
 # ---------------------------
 # Student
@@ -144,48 +145,21 @@ class Student(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.username
+        return f"{self.first_name} {self.last_name}"
 
-
-# ---------------------------
-# Booking
-# ---------------------------
-class Booking(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="bookings")
-    reference = models.CharField(max_length=10, unique=True)
-    booking_date = models.DateTimeField(auto_now_add=True)
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    status = models.CharField(max_length=20, choices=[
-        ("Pending", "Pending"),
-        ("Confirmed", "Confirmed"),
-        ("Cancelled", "Cancelled"),
-    ], default="Pending")
-    payment_status = models.CharField(max_length=20, choices=[
-        ("Pending", "Pending"),
-        ("Completed", "Completed"),
-        ("Failed", "Failed"),
-    ], default="Pending")
-
-    def __str__(self):
-        return f"Booking {self.reference} - {self.student.username}"
 
 
 # ---------------------------
 # Booking Detail
 # ---------------------------
 class BookingDetail(models.Model):
-    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="details")
-    flight = models.ForeignKey(Flight, on_delete=models.CASCADE, related_name="booking_details")
-    seat = models.ForeignKey(Seat, on_delete=models.SET_NULL, null=True, blank=True, related_name="booking_details")
-    seat_class = models.ForeignKey(SeatClass, on_delete=models.CASCADE, related_name="booking_details")
-    quantity = models.PositiveIntegerField(default=1)
-    passenger_first_name = models.CharField(max_length=50)
-    passenger_last_name = models.CharField(max_length=50)
-    passenger_email = models.EmailField(blank=True, null=True)
-    passenger_phone = models.CharField(max_length=20, blank=True, null=True)
+    flight = models.ForeignKey(Flight, on_delete=models.CASCADE)
+    seat_number = models.CharField(max_length=10, null=True, blank=True)
+    seat_class = models.CharField(max_length=50, null=True, blank=True)  # Economy, Business, etc.
+    booking_date = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        return f"{self.passenger_first_name} {self.passenger_last_name} ({self.booking.reference})"
+        return f"{self.booking} - {self.flight}"
 
 
 # ---------------------------
@@ -205,7 +179,6 @@ class Payment(models.Model):
         ("Failed", "Failed"),
     ]
 
-    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="payments")
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     method = models.CharField(max_length=50, choices=PAYMENT_METHODS)
     transaction_id = models.CharField(max_length=100, blank=True, null=True)
@@ -228,3 +201,33 @@ class CheckInDetail(models.Model):
 
     def __str__(self):
         return f"Check-In {self.id} - {self.booking_detail.booking.reference}"
+
+# ---------------------------
+# Passenger Info
+# ---------------------------
+class PassengerInfo(models.Model):
+    # booking_detail = models.ForeignKey(BookingDetail, on_delete=models.CASCADE, related_name="passengers")
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    middle_name = models.CharField(max_length=100, null=True, blank=True)
+    gender = models.CharField(max_length=10, choices=[("Male", "Male"), ("Female", "Female")])
+    date_of_birth = models.DateField()
+    phone = models.CharField(max_length=20, null=True, blank=True)
+    email = models.EmailField(null=True, blank=True)
+    passport_number = models.CharField(max_length=50, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
+    
+# ---------------------------
+# Track Log
+# ---------------------------
+class TrackLog(models.Model):
+    student = models.ForeignKey(PassengerInfo, on_delete=models.CASCADE)
+    action = models.CharField(max_length=255)  # e.g., "Searched Flight", "Booked Ticket", "Cancelled Booking"
+    timestamp = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(null=True, blank=True)  # store browser/device info
+
+    def __str__(self):
+        return f"{self.student.username} - {self.action} @ {self.timestamp}"
