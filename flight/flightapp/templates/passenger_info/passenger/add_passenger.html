@@ -1,0 +1,38 @@
+{% extends "master.html" %}
+{% block content %}
+<h2 class="text-2xl font-bold mb-4">Add Passenger Info</h2>
+
+<form method="post" class="space-y-4">
+    {% csrf_token %}
+<!-- 
+    <label class="block">
+        Booking Detail:
+        <select name="booking_detail" class="border rounded p-2 w-full">
+            {% for bd in booking_details %}
+            <option value="{{ bd.id }}">
+                {{ bd.passenger_first_name }} {{ bd.passenger_last_name }} - {{ bd.booking.reference }}
+            </option>
+            {% endfor %}
+        </select>
+    </label> -->
+
+    <label class="block">First Name: <input type="text" name="first_name" class="border rounded p-2 w-full" required></label>
+    <label class="block">Last Name: <input type="text" name="last_name" class="border rounded p-2 w-full" required></label>
+    <label class="block">Middle Name: <input type="text" name="middle_name" class="border rounded p-2 w-full"></label>
+
+    <label class="block">
+        Gender:
+        <select name="gender" class="border rounded p-2 w-full">
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+        </select>
+    </label>
+
+    <label class="block">Date of Birth: <input type="date" name="date_of_birth" class="border rounded p-2 w-full" required></label>
+    <label class="block">Phone: <input type="text" name="phone" class="border rounded p-2 w-full"></label>
+    <label class="block">Email: <input type="email" name="email" class="border rounded p-2 w-full"></label>
+    <label class="block">Passport Number: <input type="text" name="passport_number" class="border rounded p-2 w-full"></label>
+
+    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Save Passenger</button>
+</form>
+{% endblock %}

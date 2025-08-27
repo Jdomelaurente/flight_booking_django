@@ -59,12 +59,6 @@ urlpatterns = [
     path("seat-classes/update/<int:seat_class_id>/", views.update_seat_class, name="update_seat_class"),
     path("seat-classes/delete/<int:seat_class_id>/", views.delete_seat_class, name="delete_seat_class"),
 
-    #booking
-    path('booking/', views.booking_view, name='booking'),
-    path("bookings/add/", views.add_booking, name="add_booking"),
-    path("bookings/update/<int:booking_id>/", views.update_booking, name="update_booking"),
-    path("bookings/delete/<int:booking_id>/", views.delete_booking, name="delete_booking"),
-
     # booking_detail
     path('booking_detail/', views.booking_detail_view, name='booking_detail'),
     path("booking-details/add/", views.add_booking_detail, name="add_booking_detail"),
@@ -88,4 +82,10 @@ urlpatterns = [
     path("students/add/", views.add_student, name="add_student"),
     path("students/update/<int:student_id>/", views.update_student, name="update_student"),
     path("students/delete/<int:student_id>/", views.delete_student, name="delete_student"),
+
+    # passenger
+    path('passenger/', views.passenger_view, name='passenger'),
+    path("passengers/add/", views.add_passenger, name="add_passenger"),
+    path("passengers/update/<int:passenger_id>/", views.update_passenger, name="update_passenger"),
+    path("passengers/delete/<int:passenger_id>/", views.delete_passenger, name="delete_passenger"),
 ]
