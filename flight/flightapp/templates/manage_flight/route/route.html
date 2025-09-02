@@ -1,52 +1,29 @@
-{% extends 'master.html' %}
-
+{% extends "master.html" %}
 {% block content %}
-<div class="items-center mb-5">
-    <h1 class="text-2xl font-bold mb-5">Route Table</h1>
-    <a href="{% url 'add_route' %}" class="bg-green-800 hover:bg-green-900 text-white py-2 px-4 rounded">
-        <i class="fas fa-plus mr-2"></i>
-        Add Route
-    </a>
-</div>
+<h2 class="text-2xl font-bold mb-4">Routes</h2>
+<a href="{% url 'add_route' %}" class="bg-blue-600 text-white px-3 py-2 rounded">+ Add Route</a>
 
-<table class="table-auto border-collapse border border-gray-400 w-full">
+<table class="table-auto border-collapse border border-gray-400 w-full mt-4">
     <thead>
         <tr class="bg-gray-200">
-            <th class="border border-gray-400 px-4 py-2">ID</th>
-            <th class="border border-gray-400 px-4 py-2">Origin</th>
-            <th class="border border-gray-400 px-4 py-2">Destination</th>
-            <th class="border border-gray-400 px-4 py-2">Distance (km)</th>
-            <th class="border border-gray-400 px-4 py-2">Duration (mins)</th>
-            <th class="border border-gray-400 px-4 py-2">Airline</th>
-            <th class="border border-gray-400 px-4 py-2">Aircraft</th>
-            <th class="border border-gray-400 px-4 py-2">Action</th>
+            <th class="border px-4 py-2">Origin</th>
+            <th class="border px-4 py-2">Destination</th>
+            <th class="border px-4 py-2">Actions</th>
         </tr>
     </thead>
     <tbody>
         {% for route in routes %}
         <tr>
-            <td class="border border-gray-400 px-4 py-2">{{ route.id }}</td>
-            <td class="border border-gray-400 px-4 py-2">{{ route.departure_airport }}</td>
-            <td class="border border-gray-400 px-4 py-2">{{ route.arrival_airport }}</td>
-            <td class="border border-gray-400 px-4 py-2">{{ route.distance }}</td>
-            <td class="border border-gray-400 px-4 py-2">{{ route.duration }}</td>
-            <td class="border border-gray-400 px-4 py-2">{{ route.airline }}</td>
-            <td class="border border-gray-400 px-4 py-2">{{ route.aircraft }}</td>
-
-            <td class="border border-gray-400 px-4 py-2 text-center space-x-2">
-              <a href="{% url 'update_route' route.id %}"  
-                class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm inline-flex items-center">
-                  <i class="fas fa-edit mr-1"></i>Edit
-              </a>
-              <a href="{% url 'delete_route' route.id %}"
-                class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-sm inline-flex items-center">
-                  <i class="fas fa-trash-alt mr-1"></i>Delete
-              </a>
-          </td>
+            <td class="border px-4 py-2">{{ route.origin_airport.code }}</td>
+            <td class="border px-4 py-2">{{ route.destination_airport.code }}</td>
+            <td class="border px-4 py-2">
+                <a href="{% url 'update_route' route.id %}" class="bg-yellow-500 text-white px-2 py-1 rounded">Edit</a>
+                <a href="{% url 'delete_route' route.id %}" class="bg-red-600 text-white px-2 py-1 rounded" onclick="return confirm('Are you sure?')">Delete</a>
+            </td>
         </tr>
         {% empty %}
         <tr>
-            <td colspan="8" class="text-center py-4">No routes available</td>
+            <td colspan="3" class="text-center py-2">No routes found.</td>
         </tr>
         {% endfor %}
     </tbody>

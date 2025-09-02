@@ -1,28 +1,43 @@
 {% extends "master.html" %}
 {% block content %}
-<div class="max-w-lg mx-auto bg-white shadow-md rounded-lg p-6">
-  <h2 class="text-2xl font-bold mb-4">Add Aircraft</h2>
-  <form method="post">
-    {% csrf_token %}
-    
-    <label class="block mb-2">Model:</label>
-    <input type="text" name="model" class="w-full border p-2 rounded mb-4" required>
+<div class="max-w-lg mx-auto bg-white shadow-lg rounded-lg p-6">
+    <h2 class="text-2xl font-bold mb-6">Add Aircraft</h2>
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
 
-    <label class="block mb-2">Capacity:</label>
-    <input type="number" name="capacity" class="w-full border p-2 rounded mb-4" required>
+        <div>
+            <label class="block font-semibold mb-1">Model:</label>
+            <input type="text" name="model" 
+                   class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
+        </div>
 
-    <label class="block mb-2">Type:</label>
-    <input type="text" name="type" class="w-full border p-2 rounded mb-4" required>
+        <div>
+            <label class="block font-semibold mb-1">Capacity:</label>
+            <input type="number" name="capacity" 
+                   class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
+        </div>
 
-    <label class="block mb-2">Airline:</label>
-    <select name="airline" class="w-full border p-2 rounded mb-4" required>
-      <option value="">-- Select Airline --</option>
-      {% for airline in airlines %}
-        <option value="{{ airline.id }}">{{ airline.name }}</option>
-      {% endfor %}
-    </select>
+        <div>
+            <label class="block font-semibold mb-1">Airline:</label>
+            <select name="airline" 
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
+                <option value="">-- Select Airline --</option>
+                {% for airline in airlines %}
+                    <option value="{{ airline.id }}">{{ airline.name }} ({{ airline.code }})</option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
-  </form>
+        <div class="flex items-center justify-between mt-6">
+            <button type="submit" 
+                    class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
+                Add Aircraft
+            </button>
+            <a href="{% url 'aircraft' %}" 
+               class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
+                Cancel
+            </a>
+        </div>
+    </form>
 </div>
 {% endblock %}
