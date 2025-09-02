@@ -1,45 +1,26 @@
 {% extends "master.html" %}
 {% block content %}
-<div class="max-w-lg mx-auto bg-white shadow-md rounded-lg p-6">
-  <h2 class="text-2xl font-bold mb-4">Add Route</h2>
-  <form method="POST">
+<h2 class="text-2xl font-bold mb-4">Add Route</h2>
+
+<form method="POST" class="space-y-4">
     {% csrf_token %}
-    
-    <label class="block mb-2">Departure Airport:</label>
-    <select name="departure_airport" required class="w-full border rounded px-3 py-2 mb-4">
-      {% for airport in airports %}
-      <option value="{{ airport.id }}">{{ airport.code }} - {{ airport.name }}</option>
-      {% endfor %}
-    </select>
-
-    <label class="block mb-2">Arrival Airport:</label>
-    <select name="arrival_airport" required class="w-full border rounded px-3 py-2 mb-4">
-      {% for airport in airports %}
-      <option value="{{ airport.id }}">{{ airport.code }} - {{ airport.name }}</option>
-      {% endfor %}
-    </select>
-
-    <label class="block mb-2">Airline:</label>
-    <select name="airline" required class="w-full border rounded px-3 py-2 mb-4">
-      {% for airline in airlines %}
-      <option value="{{ airline.id }}">{{ airline.name }}</option>
-      {% endfor %}
-    </select>
-
-    <label class="block mb-2">Aircraft:</label>
-    <select name="aircraft" required class="w-full border rounded px-3 py-2 mb-4">
-      {% for aircraft in aircrafts %}
-      <option value="{{ aircraft.id }}">{{ aircraft.model }}</option>
-      {% endfor %}
-    </select>
-
-    <label class="block mb-2">Distance (km):</label>
-    <input type="number" name="distance" required class="w-full border rounded px-3 py-2 mb-4">
-
-    <label class="block mb-2">Duration (mins):</label>
-    <input type="number" name="duration" required class="w-full border rounded px-3 py-2 mb-4">
-
-    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Add Route</button>
-  </form>
-</div>
+    <div>
+        <label class="block">Origin Airport</label>
+        <select name="origin_airport" class="border px-3 py-2 w-full rounded" required>
+            {% for airport in airports %}
+                <option value="{{ airport.id }}">{{ airport.code }} - {{ airport.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label class="block">Destination Airport</label>
+        <select name="destination_airport" class="border px-3 py-2 w-full rounded" required>
+            {% for airport in airports %}
+                <option value="{{ airport.id }}">{{ airport.code }} - {{ airport.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+    <a href="{% url 'route' %}" class="ml-2 text-gray-600">Cancel</a>
+</form>
 {% endblock %}

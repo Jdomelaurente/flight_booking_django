@@ -14,7 +14,6 @@
         <tr class="bg-gray-200">
             <th class="border border-gray-400 px-4 py-2">ID</th>
             <th class="border border-gray-400 px-4 py-2">Name</th>
-            <th class="border border-gray-400 px-4 py-2">Description</th>
             <th class="border border-gray-400 px-4 py-2">Price Multiplier</th>
             <th class="border border-gray-400 px-4 py-2">Actions</th>
         </tr>
@@ -24,7 +23,6 @@
         <tr>
             <td class="border border-gray-400 px-4 py-2">{{ seat_class.id }}</td>
             <td class="border border-gray-400 px-4 py-2">{{ seat_class.name }}</td>
-            <td class="border border-gray-400 px-4 py-2">{{ seat_class.description }}</td>
             <td class="border border-gray-400 px-4 py-2">{{ seat_class.price_multiplier }}</td>
             <td class="border border-gray-400 px-4 py-2 text-center space-x-2">
                 <a href="{% url 'update_seat_class' seat_class.id %}" 
@@ -39,7 +37,7 @@
         </tr>
         {% empty %}
         <tr>
-            <td colspan="5" class="text-center py-4">No seat classes available</td>
+            <td colspan="4" class="text-center py-4">No seat classes available</td>
         </tr>
         {% endfor %}
     </tbody>

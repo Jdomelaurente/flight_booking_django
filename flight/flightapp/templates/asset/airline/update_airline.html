@@ -6,13 +6,13 @@
         {% csrf_token %}
 
         <div>
-            <label class="block font-semibold mb-1">Code:</label>
+            <label class="block font-semibold mb-1">Airline Code:</label>
             <input type="text" name="code" value="{{ airline.code }}"
                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
         </div>
 
         <div>
-            <label class="block font-semibold mb-1">Name:</label>
+            <label class="block font-semibold mb-1">Airline Name:</label>
             <input type="text" name="name" value="{{ airline.name }}"
                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
         </div>

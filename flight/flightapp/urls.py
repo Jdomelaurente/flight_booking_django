@@ -53,7 +53,7 @@ urlpatterns = [
     path("aircrafts/update/<int:aircraft_id>/", views.update_aircraft, name="update_aircraft"),
     path("aircrafts/delete/<int:aircraft_id>/", views.delete_aircraft, name="delete_aircraft"),
 
-    # seat class
+    # seatclass
     path('seat_class/', views.seat_class_view, name='seat_class'),
     path("seat-classes/add/", views.add_seat_class, name="add_seat_class"),
     path("seat-classes/update/<int:seat_class_id>/", views.update_seat_class, name="update_seat_class"),

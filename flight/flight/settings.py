@@ -76,10 +76,16 @@ WSGI_APPLICATION = "flight.wsgi.application"
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'flightdb',       # your new db name
+        'USER': 'postgres',       # your postgres username
+        'PASSWORD': 'postgres',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
+
+
 
 
 # Password validation
@@ -123,14 +129,5 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-import os
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
-]
 
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    BASE_DIR / "firstapp" / "static",
-]

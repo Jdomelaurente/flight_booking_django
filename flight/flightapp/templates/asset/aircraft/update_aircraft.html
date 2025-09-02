@@ -1,32 +1,38 @@
 {% extends "master.html" %}
 {% block content %}
-<div class="max-w-lg mx-auto bg-white shadow-md rounded-lg p-6">
-    <h2 class="text-2xl font-bold mb-4">Edit Aircraft</h2>
+<div class="max-w-lg mx-auto bg-white shadow-lg rounded-lg p-6">
+    <h2 class="text-2xl font-bold mb-6">Update Aircraft</h2>
     <form method="post" class="space-y-4">
         {% csrf_token %}
 
         <div>
             <label class="block font-semibold mb-1">Model:</label>
-            <input type="text" name="model" value="{{ aircraft.model }}"
+            <input type="text" name="model" value="{{ aircraft.model }}" 
                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
         </div>
 
         <div>
             <label class="block font-semibold mb-1">Capacity:</label>
-            <input type="number" name="capacity" value="{{ aircraft.capacity }}"
+            <input type="number" name="capacity" value="{{ aircraft.capacity }}" 
                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
         </div>
 
         <div>
-            <label class="block font-semibold mb-1">Type:</label>
-            <input type="text" name="type" value="{{ aircraft.type }}"
-                   class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
+            <label class="block font-semibold mb-1">Airline:</label>
+            <select name="airline" 
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
+                {% for airline in airlines %}
+                    <option value="{{ airline.id }}" {% if aircraft.airline.id == airline.id %}selected{% endif %}>
+                        {{ airline.name }} ({{ airline.code }})
+                    </option>
+                {% endfor %}
+            </select>
         </div>
 
-        <div class="flex justify-between mt-6">
+        <div class="flex items-center justify-between mt-6">
             <button type="submit" 
                     class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
-                Update
+                Update Aircraft
             </button>
             <a href="{% url 'aircraft' %}" 
                class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">

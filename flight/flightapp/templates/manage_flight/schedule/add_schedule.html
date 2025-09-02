@@ -1,28 +1,29 @@
 {% extends "master.html" %}
 {% block content %}
-<div class="max-w-lg mx-auto bg-white shadow-md rounded-lg p-6">
-    <h2 class="text-2xl font-bold mb-4">Add Flight Schedule</h2>
-    <form method="post">
-        {% csrf_token %}
+<h2 class="text-2xl font-bold mb-4">Add Schedule</h2>
 
-        <!-- Flight -->
-        <label class="block mb-2 font-medium">Flight:</label>
-        <select name="flight_id" required class="w-full border rounded px-3 py-2 mb-4">
-            <option value="">-- Select Flight --</option>
+<form method="POST" class="max-w-md bg-white p-6 rounded shadow">
+    {% csrf_token %}
+    <div class="mb-4">
+        <label for="flight" class="block font-medium mb-1">Flight</label>
+        <select name="flight" id="flight" class="w-full border rounded px-3 py-2">
             {% for flight in flights %}
-            <option value="{{ flight.id }}">{{ flight.flight_number }} ({{ flight.origin }} → {{ flight.destination }})</option>
+                <option value="{{ flight.id }}">{{ flight.flight_number }} ({{ flight.airline.code }})</option>
             {% endfor %}
         </select>
+    </div>
 
-        <!-- Departure Time -->
-        <label class="block mb-2 font-medium">Departure Time:</label>
-        <input type="datetime-local" name="departure_time" required class="w-full border rounded px-3 py-2 mb-4">
+    <div class="mb-4">
+        <label for="departure_time" class="block font-medium mb-1">Departure Time</label>
+        <input type="datetime-local" name="departure_time" id="departure_time" class="w-full border rounded px-3 py-2" required>
+    </div>
 
-        <!-- Arrival Time -->
-        <label class="block mb-2 font-medium">Arrival Time:</label>
-        <input type="datetime-local" name="arrival_time" required class="w-full border rounded px-3 py-2 mb-4">
+    <div class="mb-4">
+        <label for="arrival_time" class="block font-medium mb-1">Arrival Time</label>
+        <input type="datetime-local" name="arrival_time" id="arrival_time" class="w-full border rounded px-3 py-2" required>
+    </div>
 
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
-    </form>
-</div>
+    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Add Schedule</button>
+    <a href="{% url 'schedule' %}" class="ml-2 text-gray-600">Cancel</a>
+</form>
 {% endblock %}

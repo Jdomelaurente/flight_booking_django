@@ -104,416 +104,78 @@ def logout_view(request):
     request.session.flush()
     return redirect("login")
 
+
+# ------------------------------------ ASSETS ----------------------------------------------------------
+
 # ---------------------------
-# Flight
+# Seat Class
 # ---------------------------
 
-# flightlist
-def flight_view(request):
-    flights = Flight.objects.all()
-    return render(request, 'manage_flight/flight/flight.html', {'flight': flights})
+# List
+def seat_class_view(request):
+    seat_classes = SeatClass.objects.all()
+    return render(request, "asset/seat_class/seat_class.html", {"seat_classes": seat_classes})
 
-#  add flight
-def add_flight(request):
+# Add
+def add_seat_class(request):
     if request.method == "POST":
-        flight_number = request.POST.get("flight_number")
-        airline_id = request.POST.get("airline")
-        aircraft_id = request.POST.get("aircraft")
-        route_id = request.POST.get("route")
+        name = request.POST.get("name")
+        price_multiplier = request.POST.get("price_multiplier")
+        description = request.POST.get("description")  # optional
 
-        airline = Airline.objects.get(id=airline_id)
-        aircraft = Aircraft.objects.get(id=aircraft_id)
-        route = Route.objects.get(id=route_id)
-
-        Flight.objects.create(
-            flight_number=flight_number,
-            airline=airline,
-            aircraft=aircraft,
-            route=route,
+        SeatClass.objects.create(
+            name=name,
+            price_multiplier=price_multiplier
         )
-        return redirect("flight")  # adjust to your flight list route
+        return redirect("seat_class")
+    return render(request, "asset/seat_class/add_seat_class.html")
 
-    airlines = Airline.objects.all()
-    aircrafts = Aircraft.objects.all()
-    routes = Route.objects.all()
-    return render(request, "manage_flight/flight/add_flight.html", {
-        "airlines": airlines,
-        "aircrafts": aircrafts,
-        "routes": routes,
-    })
-
-# update flight 
-def update_flight(request, id):
-    flight = get_object_or_404(Flight, id=id)
-
+# Update
+def update_seat_class(request, seat_class_id):
+    seat_class = get_object_or_404(SeatClass, pk=seat_class_id)
     if request.method == "POST":
-        flight.flight_number = request.POST.get("flight_number")
-        flight.airline = request.POST.get("airline")
-        flight.aircraft = request.POST.get("aircraft")
-        flight.route = request.POST.get("route")
-        flight.save()
-        return redirect('flight')  # Redirect back to list
+        seat_class.name = request.POST.get("name")
+        seat_class.price_multiplier = request.POST.get("price_multiplier")
+        seat_class.save()
+        return redirect("seat_class")
+    return render(request, "asset/seat_class/update_seat_class.html", {"seat_class": seat_class})
+
+
+# Delete
+def delete_seat_class(request, seat_class_id):
+    seat_class = get_object_or_404(SeatClass, pk=seat_class_id)
+    seat_class.delete()
+    return redirect("seat_class")
 
-    return render(request, 'manage_flight/flight/update_flight.html', {'flight': flight})
-
-# delete flight
-def delete_flight(request, id):
-    flight = get_object_or_404(Flight, id=id)
-    flight.delete()
-    return redirect('flight') 
-
-# ---------------------------
-# Route
-# ---------------------------
-
-def route_view(request):
-    routes = Route.objects.all()
-    return render(request, "manage_flight/route/route.html", {"routes": routes})
-
-# ---------------------------
-# Add Route
-# ---------------------------
-def add_route(request):
-    airports = Airport.objects.all()
-    airlines = Airline.objects.all()
-    aircrafts = Aircraft.objects.all()
-
-    if request.method == "POST":
-        departure_id = request.POST["departure_airport"]
-        arrival_id = request.POST["arrival_airport"]
-        airline_id = request.POST["airline"]
-        aircraft_id = request.POST["aircraft"]
-        distance = request.POST["distance"]
-        duration = request.POST["duration"]
-
-        departure_airport = get_object_or_404(Airport, id=departure_id)
-        arrival_airport = get_object_or_404(Airport, id=arrival_id)
-        airline = get_object_or_404(Airline, id=airline_id)
-        aircraft = get_object_or_404(Aircraft, id=aircraft_id)
-
-        Route.objects.create(
-            departure_airport=departure_airport,
-            arrival_airport=arrival_airport,
-            airline=airline,
-            aircraft=aircraft,
-            distance=distance,
-            duration=duration,
-        )
-        return redirect("route")
-
-    return render(
-        request,
-        "manage_flight/route/add_route.html",
-        {"airports": airports, "airlines": airlines, "aircrafts": aircrafts},
-    )
-
-
-
-# update route
-def update_route(request, id):
-    route = get_object_or_404(Route, id=id)
-
-    if request.method == "POST":
-        route.origin = request.POST.get("origin")
-        route.destination = request.POST.get("destination")
-        route.distance = request.POST.get("distance")
-        route.duration = request.POST.get("duration")
-        route.airline = request.POST.get("airline")
-        route.aircraft = request.POST.get("aircraft")
-        route.save()
-        return redirect('route')
-
-    return render(request, 'manage_flight/route/update_route.html', {"route": route})
-
-# delete route
-def delete_route(request, id):
-    route = get_object_or_404(Route, id=id)
-    route.delete()
-    return redirect('route')
-
-# ---------------------------
-# Schedule
-# ---------------------------
-from django.shortcuts import render, redirect, get_object_or_404
-from django.utils import timezone
-from django.contrib import messages
-from .models import Flight, Schedule
-from datetime import datetime
-
-def schedule_view(request):
-    schedules = Schedule.objects.all()
-    current_time = timezone.localtime(timezone.now())
-
-    schedule_data = []
-    for s in schedules:
-        if current_time < s.departure_time:
-            status = "Standby"
-        elif s.departure_time <= current_time < s.arrival_time:
-            status = "On Flight"
-        else:
-            status = "Arrived"
-
-        schedule_data.append({
-            "schedule": s,
-            "status": status
-        })
-
-    return render(request, "manage_flight/schedule/schedule.html", {
-        "schedule_data": schedule_data,
-        "current_time": current_time
-    })
-
-
-
-# ---------------------------
-# Add schedule
-# ---------------------------
-def add_schedule(request):
-    flights = Flight.objects.all()
-    if request.method == "POST":
-        flight_id = request.POST["flight_id"]
-        departure_time_str = request.POST["departure_time"]
-        arrival_time_str = request.POST["arrival_time"]
-
-        # Convert to datetime (Flask logic)
-        departure_time = datetime.strptime(departure_time_str, "%Y-%m-%dT%H:%M")
-        arrival_time = datetime.strptime(arrival_time_str, "%Y-%m-%dT%H:%M")
-
-        # Make timezone-aware
-        departure_time = timezone.make_aware(departure_time)
-        arrival_time = timezone.make_aware(arrival_time)
-
-        Schedule.objects.create(
-            flight_id=flight_id,
-            departure_time=departure_time,
-            arrival_time=arrival_time
-        )
-        messages.success(request, "Flight schedule added successfully!")
-        return redirect("schedule")
-
-    return render(request, "manage_flight/schedule/add_schedule.html", {"flights": flights})
-
-
-# ---------------------------
-# Edit schedule
-# ---------------------------
-def update_schedule(request, id):
-    schedule = get_object_or_404(Schedule, id=id)
-    flights = Flight.objects.all()
-
-    if request.method == "POST":
-        schedule.flight_id = request.POST["flight_id"]
-
-        departure_time_str = request.POST["departure_time"]
-        arrival_time_str = request.POST["arrival_time"]
-
-        # Convert like in Flask
-        departure_time = datetime.strptime(departure_time_str, "%Y-%m-%dT%H:%M")
-        arrival_time = datetime.strptime(arrival_time_str, "%Y-%m-%dT%H:%M")
-
-        schedule.departure_time = timezone.make_aware(departure_time)
-        schedule.arrival_time = timezone.make_aware(arrival_time)
-
-        schedule.save()
-        messages.success(request, "Flight schedule updated successfully!")
-        return redirect("schedule")
-
-    return render(request, "manage_flight/schedule/update_schedule.html", {
-        "schedule": schedule,
-        "flights": flights
-    })
-
-
-# ---------------------------
-# Delete schedule
-# ---------------------------
-def delete_schedule(request, id):
-    schedule = get_object_or_404(Schedule, id=id)
-    schedule.delete()
-    messages.error(request, "Flight schedule deleted.")
-    return redirect("schedule")
-
-# ---------------------------
-# Seat
-# ---------------------------
-
-def seat_view(request):
-    seats = Seat.objects.all()
-    return render(request, 'manage_flight/seat/seat.html', {"seats": seats})
-
-# Add seat
-def add_seat(request):
-    if request.method == "POST":
-        schedule_id = request.POST["schedule"]
-        seat_number = request.POST["seat_number"]
-        seat_class_id = request.POST["seat_class"]   # Now we use ID, not text
-        available = request.POST.get("available") == "on"
-        price = request.POST["price"]
-
-        schedule = Schedule.objects.get(id=schedule_id)
-        seat_class = SeatClass.objects.get(id=seat_class_id)  # ✅ fetch instance
-
-        Seat.objects.create(
-            schedule=schedule,
-            seat_number=seat_number,
-            seat_class=seat_class,   # ✅ correct
-            available=available,
-            price=price
-        )
-        return redirect("seat")
-
-    schedules = Schedule.objects.all()
-    seat_classes = SeatClass.objects.all()   # ✅ add this
-    return render(request, "manage_flight/seat/add_seat.html", {
-        "schedules": schedules,
-        "seat_classes": seat_classes
-    })
-
-
-# Update seat
-def update_seat(request, seat_id):
-    seat = get_object_or_404(Seat, id=seat_id)
-
-    if request.method == "POST":
-        seat.schedule_id = request.POST["schedule"]
-        seat.seat_number = request.POST["seat_number"]
-        seat.seat_class = request.POST["seat_class"]
-        seat.available = request.POST.get("available") == "on"
-        seat.price = request.POST["price"]
-        seat.save()
-        return redirect("seat")
-
-    schedules = Schedule.objects.all()
-    return render(request, "manage_flight/seat/update_seat.html", {"seat": seat, "schedules": schedules})
-
-# Delete seat
-def delete_seat(request, seat_id):
-    seat = get_object_or_404(Seat, id=seat_id)
-    seat.delete()
-    return redirect("seat")
-
-# ---------------------------
-# Airport
-# ---------------------------
-
-# ---------------------------
-# Airport List
-# ---------------------------
-def airport_view(request):
-    airports = Airport.objects.all()
-    return render(request, "asset/airport/airport.html", {"airports": airports})
-
-# ---------------------------
-# Add Airport
-# ---------------------------
-def add_airport(request):
-    if request.method == "POST":
-        code = request.POST["code"]
-        name = request.POST["name"]
-        city = request.POST["city"]
-        country = request.POST["country"]
-
-        Airport.objects.create(code=code, name=name, city=city, country=country)
-        return redirect("airport")
-
-    return render(request, "asset/airport/add_airport.html")
-
-# Update airport
-def update_airport(request, airport_id):
-    airport = get_object_or_404(Airport, id=airport_id)
-
-    if request.method == "POST":
-        airport.code = request.POST["code"]
-        airport.name = request.POST["name"]
-        airport.city = request.POST["city"]
-        airport.country = request.POST["country"]
-        airport.save()
-        return redirect("airport")
-
-    return render(request, "asset/airport/update_airport.html", {"airport": airport})
-
-# Delete airport
-def delete_airport(request, airport_id):
-    airport = get_object_or_404(Airport, id=airport_id)
-    airport.delete()
-    return redirect("airport")
-
-# ---------------------------
-# Airline
-# ---------------------------
-
-def airline_view(request):
-    airlines = Airline.objects.all()
-    return render(request, 'asset/airline/airline.html', {"airlines": airlines})
-
-# Add Airline
-def add_airline(request):
-    if request.method == "POST":
-        code = request.POST["code"]
-        name = request.POST["name"]
-
-        Airline.objects.create(code=code, name=name)
-        return redirect("airline")
-
-    return render(request, "asset/airline/add_airline.html")
-
-# Update Airline
-def update_airline(request, airline_id):
-    airline = get_object_or_404(Airline, id=airline_id)
-
-    if request.method == "POST":
-        airline.code = request.POST["code"]
-        airline.name = request.POST["name"]
-        airline.save()
-        return redirect("airline")
-
-    return render(request, "asset/airline/update_airline.html", {"airline": airline})
-
-# Delete Airline
-def delete_airline(request, airline_id):
-    airline = get_object_or_404(Airline, id=airline_id)
-    airline.delete()
-    return redirect("airline")
 
 # ---------------------------
 # Aircraft
 # ---------------------------
 
-
-# ---------------------------
-# Aircraft List
-# ---------------------------
+# List
 def aircraft_view(request):
     aircrafts = Aircraft.objects.all()
     return render(request, 'asset/aircraft/aircraft.html', {"aircrafts": aircrafts})
 
-# ---------------------------
-# Add Aircraft
-# ---------------------------
+# Add
 def add_aircraft(request):
-    airlines = Airline.objects.all()  # so you can choose airline in dropdown
-
     if request.method == "POST":
-        model = request.POST["model"]
-        capacity = request.POST["capacity"]
-        type = request.POST["type"]
-        airline_id = request.POST["airline"]
-
-        airline = get_object_or_404(Airline, id=airline_id)
+        model = request.POST.get("model")
+        capacity = request.POST.get("capacity")
+        airline_id = request.POST.get("airline")  # comes from dropdown
+        airline = Airline.objects.get(id=airline_id)
 
         Aircraft.objects.create(
             model=model,
             capacity=capacity,
-            type=type,
             airline=airline
         )
         return redirect("aircraft")
 
+    airlines = Airline.objects.all()  # for dropdown
     return render(request, "asset/aircraft/add_aircraft.html", {"airlines": airlines})
 
-# ---------------------------
-# Update Aircraft
-# ---------------------------
+# Update
 def update_aircraft(request, aircraft_id):
     aircraft = get_object_or_404(Aircraft, id=aircraft_id)
     airlines = Airline.objects.all()
@@ -534,58 +196,315 @@ def update_aircraft(request, aircraft_id):
         {"aircraft": aircraft, "airlines": airlines}
     )
 
-# ---------------------------
-# Delete Aircraft
-# ---------------------------
+# Delete
 def delete_aircraft(request, aircraft_id):
     aircraft = get_object_or_404(Aircraft, id=aircraft_id)
     aircraft.delete()
     return redirect("aircraft")
 
+
 # ---------------------------
-# Seat_class
+# Airlines
 # ---------------------------
 
-def seat_class_view(request):
-    seat_classes = SeatClass.objects.all()
-    return render(request, 'asset/seat_class/seat_class.html', {"seat_classes": seat_classes})
+# List
+def airline_view(request):
+    airlines = Airline.objects.all()
+    return render(request, "asset/airline/airline.html", {"airlines": airlines})
 
-
-# Add Seat Class
-def add_seat_class(request):
+# Add
+def add_airline(request):
     if request.method == "POST":
-        name = request.POST["name"]
-        description = request.POST["description"]
-        price_multiplier = request.POST["price_multiplier"]
+        name = request.POST.get("name")
+        code = request.POST.get("code")
+        Airline.objects.create(name=name, code=code)
+        return redirect("airline")
+    return render(request, "asset/airline/add_airline.html")
 
-        SeatClass.objects.create(
-            name=name,
-            description=description,
-            price_multiplier=price_multiplier
+# Update
+def update_airline(request, airline_id):
+    airline = get_object_or_404(Airline, id=airline_id)
+    if request.method == "POST":
+        airline.name = request.POST.get("name")
+        airline.code = request.POST.get("code")
+        airline.save()
+        return redirect("airline")
+    return render(request, "asset/airline/update_airline.html", {"airline": airline})
+
+# Delete
+def delete_airline(request, airline_id):
+    airline = get_object_or_404(Airline, id=airline_id)
+    airline.delete()
+    return redirect("airline")
+
+# ---------------------------
+# Airport
+# ---------------------------
+
+# List
+def airport_view(request):
+    airports = Airport.objects.all()
+    return render(request, "asset/airport/airport.html", {"airports": airports})
+
+
+from django.db import IntegrityError
+# Add
+def add_airport(request):
+    error_message = None
+
+    if request.method == "POST":
+        name = request.POST.get("name")
+        code = request.POST.get("code")
+        location = request.POST.get("location")
+
+        # Check for duplicate airport code
+        if Airport.objects.filter(code=code).exists():
+            error_message = f"Airport with code {code} already exists."
+        else:
+            try:
+                Airport.objects.create(
+                    name=name,
+                    code=code,
+                    location=location,
+                )
+                return redirect("airport")
+            except IntegrityError:
+                error_message = "Something went wrong while saving."
+
+    return render(request, "asset/airport/add_airport.html", {"error_message": error_message})
+
+
+# Update
+def update_airport(request, airport_id):
+    airport = get_object_or_404(Airport, pk=airport_id)
+
+    if request.method == "POST":
+        airport.name = request.POST.get("name")
+        airport.code = request.POST.get("code")
+        airport.location = request.POST.get("location")
+        airport.save()
+        return redirect("airport")
+
+    return render(request, "asset/airport/update_airport.html", {"airport": airport})
+
+# Delete
+def delete_airport(request, airport_id):
+    airport = get_object_or_404(Airport, pk=airport_id)
+    airport.delete()
+    return redirect("airport")
+
+# ------------------------------------------------------------------------------------
+
+# ---------------------------
+# Flight
+# ---------------------------
+
+# List
+def flight_view(request):
+    flights = Flight.objects.all()
+    return render(request, "manage_flight/flight/flight.html", {"flights": flights})
+
+# Add 
+def add_flight(request):
+    airlines = Airline.objects.all()
+    aircrafts = Aircraft.objects.all()
+    routes = Route.objects.all()
+
+    if request.method == "POST":
+        flight_number = request.POST.get("flight_number")
+        airline_id = request.POST.get("airline")
+        aircraft_id = request.POST.get("aircraft")
+        route_id = request.POST.get("route")
+
+        airline = get_object_or_404(Airline, pk=airline_id)
+        aircraft = get_object_or_404(Aircraft, pk=aircraft_id)
+        route = get_object_or_404(Route, pk=route_id)
+
+        Flight.objects.create(
+            flight_number=flight_number,
+            airline=airline,
+            aircraft=aircraft,
+            route=route
         )
-        return redirect("seat_class")
+        return redirect("flight")
 
-    return render(request, "asset/seat_class/add_seat_class.html")
+    return render(request, "manage_flight/flight/add_flight.html", {
+        "airlines": airlines,
+        "aircrafts": aircrafts,
+        "routes": routes
+    })
 
-# Update Seat Class
-def update_seat_class(request, seat_class_id):
-    seat_class = get_object_or_404(SeatClass, id=seat_class_id)
+# Update
+def update_flight(request, id):
+    flight = get_object_or_404(Flight, pk=id)
+    airlines = Airline.objects.all()
+    aircrafts = Aircraft.objects.all()
+    routes = Route.objects.all()
 
     if request.method == "POST":
-        seat_class.name = request.POST["name"]
-        seat_class.description = request.POST["description"]
-        seat_class.price_multiplier = request.POST["price_multiplier"]
-        seat_class.save()
-        return redirect("seat_class")
+        flight.flight_number = request.POST.get("flight_number")
+        flight.airline = get_object_or_404(Airline, pk=request.POST.get("airline"))
+        flight.aircraft = get_object_or_404(Aircraft, pk=request.POST.get("aircraft"))
+        flight.route = get_object_or_404(Route, pk=request.POST.get("route"))
+        flight.save()
+        return redirect("flight")
 
-    return render(request, "asset/seat_class/update_seat_class.html", {"seat_class": seat_class})
+    return render(request, "manage_flight/flight/update_flight.html", {
+        "flight": flight,
+        "airlines": airlines,
+        "aircrafts": aircrafts,
+        "routes": routes
+    })
 
-# Delete Seat Class
-def delete_seat_class(request, seat_class_id):
-    seat_class = get_object_or_404(SeatClass, id=seat_class_id)
-    seat_class.delete()
-    return redirect("seat_class")
+# Delete flight
+def delete_flight(request, id):
+    flight = get_object_or_404(Flight, pk=id)
+    flight.delete()
+    return redirect("flight")
 
+
+# ---------------------------
+# Route
+# ---------------------------
+
+# List
+def route_view(request):
+    routes = Route.objects.all()
+    return render(request, "manage_flight/route/route.html", {"routes": routes})
+
+# Add 
+def add_route(request):
+    airports = Airport.objects.all()
+    if request.method == "POST":
+        origin_id = request.POST.get("origin_airport")
+        destination_id = request.POST.get("destination_airport")
+        origin = get_object_or_404(Airport, pk=origin_id)
+        destination = get_object_or_404(Airport, pk=destination_id)
+        Route.objects.create(origin_airport=origin, destination_airport=destination)
+        return redirect("route")
+    return render(request, "manage_flight/route/add_route.html", {"airports": airports})
+
+# Update 
+def update_route(request, id):
+    route = get_object_or_404(Route, pk=id)
+    airports = Airport.objects.all()
+    if request.method == "POST":
+        route.origin_airport = get_object_or_404(Airport, pk=request.POST.get("origin_airport"))
+        route.destination_airport = get_object_or_404(Airport, pk=request.POST.get("destination_airport"))
+        route.save()
+        return redirect("route")
+    return render(request, "manage_flight/route/update_route.html", {"route": route, "airports": airports})
+
+# Delete 
+def delete_route(request, id):
+    route = get_object_or_404(Route, pk=id)
+    route.delete()
+    return redirect("route")
+
+
+# ---------------------------
+# Schedule
+# ---------------------------
+
+# List
+def schedule_view(request):
+    schedules = Schedule.objects.all()
+    return render(request, "manage_flight/schedule/schedule.html", {"schedules": schedules})
+
+# Add 
+def add_schedule(request):
+    flights = Flight.objects.all()
+    if request.method == "POST":
+        flight_id = request.POST.get("flight")
+        departure_time = request.POST.get("departure_time")
+        arrival_time = request.POST.get("arrival_time")
+        flight = get_object_or_404(Flight, pk=flight_id)
+        Schedule.objects.create(flight=flight, departure_time=departure_time, arrival_time=arrival_time)
+        return redirect("schedule")
+    return render(request, "manage_flight/schedule/add_schedule.html", {"flights": flights})
+
+# Update
+def update_schedule(request, id):
+    schedule = get_object_or_404(Schedule, pk=id)
+    flights = Flight.objects.all()
+    if request.method == "POST":
+        schedule.flight = get_object_or_404(Flight, pk=request.POST.get("flight"))
+        schedule.departure_time = request.POST.get("departure_time")
+        schedule.arrival_time = request.POST.get("arrival_time")
+        schedule.save()
+        return redirect("schedule")
+    return render(request, "manage_flight/schedule/update_schedule.html", {"schedule": schedule, "flights": flights})
+
+# Delete
+def delete_schedule(request, id):
+    schedule = get_object_or_404(Schedule, pk=id)
+    schedule.delete()
+    return redirect("schedule")
+
+
+# -----------------------------
+# Seat
+# -----------------------------
+
+# List
+def seat_view(request):
+    seats = Seat.objects.all()
+    return render(request, "manage_flight/seat/seat.html", {"seats": seats})
+
+# Add
+def add_seat(request):
+    schedules = Schedule.objects.all()
+    seat_classes = SeatClass.objects.all()
+    
+    if request.method == "POST":
+        schedule_id = request.POST.get("schedule")
+        seat_class_id = request.POST.get("seat_class")
+        seat_number = request.POST.get("seat_number")
+        is_available = "is_available" in request.POST
+
+        schedule = get_object_or_404(Schedule, id=schedule_id)
+        seat_class = get_object_or_404(SeatClass, id=seat_class_id)
+
+        Seat.objects.create(
+            schedule=schedule,
+            seat_class=seat_class,
+            seat_number=seat_number,
+            is_available=is_available
+        )
+        return redirect("seat")
+    
+    return render(request, "manage_flight/seat/add_seat.html", {"schedules": schedules, "seat_classes": seat_classes})
+
+# Update 
+def update_seat(request, seat_id):
+    seat = get_object_or_404(Seat, id=seat_id)
+    schedules = Schedule.objects.all()
+    seat_classes = SeatClass.objects.all()
+    
+    if request.method == "POST":
+        schedule_id = request.POST.get("schedule")
+        seat_class_id = request.POST.get("seat_class")
+        seat_number = request.POST.get("seat_number")
+        is_available = "is_available" in request.POST
+
+        seat.schedule = get_object_or_404(Schedule, id=schedule_id)
+        seat.seat_class = get_object_or_404(SeatClass, id=seat_class_id)
+        seat.seat_number = seat_number
+        seat.is_available = is_available
+        seat.save()
+        return redirect("seat")
+    
+    return render(request, "manage_flight/seat/update_seat.html", {
+        "seat": seat,
+        "schedules": schedules,
+        "seat_classes": seat_classes
+    })
+
+# Delete
+def delete_seat(request, seat_id):
+    seat = get_object_or_404(Seat, id=seat_id)
+    seat.delete()
+    return redirect("seat")
 
 # ---------------------------
 # Booking_detail
@@ -611,11 +530,9 @@ def add_booking_detail(request):
         )
         return redirect("booking_detail")
 
-    bookings = Booking.objects.all()
     flights = Flight.objects.all()
     seat_classes = SeatClass.objects.all()
     return render(request, "booking/booking_detail/add_booking_detail.html", {
-        "bookings": bookings,
         "flights": flights,
         "seat_classes": seat_classes
     })
@@ -631,12 +548,10 @@ def update_booking_detail(request, detail_id):
         detail.save()
         return redirect("booking_detail")
 
-    bookings = Booking.objects.all()
     flights = Flight.objects.all()
     seat_classes = SeatClass.objects.all()
     return render(request, "booking/booking_detail/update_booking_detail.html", {
         "detail": detail,
-        "bookings": bookings,
         "flights": flights,
         "seat_classes": seat_classes
     })
@@ -672,7 +587,6 @@ def add_payment(request):
         )
         return redirect("payment")
 
-    bookings = Booking.objects.all()
     return render(request, "booking/payment/add_payment.html", {"bookings": bookings})
 
 # Update
@@ -687,7 +601,6 @@ def update_payment(request, payment_id):
         payment.save()
         return redirect("payment")
 
-    bookings = Booking.objects.all()
     return render(request, "booking/payment/update_payment.html", {"payment": payment, "bookings": bookings})
 
 # Delete
@@ -719,7 +632,6 @@ def add_checkin(request):
         )
         return redirect("check_in")
 
-    bookings = Booking.objects.all()
     return render(request, "passenger_info/check_in/add_check_in.html", {"bookings": bookings})
 
 # Update
@@ -733,7 +645,6 @@ def update_checkin(request, checkin_id):
         checkin.save()
         return redirect("check_in")
 
-    bookings = Booking.objects.all()
     return render(request, "passenger_info/check_in/update_check_in.html", {"checkin": checkin, "bookings": bookings})
 
 # Delete
