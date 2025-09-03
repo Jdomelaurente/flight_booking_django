@@ -7,50 +7,74 @@
 
         <div>
             <label class="block font-semibold mb-1">Flight Number:</label>
-            <input type="text" name="flight_number"
-                   class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
+            <input type="text" name="flight_number" 
+                   class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
+                   required>
         </div>
 
         <div>
             <label class="block font-semibold mb-1">Airline:</label>
-            <select name="airline" 
-                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
+            <select name="airline" id="id_airline" required
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                <option value="">-- Select Airline --</option>
                 {% for airline in airlines %}
-                    <option value="{{ airline.id }}">{{ airline.code }} - {{ airline.name }}</option>
+                <option value="{{ airline.id }}">{{ airline.name }}</option>
                 {% endfor %}
             </select>
         </div>
 
         <div>
             <label class="block font-semibold mb-1">Aircraft:</label>
-            <select name="aircraft" 
-                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
-                {% for aircraft in aircrafts %}
-                    <option value="{{ aircraft.id }}">{{ aircraft.model }}</option>
-                {% endfor %}
+            <select name="aircraft" id="id_aircraft" required
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                <option value="">-- Select Aircraft --</option>
             </select>
         </div>
 
         <div>
             <label class="block font-semibold mb-1">Route:</label>
-            <select name="route" 
-                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
+            <select name="route" required
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                <option value="">Select Route</option>
                 {% for route in routes %}
-                    <option value="{{ route.id }}">{{ route }}</option>
+                <option value="{{ route.id }}">{{ route }}</option>
                 {% endfor %}
             </select>
         </div>
 
         <div class="flex items-center justify-between mt-6">
-            <button type="submit" 
+            <button type="submit"
                     class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
                 Add Flight
             </button>
-            <a href="{% url 'flight' %}" 
+            <a href="{% url 'flight' %}"
                class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
                 Cancel
             </a>
         </div>
     </form>
 </div>
+
+<!-- jQuery for dependent dropdown -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $("#id_airline").change(function () {
+    var url = "{% url 'ajax_load_aircrafts' %}";
+    var airlineId = $(this).val();
+
+    $.ajax({
+      url: url,
+      data: { 'airline': airlineId },
+      success: function (data) {
+        $("#id_aircraft").empty();
+        $("#id_aircraft").append('<option value="">-- Select Aircraft --</option>');
+        $.each(data, function (index, aircraft) {
+          $("#id_aircraft").append(
+            $("<option></option>").val(aircraft.id).text(aircraft.model)
+          );
+        });
+      }
+    });
+  });
+</script>
 {% endblock %}

@@ -4,6 +4,7 @@ from django.shortcuts import redirect, render
 from django.shortcuts import get_object_or_404, redirect
 from datetime import datetime
 from django.utils import timezone
+from django.http import JsonResponse
 
 import hashlib
 from .models import MyUser
@@ -309,33 +310,34 @@ def flight_view(request):
 
 # Add 
 def add_flight(request):
-    airlines = Airline.objects.all()
-    aircrafts = Aircraft.objects.all()
-    routes = Route.objects.all()
-
     if request.method == "POST":
         flight_number = request.POST.get("flight_number")
         airline_id = request.POST.get("airline")
         aircraft_id = request.POST.get("aircraft")
-        route_id = request.POST.get("route")
+        route_id = request.POST.get("route")  # ✅ Only route, no origin/destination
 
-        airline = get_object_or_404(Airline, pk=airline_id)
-        aircraft = get_object_or_404(Aircraft, pk=aircraft_id)
-        route = get_object_or_404(Route, pk=route_id)
+        airline = Airline.objects.get(id=airline_id)
+        aircraft = Aircraft.objects.get(id=aircraft_id)
+        route = Route.objects.get(id=route_id)
 
         Flight.objects.create(
             flight_number=flight_number,
             airline=airline,
             aircraft=aircraft,
-            route=route
+            route=route,   # ✅ this links to both origin + destination
         )
         return redirect("flight")
 
-    return render(request, "manage_flight/flight/add_flight.html", {
-        "airlines": airlines,
-        "aircrafts": aircrafts,
-        "routes": routes
-    })
+    airlines = Airline.objects.all()
+    routes = Route.objects.all()
+    return render(request, "manage_flight/flight/add_flight.html", {"airlines": airlines, "routes": routes})
+
+
+# AJAX endpoint to load aircraft based on airline
+def load_aircrafts(request):
+    airline_id = request.GET.get("airline")
+    aircrafts = Aircraft.objects.filter(airline_id=airline_id).values("id", "model")
+    return JsonResponse(list(aircrafts), safe=False)
 
 # Update
 def update_flight(request, flight_id):

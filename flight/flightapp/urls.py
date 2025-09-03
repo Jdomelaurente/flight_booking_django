@@ -46,6 +46,7 @@ urlpatterns = [
     path("airlines/add/", views.add_airline, name="add_airline"),
     path("airlines/update/<int:airline_id>/", views.update_airline, name="update_airline"),
     path("airlines/delete/<int:airline_id>/", views.delete_airline, name="delete_airline"),
+    path("ajax/load-aircrafts/", views.load_aircrafts, name="ajax_load_aircrafts"),
 
     # aircraft
     path('aircraft/', views.aircraft_view, name='aircraft'),
