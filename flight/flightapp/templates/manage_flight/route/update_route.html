@@ -1,30 +1,42 @@
 {% extends "master.html" %}
 {% block content %}
-<h2 class="text-2xl font-bold mb-4">Update Route</h2>
+<div class="max-w-lg mx-auto bg-white shadow-md rounded-lg p-6">
+    <h2 class="text-2xl font-bold mb-4">Edit Route</h2>
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
 
-<form method="POST" class="space-y-4">
-    {% csrf_token %}
-    <div>
-        <label class="block">Origin Airport</label>
-        <select name="origin_airport" class="border px-3 py-2 w-full rounded" required>
-            {% for airport in airports %}
-                <option value="{{ airport.id }}" {% if airport == route.origin_airport %}selected{% endif %}>
-                    {{ airport.code }} - {{ airport.name }}
-                </option>
-            {% endfor %}
-        </select>
-    </div>
-    <div>
-        <label class="block">Destination Airport</label>
-        <select name="destination_airport" class="border px-3 py-2 w-full rounded" required>
-            {% for airport in airports %}
-                <option value="{{ airport.id }}" {% if airport == route.destination_airport %}selected{% endif %}>
-                    {{ airport.code }} - {{ airport.name }}
-                </option>
-            {% endfor %}
-        </select>
-    </div>
-    <button type="submit" class="bg-yellow-500 text-white px-4 py-2 rounded">Update</button>
-    <a href="{% url 'route' %}" class="ml-2 text-gray-600">Cancel</a>
-</form>
+        <div>
+            <label class="block font-semibold mb-1">Origin Airport:</label>
+            <select name="origin_airport" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
+                {% for airport in airports %}
+                    <option value="{{ airport.id }}" {% if airport == route.origin_airport %}selected{% endif %}>
+                        {{ airport.code }} - {{ airport.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-1">Destination Airport:</label>
+            <select name="destination_airport" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
+                {% for airport in airports %}
+                    <option value="{{ airport.id }}" {% if airport == route.destination_airport %}selected{% endif %}>
+                        {{ airport.code }} - {{ airport.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="flex justify-between mt-6">
+            <button type="submit" 
+                    class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
+                Update
+            </button>
+            <a href="{% url 'route' %}" 
+               class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
 {% endblock %}

@@ -1,49 +1,62 @@
 {% extends "master.html" %}
 {% block content %}
-<h2 class="text-2xl font-bold mb-4">Update Flight</h2>
+<div class="max-w-lg mx-auto bg-white shadow-md rounded-lg p-6">
+    <h2 class="text-2xl font-bold mb-4">Edit Flight</h2>
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
 
-<form method="POST" class="space-y-4">
-    {% csrf_token %}
+        <div>
+            <label class="block font-semibold mb-1">Flight Number:</label>
+            <input type="text" name="flight_number" value="{{ flight.flight_number }}"
+                   class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
+        </div>
 
-    <div>
-        <label class="block">Flight Number:</label>
-        <input type="text" name="flight_number" value="{{ flight.flight_number }}" class="border p-2 rounded w-full" required>
-    </div>
+        <div>
+            <label class="block font-semibold mb-1">Airline:</label>
+            <select name="airline" 
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
+                {% for airline in airlines %}
+                    <option value="{{ airline.id }}" {% if airline.id == flight.airline.id %}selected{% endif %}>
+                        {{ airline.code }} - {{ airline.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <div>
-        <label class="block">Airline:</label>
-        <select name="airline" class="border p-2 rounded w-full" required>
-            {% for airline in airlines %}
-                <option value="{{ airline.id }}" {% if airline.id == flight.airline.id %}selected{% endif %}>
-                    {{ airline.code }} - {{ airline.name }}
-                </option>
-            {% endfor %}
-        </select>
-    </div>
+        <div>
+            <label class="block font-semibold mb-1">Aircraft:</label>
+            <select name="aircraft" 
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
+                {% for aircraft in aircrafts %}
+                    <option value="{{ aircraft.id }}" {% if aircraft.id == flight.aircraft.id %}selected{% endif %}>
+                        {{ aircraft.model }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <div>
-        <label class="block">Aircraft:</label>
-        <select name="aircraft" class="border p-2 rounded w-full" required>
-            {% for aircraft in aircrafts %}
-                <option value="{{ aircraft.id }}" {% if aircraft.id == flight.aircraft.id %}selected{% endif %}>
-                    {{ aircraft.model }}
-                </option>
-            {% endfor %}
-        </select>
-    </div>
+        <div>
+            <label class="block font-semibold mb-1">Route:</label>
+            <select name="route" 
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
+                {% for route in routes %}
+                    <option value="{{ route.id }}" {% if route.id == flight.route.id %}selected{% endif %}>
+                        {{ route }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <div>
-        <label class="block">Route:</label>
-        <select name="route" class="border p-2 rounded w-full" required>
-            {% for route in routes %}
-                <option value="{{ route.id }}" {% if route.id == flight.route.id %}selected{% endif %}>
-                    {{ route }}
-                </option>
-            {% endfor %}
-        </select>
-    </div>
-
-    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Update</button>
-    <a href="{% url 'flight' %}" class="bg-gray-500 text-white px-4 py-2 rounded">Cancel</a>
-</form>
+        <div class="flex justify-between mt-6">
+            <button type="submit" 
+                    class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
+                Update
+            </button>
+            <a href="{% url 'flight' %}" 
+               class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
 {% endblock %}

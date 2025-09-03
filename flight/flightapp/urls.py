@@ -14,20 +14,20 @@ urlpatterns = [
     # flight
     path('flight/', views.flight_view, name='flight'),
     path('flights/add/', views.add_flight, name='add_flight'),
-    path('flights/update/<int:id>/', views.update_flight, name='update_flight'),
-    path('flights/delete/<int:id>/', views.delete_flight, name='delete_flight'),
+    path('flights/update/<int:flight_id>/', views.update_flight, name='update_flight'),
+    path('flights/delete/<int:flight_id>/', views.delete_flight, name='delete_flight'),
 
     # route
     path('route/', views.route_view, name='route'),
     path('routes/add/', views.add_route, name='add_route'),
-    path('routes/update/<int:id>/', views.update_route, name='update_route'),
-    path('routes/delete/<int:id>/', views.delete_route, name='delete_route'),
+    path('routes/update/<int:route_id>/', views.update_route, name='update_route'),
+    path('routes/delete/<int:route_id>/', views.delete_route, name='delete_route'),
 
     #schedule 
     path('schedule/', views.schedule_view, name='schedule'),
     path('schedules/add/', views.add_schedule, name='add_schedule'),
-    path('schedules/update/<int:id>/', views.update_schedule, name='update_schedule'),
-    path('schedules/delete/<int:id>/', views.delete_schedule, name='delete_schedule'),
+    path('schedules/update/<int:schedule_id>/', views.update_schedule, name='update_schedule'),
+    path('schedules/delete/<int:schedule_id>/', views.delete_schedule, name='delete_schedule'),
 
     #seats
     path('seat/', views.seat_view, name='seat'),
@@ -59,6 +59,12 @@ urlpatterns = [
     path("seat-classes/update/<int:seat_class_id>/", views.update_seat_class, name="update_seat_class"),
     path("seat-classes/delete/<int:seat_class_id>/", views.delete_seat_class, name="delete_seat_class"),
 
+    # booking
+    path('booking/', views.booking_view, name='booking'),
+    path("booking/add/", views.add_booking, name="add_booking"),
+    path("booking/update/<int:booking_id>/", views.update_booking, name="update_booking"),
+    path("booking/delete/<int:booking_id>/", views.delete_booking, name="delete_booking"),
+
     # booking_detail
     path('booking_detail/', views.booking_detail_view, name='booking_detail'),
     path("booking-details/add/", views.add_booking_detail, name="add_booking_detail"),
@@ -88,4 +94,10 @@ urlpatterns = [
     path("passengers/add/", views.add_passenger, name="add_passenger"),
     path("passengers/update/<int:passenger_id>/", views.update_passenger, name="update_passenger"),
     path("passengers/delete/<int:passenger_id>/", views.delete_passenger, name="delete_passenger"),
+
+    # tracklog
+    path('tracklog/', views.tracklog_view, name='tracklog'),
+    path("tracklogs/add/", views.add_tracklog, name="add_tracklog"),
+    path("tracklogs/update/<int:tracklog_id>/", views.update_tracklog, name="update_tracklog"),
+    path("tracklogs/delete/<int:tracklog_id>/", views.delete_tracklog, name="delete_tracklog"),
 ]

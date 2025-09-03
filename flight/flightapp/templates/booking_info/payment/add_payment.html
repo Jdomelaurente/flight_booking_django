@@ -7,9 +7,11 @@
 
         <div>
             <label class="block font-semibold mb-1">Booking:</label>
-            <select name="booking" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
-                {% for b in bookings %}
-                <option value="{{ b.id }}">Booking {{ b.id }} - {{ b.student }}</option>
+            <select name="booking" required 
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                <option value="">Select Booking</option>
+                {% for booking in bookings %}
+                <option value="{{ booking.id }}">Booking {{ booking.id }} - {{ booking.student.first_name }} {{ booking.student.last_name }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -22,7 +24,8 @@
 
         <div>
             <label class="block font-semibold mb-1">Method:</label>
-            <select name="method" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+            <select name="method" required
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
                 <option value="GCash">GCash</option>
                 <option value="Credit Card">Credit Card</option>
                 <option value="Cash">Cash</option>
@@ -31,14 +34,15 @@
         </div>
 
         <div>
-            <label class="block font-semibold mb-1">Transaction ID:</label>
+            <label class="block font-semibold mb-1">Transaction ID (optional):</label>
             <input type="text" name="transaction_id"
                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
         </div>
 
         <div>
             <label class="block font-semibold mb-1">Status:</label>
-            <select name="status" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+            <select name="status" required
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
                 <option value="Pending">Pending</option>
                 <option value="Completed">Completed</option>
                 <option value="Failed">Failed</option>
@@ -46,10 +50,12 @@
         </div>
 
         <div class="flex items-center justify-between mt-6">
-            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
-                Save
+            <button type="submit" 
+                    class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
+                Add Payment
             </button>
-            <a href="{% url 'payment' %}" class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
+            <a href="{% url 'payment' %}" 
+               class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
                 Cancel
             </a>
         </div>

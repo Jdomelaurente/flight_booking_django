@@ -1,0 +1,61 @@
+{% extends "master.html" %}
+{% block content %}
+<div class="max-w-lg mx-auto bg-white shadow-md rounded-lg p-6">
+    <h2 class="text-2xl font-bold mb-4">Edit Booking</h2>
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+
+        <div>
+            <label class="block font-semibold mb-1">Student:</label>
+            <select name="student" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                {% for student in students %}
+                <option value="{{ student.id }}" {% if booking.student.id == student.id %}selected{% endif %}>{{ student.first_name }} {{ student.last_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-1">Schedule:</label>
+            <select name="schedule" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                {% for schedule in schedules %}
+                <option value="{{ schedule.id }}" {% if booking.schedule.id == schedule.id %}selected{% endif %}>
+                    {{ schedule.flight.flight_number }} ({{ schedule.departure_time|date:"Y-m-d H:i" }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-1">Seat (Optional):</label>
+            <select name="seat" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                <option value="">-- Select Seat --</option>
+                {% for seat in seats %}
+                <option value="{{ seat.id }}" {% if booking.seat and booking.seat.id == seat.id %}selected{% endif %}>
+                    {{ seat.seat_number }} - {{ seat.seat_class.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-1">Status:</label>
+            <select name="status" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                <option value="Pending" {% if booking.status == "Pending" %}selected{% endif %}>Pending</option>
+                <option value="Confirmed" {% if booking.status == "Confirmed" %}selected{% endif %}>Confirmed</option>
+                <option value="Cancelled" {% if booking.status == "Cancelled" %}selected{% endif %}>Cancelled</option>
+            </select>
+        </div>
+
+        <div class="flex justify-between mt-6">
+            <button type="submit" 
+                    class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
+                Update
+            </button>
+            <a href="{% url 'booking' %}" 
+               class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
