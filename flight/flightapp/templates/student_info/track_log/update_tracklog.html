@@ -1,0 +1,38 @@
+{% extends "master.html" %}
+{% block content %}
+<div class="max-w-lg mx-auto bg-white shadow-md rounded-lg p-6">
+    <h2 class="text-2xl font-bold mb-4">Edit Track Log</h2>
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+
+        <div>
+            <label class="block font-semibold mb-1">Student:</label>
+            <select name="student" required 
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                {% for student in students %}
+                <option value="{{ student.id }}" {% if student.id == tracklog.student.id %}selected{% endif %}>
+                    {{ student.student_number }} - {{ student.first_name }} {{ student.last_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-1">Action:</label>
+            <input type="text" name="action" value="{{ tracklog.action }}"
+                   class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
+        </div>
+
+        <div class="flex justify-between mt-6">
+            <button type="submit" 
+                    class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
+                Update
+            </button>
+            <a href="{% url 'tracklog' %}" 
+               class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

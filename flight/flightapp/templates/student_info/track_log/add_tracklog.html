@@ -1,38 +1,33 @@
 {% extends "master.html" %}
 {% block content %}
 <div class="max-w-lg mx-auto bg-white shadow-lg rounded-lg p-6">
-    <h2 class="text-2xl font-bold mb-6">Add Schedule</h2>
+    <h2 class="text-2xl font-bold mb-6">Add Track Log</h2>
     <form method="post" class="space-y-4">
         {% csrf_token %}
 
         <div>
-            <label class="block font-semibold mb-1">Flight:</label>
-            <select name="flight" 
+            <label class="block font-semibold mb-1">Student:</label>
+            <select name="student" required 
                     class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
-                {% for flight in flights %}
-                    <option value="{{ flight.id }}">{{ flight.flight_number }} ({{ flight.airline.code }})</option>
+                <option value="">Select Student</option>
+                {% for student in students %}
+                <option value="{{ student.id }}">{{ student.student_number }} - {{ student.first_name }} {{ student.last_name }}</option>
                 {% endfor %}
             </select>
         </div>
 
         <div>
-            <label class="block font-semibold mb-1">Departure Time:</label>
-            <input type="datetime-local" name="departure_time"
-                   class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
-        </div>
-
-        <div>
-            <label class="block font-semibold mb-1">Arrival Time:</label>
-            <input type="datetime-local" name="arrival_time"
+            <label class="block font-semibold mb-1">Action:</label>
+            <input type="text" name="action" 
                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500" required>
         </div>
 
         <div class="flex items-center justify-between mt-6">
             <button type="submit" 
                     class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
-                Add Schedule
+                Add Track Log
             </button>
-            <a href="{% url 'schedule' %}" 
+            <a href="{% url 'tracklog' %}" 
                class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
                 Cancel
             </a>

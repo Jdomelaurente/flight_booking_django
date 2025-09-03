@@ -1,0 +1,60 @@
+{% extends "master.html" %}
+{% block content %}
+<div class="max-w-lg mx-auto bg-white shadow-lg rounded-lg p-6">
+    <h2 class="text-2xl font-bold mb-6">Add Booking Detail</h2>
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+
+        <div>
+            <label class="block font-semibold mb-1">Booking:</label>
+            <select name="booking" required class="w-full border border-gray-300 rounded px-3 py-2">
+                <option value="">Select Booking</option>
+                {% for booking in bookings %}
+                <option value="{{ booking.id }}">Booking {{ booking.id }} - {{ booking.student.first_name }} {{ booking.student.last_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-1">Flight:</label>
+            <select name="flight" required class="w-full border border-gray-300 rounded px-3 py-2">
+                <option value="">Select Flight</option>
+                {% for flight in flights %}
+                <option value="{{ flight.id }}">{{ flight.flight_number }} ({{ flight.airline.code }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-1">Seat (optional):</label>
+            <select name="seat" class="w-full border border-gray-300 rounded px-3 py-2">
+                <option value="">Select Seat</option>
+                {% for seat in seats %}
+                <option value="{{ seat.id }}">{{ seat.seat_number }} - {{ seat.schedule.flight.flight_number }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-1">Seat Class (optional):</label>
+            <select name="seat_class" class="w-full border border-gray-300 rounded px-3 py-2">
+                <option value="">Select Seat Class</option>
+                {% for sc in seat_classes %}
+                <option value="{{ sc.id }}">{{ sc.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="flex items-center justify-between mt-6">
+            <button type="submit" 
+                    class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
+                Add Booking Detail
+            </button>
+            <a href="{% url 'booking_detail' %}" 
+               class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
