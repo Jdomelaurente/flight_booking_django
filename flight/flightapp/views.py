@@ -5,11 +5,20 @@ from django.shortcuts import get_object_or_404, redirect
 from datetime import datetime
 from django.utils import timezone
 from django.http import JsonResponse
+from django.shortcuts import render
 
 import hashlib
 from .models import MyUser
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
+from collections import defaultdict
+from django.utils.timezone import localtime
+from django.shortcuts import render
+from .models import Schedule
+from datetime import datetime
+from django.utils import timezone
+from datetime import datetime
+
 
 from .models import Flight
 from .models import Route
@@ -26,6 +35,51 @@ from .models import CheckInDetail
 from .models import Student
 from .models import PassengerInfo
 from .models import  TrackLog
+
+# dashboard
+from django.utils import timezone
+from datetime import datetime
+
+def dashboard_view(request):
+    date_filter = request.GET.get("date")
+    schedules = Schedule.objects.all()
+    current_time = timezone.now()  # make it timezone aware
+
+    if date_filter:
+        try:
+            selected_date = datetime.strptime(date_filter, "%Y-%m-%d").date()
+            schedules = schedules.filter(departure_time__date=selected_date)
+        except ValueError:
+            pass
+
+    schedule_data = []
+
+    # Initialize counters
+    total_standby = 0
+    total_on_flight = 0
+    total_arrived = 0
+
+    for s in schedules:
+        if current_time < s.departure_time:
+            status = 'Standby'
+            total_standby += 1
+        elif s.departure_time <= current_time < s.arrival_time:
+            status = 'On Flight'
+            total_on_flight += 1
+        else:
+            status = 'Arrived'
+            total_arrived += 1
+        schedule_data.append({'schedule': s, 'status': status})
+
+    return render(request, "dashboard.html", {
+        "schedule_data": schedule_data,
+        "selected_date": date_filter,
+        "username": request.user.username,
+        "total_standby": total_standby,
+        "total_on_flight": total_on_flight,
+        "total_arrived": total_arrived,
+    })
+
 
 # main
 def main(request):
@@ -97,11 +151,7 @@ def login_view(request):
 
     return render(request, "login.html")
 
-# DASHBOARD
-def dashboard_view(request):
-    if "user_id" not in request.session:
-        return redirect("login")
-    return render(request, "dashboard.html", {"username": request.session["username"]})
+
 
 # LOGOUT
 def logout_view(request):
@@ -407,28 +457,56 @@ def delete_route(request, route_id):
     return redirect("route")
 
 
+from django.utils import timezone
+
 # ---------------------------
 # Schedule
 # ---------------------------
 
-# List
 def schedule_view(request):
     schedules = Schedule.objects.all()
-    return render(request, "manage_flight/schedule/schedule.html", {"schedules": schedules})
+    current_time = timezone.now()  # Use Django-aware datetime
 
-# Add 
+    schedule_data = []
+    for s in schedules:
+        if current_time < s.departure_time:
+            status = 'Standby'
+        elif s.departure_time <= current_time < s.arrival_time:
+            status = 'On Flight'
+        else:
+            status = 'Arrived'
+        schedule_data.append({
+            'schedule': s,
+            'status': status
+        })
+
+    return render(request, "manage_flight/schedule/schedule.html", {
+        "schedule_data": schedule_data,
+        "current_time": current_time
+    })
+
+
+# Add schedule
 def add_schedule(request):
     flights = Flight.objects.all()
     if request.method == "POST":
         flight_id = request.POST.get("flight")
         departure_time = request.POST.get("departure_time")
         arrival_time = request.POST.get("arrival_time")
+        price = request.POST.get("price")  # NEW
         flight = get_object_or_404(Flight, pk=flight_id)
-        Schedule.objects.create(flight=flight, departure_time=departure_time, arrival_time=arrival_time)
+        Schedule.objects.create(
+            flight=flight,
+            departure_time=departure_time,
+            arrival_time=arrival_time,
+            price=price
+        )
         return redirect("schedule")
     return render(request, "manage_flight/schedule/add_schedule.html", {"flights": flights})
 
-# Update
+
+
+# Update schedule
 def update_schedule(request, schedule_id):
     schedule = get_object_or_404(Schedule, pk=schedule_id)
     flights = Flight.objects.all()
@@ -440,7 +518,8 @@ def update_schedule(request, schedule_id):
         return redirect("schedule")
     return render(request, "manage_flight/schedule/update_schedule.html", {"schedule": schedule, "flights": flights})
 
-# Delete
+
+# Delete schedule
 def delete_schedule(request, schedule_id):
     schedule = get_object_or_404(Schedule, pk=schedule_id)
     schedule.delete()

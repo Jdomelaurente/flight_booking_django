@@ -69,12 +69,22 @@ class Flight(models.Model):
 
 
 class Schedule(models.Model):
-    flight = models.ForeignKey(Flight, on_delete=models.CASCADE, related_name="schedules")
+    flight = models.ForeignKey("Flight", on_delete=models.CASCADE, related_name="schedules")
     departure_time = models.DateTimeField()
     arrival_time = models.DateTimeField()
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # NEW
 
     def __str__(self):
         return f"{self.flight.flight_number} ({self.departure_time} - {self.arrival_time})"
+
+    def duration(self):
+        diff = self.arrival_time - self.departure_time
+        total_minutes = int(diff.total_seconds() // 60)
+        hours, minutes = divmod(total_minutes, 60)
+        days = diff.days
+        if days > 0:
+            return f"{hours}h {minutes}m (+{days}d)"
+        return f"{hours}h {minutes}m" if minutes else f"{hours}h"
 
 
 class Seat(models.Model):
