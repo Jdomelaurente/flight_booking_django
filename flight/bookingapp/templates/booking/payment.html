@@ -1,0 +1,45 @@
+{% extends 'booking/base.html' %}
+{% block title %} Payment
+{% endblock  %}
+
+{% block content %}
+<div class="w-full flex flex-col  items-center ">
+    <div class="flex flex-col w-full">
+        <h1 class="text-2xl font-bold">Payment Method</h1>
+        <p class="text-xs">How would you like to pay?</p>
+    </div>
+    
+    <div class="flex flex-col w-[777px] h-[334px] bg-green-950  px-1 pb-10 mb-5">
+        <h1 class="text-white text-2xl py-2">E-Wallet</h1>
+        <div class="flex-1 flex flex-col justify-center gap-10 px-5 bg-white z-1">
+            <div>
+                <input type="radio">
+                <label for="" class="font-semibold">Gcash</label>
+            </div>
+            <div>
+                <input type="radio">
+                <label for="" class="font-semibold">PayMaya</label>
+            </div>
+            <div>
+                <input type="radio">
+                <label for="" class="font-semibold">PayPal</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex  w-[777px] h-[121px] bg-white shadow-2xl  px-5 py-10 justify-center items-center gap-5 border-t-2 border-green-950 ">
+        <input type="radio">
+        <label for="" class="text-xs">I fully understand that all information is handled is handled in accordance with CSUCC Privacy Policy in effect at the  time of booking, CSUCC also reserves the right information with the goverment authorities partners of the purpose comleting the booking transaction needed for the flight</label>
+    </div>
+
+    <div class="w-[777px]  py-3 flex justify-end  ">
+        <button class="flex bg-green-950 hover:bg-green-950/80 px-20 py-2 text-white">Submit</button>
+    </div>
+
+
+ 
+</div>
+
+
+
+{% endblock  %}

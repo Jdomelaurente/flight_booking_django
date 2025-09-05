@@ -1,0 +1,83 @@
+{% extends 'booking/base.html' %}
+{% block title %} Home {% endblock %}
+
+{% block content %}
+
+<div class="flex flex-col justify-center bg-white w-auto max-h-[171px] p-5 rounded-lg shadow-md mt-[400px]">
+    <!-- Radio buttons row -->
+  <div class="flex space-x-6 mb-4">
+    <div>
+      <input type="radio" id="oneway" name="trip" value="oneway" checked>
+      <label for="oneway" class="font-semibold">One-Way</label>
+    </div>
+    <div>
+      <input type="radio" id="round" name="trip" value="round">
+      <label for="round" class="font-semibold">Round Trip</label>
+    </div>
+    <div>
+      <input type="radio" id="multi" name="trip" value="multi">
+      <label for="multi" class="font-semibold">Multi-city</label>
+    </div>
+  </div>
+<form method="POST" action="{% url 'flight_schedule' %}">
+  {% csrf_token %}
+
+
+  <!-- Input fields row -->
+  <div class="flex justify-center items-stretch gap-4">
+
+    <!-- From -->
+    <div class="flex-1 border-2 p-2 w-[290px] flex flex-col justify-between">
+      <label for="from" class="text-sm">From</label>
+      <select name="from" id="from">
+          {% for from_airport in from_airports %}
+              <option value="{{ from_airport.origin_airport.id }}">
+                  {{ from_airport.origin_airport.name }} - {{ from_airport.origin_airport.code }}
+              </option>
+          {% endfor %}
+      </select>
+    </div>
+
+    <!-- To -->
+    <div class="border-2 p-2 w-[290px] flex flex-col justify-between">
+      <label for="to" class="text-sm">To</label>
+      <select name="to" id="to">
+          {% for to_airport in to_airports %}
+              <option value="{{ to_airport.destination_airport.id }}">
+                  {{ to_airport.destination_airport.name }} - {{ to_airport.destination_airport.code }}
+              </option>
+          {% endfor %}
+      </select>
+    </div>
+
+
+    <!-- DATE -->
+    <div class="flex border-2 p-2 flex-1 gap-6">
+      <div class="flex flex-col flex-1">
+        <label for="depart" class="text-sm">Depart</label>
+        <input type="date" id="depart" name="depart" value="2025-09-03" class="px-2 py-1 rounded">
+      </div>
+      <!-- <div class="flex flex-col flex-1">
+        <label for="return" class="text-sm">Return</label>
+        <input type="date" id="return" name="return" value="2025-09-06" class="px-2 py-1 rounded">
+      </div> -->
+    </div>
+
+    <!-- Passengers -->
+    <div class="border-2 p-2 flex flex-col justify-between">
+      <label for="passengers" class="text-sm">Passengers</label>
+      <select id="passengers" name="passengers" class="px-2 py-1">
+        <option value="1_adult_economy">1 adult, Economy</option>
+      </select>
+    </div>
+
+    <!-- Search -->
+    <button type="submit" class="px-10 bg-green-950 hover:bg-green-900 font-semibold text-white rounded flex items-center justify-center text-[16px]">
+      Search
+    </button>
+
+  </div>
+</form>
+</div>
+
+{% endblock %}

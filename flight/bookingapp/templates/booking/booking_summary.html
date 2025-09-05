@@ -1,0 +1,123 @@
+{% extends 'booking/base.html' %}
+{% block title %} Booking Sumarry
+{% endblock  %}
+
+{% block content %}
+<div class="w-full flex flex-col  items-center space-y-4">
+    <div class="flex flex-col w-full">
+        <h1 class="text-2xl font-bold">Booking Summary</h1>
+        <p class="text-xs">Review your booking before proceeding to payment</p>
+    </div>
+
+    <div class="w-[800px] h-[462px] bg-white flex flex-col flex gap-3 shadow-2xl rounded-xl">
+        <div class="flex  bg-green-950 h-[54px] w-full justify-center items-center">
+            <h1 class="font-semibold text-white text-2xl">Review Booking Summary</h1>
+        </div>
+
+        <!-- details  -->
+        <div class=" flex justify-between mt-5">
+
+            <div class="flex flex-col leading-none mx-[30px]">
+                <h1 class="text-2xl font-semibold">Juan Delata</h1>
+                <div class="flex gap-2 text-green-500">
+                    <p>MNL</p>
+                    <p>to</p>
+                    <p>BXU</p>
+                </div>
+                <p class="text-sm ">Manila-Butuan, 08 May 2025</p>
+            </div>
+
+            <div class="flex gap-2 my-2 mx-5" >
+                <div class="border-2 mx-5 border-gray-400"></div>
+                <div class="flex flex-col space-y-5">
+
+                    <button class="h-[35px]  bg-green-950 text-white w-full">Show Flight Details</button>
+
+                    <div class="flex items-end justify-center gap-1">
+                        <p class="text-xs text-gree-400">subtotal:</p>
+                        <h1 class="text-2xl font-semibold">PHP 9,000</h1>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="border-2 mx-5 border-gray-400"></div>
+
+        <div class=" flex justify-between ">
+
+            <div class="flex flex-col leading-none mx-[30px]">
+                <h1 class="text-2xl font-semibold">Juan Delata</h1>
+                <div class="flex gap-2 text-green-500">
+                    <p>MNL</p>
+                    <p>to</p>
+                    <p>BXU</p>
+                </div>
+                <p class="text-sm ">Manila-Butuan, 08 May 2025</p>
+            </div>
+
+            <div class="flex gap-2 my-2 mx-5" >
+                <div class="border-2 mx-5 border-gray-400"></div>
+                <div class="flex flex-col space-y-5">
+
+                    <button class="h-[35px]  bg-green-950 text-white w-full">Show Flight Details</button>
+
+                    <div class="flex items-end justify-center gap-1">
+                        <p class="text-xs text-gree-400">subtotal:</p>
+                        <h1 class="text-2xl font-semibold">PHP 9,000</h1>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="border-2 mx-5 border-gray-400"></div>
+
+        <div class=" flex justify-between ">
+
+            <div class="flex flex-col leading-none mx-[30px]">
+                <h1 class="text-2xl font-semibold">Juan Delata</h1>
+                <div class="flex gap-2 text-green-500">
+                    <p>MNL</p>
+                    <p>to</p>
+                    <p>BXU</p>
+                </div>
+                <p class="text-sm ">Manila-Butuan, 08 May 2025</p>
+            </div>
+
+            <div class="flex gap-2 my-2 mx-5" >
+                <div class="border-2 mx-5 border-gray-400"></div>
+                <div class="flex flex-col space-y-5">
+
+                    <button class="h-[35px]  bg-green-950 text-white w-full">Show Flight Details</button>
+
+                    <div class="flex items-end justify-center gap-1">
+                        <p class="text-xs text-gree-400">subtotal:</p>
+                        <h1 class="text-2xl font-semibold">PHP 9,000</h1>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <div class="w-[800px] bg-white h-[115px] flex shadow-md/20 justify-center items-center gap-3 rounded-xl">
+        <input type="checkbox">
+        <label for="" class="text-xs">By clicking ‘Continue’ I confirm that i have read, understood, and accept the <strong>Condition of Carriage</strong></label>
+    </div>
+
+    <div class="w-[800px]  h-[115px] flex text-white justify-end shadow-md/20   gap-3">
+        <button class="w-[235px] h-[35px] bg-green-950 hover:bg-green-950/80 cursor-pointer">Continue</button>
+    </div>
+
+
+
+
+
+    
+</div>
+
+
+
+{% endblock  %}
