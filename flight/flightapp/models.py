@@ -73,7 +73,7 @@ class Schedule(models.Model):
     departure_time = models.DateTimeField()
     arrival_time = models.DateTimeField()
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # NEW
-
+    
     def __str__(self):
         return f"{self.flight.flight_number} ({self.departure_time} - {self.arrival_time})"
 

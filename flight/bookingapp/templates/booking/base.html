@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>{% block title %}
+        {% endblock  %}</title>
+</head>
+<body class="bg-blue-100 flex flex-col min-h-screen  space-y-7 text-black border-black text-sm">
+
+    <header class="flex justify-between w-full p-3 h-[34px]">
+        <div class="flex gap-2 my-5 items-center justify-center">
+            <a href="#" class="p-4 rounded-full bg-black"></a>
+            <p class="font-bold text-2xl">Flight Booking Simulator</p>
+        </div>
+        <div class="flex gap-20" >
+            <ul class="flex gap-5"> 
+                <li><a href="#" class="text-regular cursor-pointer">Manage</a></li>
+                <li><a href="#" class="text-regular cursor-pointer">Travel Info</a></li>
+                <li><a href="#" class="text-regular cursor-pointer">Explore</a></li>
+                <li><a href="#" class="text-regular cursor-pointer">About</a></li>
+            </ul>
+
+            <a href="#" class="font-semibold text-[16px]">Student Log in</a>
+        </div>
+    </header>
+
+    <main class="flex flex-1 max-w-screen-2xl w-full mx-auto justify-center mb-20 ">
+        {% block content %}
+        {% endblock  %}
+    </main>
+
+    <footer class="bg-green-950 h-32">
+
+    </footer>
+
+
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    function formatDate(inputId, outputId) {
+        const input = document.getElementById(inputId);
+        const output = document.getElementById(outputId);
+
+        function update() {
+            if (!input.value) return output.textContent = "";
+            const date = new Date(input.value);
+            const options = { weekday: "short", month: "short", day: "numeric" };
+            output.textContent = date.toLocaleDateString("en-US", options);
+        }
+
+        input.addEventListener("change", update);
+        update(); // format initial value
+    }
+
+    formatDate("depart", "departFormatted");
+    formatDate("return", "returnFormatted");
+    </script>
+</body>
+</html>
