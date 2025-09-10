@@ -4,11 +4,15 @@ from . import views
 urlpatterns = [
     path('', views.main, name="main"),
 
+    #user
+    path("admins/", views.admin_dashboard, name="admin_dashboard"),
+    path("instructors/", views.instructor_dashboard, name="instructor_dashboard"),
+    
     #login
+    path("dashboard/", views.dashboard, name="dashboard"),
     path("profile/", views.profile_view, name="profile"),
     path("register/", views.register_view, name="register"),
     path("login/", views.login_view, name="login"),
-    path("dashboard/", views.dashboard_view, name="dashboard"),
     path("logout/", views.logout_view, name="logout"),
 
     # flight
@@ -65,6 +69,7 @@ urlpatterns = [
     path("booking/add/", views.add_booking, name="add_booking"),
     path("booking/update/<int:booking_id>/", views.update_booking, name="update_booking"),
     path("booking/delete/<int:booking_id>/", views.delete_booking, name="delete_booking"),
+    path("booking/seats/<int:schedule_id>/", views.get_seats_for_schedule, name="get_seats_for_schedule"),
 
     # booking_detail
     path('booking_detail/', views.booking_detail_view, name='booking_detail'),

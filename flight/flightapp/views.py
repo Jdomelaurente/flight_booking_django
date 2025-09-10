@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from django.shortcuts import render
 
 import hashlib
-from .models import MyUser
+from .models import User
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
 from collections import defaultdict
@@ -36,55 +36,19 @@ from .models import Student
 from .models import PassengerInfo
 from .models import  TrackLog
 
-# dashboard
-from django.utils import timezone
-from datetime import datetime
-
-def dashboard_view(request):
-    date_filter = request.GET.get("date")
-    schedules = Schedule.objects.all()
-    current_time = timezone.now()  # make it timezone aware
-
-    if date_filter:
-        try:
-            selected_date = datetime.strptime(date_filter, "%Y-%m-%d").date()
-            schedules = schedules.filter(departure_time__date=selected_date)
-        except ValueError:
-            pass
-
-    schedule_data = []
-
-    # Initialize counters
-    total_standby = 0
-    total_on_flight = 0
-    total_arrived = 0
-
-    for s in schedules:
-        if current_time < s.departure_time:
-            status = 'Standby'
-            total_standby += 1
-        elif s.departure_time <= current_time < s.arrival_time:
-            status = 'On Flight'
-            total_on_flight += 1
-        else:
-            status = 'Arrived'
-            total_arrived += 1
-        schedule_data.append({'schedule': s, 'status': status})
-
-    return render(request, "dashboard.html", {
-        "schedule_data": schedule_data,
-        "selected_date": date_filter,
-        "username": request.user.username,
-        "total_standby": total_standby,
-        "total_on_flight": total_on_flight,
-        "total_arrived": total_arrived,
-    })
-
+# ------------------------------------ Users ----------------------------------------------------------
 
 # main
 def main(request):
     template = loader.get_template('main.html')
     return HttpResponse(template.render())
+
+def admin_dashboard(request):
+    return render(request, "dashboard.html")
+
+def instructor_dashboard(request):
+    return render(request, "instructor_dashboard.html")
+
 
 # profile
 def profile_view(request):
@@ -92,7 +56,7 @@ def profile_view(request):
     if not user_id:
         return redirect("login")  # redirect if not logged in
 
-    user = MyUser.objects.get(id=user_id)
+    user = User.objects.get(id=user_id)
 
     if request.method == "POST":
         username = request.POST.get("username")
@@ -117,18 +81,29 @@ def hash_password(password):
 def register_view(request):
     if request.method == "POST":
         username = request.POST.get("username")
+        email = request.POST.get("email")
         password = request.POST.get("password")
         password2 = request.POST.get("password2")
+        role = request.POST.get("role")
 
         if password != password2:
             messages.error(request, "Passwords do not match.")
             return redirect("register")
 
-        if MyUser.objects.filter(username=username).exists():
+        if User.objects.filter(username=username).exists():
             messages.error(request, "Username already exists.")
             return redirect("register")
 
-        MyUser.objects.create(username=username, password=hash_password(password))
+        if User.objects.filter(email=email).exists():
+            messages.error(request, "Email already exists.")
+            return redirect("register")
+
+        User.objects.create(
+            username=username,
+            email=email,
+            password=hash_password(password),
+            role=role
+        )
         messages.success(request, "Account created. Please login.")
         return redirect("login")
 
@@ -141,11 +116,21 @@ def login_view(request):
         password = hash_password(request.POST.get("password"))
 
         try:
-            user = MyUser.objects.get(username=username, password=password)
+            user = User.objects.get(username=username, password=password)
             request.session["user_id"] = user.id
             request.session["username"] = user.username
-            return redirect("dashboard")
-        except MyUser.DoesNotExist:
+            request.session["role"] = user.role  # store role in session
+
+            # redirect based on role
+            if user.role == "admin":
+                return redirect("admin_dashboard")
+            elif user.role == "instructor":
+                return redirect("instructor_dashboard")
+            elif user.role == "student":
+                return redirect("student_dashboard")
+            else:
+                return redirect("login")  # fallback
+        except User.DoesNotExist:
             messages.error(request, "Invalid username or password.")
             return redirect("login")
 
@@ -153,10 +138,73 @@ def login_view(request):
 
 
 
+
 # LOGOUT
 def logout_view(request):
     request.session.flush()
     return redirect("login")
+
+# ------------------------------------Dashboard ----------------------------------------------------------
+
+def dashboard(request):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return redirect("login")
+
+    user = User.objects.get(id=user_id)
+    if user.role == "admin":
+        return redirect("admin_dashboard")
+    elif user.role == "instructor":
+        return redirect("instructor_dashboard")
+    return redirect("login")
+
+
+# dashboard
+from django.utils import timezone
+from datetime import datetime
+
+def admin_dashboard(request):
+    date_filter = request.GET.get("date")
+    schedules = Schedule.objects.all()
+    current_time = timezone.now()
+
+    if date_filter:
+        try:
+            selected_date = datetime.strptime(date_filter, "%Y-%m-%d").date()
+            schedules = schedules.filter(departure_time__date=selected_date)
+        except ValueError:
+            pass
+
+    schedule_data = []
+    total_open = 0
+    total_standby = 0
+    total_on_flight = 0
+    total_arrived = 0
+
+    for s in schedules:
+        if not s.is_open:
+            status = "Closed"
+        elif current_time < s.departure_time:
+            status = "Open"   # ✅ treat as open-for-booking
+            total_open += 1
+        elif s.departure_time <= current_time < s.arrival_time:
+            status = "On Flight"
+            total_on_flight += 1
+        else:
+            status = "Arrived"
+            total_arrived += 1
+
+        schedule_data.append({"schedule": s, "status": status})
+
+    return render(request, "dashboard.html", {
+        "schedule_data": schedule_data,
+        "selected_date": date_filter,
+        "username": request.user.username,
+        "total_open": total_open,
+        "total_standby": total_standby,
+        "total_on_flight": total_on_flight,
+        "total_arrived": total_arrived,
+    })
 
 
 # ------------------------------------ ASSETS ----------------------------------------------------------
@@ -169,6 +217,7 @@ def logout_view(request):
 def seat_class_view(request):
     seat_classes = SeatClass.objects.all()
     return render(request, "asset/seat_class/seat_class.html", {"seat_classes": seat_classes})
+    
 
 # Add
 def add_seat_class(request):
@@ -358,6 +407,7 @@ def flight_view(request):
     flights = Flight.objects.all()
     return render(request, "manage_flight/flight/flight.html", {"flights": flights})
 
+
 # Add 
 def add_flight(request):
     if request.method == "POST":
@@ -463,46 +513,68 @@ from django.utils import timezone
 # Schedule
 # ---------------------------
 
+
 def schedule_view(request):
     schedules = Schedule.objects.all()
-    current_time = timezone.now()  # Use Django-aware datetime
 
     schedule_data = []
+    total_open = total_closed = total_on_flight = total_arrived = 0
+
     for s in schedules:
-        if current_time < s.departure_time:
-            status = 'Standby'
-        elif s.departure_time <= current_time < s.arrival_time:
-            status = 'On Flight'
-        else:
-            status = 'Arrived'
+        s.update_status()  # 🔹 model decides correct status
+
+        if s.status == "Open":
+            total_open += 1
+        elif s.status == "Closed":
+            total_closed += 1
+        elif s.status == "On Flight":
+            total_on_flight += 1
+        elif s.status == "Arrived":
+            total_arrived += 1
+
         schedule_data.append({
-            'schedule': s,
-            'status': status
+            "schedule": s,
+            "status": s.status
         })
 
-    return render(request, "manage_flight/schedule/schedule.html", {
+    context = {
         "schedule_data": schedule_data,
-        "current_time": current_time
-    })
+        "total_open": total_open,
+        "total_closed": total_closed,
+        "total_on_flight": total_on_flight,
+        "total_arrived": total_arrived,
+    }
+    return render(request, "manage_flight/schedule/schedule.html", context)
+
 
 
 # Add schedule
 def add_schedule(request):
     flights = Flight.objects.all()
+
     if request.method == "POST":
         flight_id = request.POST.get("flight")
         departure_time = request.POST.get("departure_time")
         arrival_time = request.POST.get("arrival_time")
-        price = request.POST.get("price")  # NEW
-        flight = get_object_or_404(Flight, pk=flight_id)
+        price = request.POST.get("price")  # if you want to include price
+
+        flight = Flight.objects.get(id=flight_id)
+
+        # Schedule save() will auto-generate seats
         Schedule.objects.create(
             flight=flight,
             departure_time=departure_time,
             arrival_time=arrival_time,
             price=price
         )
+
         return redirect("schedule")
-    return render(request, "manage_flight/schedule/add_schedule.html", {"flights": flights})
+
+    return render(
+        request, 
+        "manage_flight/schedule/add_schedule.html", 
+        {"flights": flights}
+    )
 
 
 
@@ -531,9 +603,18 @@ def delete_schedule(request, schedule_id):
 # -----------------------------
 
 # List
+
+
 def seat_view(request):
     seats = Seat.objects.all()
-    return render(request, "manage_flight/seat/seat.html", {"seats": seats})
+    flights = Flight.objects.all()
+
+    flight_id = request.GET.get("flight")
+    if flight_id:
+        seats = seats.filter(schedule__flight__id=flight_id)
+
+    return render(request, "manage_flight/seat/seat.html", {"seats": seats, "flights": flights})
+
 
 # Add
 def add_seat(request):
@@ -604,9 +685,9 @@ def booking_view(request):
 # Add
 def add_booking(request):
     students = Student.objects.all()
-    schedules = Schedule.objects.all()
-    seats = Seat.objects.filter(is_available=True)
-    
+    # only show open schedules
+    schedules = Schedule.objects.filter(status="Open")
+
     if request.method == "POST":
         student_id = request.POST.get("student")
         schedule_id = request.POST.get("schedule")
@@ -615,6 +696,12 @@ def add_booking(request):
 
         student = get_object_or_404(Student, id=student_id)
         schedule = get_object_or_404(Schedule, id=schedule_id)
+
+        # prevent booking if schedule is not open
+        if schedule.status != "Open":
+            messages.error(request, "This flight is not open for booking.")
+            return redirect("booking")
+
         seat = get_object_or_404(Seat, id=seat_id) if seat_id else None
 
         booking = Booking.objects.create(
@@ -629,13 +716,32 @@ def add_booking(request):
             seat.is_available = False
             seat.save()
 
+        messages.success(request, "Booking successfully created!")
         return redirect("booking")
     
     return render(request, "booking_info/booking/add_booking.html", {
         "students": students,
-        "schedules": schedules,
-        "seats": seats,
+        "schedules": schedules,  # only "Open" schedules
     })
+
+
+
+
+# 🔹 API endpoint to fetch seats for a schedule
+def get_seats_for_schedule(request, schedule_id):
+    seats = Seat.objects.filter(schedule_id=schedule_id).select_related("seat_class")
+    data = [
+        {
+            "id": seat.id,
+            "label": f"{seat.seat_number} - {seat.seat_class.name} - {'Available' if seat.is_available else 'Booked'}",
+            "is_available": seat.is_available
+        }
+        for seat in seats
+    ]
+    return JsonResponse(data, safe=False)
+
+
+
 
 # Update
 def update_booking(request, booking_id):

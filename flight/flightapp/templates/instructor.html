@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Instructor Dashboard</title>
+  <!-- Tailwind CSS -->
+
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    .sidebar {
+      background-color: #053322; /* Custom dark green */
+    }
+  </style>
+</head>
+<body class="h-screen bg-gray-100 flex">
+
+  <!-- Sidebar -->
+  <nav class="w-64 text-white flex flex-col p-4 fixed h-full overflow-y-auto sidebar">
+    <h4 class="text-center text-2xl font-bold mb-6">Instructor</h4>
+
+    <a href="{% url 'instructor_dashboard' %}" 
+       class="flex justify-between items-center py-2 px-4 hover:bg-green-900 rounded">
+      <span class="flex items-center">
+        <i class="fas fa-home mr-2"></i> Dashboard
+      </span>
+    </a>
+
+    <!-- Student Monitoring -->
+    <button class="w-full text-left px-4 py-2 hover:bg-green-900 flex justify-between items-center rounded" onclick="toggleMenu('studentMgmt')">
+      <span><i class="fas fa-user-graduate mr-2"></i> Student Monitoring</span><i class="fas fa-caret-down"></i>
+    </button>
+    <div id="studentMgmt" class="hidden pl-6 text-sm">
+      <a href="{% url 'student' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Student List</a>
+      <a href="{% url 'tracklog' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Track Log</a>
+    </div>
+
+    <!-- Bookings Overview -->
+    <button class="w-full text-left px-4 py-2 hover:bg-green-900 flex justify-between items-center rounded" onclick="toggleMenu('bookingInfo')">
+      <span><i class="fas fa-ticket-alt mr-2"></i> Bookings</span><i class="fas fa-caret-down"></i>
+    </button>
+    <div id="bookingInfo" class="hidden pl-6 text-sm">
+      <a href="{% url 'booking' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Overview</a>
+      <a href="{% url 'payment' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Payments</a>
+    </div>
+
+    <!-- Reports -->
+    <a href="" 
+       class="flex justify-between items-center py-2 px-4 hover:bg-green-900 rounded">
+      <span class="flex items-center">
+        <i class="fas fa-chart-line mr-2"></i> Reports
+      </span>
+    </a>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="ml-64 p-6 w-full overflow-y-auto ">
+    <div class="flex justify-end items-center ml-64 relative"> 
+      <!-- Profile Button -->
+      <button onclick="toggleMenu('profileMenu')" 
+        class="flex items-center bg-[#053322] px-4 py-2 rounded-lg shadow hover:shadow-md transition ">
+        <i class="fas fa-user-circle text-white text-2xl"></i>
+         <span class="ml-3 text-white font-medium">{{ username }}</span>
+        <i class="fas fa-caret-down ml-2 text-sm text-white"></i>
+      </button>
+
+      <!-- Dropdown -->
+      <div id="profileMenu" 
+        class="absolute right-0 top-full mt-2 w-48 bg-white shadow-lg rounded-lg hidden z-10">
+        <a href="{% url 'profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <i class="fas fa-user mr-2"></i> Profile
+        </a>
+        <a href="{% url 'logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <i class="fas fa-sign-out-alt mr-2"></i> Logout
+        </a>
+      </div>
+    </div>
+
+    {% block content %}
+    <!-- Instructor main content goes here -->
+    {% endblock %}
+  </main>
+
+  <script>
+    function toggleMenu(id) {
+      const menu = document.getElementById(id);
+      menu.classList.toggle("hidden");
+    }
+
+    // Close profile dropdown if clicked outside
+    window.addEventListener('click', function (e) {
+      const profileMenu = document.getElementById('profileMenu');
+      const button = document.querySelector('[onclick="toggleMenu(\'profileMenu\')"]');
+      if (!profileMenu.contains(e.target) && !button.contains(e.target)) {
+        profileMenu.classList.add('hidden');
+      }
+    });
+  </script>
+
+</body>
+</html>
