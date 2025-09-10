@@ -5,6 +5,7 @@
     <form method="post" class="space-y-4">
         {% csrf_token %}
 
+        <!-- 🔹 Student -->
         <div>
             <label class="block font-semibold mb-1">Student:</label>
             <select name="student" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
@@ -14,25 +15,33 @@
             </select>
         </div>
 
+        <!-- 🔹 Schedule -->
         <div>
-            <label class="block font-semibold mb-1">Schedule:</label>
-            <select name="schedule" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+            <label class="block font-semibold mb-1">Schedule (Open Only):</label>
+            <select id="schedule" name="schedule" 
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                <option value="">-- Select Open Schedule --</option>
                 {% for schedule in schedules %}
-                <option value="{{ schedule.id }}">{{ schedule.flight.flight_number }} ({{ schedule.departure_time|date:"Y-m-d H:i" }})</option>
+                <option value="{{ schedule.id }}">
+                    {{ schedule.flight.flight_number }} 
+                    ({{ schedule.departure_time|date:"Y-m-d H:i" }})
+                </option>
                 {% endfor %}
             </select>
         </div>
 
+
+        <!-- 🔹 Seat (Dynamic) -->
         <div>
             <label class="block font-semibold mb-1">Seat (Optional):</label>
-            <select name="seat" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+            <select id="seat" name="seat" 
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
                 <option value="">-- Select Seat --</option>
-                {% for seat in seats %}
-                <option value="{{ seat.id }}">{{ seat.seat_number }} - {{ seat.seat_class.name }}</option>
-                {% endfor %}
+                <!-- Seats will be loaded dynamically via JS -->
             </select>
         </div>
 
+        <!-- 🔹 Status -->
         <div>
             <label class="block font-semibold mb-1">Status:</label>
             <select name="status" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
@@ -42,6 +51,7 @@
             </select>
         </div>
 
+        <!-- 🔹 Buttons -->
         <div class="flex items-center justify-between mt-6">
             <button type="submit" 
                     class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
@@ -54,4 +64,39 @@
         </div>
     </form>
 </div>
+
+<!-- 🔹 JavaScript to fetch seats based on schedule -->
+
+<script>
+document.getElementById("schedule").addEventListener("change", function() {
+    const scheduleId = this.value;
+    const seatDropdown = document.getElementById("seat");
+
+    // reset dropdown
+    seatDropdown.innerHTML = '<option value="">-- Select Seat --</option>';
+
+    if (scheduleId) {
+        fetch(`/booking/seats/${scheduleId}/`)
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(seat => {
+                    const option = document.createElement("option");
+                    option.value = seat.id;
+                    option.textContent = seat.label;
+
+                    // 🔹 disable if seat is booked (is_available = False)
+                    if (!seat.is_available) {
+                        option.disabled = true;
+                        option.classList.add("text-gray-400"); // optional: style booked seats gray
+                    }
+
+                    seatDropdown.appendChild(option);
+                });
+            });
+    }
+});
+</script>
+
+
+
 {% endblock %}

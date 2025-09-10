@@ -1,17 +1,66 @@
 from django.db import models
 from django.utils import timezone
+from django.db import models
+from django.utils import timezone
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 # ---------------------------
-# Custom User (optional)
+# Signal inside models.py
 # ---------------------------
-class MyUser(models.Model):
+
+@receiver(post_save, sender="flightapp.Schedule")  # ⚠ replace "yourapp" with your Django app name
+def create_seats_for_schedule(sender, instance, created, **kwargs):
+    if created:
+        aircraft = instance.flight.aircraft
+        default_class = SeatClass.objects.first()
+
+        if not default_class:
+            return  # no SeatClass exists yet
+
+        seats = [
+            Seat(
+                schedule=instance,
+                seat_class=default_class,
+                seat_number=f"{i:02d}",  # seat numbering 01, 02, 03...
+                is_available=True
+            )
+            for i in range(1, aircraft.capacity + 1)
+        ]
+        Seat.objects.bulk_create(seats)
+
+
+# ---------------------------
+# User (Base Table)
+# ---------------------------
+class User(models.Model):
+    ROLE_CHOICES = [
+        ('admin', 'Admin'),
+        ('instructor', 'Instructor'),
+    ]
+
     username = models.CharField(max_length=150, unique=True)
-    password = models.CharField(max_length=255)  # store hashed password
-    created_at = models.DateTimeField(auto_now_add=True)
+    password = models.CharField(max_length=255)  # hashed in real use
+    email = models.EmailField(unique=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        return self.username
+        return f"{self.username} ({self.role})"
+
+
+# ---------------------------
+# Instructor Profile
+# ---------------------------
+class InstructorProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="instructor_profile")
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    department = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} ({self.department})"
 
 # ---------------------------
 # Flight & Seat Core
@@ -35,7 +84,7 @@ class Airline(models.Model):
 class Aircraft(models.Model):
     model = models.CharField(max_length=100)
     capacity = models.PositiveIntegerField()
-    airline = models.ForeignKey(Airline, on_delete=models.CASCADE, related_name="aircrafts")
+    airline = models.ForeignKey("Airline", on_delete=models.CASCADE, related_name="aircrafts")
 
     def __str__(self):
         return f"{self.model} ({self.airline.code})"
@@ -69,11 +118,19 @@ class Flight(models.Model):
 
 
 class Schedule(models.Model):
+    STATUS_CHOICES = [
+        ('Open', 'Open for Booking'),
+        ('Closed', 'Closed'),
+        ('On Flight', 'On Flight'),
+        ('Arrived', 'Arrived'),
+    ]
+
     flight = models.ForeignKey("Flight", on_delete=models.CASCADE, related_name="schedules")
     departure_time = models.DateTimeField()
     arrival_time = models.DateTimeField()
-    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # NEW
-    
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Open')
+
     def __str__(self):
         return f"{self.flight.flight_number} ({self.departure_time} - {self.arrival_time})"
 
@@ -85,6 +142,22 @@ class Schedule(models.Model):
         if days > 0:
             return f"{hours}h {minutes}m (+{days}d)"
         return f"{hours}h {minutes}m" if minutes else f"{hours}h"
+
+    def update_status(self):
+        now = timezone.now()
+        if now < self.departure_time - timezone.timedelta(hours=1):
+            self.status = 'Open'
+        elif self.departure_time - timezone.timedelta(hours=1) <= now < self.departure_time:
+            self.status = 'Closed'
+        elif self.departure_time <= now < self.arrival_time:
+            self.status = 'On Flight'
+        else:
+            self.status = 'Arrived'
+        self.save()
+
+    @property
+    def is_open(self):
+        return self.status == "Open"
 
 
 class Seat(models.Model):
