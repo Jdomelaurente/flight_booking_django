@@ -82,6 +82,8 @@ urlpatterns = [
     path("payments/add/", views.add_payment, name="add_payment"),
     path("payments/update/<int:payment_id>/", views.update_payment, name="update_payment"),
     path("payments/delete/<int:payment_id>/", views.delete_payment, name="delete_payment"),
+    path('booking/return_schedules/<int:outbound_id>/', views.get_return_schedules, name='return_schedules'),
+
 
     #check_in
     path('check_in/', views.check_in_view, name='check_in'),

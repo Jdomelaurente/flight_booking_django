@@ -200,18 +200,18 @@ class Student(models.Model):
 
 
 class Booking(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="bookings")
-    schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE, related_name="bookings")
-    seat = models.ForeignKey(Seat, on_delete=models.SET_NULL, null=True, blank=True, related_name="bookings")
-    status = models.CharField(max_length=20, choices=[
-        ("Pending", "Pending"),
-        ("Confirmed", "Confirmed"),
-        ("Cancelled", "Cancelled"),
-    ], default="Pending")
-    created_at = models.DateTimeField(default=timezone.now)
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    trip_type = models.CharField(max_length=20, choices=[("one_way","One Way"),("round_trip","Round Trip"),("multi_city","Multi City")])
+    outbound_schedule = models.ForeignKey(Schedule, related_name="outbound_bookings", on_delete=models.CASCADE, null=True, blank=True)
+    return_schedule = models.ForeignKey(Schedule, related_name="return_bookings", on_delete=models.CASCADE, null=True, blank=True)
+    outbound_seat = models.ForeignKey(Seat, related_name="outbound_bookings", on_delete=models.SET_NULL, null=True, blank=True)
+    return_seat = models.ForeignKey(Seat, related_name="return_bookings", on_delete=models.SET_NULL, null=True, blank=True)
+    status = models.CharField(max_length=20, default="Pending")
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Booking {self.id} - {self.student.first_name} {self.student.last_name}"
+
 
 
 class BookingDetail(models.Model):

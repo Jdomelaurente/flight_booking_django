@@ -173,37 +173,49 @@ def admin_dashboard(request):
             selected_date = datetime.strptime(date_filter, "%Y-%m-%d").date()
             schedules = schedules.filter(departure_time__date=selected_date)
         except ValueError:
-            pass
+            selected_date = None
+    else:
+        selected_date = None
 
     schedule_data = []
+
+    # Initialize counters
     total_open = 0
-    total_standby = 0
+    total_closed = 0
     total_on_flight = 0
     total_arrived = 0
 
     for s in schedules:
-        if not s.is_open:
-            status = "Closed"
-        elif current_time < s.departure_time:
-            status = "Open"   # ✅ treat as open-for-booking
-            total_open += 1
+        # Future flights → use DB status (Open/Closed)
+        if current_time < s.departure_time:
+            status = s.status  # Open / Closed
+            if status == "Open":
+                total_open += 1
+            else:
+                total_closed += 1
+        # Ongoing flight
         elif s.departure_time <= current_time < s.arrival_time:
             status = "On Flight"
             total_on_flight += 1
+        # Completed flight
         else:
             status = "Arrived"
             total_arrived += 1
 
-        schedule_data.append({"schedule": s, "status": status})
+        schedule_data.append({'schedule': s, 'status': status})
+
+    # 🔹 Fetch bookings (latest first)
+    bookings = Booking.objects.select_related("student", "schedule", "seat").order_by("-created_at")
 
     return render(request, "dashboard.html", {
         "schedule_data": schedule_data,
-        "selected_date": date_filter,
+        "selected_date": selected_date,
         "username": request.user.username,
         "total_open": total_open,
-        "total_standby": total_standby,
+        "total_closed": total_closed,
         "total_on_flight": total_on_flight,
         "total_arrived": total_arrived,
+          # ✅ pass to template
     })
 
 
@@ -683,48 +695,121 @@ def booking_view(request):
     return render(request, "booking_info/booking/booking.html", {"bookings": bookings})
 
 # Add
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from .models import Student, Schedule, Seat, Booking
+
 def add_booking(request):
     students = Student.objects.all()
-    # only show open schedules
-    schedules = Schedule.objects.filter(status="Open")
+    schedules = Schedule.objects.all()
+    seats = Seat.objects.filter(is_available=True)
 
     if request.method == "POST":
         student_id = request.POST.get("student")
-        schedule_id = request.POST.get("schedule")
-        seat_id = request.POST.get("seat")
-        status = request.POST.get("status")
+        trip_type = request.POST.get("trip_type")
+        status = request.POST.get("status", "pending")
+
+        if not student_id:
+            messages.error(request, "Student is required.")
+            return redirect("add_booking")
 
         student = get_object_or_404(Student, id=student_id)
-        schedule = get_object_or_404(Schedule, id=schedule_id)
 
-        # prevent booking if schedule is not open
-        if schedule.status != "Open":
-            messages.error(request, "This flight is not open for booking.")
-            return redirect("booking")
+        # ------------------------------
+        # Handle booking types
+        # ------------------------------
+        if trip_type == "one_way":
+            outbound_id = request.POST.get("outbound_schedule")
+            if not outbound_id:
+                messages.error(request, "Outbound schedule is required.")
+                return redirect("add_booking")
 
-        seat = get_object_or_404(Seat, id=seat_id) if seat_id else None
+            outbound_schedule = get_object_or_404(Schedule, id=outbound_id)
+            outbound_seat_id = request.POST.get("outbound_seat") or None
+            outbound_seat = Seat.objects.get(id=outbound_seat_id) if outbound_seat_id else None
 
-        booking = Booking.objects.create(
-            student=student,
-            schedule=schedule,
-            seat=seat,
-            status=status,
-            created_at=timezone.now()
-        )
+            booking = Booking.objects.create(
+                student=student,
+                trip_type="one_way",
+                outbound_schedule=outbound_schedule,
+                outbound_seat=outbound_seat,
+                status=status
+            )
 
-        if seat:
-            seat.is_available = False
-            seat.save()
+            # Mark seat unavailable
+            if outbound_seat:
+                outbound_seat.is_available = False
+                outbound_seat.save()
 
-        messages.success(request, "Booking successfully created!")
+        elif trip_type == "round_trip":
+            outbound_id = request.POST.get("outbound_schedule")
+            return_id = request.POST.get("return_schedule")
+
+            if not outbound_id or not return_id:
+                messages.error(request, "Both outbound and return schedules are required.")
+                return redirect("add_booking")
+
+            outbound_schedule = get_object_or_404(Schedule, id=outbound_id)
+            return_schedule = get_object_or_404(Schedule, id=return_id)
+
+            outbound_seat_id = request.POST.get("outbound_seat") or None
+            return_seat_id = request.POST.get("return_seat") or None
+
+            outbound_seat = Seat.objects.get(id=outbound_seat_id) if outbound_seat_id else None
+            return_seat = Seat.objects.get(id=return_seat_id) if return_seat_id else None
+
+            booking = Booking.objects.create(
+                student=student,
+                trip_type="round_trip",
+                outbound_schedule=outbound_schedule,
+                outbound_seat=outbound_seat,
+                return_schedule=return_schedule,
+                return_seat=return_seat,
+                status=status
+            )
+
+            # Mark both seats unavailable
+            if outbound_seat:
+                outbound_seat.is_available = False
+                outbound_seat.save()
+            if return_seat:
+                return_seat.is_available = False
+                return_seat.save()
+
+        elif trip_type == "multi_city":
+            segment_num = 1
+            while True:
+                schedule_id = request.POST.get(f"multi_schedule_{segment_num}")
+                if not schedule_id:
+                    break
+
+                schedule = get_object_or_404(Schedule, id=schedule_id)
+                seat_id = request.POST.get(f"multi_seat_{segment_num}") or None
+                seat = Seat.objects.get(id=seat_id) if seat_id else None
+
+                booking = Booking.objects.create(
+                    student=student,
+                    trip_type="multi_city",
+                    outbound_schedule=schedule,   # reuse outbound for segment
+                    outbound_seat=seat,
+                    status=status
+                )
+
+                # Mark seat unavailable
+                if seat:
+                    seat.is_available = False
+                    seat.save()
+
+                segment_num += 1
+
+        messages.success(request, "Booking successfully created.")
         return redirect("booking")
-    
+
     return render(request, "booking_info/booking/add_booking.html", {
         "students": students,
-        "schedules": schedules,  # only "Open" schedules
+        "schedules": schedules,
+        "seats": seats,
     })
-
-
 
 
 # 🔹 API endpoint to fetch seats for a schedule
@@ -740,8 +825,34 @@ def get_seats_for_schedule(request, schedule_id):
     ]
     return JsonResponse(data, safe=False)
 
+from django.http import JsonResponse
+from .models import Schedule
 
+def get_return_schedules(request, outbound_id):
+    try:
+        outbound = Schedule.objects.get(id=outbound_id)
+        outbound_route = outbound.flight.route  # or outbound.flight.routes.first() if multiple
+    except Schedule.DoesNotExist:
+        return JsonResponse([], safe=False)
 
+    # Find schedules with matching reverse route
+    return_schedules = Schedule.objects.filter(
+        flight__route__origin_airport=outbound_route.destination_airport,
+        flight__route__destination_airport=outbound_route.origin_airport,
+        status="Open"
+    )
+
+    data = [
+        {
+            "id": s.id,
+            "flight_number": s.flight.flight_number,
+            "origin": s.flight.route.origin_airport.code,
+            "destination": s.flight.route.destination_airport.code,
+            "departure_time": s.departure_time.strftime("%Y-%m-%d %H:%M")
+        }
+        for s in return_schedules
+    ]
+    return JsonResponse(data, safe=False)
 
 # Update
 def update_booking(request, booking_id):
@@ -860,7 +971,7 @@ def booking_detail_view(request):
 def add_booking_detail(request):
     bookings = Booking.objects.all()
     flights = Flight.objects.all()
-    seats = Seat.objects.filter(is_available=True)
+    seats = Seat.objects.filter(is_available=True)  # ✅ only show available seats
     seat_classes = SeatClass.objects.all()
 
     if request.method == "POST":
@@ -874,12 +985,19 @@ def add_booking_detail(request):
         seat = get_object_or_404(Seat, id=seat_id) if seat_id else None
         seat_class = get_object_or_404(SeatClass, id=seat_class_id) if seat_class_id else None
 
+        # ✅ Create booking detail
         BookingDetail.objects.create(
             booking=booking,
             flight=flight,
             seat=seat,
             seat_class=seat_class
         )
+
+        # ✅ Mark seat as unavailable
+        if seat:
+            seat.is_available = False
+            seat.save()
+
         messages.success(request, "Booking detail added successfully!")
         return redirect("booking_detail")
 
@@ -889,6 +1007,8 @@ def add_booking_detail(request):
         "seats": seats,
         "seat_classes": seat_classes
     })
+
+
 
 # Update
 def update_booking_detail(request, detail_id):
@@ -901,15 +1021,29 @@ def update_booking_detail(request, detail_id):
     if request.method == "POST":
         detail.booking = get_object_or_404(Booking, id=request.POST.get("booking"))
         detail.flight = get_object_or_404(Flight, id=request.POST.get("flight"))
-        seat_id = request.POST.get("seat")
-        detail.seat = get_object_or_404(Seat, id=seat_id) if seat_id else None
+
+        # ✅ Seat logic
+        old_seat = detail.seat
+        new_seat_id = request.POST.get("seat")
+        new_seat = get_object_or_404(Seat, id=new_seat_id) if new_seat_id else None
+
+        if old_seat and old_seat != new_seat:
+            old_seat.is_available = True
+            old_seat.save()
+
+        if new_seat and new_seat.is_available:
+            new_seat.is_available = False
+            new_seat.save()
+            detail.seat = new_seat
+
+        # ✅ Seat class
         seat_class_id = request.POST.get("seat_class")
         detail.seat_class = get_object_or_404(SeatClass, id=seat_class_id) if seat_class_id else None
+
         detail.save()
         messages.success(request, "Booking detail updated successfully!")
         return redirect("booking_detail")
 
-    
     return render(request, "booking_info/booking_detail/update_booking_detail.html", {
         "detail": detail,
         "bookings": bookings,
@@ -917,13 +1051,21 @@ def update_booking_detail(request, detail_id):
         "seats": seats,
         "seat_classes": seat_classes
     })
+    
 
 # Delete
 def delete_booking_detail(request, detail_id):
     detail = get_object_or_404(BookingDetail, id=detail_id)
+
+    # ✅ Restore seat availability
+    if detail.seat:
+        detail.seat.is_available = True
+        detail.seat.save()
+
     detail.delete()
     messages.success(request, "Booking detail deleted successfully!")
     return redirect("booking_detail")
+
 
 # ---------------------------------------Passenger Info---------------------------------------------
 
