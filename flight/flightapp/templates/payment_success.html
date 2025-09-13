@@ -1,0 +1,11 @@
+{% extends "master.html" %}
+{% block content %}
+<div class="max-w-lg mx-auto bg-green-100 p-6 rounded shadow">
+    <h2 class="text-2xl font-bold mb-4 text-green-700">Payment Successful 🎉</h2>
+    <p>Booking <strong>#{{ booking.id }}</strong> is now <span class="text-green-600">Confirmed</span>.</p>
+    <p>Amount Paid: ₱{{ payment.amount }}</p>
+    <p>Method: {{ payment.method }}</p>
+    <p>Status: {{ payment.status }}</p>
+    <a href="{% url 'booking' %}" class="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded">Back to Bookings</a>
+</div>
+{% endblock %}

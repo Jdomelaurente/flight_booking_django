@@ -75,15 +75,9 @@
             </button>
         </div>
 
-        <!-- 🔹 Status -->
-        <div>
-            <label class="block font-semibold mb-1">Status:</label>
-            <select name="status" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
-                <option value="Pending">Pending</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="Cancelled">Cancelled</option>
-            </select>
-        </div>
+        <!-- 🔹 Status (Auto-handled) -->
+        <input type="hidden" name="status" value="Pending">
+
 
         <!-- 🔹 Buttons -->
         <div class="flex items-center justify-between mt-6">

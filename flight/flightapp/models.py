@@ -201,7 +201,10 @@ class Student(models.Model):
 
 class Booking(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    trip_type = models.CharField(max_length=20, choices=[("one_way","One Way"),("round_trip","Round Trip"),("multi_city","Multi City")])
+    trip_type = models.CharField(
+        max_length=20,
+        choices=[("one_way","One Way"),("round_trip","Round Trip"),("multi_city","Multi City")]
+    )
     outbound_schedule = models.ForeignKey(Schedule, related_name="outbound_bookings", on_delete=models.CASCADE, null=True, blank=True)
     return_schedule = models.ForeignKey(Schedule, related_name="return_bookings", on_delete=models.CASCADE, null=True, blank=True)
     outbound_seat = models.ForeignKey(Seat, related_name="outbound_bookings", on_delete=models.SET_NULL, null=True, blank=True)
@@ -211,6 +214,16 @@ class Booking(models.Model):
 
     def __str__(self):
         return f"Booking {self.id} - {self.student.first_name} {self.student.last_name}"
+
+    @property
+    def total_amount(self):
+        total = 0
+        if self.outbound_schedule:
+            total += self.outbound_schedule.price  # assumes Schedule has price
+        if self.return_schedule:
+            total += self.return_schedule.price
+        return total
+
 
 
 

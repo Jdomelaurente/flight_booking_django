@@ -1301,3 +1301,112 @@ def delete_tracklog(request, tracklog_id):
     tracklog.delete()
     messages.success(request, "TrackLog deleted successfully!")
     return redirect("tracklog")
+
+
+
+import base64
+import requests
+from django.conf import settings
+from django.shortcuts import redirect, render, get_object_or_404
+from django.urls import reverse
+from django.http import JsonResponse
+from .models import Booking, Payment
+
+
+def create_checkout(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id)
+    amount = int(booking.total_amount * 100)  # PayMongo needs cents
+
+    url = "https://api.paymongo.com/v1/checkout_sessions"
+
+    # Encode API key in Base64
+    secret_key = settings.PAYMONGO_SECRET_KEY  # e.g. "sk_test_xxx"
+    auth_key = base64.b64encode(f"{secret_key}:".encode()).decode("utf-8")
+
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "authorization": f"Basic {auth_key}"
+    }
+
+    payload = {
+        "data": {
+            "attributes": {
+                "line_items": [
+                    {
+                        "name": f"Booking #{booking.id}",
+                        "quantity": 1,
+                        "currency": "PHP",
+                        "amount": amount
+                    }
+                ],
+                "payment_method_types": ["gcash", "card"],
+                "success_url": request.build_absolute_uri(
+                    reverse("payment_success", args=[booking.id])
+                ),
+                "cancel_url": request.build_absolute_uri(
+                    reverse("payment_cancel", args=[booking.id])
+                )
+            }
+        }
+    }
+
+    response = requests.post(url, headers=headers, json=payload)
+    data = response.json()
+
+    # Handle errors
+    if response.status_code != 200:
+        return JsonResponse({"error": data}, status=response.status_code)
+
+    checkout_url = data["data"]["attributes"]["checkout_url"]
+
+    # ✅ Create a pending Payment record
+    Payment.objects.create(
+        booking=booking,
+        amount=booking.total_amount,
+        method="GCash",   # or detect from request if user chooses
+        status="Pending"
+    )
+
+    return redirect(checkout_url)
+
+
+def payment_success(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id)
+
+    # Update booking status
+    booking.status = "Confirmed"
+    booking.save()
+
+    # Update payment record
+    try:
+        payment = Payment.objects.get(booking=booking)
+        payment.status = "Completed"
+        payment.save()
+    except Payment.DoesNotExist:
+        payment = None
+
+    return render(request, "success.html", {
+        "booking": booking,
+        "payment": payment
+    })
+
+
+def payment_cancel(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id)
+    booking.status = "Pending"
+    booking.save()
+
+    # If payment exists, mark it failed
+    try:
+        payment = Payment.objects.get(booking=booking)
+        payment.status = "Failed"
+        payment.save()
+    except Payment.DoesNotExist:
+        payment = None
+
+    return render(request, "cancel.html", {
+        "booking": booking,
+        "payment": payment
+    })
+

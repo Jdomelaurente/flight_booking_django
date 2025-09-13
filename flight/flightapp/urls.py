@@ -108,4 +108,10 @@ urlpatterns = [
     path("tracklogs/add/", views.add_tracklog, name="add_tracklog"),
     path("tracklogs/update/<int:tracklog_id>/", views.update_tracklog, name="update_tracklog"),
     path("tracklogs/delete/<int:tracklog_id>/", views.delete_tracklog, name="delete_tracklog"),
+
+
+    path("payment/checkout/<int:booking_id>/", views.create_checkout, name="create_checkout"),
+    path("payment/success/<int:booking_id>/", views.payment_success, name="payment_success"),
+    path("payment/cancel/<int:booking_id>/", views.payment_cancel, name="payment_cancel"),
+
 ]
