@@ -44,11 +44,6 @@
                    onclick="return confirm('Are you sure you want to delete this payment?');">
                     <i class="fas fa-trash-alt mr-1"></i>Delete
                 </a>
-                <!-- PayMongo Checkout -->
-                <a href="{% url 'create_checkout' payment.booking.id %}" 
-                   class="bg-green-600 hover:bg-green-700 text-white py-1 px-3 rounded text-sm inline-flex items-center">
-                    <i class="fas fa-credit-card mr-1"></i>Pay
-                </a>
             </td>
         </tr>
         {% empty %}

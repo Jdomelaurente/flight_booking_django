@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+  </style>
+</head>
+<body>
+  <h2>Booking Confirmed!</h2>
+  <p>Hello {{ booking.student.first_name }} {{ booking.student.last_name }},</p>
+  <p>Your booking has been confirmed. Here are the details:</p>
+
+  <table>
+    <tr>
+      <th>Passenger</th>
+      <th>Flight</th>
+      <th>Route</th>
+      <th>Seat</th>
+      <th>Seat Class</th>
+      <th>Booking Date</th>
+    </tr>
+    {% for detail in details %}
+    <tr>
+      <td>{{ detail.booking.student.first_name }} {{ detail.booking.student.last_name }}</td>
+      <td>{{ detail.flight.flight_number }}</td>
+      <td>{{ detail.flight.route.origin_airport.code }} → {{ detail.flight.route.destination_airport.code }}</td>
+      <td>{% if detail.seat %}{{ detail.seat.seat_number }}{% else %}-{% endif %}</td>
+      <td>{% if detail.seat_class %}{{ detail.seat_class.name }}{% else %}-{% endif %}</td>
+      <td>{{ detail.booking_date }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <p>Total Paid: 
+    {% if payment %}
+      ₱{{ payment.amount }}
+    {% else %}
+      N/A
+    {% endif %}
+  </p>
+
+  <p>Thank you for booking with us!</p>
+</body>
+</html>

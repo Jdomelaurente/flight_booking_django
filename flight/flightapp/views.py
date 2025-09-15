@@ -1370,6 +1370,10 @@ def create_checkout(request, booking_id):
 
     return redirect(checkout_url)
 
+from django.shortcuts import get_object_or_404, render
+from django.core.mail import EmailMessage
+from django.conf import settings
+from .models import Booking, Payment, BookingDetail, SeatClass
 
 def payment_success(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
@@ -1378,18 +1382,61 @@ def payment_success(request, booking_id):
     booking.status = "Confirmed"
     booking.save()
 
-    # Update payment record
+    # Update payment
     try:
-        payment = Payment.objects.get(booking=booking)
+        payment = Payment.objects.filter(booking=booking).latest("payment_date")
         payment.status = "Completed"
         payment.save()
     except Payment.DoesNotExist:
         payment = None
 
+    # Create BookingDetail entries if they don't exist
+    if not booking.details.exists():
+        default_class = SeatClass.objects.first()  # fallback if seat_class is missing
+
+        if booking.outbound_schedule:
+            BookingDetail.objects.create(
+                booking=booking,
+                flight=booking.outbound_schedule.flight,
+                seat=booking.outbound_seat,
+                seat_class=booking.outbound_seat.seat_class if booking.outbound_seat else default_class
+            )
+
+        if booking.return_schedule:
+            BookingDetail.objects.create(
+                booking=booking,
+                flight=booking.return_schedule.flight,
+                seat=booking.return_seat,
+                seat_class=booking.return_seat.seat_class if booking.return_seat else default_class
+            )
+
+    # Get all booking details
+    booking_details = booking.details.all()
+
+    # Send confirmation email
+    if booking.student.email:
+        email = EmailMessage(
+            subject=f"Booking Confirmed - {booking.id}",
+            body=render(
+                request,
+                "booking_confirmation.html",
+                {"booking": booking, "payment": payment, "details": booking_details},
+            ).content.decode("utf-8"),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[booking.student.email],
+        )
+        email.content_subtype = "html"
+        email.send(fail_silently=False)
+
     return render(request, "success.html", {
         "booking": booking,
-        "payment": payment
+        "payment": payment,
+        "details": booking_details
     })
+
+
+
+
 
 
 def payment_cancel(request, booking_id):
@@ -1410,3 +1457,26 @@ def payment_cancel(request, booking_id):
         "payment": payment
     })
 
+def send_booking_email(booking):
+    subject = f"Booking Confirmation - {booking.id}"
+    message = f"""
+    Hello {booking.student.name},
+
+    Your booking has been confirmed!
+
+    Booking Details:
+    Flight: {booking.schedule.flight}
+    Date: {booking.schedule.date}
+    Seat: {booking.seat.number}
+    Amount Paid: {booking.payment.amount}
+
+    Thank you for booking with us!
+    """
+    recipient_list = [booking.student.email]
+    send_mail(
+        subject,
+        message,
+        settings.DEFAULT_FROM_EMAIL,
+        recipient_list,
+        fail_silently=False,
+    )

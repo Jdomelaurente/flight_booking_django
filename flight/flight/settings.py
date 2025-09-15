@@ -2,10 +2,6 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-import os
-from dotenv import load_dotenv
-from pathlib import Path
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables from .env
@@ -14,6 +10,15 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 SECRET_KEY = os.getenv("SECRET_KEY")
 PAYMONGO_PUBLIC_KEY = os.getenv("PAYMONGO_PUBLIC_KEY")
 PAYMONGO_SECRET_KEY = os.getenv("PAYMONGO_SECRET_KEY")
+
+# Email settings
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'jdomelaurente@gmail.com'
+EMAIL_HOST_PASSWORD = os.getenv('DJANGO_EMAIL_PASSWORD')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
 DEBUG = True
