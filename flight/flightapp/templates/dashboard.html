@@ -1,164 +1,93 @@
 {% extends "master.html" %}
 
 {% block content %}
-<div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-800 mb-2">Dashboard</h1>
+<div class="mb-2">
+  <h1 class="unbounded font-bold text-gray-900 text-2xl mb-1">Dashboard</h1>
+  <p class="poppins text-sm text-gray-500">Hi {{ username }} have a nice day!</p>
 </div>
 
-<!-- 🔹 Total Flights by Status -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+<!-- 🔹 Main Dashboard Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-1 gap-4 mb-4"> <!-- changed lg:grid-cols-3 → lg:grid-cols-1 -->
 
-    <!-- Open -->
-    <div class="bg-green-300 p-6 rounded-lg shadow flex items-center justify-between">
-        <div>
-            <p class="text-sm font-medium text-green-900">Open</p>
-            <p class="text-3xl font-bold text-green-950">{{ total_open }}</p>
+  <!-- Left Side: Top Stats + Charts -->
+  <div class="space-y-4"> <!-- removed lg:col-span-2, since now it's full width -->
+
+    <!-- Top Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <!-- Passenger Today -->
+      <div class="bg-white rounded shadow-md p-6 flex justify-between items-center">
+        <div class="flex flex-col justify-between h-full text-left">
+          <p class="poppins text-gray-700 mb-2">Passenger Today</p>
+          <p class="unbounded text-gray-900 text-base font-bold">{{ passenger_today }}</p>
         </div>
-        <div class="w-12 h-12 flex items-center justify-center rounded-full bg-green-900 text-white">
-            <!-- Folder open icon -->
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
-                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      d="M3 7h4l2 2h12v10H3z" />
-            </svg>
+        <div class="bg-[#053322] rounded-full p-3 flex items-center justify-center">
+          <i class="ph ph-users text-white text-md"></i>
         </div>
+      </div>
+
+      <!-- Total Revenue -->
+      <div class="bg-white rounded shadow-md p-6 flex justify-between items-center">
+        <div class="flex flex-col justify-between h-full text-left">
+          <p class="poppins text-gray-700 mb-4">Total Revenue</p>
+          <p class="unbounded text-gray-900 text-base font-bold">₱{{ total_revenue }}</p>
+        </div>
+        <div class="bg-[#053322] rounded-full p-3 flex items-center justify-center">
+          <i class="ph ph-money text-white text-md"></i>
+        </div>
+      </div>
+
+      <!-- Total Booking -->
+      <div class="bg-white rounded shadow-md p-6 flex justify-between items-center">
+        <div class="flex flex-col justify-between h-full text-left">
+          <p class="poppins text-gray-700 mb-4">Total Booking</p>
+          <p class="unbounded text-gray-900 text-base font-bold">{{ total_bookings }}</p>
+        </div>
+        <div class="bg-[#053322] rounded-full p-3 flex items-center justify-center">
+          <i class="ph ph-check-circle text-white text-md"></i>
+        </div>
+      </div>
+
+      <!-- Active Flights -->
+      <div class="bg-white rounded shadow-md p-6 flex justify-between items-center">
+        <div class="flex flex-col justify-between h-full text-left">
+          <p class="poppins text-gray-700 mb-4">Active Flights</p>
+          <p class="unbounded text-gray-900 text-base font-bold">{{ total_on_flight }}</p>
+        </div>
+        <div class="bg-[#053322] rounded-full p-3 flex items-center justify-center">
+          <i class="ph ph-airplane text-white text-md"></i>
+        </div>
+      </div>
     </div>
 
-    <!-- Closed -->
-    <div class="bg-red-300 p-6 rounded-lg shadow flex items-center justify-between">
-        <div>
-            <p class="text-sm font-medium text-red-900">Closed</p>
-            <p class="text-3xl font-bold text-red-950">{{ total_closed }}</p>
+    <!-- Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <!-- Ticket Sales -->
+      <div class="bg-white shadow rounded p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold">Ticket Sales</h3>
+          <button class="flex items-center text-sm bg-gray-100 px-3 py-1 rounded">
+            <i class="ph ph-calendar mr-2"></i> This Week
+          </button>
         </div>
-        <div class="w-12 h-12 flex items-center justify-center rounded-full bg-red-900 text-white">
-            <!-- X-circle icon -->
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
-                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      d="M6 18L18 6M6 6l12 12" />
-            </svg>
+        <p class="text-2xl font-bold mb-4">{{ total_tickets }} Tickets Sold</p>
+        <canvas id="ticketSalesChart" class="w-full h-56"></canvas>
+      </div>
+
+      <!-- Flight Schedule -->
+      <div class="bg-white shadow rounded p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold">Flight Schedule</h3>
+          <button class="flex items-center text-sm bg-gray-100 px-3 py-1 rounded">
+            <i class="ph ph-calendar-dots mr-2"></i> Last 8 Months
+          </button>
         </div>
+        <canvas id="flightScheduleChart" class="w-full h-56"></canvas>
+      </div>
     </div>
 
-    <!-- On Flight -->
-    <div class="bg-blue-300 p-6 rounded-lg shadow flex items-center justify-between">
-        <div>
-            <p class="text-sm font-medium text-blue-900">On Flight</p>
-            <p class="text-3xl font-bold text-blue-950">{{ total_on_flight }}</p>
-        </div>
-        <div class="w-12 h-12 flex items-center justify-center rounded-full bg-blue-900 text-white">
-            <!-- Airplane icon -->
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
-                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      d="M2.5 19.5l19-7.5-19-7.5v5l12 2.5-12 2.5v5z" />
-            </svg>
-        </div>
-    </div>
-
-    <!-- Arrived -->
-    <div class="bg-gray-300 p-6 rounded-lg shadow flex items-center justify-between">
-        <div>
-            <p class="text-sm font-medium text-gray-900">Arrived</p>
-            <p class="text-3xl font-bold text-gray-950">{{ total_arrived }}</p>
-        </div>
-        <div class="w-12 h-12 flex items-center justify-center rounded-full bg-gray-900 text-white">
-            <!-- Check icon -->
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
-                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      d="M5 13l4 4L19 7" />
-            </svg>
-        </div>
-    </div>
+  </div>
 
 </div>
 
 
-
-
-
-<!-- 🔹 Split Layout for Schedules & Bookings -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
-
-    <!-- 🔹 Flight Schedules -->
-    <div class="space-y-4">
-        <h3 class="text-xl font-bold text-gray-800 mb-4">Flight Schedules</h3>
-
-        <!-- 🔹 Date Filter -->
-        <div class="mb-6 flex flex-wrap items-center gap-3">
-            <form method="get" class="flex flex-wrap items-center gap-2">
-                <input type="date" name="date" value="{{ selected_date }}" 
-                    class="border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <button type="submit" 
-                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition">Filter</button>
-                {% if selected_date %}
-                <a href="{% url 'dashboard' %}" 
-                class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded transition">
-                Clear
-                </a>
-                {% endif %}
-            </form>
-        </div>
-
-        {% for item in schedule_data %}
-        <div class="bg-white shadow-md rounded-xl p-4 flex items-center justify-between hover:shadow-lg transition">
-
-            <!-- Left: Airline & Date -->
-            <div class="w-1/4">
-                <p class="font-semibold text-gray-900">{{ item.schedule.flight.airline.name }}</p>
-                <p class="text-sm text-gray-500">{{ item.schedule.flight.flight_number }}</p>
-                <div class="flex items-center text-xs text-gray-500 mt-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-gray-400" fill="none"
-                         viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2 2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                    {{ item.schedule.departure_time|date:"M d, Y" }}
-                </div>
-            </div>
-
-            <!-- Middle: Time & Duration -->
-            <div class="w-2/4 flex items-center justify-between">
-                <div class="text-left">
-                    <p class="text-lg font-bold text-gray-900">{{ item.schedule.departure_time|date:"h:i A" }}</p>
-                    <p class="text-sm text-gray-500">{{ item.schedule.flight.route.origin }}</p>
-                </div>
-
-                <div class="flex flex-col items-center mx-4">
-                    <span class="text-xs text-gray-500">Duration: 
-                        {{ item.schedule.arrival_time|timeuntil:item.schedule.departure_time }}
-                    </span>
-                    <div class="flex items-center mt-1">
-                        <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
-                        <span class="w-20 border-t border-dashed border-gray-400 mx-1"></span>
-                        <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
-                    </div>
-                </div>
-
-                <div class="text-right">
-                    <p class="text-lg font-bold text-gray-900">{{ item.schedule.arrival_time|date:"h:i A" }}</p>
-                    <p class="text-sm text-gray-500">{{ item.schedule.flight.route.destination }}</p>
-                </div>
-            </div>
-
-            <!-- Right: Price + Status -->
-            <div class="w-1/4 text-right">
-                <p class="font-semibold text-lg text-gray-900">₱{{ item.schedule.price }}</p>
-                <span class="px-3 py-1 rounded-full text-xs font-semibold mt-1 inline-block
-                             {% if item.status == 'Open' %}bg-green-100 text-green-800{% endif %}
-                             {% if item.status == 'Closed' %}bg-red-100 text-red-800{% endif %}
-                             {% if item.status == 'On Flight' %}bg-blue-100 text-blue-800{% endif %}
-                             {% if item.status == 'Arrived' %}bg-gray-200 text-gray-800{% endif %}">
-                    {{ item.status }}
-                </span>
-            </div>
-
-        </div>
-        {% empty %}
-        <p class="text-center text-gray-500 mt-4">No schedules available</p>
-        {% endfor %}
-    </div>
-</div>
-
-{% endblock %}
+{% endblock %} 

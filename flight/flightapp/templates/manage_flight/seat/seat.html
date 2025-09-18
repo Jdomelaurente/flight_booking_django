@@ -1,17 +1,17 @@
 {% extends "master.html" %}
 {% block content %}
 <div class="items-center mb-5">
-    <h1 class="text-2xl font-bold mb-5">Seats Table</h1>
+    <h1 class="unbounded">Seats Table</h1>
     <a href="{% url 'add_seat' %}" 
-       class="bg-green-800 hover:bg-green-900 text-white py-2 px-4 rounded inline-flex items-center">
-        <i class="fas fa-plus mr-2"></i>
+       class="bg-green-800 hover:bg-green-900 text-white py-2 px-4 rounded inline-flex items-center poppins">
+        <i class="ph ph-plus mr-2"></i>
         Add Seat
     </a>
 </div>
 
 <form method="get" class="mb-5 flex gap-2">
-    <select name="flight" class="border rounded px-3 py-2">
-        <option value="">-- All Flights --</option>
+    <select name="flight" class="border rounded px-3 py-1 poppins">
+        <option value="">All Flights</option>
         {% for flight in flights %}
         <option value="{{ flight.id }}" {% if request.GET.flight == flight.id|stringformat:"s" %}selected{% endif %}>
             {{ flight.flight_number }}
@@ -19,12 +19,12 @@
         {% endfor %}
     </select>
 
-    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded poppins">
         Filter
     </button>
 
     {% if request.GET.flight %}
-    <a href="{% url 'seat' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+    <a href="{% url 'seat' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded poppins">
         Clear
     </a>
     {% endif %}
@@ -38,7 +38,7 @@
     <h2 class="text-xl font-semibold text-gray-800 mt-6 mb-3">
         ✈ Flight: {{ flight.grouper }}
     </h2>
-    <table class="table-auto border-collapse border border-gray-400 w-full mb-6">
+    <table class="table-auto border-collapse border border-gray-400 w-full mb-6 poppins">
         <thead>
             <tr class="bg-gray-200">
                 <th class="border border-gray-400 px-4 py-2">Seat Number</th>
@@ -49,16 +49,16 @@
         </thead>
         <tbody>
             {% for seat in flight.list %}
-            <tr>
+            <tr class="poppins-small">
                 <td class="border border-gray-400 px-4 py-2">{{ seat.seat_number }}</td>
                 <td class="border border-gray-400 px-4 py-2">{{ seat.seat_class.name }}</td>
                 <td class="border border-gray-400 px-4 py-2">{{ seat.is_available|yesno:"Yes,No" }}</td>
                 <td class="border border-gray-400 px-4 py-2 text-center space-x-2">
-                    <a href="{% url 'update_seat' seat.id %}" class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm inline-flex items-center">
-                        <i class="fas fa-edit mr-1"></i>Edit
+                    <a href="{% url 'update_seat' seat.id %}" class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded inline-flex items-center">
+                        <i class="ph ph-pen mr-1"></i>Edit
                     </a>
-                    <a href="{% url 'delete_seat' seat.id %}" class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-sm inline-flex items-center">
-                        <i class="fas fa-trash-alt mr-1"></i>Delete
+                    <a href="{% url 'delete_seat' seat.id %}" class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded inline-flex items-center">
+                        <i class="ph ph-trash mr-1"></i>Delete
                     </a>
                 </td>
             </tr>

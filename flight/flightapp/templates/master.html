@@ -3,130 +3,221 @@
 <head>
   <meta charset="UTF-8">
   <title>Admin Dashboard</title>
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Font Awesome -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <style>
-    .sidebar {
-      background-color: #053322; /* Custom dark green */
-    }
 
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400&family=Poppins:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <style>
+    .sidebar { background-color: #053322; }
+    .rotate-180 { transform: rotate(180deg); }
+    .unbounded { font-family: 'Unbounded', sans-serif; font-size: 20px; }
+    .poppins { font-family: 'Poppins', sans-serif; font-size: 14px; }
+    .poppins-small { font-family: 'Poppins', sans-serif; font-size: 12px; }
+    .submenu a { display: block; }
   </style>
 </head>
 <body class="h-screen bg-gray-100 flex">
 
   <!-- Sidebar -->
-  <nav class="w-64 text-white flex flex-col p-4 fixed h-full overflow-y-auto sidebar">
-    <h4 class="text-center text-2xl font-bold mb-6">Flight Admin</h4>
+  <nav id="sidebar" class="w-16 sidebar text-white flex flex-col items-center py-4 transition-all duration-300 fixed h-screen z-50">
 
-    <a href="{% url 'dashboard' %}" class="flex justify-between items-center py-2 px-4 hover:bg-green-900 rounded">
-      <span class="flex items-center">
-        <i class="fas fa-home mr-2"></i> Dashboard
-      </span>
+    <!-- Toggle Button -->
+    <button onclick="toggleSidebar()"
+      class="absolute -right-3 top-6 bg-white text-black rounded-full p-1 shadow z-50">
+      <i id="toggleIcon" class="ph ph-caret-right text-lg"></i>
+    </button>
+
+    <!-- Dashboard -->
+    <a href="{% url 'dashboard' %}" class="flex mt-12 items-center w-full py-2 px-4 hover:bg-green-900 rounded transition poppins">
+      <i class="ph ph-house mr-3 text-xl"></i>
+      <span class="sidebar-text hidden">Dashboard</span>
     </a>
 
-    <!-- Flight Management -->
-    <button class="w-full text-left px-4 py-2 hover:bg-green-900 flex justify-between items-center rounded" onclick="toggleMenu('flightMgmt')">
-      <span><i class="fas fa-plane mr-2"></i> Manage Flights</span><i class="fas fa-caret-down"></i>
+    <!-- Manage Flight -->
+    <button class="w-full flex justify-between items-center py-2 px-4 hover:bg-green-900 rounded transition poppins"
+            onclick="toggleSubmenu('flightMgmt')">
+      <span class="flex items-center">
+        <i class="ph ph-airplane mr-3 text-xl"></i>
+        <span class="sidebar-text hidden">Manage Flight</span>
+      </span>
+      <i class="ph ph-caret-down transition-transform" id="caret-flightMgmt"></i>
     </button>
-    <div id="flightMgmt" class="hidden pl-6 text-sm">
-      <a href="{% url 'flight' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Flights</a>
-      <a href="{% url 'route' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Routes</a>
-      <a href="{% url 'schedule' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Schedules</a>
-      <a href="{% url 'seat' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Seats</a>
+    <div id="flightMgmt" class="submenu hidden pl-8 text-sm">
+      <a href="{% url 'flight' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Flights</a>
+      <a href="{% url 'route' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Routes</a>
+      <a href="{% url 'schedule' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Schedules</a>
+      <a href="{% url 'seat' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Seats</a>
     </div>
 
     <!-- Assets -->
-    <button class="w-full text-left px-4 py-2 hover:bg-green-900 flex justify-between items-center rounded" onclick="toggleMenu('assets')">
-      <span><i class="fas fa-box mr-2"></i> Assets</span><i class="fas fa-caret-down"></i>
+    <button class="w-full flex justify-between items-center py-2 px-4 hover:bg-green-900 rounded transition poppins"
+            onclick="toggleSubmenu('assets')">
+      <span class="flex items-center">
+        <i class="ph ph-package mr-3 text-xl"></i>
+        <span class="sidebar-text hidden">Assets</span>
+      </span>
+      <i class="ph ph-caret-down transition-transform" id="caret-assets"></i>
     </button>
-    <div id="assets" class="hidden pl-6 text-sm">
-      <a href="{% url 'airport' %}" class="block py-2 px-2 hover:bg-green-700 rounded">Airports</a>
-      <a href="{% url 'airline' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Airlines</a>
-      <a href="{% url 'aircraft' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Aircraft</a>
-      <a href="{% url 'seat_class' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Seat Classes</a>
+    <div id="assets" class="submenu hidden pl-8 text-sm">
+      <a href="{% url 'airport' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Airports</a>
+      <a href="{% url 'airline' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Airlines</a>
+      <a href="{% url 'aircraft' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Aircraft</a>
+      <a href="{% url 'seat_class' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Seat Classes</a>
     </div>
 
-     <!-- Bookings -->
-    <button class="w-full text-left px-4 py-2 hover:bg-green-900 flex justify-between items-center rounded" onclick="toggleMenu('bookings')">
-      <span><i class="fas fa-receipt mr-2"></i> Bookings Info</span><i class="fas fa-caret-down"></i>
+    <!-- Booking -->
+    <button class="w-full flex justify-between items-center py-2 px-4 hover:bg-green-900 rounded transition poppins"
+            onclick="toggleSubmenu('bookings')">
+      <span class="flex items-center">
+        <i class="ph ph-receipt mr-3 text-xl"></i>
+        <span class="sidebar-text hidden">Booking</span>
+      </span>
+      <i class="ph ph-caret-down transition-transform" id="caret-bookings"></i>
     </button>
-    <div id="bookings" class="hidden pl-6 text-sm">
-      <a href="{% url 'booking_detail' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Booking Details</a>
-      <a href="{% url 'booking' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Booking</a>
-      <a href="{% url 'payment' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Payments</a>
+    <div id="bookings" class="submenu hidden pl-8 text-sm">
+      <a href="{% url 'booking_detail' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Booking Details</a>
+      <a href="{% url 'booking' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Bookings</a>
+      <a href="{% url 'payment' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Payments</a>
     </div>
 
-    <!-- Passengers -->
-    <button class="w-full text-left px-4 py-2 hover:bg-green-900 flex justify-between items-center rounded" onclick="toggleMenu('passenger')">
-      <span><i class="fas fa-user-friends mr-2"></i> Passengers Info</span><i class="fas fa-caret-down"></i>
+    <!-- Passenger -->
+    <button class="w-full flex justify-between items-center py-2 px-4 hover:bg-green-900 rounded transition poppins"
+            onclick="toggleSubmenu('passenger')">
+      <span class="flex items-center">
+        <i class="ph ph-users mr-3 text-xl"></i>
+        <span class="sidebar-text hidden">Passenger</span>
+      </span>
+      <i class="ph ph-caret-down transition-transform" id="caret-passenger"></i>
     </button>
-    <div id="passenger" class="hidden pl-6 text-sm">
-      <a href="{% url 'passenger' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Passengers</a>
-      <a href="{% url 'check_in' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Check-Ins</a>
+    <div id="passenger" class="submenu hidden pl-8 text-sm">
+      <a href="{% url 'passenger' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Passengers</a>
+      <a href="{% url 'check_in' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Check-Ins</a>
     </div>
 
-    <!-- Student info -->
-    <button class="w-full text-left px-4 py-2 hover:bg-green-900 flex justify-between items-center rounded" onclick="toggleMenu('student')">
-      <span><i class="fas fa-user mr-2"></i> Student Info</span><i class="fas fa-caret-down"></i>
+    <!-- Student Info -->
+    <button class="w-full flex justify-between items-center py-2 px-4 hover:bg-green-900 rounded transition poppins"
+            onclick="toggleSubmenu('student')">
+      <span class="flex items-center">
+        <i class="ph ph-student mr-3 text-xl"></i>
+        <span class="sidebar-text hidden">Student Info</span>
+      </span>
+      <i class="ph ph-caret-down transition-transform" id="caret-student"></i>
     </button>
-    <div id="student" class="hidden pl-6 text-sm">
-      <a href="{% url 'student' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Student</a>
-      <a href="{% url 'tracklog' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Track Log</a>
+    <div id="student" class="submenu hidden pl-8 text-sm">
+      <a href="{% url 'student' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Student</a>
+      <a href="{% url 'tracklog' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Track Log</a>
     </div>
 
   </nav>
 
-<main class="ml-64 p-6 w-full overflow-y-auto ">
-  <div class="flex justify-end items-center ml-64 relative"> 
-    <!-- relative makes the dropdown anchor properly -->
-
-    <!-- Profile Button -->
-    <button onclick="toggleMenu('profileMenu')" 
-      class="flex items-center bg-[#053322] px-4 py-2 rounded-lg shadow hover:shadow-md transition ">
-      <i class="fas fa-user-circle text-white text-2xl"></i>
-       <span class="ml-3 text-white font-medium">{{ username }}</span>
-      <i class="fas fa-caret-down ml-2 text-sm text-white"></i>
-    </button>
-
-    <!-- Dropdown -->
-    <div id="profileMenu" 
-      class="absolute right-0 top-full mt-2 w-48 bg-white shadow-lg rounded-lg hidden z-10">
-      <a href="{% url 'profile' %}"  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-        <i class="fas fa-user mr-2"></i> Profile
-      </a>
-      <a href="{% url 'logout' %}" 
-        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-        <i class="fas fa-sign-out-alt mr-2"></i> Logout
-      </a>
-    </div>
-  </div>
-
   <!-- Main Content -->
+  <main id="mainContent" class="flex-1 p-6 transition-all duration-300 ml-16">
+    <div class="flex justify-end items-center relative mb-6">
+      <!-- Profile Button -->
+      <button onclick="toggleSubmenu('profileMenu')" 
+        class="flex items-center bg-[#053322] px-4 py-1 rounded shadow hover:shadow-md transition poppins">
+        <i class="ph ph-user-circle text-white text-2xl"></i>
+        <span class="ml-3 text-white">{{ username }}</span>
+        <i class="ph ph-caret-down ml-2 text-white"></i>
+      </button>
+
+      <!-- Profile Dropdown -->
+      <div id="profileMenu" 
+        class="absolute right-0 top-full mt-2 w-48 bg-white shadow-lg rounded-lg hidden z-10">
+        <a href="{% url 'profile' %}" 
+          class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <i class="ph ph-user mr-2"></i> Profile
+        </a>
+        <a href="{% url 'logout' %}" 
+          class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          <i class="ph ph-sign-out mr-2"></i> Logout
+        </a>
+      </div>
+    </div>
+
     {% block content %}
     {% endblock %}
   </main>
 
-  <script>
-    function toggleMenu(id) {
-  document.getElementById(id).classList.toggle('hidden');
-    }
+<script>
+// Sidebar expand/collapse with localStorage
+function toggleSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  const texts = sidebar.querySelectorAll(".sidebar-text");
+  const toggleIcon = document.getElementById("toggleIcon");
+  const main = document.getElementById("mainContent");
+  const carets = sidebar.querySelectorAll(".ph-caret-down");
+  const submenus = sidebar.querySelectorAll(".submenu");
 
-    function toggleMenu(id) {
-      const menu = document.getElementById(id);
-      menu.classList.toggle("hidden");
-    }
+  sidebar.classList.toggle("w-64");
+  sidebar.classList.toggle("w-16");
+  texts.forEach(txt => txt.classList.toggle("hidden"));
 
-    // Optional: Close profile dropdown if clicked outside
-    window.addEventListener('click', function (e) {
-      const profileMenu = document.getElementById('profileMenu');
-      const button = document.querySelector('[onclick="toggleMenu(\'profileMenu\')"]');
-      if (!profileMenu.contains(e.target) && !button.contains(e.target)) {
-        profileMenu.classList.add('hidden');
-      }
-    });
-  </script>
+  if (sidebar.classList.contains("w-16")) {
+    submenus.forEach(sm => sm.classList.add("hidden"));
+    carets.forEach(c => c.classList.add("hidden", "rotate-180"));
+    localStorage.setItem("sidebarCollapsed", "true");
+    main.style.marginLeft = "4rem"; // w-16
+    toggleIcon.classList.remove("ph-caret-left");
+    toggleIcon.classList.add("ph-caret-right");
+  } else {
+    carets.forEach(c => c.classList.remove("hidden"));
+    localStorage.setItem("sidebarCollapsed", "false");
+    main.style.marginLeft = "16rem"; // w-64
+    toggleIcon.classList.remove("ph-caret-right");
+    toggleIcon.classList.add("ph-caret-left");
+  }
+}
+
+// Submenu toggle
+function toggleSubmenu(menuId) {
+  const sidebar = document.getElementById("sidebar");
+  if (sidebar.classList.contains("w-16")) return; // collapsed
+  const menu = document.getElementById(menuId);
+  const caret = document.getElementById("caret-" + menuId);
+  if (menu) {
+    menu.classList.toggle("hidden");
+    if (caret) caret.classList.toggle("rotate-180");
+  }
+}
+
+// Initialize sidebar on page load
+document.addEventListener("DOMContentLoaded", function() {
+  const sidebar = document.getElementById("sidebar");
+  const carets = sidebar.querySelectorAll(".ph-caret-down");
+  const texts = sidebar.querySelectorAll(".sidebar-text");
+  const submenus = sidebar.querySelectorAll(".submenu");
+  const toggleIcon = document.getElementById("toggleIcon");
+  const main = document.getElementById("mainContent");
+
+  const collapsed = localStorage.getItem("sidebarCollapsed") === "true";
+
+  if (collapsed) {
+    sidebar.classList.add("w-16");
+    sidebar.classList.remove("w-64");
+    texts.forEach(txt => txt.classList.add("hidden"));
+    carets.forEach(c => c.classList.add("hidden", "rotate-180"));
+    submenus.forEach(sm => sm.classList.add("hidden"));
+    toggleIcon.classList.remove("ph-caret-left");
+    toggleIcon.classList.add("ph-caret-right");
+    main.style.marginLeft = "4rem";
+  } else {
+    sidebar.classList.add("w-64");
+    sidebar.classList.remove("w-16");
+    texts.forEach(txt => txt.classList.remove("hidden"));
+    carets.forEach(c => c.classList.remove("hidden"));
+    toggleIcon.classList.remove("ph-caret-right");
+    toggleIcon.classList.add("ph-caret-left");
+    main.style.marginLeft = "16rem";
+  }
+});
+</script>
 
 </body>
 </html>

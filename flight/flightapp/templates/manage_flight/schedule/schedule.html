@@ -1,14 +1,14 @@
 {% extends "master.html" %}
 {% block content %}
 <div class="items-center mb-5">
-    <h1 class="text-2xl font-bold mb-5">Schedules Table</h1>
+    <h1 class="unbounded">Schedules Table</h1>
     <a href="{% url 'add_schedule' %}" 
-       class="bg-green-800 hover:bg-green-900 text-white py-2 px-4 rounded inline-flex items-center">
-        <i class="fas fa-plus mr-2"></i> Add Schedule
+       class="bg-green-800 hover:bg-green-900 text-white py-2 px-4 rounded inline-flex items-center poppins">
+        <i class="ph ph-plus mr-2"></i> Add Schedule
     </a>
 </div>
 
-<table class="table-auto border-collapse border border-gray-400 w-full">
+<table class="table-auto border-collapse border border-gray-400 w-full poppins">
     <thead>
         <tr class="bg-gray-200">
             <th class="border border-gray-400 px-4 py-2">Flight</th>
@@ -21,7 +21,7 @@
     </thead>
     <tbody>
         {% for item in schedule_data %}
-        <tr>
+        <tr class="poppins-small">
             <td class="border border-gray-400 px-4 py-2">{{ item.schedule.flight.flight_number }}</td>
             <td class="border border-gray-400 px-4 py-2">{{ item.schedule.departure_time }}</td>
             <td class="border border-gray-400 px-4 py-2">{{ item.schedule.arrival_time }}</td>
@@ -41,11 +41,11 @@
             </td>
 
             <td class="border border-gray-400 px-4 py-2 text-center space-x-2">
-                <a href="{% url 'update_schedule' item.schedule.id %}" class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm inline-flex items-center">
-                    <i class="fas fa-edit mr-1"></i>Edit
+                <a href="{% url 'update_schedule' item.schedule.id %}" class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded  inline-flex items-center">
+                    <i class="ph ph-pen mr-1"></i>Edit
                 </a>
-                <a href="{% url 'delete_schedule' item.schedule.id %}" onclick="return confirm('Are you sure?')" class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-sm inline-flex items-center">
-                    <i class="fas fa-trash-alt mr-1"></i>Delete
+                <a href="{% url 'delete_schedule' item.schedule.id %}" onclick="return confirm('Are you sure?')" class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded  inline-flex items-center">
+                    <i class="ph ph-trash mr-1"></i>Delete
                 </a>
             </td>
         </tr>

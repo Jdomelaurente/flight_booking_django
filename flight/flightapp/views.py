@@ -137,8 +137,6 @@ def login_view(request):
     return render(request, "login.html")
 
 
-
-
 # LOGOUT
 def logout_view(request):
     request.session.flush()
@@ -158,10 +156,11 @@ def dashboard(request):
         return redirect("instructor_dashboard")
     return redirect("login")
 
-
-# dashboard
-from django.utils import timezone
+from django.db.models import Sum
 from datetime import datetime
+from django.utils import timezone
+from django.shortcuts import render
+from .models import Schedule, Booking, Payment
 
 def admin_dashboard(request):
     date_filter = request.GET.get("date")
@@ -204,18 +203,32 @@ def admin_dashboard(request):
 
         schedule_data.append({'schedule': s, 'status': status})
 
-    # 🔹 Fetch bookings (latest first)
-    bookings = Booking.objects.select_related("student", "schedule", "seat").order_by("-created_at")
+    # ✅ Fetch bookings (only confirmed, latest first)
+    recent_bookings = Booking.objects.select_related(
+        "student", "outbound_schedule__flight", "outbound_seat"
+    ).filter(status="Confirmed").order_by("-created_at")[:10]  # show latest 10
+
+    # Extra Stats
+    today = current_time.date()
+    passenger_today = Booking.objects.filter(created_at__date=today).count()
+    total_bookings = Booking.objects.count()
+    total_revenue = Payment.objects.aggregate(total=Sum("amount"))["total"] or 0
 
     return render(request, "dashboard.html", {
         "schedule_data": schedule_data,
         "selected_date": selected_date,
         "username": request.user.username,
+
+        # Flight status counters
         "total_open": total_open,
         "total_closed": total_closed,
         "total_on_flight": total_on_flight,
         "total_arrived": total_arrived,
-          # ✅ pass to template
+
+        # Extra stats
+        "passenger_today": passenger_today,
+        "total_bookings": total_bookings,
+        "total_revenue": total_revenue,
     })
 
 

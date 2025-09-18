@@ -90,7 +90,7 @@ def select_schedule(request):
 
 
 
-def passenger(request):
+def booking_passenger(request):
     schedule = None
     schedule_id = request.session.get('selected_schedule_id')
     
