@@ -156,17 +156,26 @@ def dashboard(request):
         return redirect("instructor_dashboard")
     return redirect("login")
 
-from django.db.models import Sum
-from datetime import datetime
-from django.utils import timezone
 from django.shortcuts import render
-from .models import Schedule, Booking, Payment
+from django.utils import timezone
+from datetime import datetime, timedelta
+from django.db.models import Sum, Count
+from django.db.models.functions import TruncMonth
+from django.http import JsonResponse
+from .models import Booking, Payment, Schedule
+
 
 def admin_dashboard(request):
     date_filter = request.GET.get("date")
+    date_range = request.GET.get("range")
+    flight_range = request.GET.get("flight_range")  # 👈 Added for flight schedule filter
     schedules = Schedule.objects.all()
     current_time = timezone.now()
+    today = current_time.date()
 
+    # -------------------
+    # Handle single date filter (calendar input)
+    # -------------------
     if date_filter:
         try:
             selected_date = datetime.strptime(date_filter, "%Y-%m-%d").date()
@@ -176,48 +185,127 @@ def admin_dashboard(request):
     else:
         selected_date = None
 
+    # -------------------
+    # Flight Status Counters
+    # -------------------
     schedule_data = []
-
-    # Initialize counters
-    total_open = 0
-    total_closed = 0
-    total_on_flight = 0
-    total_arrived = 0
+    total_open = total_closed = total_on_flight = total_arrived = 0
 
     for s in schedules:
-        # Future flights → use DB status (Open/Closed)
         if current_time < s.departure_time:
-            status = s.status  # Open / Closed
+            status = s.status
             if status == "Open":
                 total_open += 1
             else:
                 total_closed += 1
-        # Ongoing flight
         elif s.departure_time <= current_time < s.arrival_time:
             status = "On Flight"
             total_on_flight += 1
-        # Completed flight
         else:
             status = "Arrived"
             total_arrived += 1
 
         schedule_data.append({'schedule': s, 'status': status})
 
-    # ✅ Fetch bookings (only confirmed, latest first)
+    # -------------------
+    # Latest Bookings
+    # -------------------
     recent_bookings = Booking.objects.select_related(
         "student", "outbound_schedule__flight", "outbound_seat"
-    ).filter(status="Confirmed").order_by("-created_at")[:10]  # show latest 10
+    ).filter(status="Confirmed").order_by("-created_at")[:10]
 
+    # -------------------
     # Extra Stats
-    today = current_time.date()
+    # -------------------
     passenger_today = Booking.objects.filter(created_at__date=today).count()
     total_bookings = Booking.objects.count()
     total_revenue = Payment.objects.aggregate(total=Sum("amount"))["total"] or 0
 
+    # -------------------
+    # Ticket Sales Chart
+    # -------------------
+    if date_range == "week":
+        start = today - timedelta(days=today.weekday())
+        days = [start + timedelta(days=i) for i in range(7)]
+    elif date_range == "month":
+        start = today.replace(day=1)
+        days = [start + timedelta(days=i) for i in range((today - start).days + 1)]
+    elif date_range == "year":
+        months = [datetime(today.year, m, 1).date() for m in range(1, 13)]
+        ticket_sales_data = [
+            Booking.objects.filter(
+                created_at__year=today.year,
+                created_at__month=month.month,
+                status="Confirmed"
+            ).count() for month in months
+        ]
+        ticket_sales_labels = [month.strftime("%b") for month in months]
+    else:
+        # Default: last 7 days
+        days = [today - timedelta(days=i) for i in range(6, -1, -1)]
+
+    if date_range != "year":
+        ticket_sales_data = [
+            Booking.objects.filter(created_at__date=day, status="Confirmed").count()
+            for day in days
+        ]
+        ticket_sales_labels = [day.strftime("%b %d") for day in days]
+
+    total_tickets_sold = sum(ticket_sales_data)
+
+    # -------------------
+    # Flight Schedule Chart
+    # -------------------
+    if flight_range == "month":
+        start = today.replace(day=1)
+        days = [start + timedelta(days=i) for i in range((today - start).days + 1)]
+        flight_schedule_data = [
+            Schedule.objects.filter(departure_time__date=day).count() for day in days
+        ]
+        flight_schedule_labels = [day.strftime("%b %d") for day in days]
+
+    elif flight_range == "year":
+        months = [datetime(today.year, m, 1).date() for m in range(1, 13)]
+        flight_schedule_data = [
+            Schedule.objects.filter(
+                departure_time__year=today.year,
+                departure_time__month=month.month
+            ).count() for month in months
+        ]
+        flight_schedule_labels = [month.strftime("%b") for month in months]
+
+    else:
+        # Default & "week"
+        start = today - timedelta(days=today.weekday())
+        days = [start + timedelta(days=i) for i in range(7)]
+        flight_schedule_data = [
+            Schedule.objects.filter(departure_time__date=day).count() for day in days
+        ]
+        flight_schedule_labels = [day.strftime("%a") for day in days]
+
+    # -------------------
+    # AJAX Response for chart updates
+    # -------------------
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        if request.GET.get("chart") == "flight":
+            return JsonResponse({
+                "labels": flight_schedule_labels,
+                "data": flight_schedule_data,
+            })
+        else:
+            return JsonResponse({
+                "labels": ticket_sales_labels,
+                "data": ticket_sales_data,
+            })
+
+    # -------------------
+    # Render full dashboard page
+    # -------------------
     return render(request, "dashboard.html", {
         "schedule_data": schedule_data,
         "selected_date": selected_date,
-        "username": request.user.username,
+        "username": request.session.get("username"),
+
 
         # Flight status counters
         "total_open": total_open,
@@ -229,7 +317,18 @@ def admin_dashboard(request):
         "passenger_today": passenger_today,
         "total_bookings": total_bookings,
         "total_revenue": total_revenue,
+
+        # Charts
+        "ticket_sales_labels": ticket_sales_labels,
+        "ticket_sales_data": ticket_sales_data,
+        "total_tickets_sold": total_tickets_sold,
+        "flight_schedule_labels": flight_schedule_labels,
+        "flight_schedule_data": flight_schedule_data,
+        "recent_bookings": recent_bookings,
     })
+
+
+
 
 
 # ------------------------------------ ASSETS ----------------------------------------------------------
@@ -712,6 +811,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .models import Student, Schedule, Seat, Booking
 
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from .models import Student, Schedule, Seat, Booking
+
 def add_booking(request):
     students = Student.objects.all()
     schedules = Schedule.objects.all()
@@ -741,18 +844,13 @@ def add_booking(request):
             outbound_seat_id = request.POST.get("outbound_seat") or None
             outbound_seat = Seat.objects.get(id=outbound_seat_id) if outbound_seat_id else None
 
-            booking = Booking.objects.create(
+            Booking.objects.create(
                 student=student,
                 trip_type="one_way",
                 outbound_schedule=outbound_schedule,
                 outbound_seat=outbound_seat,
                 status=status
             )
-
-            # Mark seat unavailable
-            if outbound_seat:
-                outbound_seat.is_available = False
-                outbound_seat.save()
 
         elif trip_type == "round_trip":
             outbound_id = request.POST.get("outbound_schedule")
@@ -771,7 +869,7 @@ def add_booking(request):
             outbound_seat = Seat.objects.get(id=outbound_seat_id) if outbound_seat_id else None
             return_seat = Seat.objects.get(id=return_seat_id) if return_seat_id else None
 
-            booking = Booking.objects.create(
+            Booking.objects.create(
                 student=student,
                 trip_type="round_trip",
                 outbound_schedule=outbound_schedule,
@@ -780,14 +878,6 @@ def add_booking(request):
                 return_seat=return_seat,
                 status=status
             )
-
-            # Mark both seats unavailable
-            if outbound_seat:
-                outbound_seat.is_available = False
-                outbound_seat.save()
-            if return_seat:
-                return_seat.is_available = False
-                return_seat.save()
 
         elif trip_type == "multi_city":
             segment_num = 1
@@ -800,30 +890,25 @@ def add_booking(request):
                 seat_id = request.POST.get(f"multi_seat_{segment_num}") or None
                 seat = Seat.objects.get(id=seat_id) if seat_id else None
 
-                booking = Booking.objects.create(
+                Booking.objects.create(
                     student=student,
                     trip_type="multi_city",
-                    outbound_schedule=schedule,   # reuse outbound for segment
+                    outbound_schedule=schedule,   # reuse outbound field for segment
                     outbound_seat=seat,
                     status=status
                 )
-
-                # Mark seat unavailable
-                if seat:
-                    seat.is_available = False
-                    seat.save()
 
                 segment_num += 1
 
         messages.success(request, "Booking successfully created.")
         return redirect("booking")
 
+    # ⚠️ Important: Always return an HttpResponse on GET
     return render(request, "booking_info/booking/add_booking.html", {
         "students": students,
         "schedules": schedules,
         "seats": seats,
     })
-
 
 # 🔹 API endpoint to fetch seats for a schedule
 def get_seats_for_schedule(request, schedule_id):
@@ -872,38 +957,33 @@ def update_booking(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
     students = Student.objects.all()
     schedules = Schedule.objects.all()
-    seats = Seat.objects.filter(is_available=True) | Seat.objects.filter(id=booking.seat.id if booking.seat else None)
 
     if request.method == "POST":
         student_id = request.POST.get("student")
-        schedule_id = request.POST.get("schedule")
-        seat_id = request.POST.get("seat")
         status = request.POST.get("status")
 
-        # Free previous seat if changed
-        if booking.seat and (not seat_id or int(seat_id) != booking.seat.id):
-            booking.seat.is_available = True
-            booking.seat.save()
-
         booking.student = get_object_or_404(Student, id=student_id)
-        booking.schedule = get_object_or_404(Schedule, id=schedule_id)
-        booking.seat = get_object_or_404(Seat, id=seat_id) if seat_id else None
         booking.status = status
         booking.save()
 
-        # Mark new seat as unavailable
-        if booking.seat:
-            booking.seat.is_available = False
-            booking.seat.save()
+        # ✅ Mark seats unavailable only when confirmed
+        if status == "confirmed":
+            if booking.outbound_seat:
+                booking.outbound_seat.is_available = False
+                booking.outbound_seat.save()
+            if booking.return_seat:
+                booking.return_seat.is_available = False
+                booking.return_seat.save()
+        else:
+            # If booking is not confirmed, keep seats available
+            if booking.outbound_seat:
+                booking.outbound_seat.is_available = True
+                booking.outbound_seat.save()
+            if booking.return_seat:
+                booking.return_seat.is_available = True
+                booking.return_seat.save()
 
-        return redirect("booking")
-    
-    return render(request, "booking_info/booking/update_booking.html", {
-        "booking": booking,
-        "students": students,
-        "schedules": schedules,
-        "seats": seats,
-    })
+        return redirect("booking_info/booking/update_booking.html")
 
 # Delete 
 def delete_booking(request, booking_id):
@@ -913,6 +993,8 @@ def delete_booking(request, booking_id):
         booking.seat.save()
     booking.delete()
     return redirect("booking")
+
+    
 
 # ---------------------------
 # Payment

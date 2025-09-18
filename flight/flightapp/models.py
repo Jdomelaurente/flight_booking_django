@@ -53,8 +53,8 @@ class User(models.Model):
 # ---------------------------
 # Instructor Profile
 # ---------------------------
-class InstructorProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="instructor_profile")
+class Instructor(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="instructor")
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     department = models.CharField(max_length=100)

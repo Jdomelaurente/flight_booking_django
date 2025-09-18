@@ -1,76 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard Register</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&family=Poppins:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <style>
+    .unbounded { font-family: 'Unbounded', sans-serif; }
+    .poppins { font-family: 'Poppins', sans-serif; }
+    .poppins-small { font-family: 'Poppins', sans-serif; font-size: 12px; }
+  </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
 
 <!-- Header -->
-<header class="bg-green-900 text-white p-9 shadow-md"></header>
+<header class="bg-green-900 text-white p-4 shadow-md"></header>
 
 <!-- Main Content -->
 <main class="flex-grow flex items-center justify-center">
-    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h2 class="text-2xl font-bold mb-6 text-center">Register</h2>
+    <div class="bg-white p-4 rounded shadow-md w-full max-w-sm">
+        <h2 class="text-xl font-bold mb-5 text-center unbounded">Register</h2>
 
         {% if messages %}
-            <div class="mb-4">
+            <div class="mb-3">
                 {% for message in messages %}
-                    <div class="p-3 rounded bg-red-100 text-red-700">{{ message }}</div>
+                    <div class="p-2 rounded bg-red-100 text-red-700 flex items-center text-sm">
+                        <i class="ph ph-warning-circle mr-2 text-red-700"></i>
+                        {{ message }}
+                    </div>
                 {% endfor %}
             </div>
         {% endif %}
 
-        <form method="POST">
+        <form method="POST" class="space-y-3">
             {% csrf_token %}
 
             <!-- Username -->
-            <label class="block font-semibold mb-1">Username:</label>
-            <input type="text" name="username"
-                   class="w-full bg-gray-100 p-2 border rounded shadow-inner" required>
+            <label class="block poppins text-sm mb-1">Username:</label>
+            <div class="flex items-center bg-gray-100 border rounded shadow-inner p-2 text-sm">
+                <i class="ph ph-user text-gray-500 mr-2"></i>
+                <input type="text" name="username" placeholder="Enter username" class="w-full bg-gray-100 outline-none text-sm" required>
+            </div>
 
             <!-- Email -->
-            <label class="block font-semibold mb-1 mt-3">Email:</label>
-            <input type="email" name="email"
-                class="w-full bg-gray-100 p-2 border rounded shadow-inner" required>
-
+            <label class="block poppins text-sm mb-1 mt-2">Email:</label>
+            <div class="flex items-center bg-gray-100 border rounded shadow-inner p-2 text-sm">
+                <i class="ph ph-envelope text-gray-500 mr-2"></i>
+                <input type="email" name="email" placeholder="Enter email" class="w-full bg-gray-100 outline-none text-sm" required>
+            </div>
 
             <!-- Password -->
-            <label class="block font-semibold mb-1 mt-3">Password:</label>
-            <input type="password" name="password"
-                   class="w-full bg-gray-100 p-2 border rounded shadow-inner" required>
+            <label class="block poppins text-sm mb-1 mt-2">Password:</label>
+            <div class="flex items-center bg-gray-100 border rounded shadow-inner p-2 text-sm">
+                <i class="ph ph-lock-key text-gray-500 mr-2"></i>
+                <input type="password" name="password" placeholder="Enter password" class="w-full bg-gray-100 outline-none text-sm" required>
+            </div>
 
             <!-- Confirm Password -->
-            <label class="block font-semibold mb-1 mt-3">Confirm Password:</label>
-            <input type="password" name="password2"
-                   class="w-full bg-gray-100 p-2 border rounded shadow-inner" required>
+            <label class="block poppins text-sm mb-1 mt-2">Confirm Password:</label>
+            <div class="flex items-center bg-gray-100 border rounded shadow-inner p-2 text-sm">
+                <i class="ph ph-lock-key text-gray-500 mr-2"></i>
+                <input type="password" name="password2" placeholder="Confirm password" class="w-full bg-gray-100 outline-none text-sm" required>
+            </div>
 
             <!-- Role Selection -->
-            <label class="block font-semibold mb-1 mt-3">Role:</label>
-            <select name="role"
-                    class="w-full bg-gray-100 p-2 border rounded shadow-inner" required>
-                <option value="">-- Select Role --</option> 
-                <option value="instructor">Instructor</option>
-                <option value="admin">Admin</option>
-            </select>
+            <label class="block poppins text-sm mb-1 mt-2">Role:</label>
+            <div class="flex items-center bg-gray-100 border rounded shadow-inner p-2 text-sm">
+                <i class="ph ph-user-circle text-gray-500 mr-2"></i>
+                <select name="role" class="w-full bg-gray-100 outline-none text-sm" required>
+                    <option value="">-- Select Role --</option>
+                    <option value="instructor">Instructor</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
 
-            <button class="w-full mt-4 bg-green-900 text-white p-2 rounded hover:bg-green-800">
+            <!-- Submit Button -->
+            <button type="submit" 
+                    class="w-full mt-3 bg-green-900 text-white p-2 hover:bg-green-800 font-semibold poppins flex items-center justify-center text-sm">
+                <i class="ph ph-user-plus mr-2"></i>
                 Register
             </button>
         </form>
 
-        <p class="text-center text-sm mt-4">Already have an account? 
+        <p class="text-center mt-3 poppins-small text-sm">Already have an account? 
             <a href="{% url 'login' %}" class="text-green-800 hover:underline">Login</a>
         </p>
     </div>
 </main>
 
 <!-- Footer -->
-<footer class="bg-green-900 text-white text-center p-5 text-sm">
-    &copy;2025 All rights reserved.
+<footer class="bg-green-900 text-white text-center p-2 poppins-small text-sm">
+    &copy; 2025 All rights reserved.
 </footer>
 
 </body>
