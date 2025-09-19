@@ -227,6 +227,8 @@ class Booking(models.Model):
         if self.return_schedule:
             total += self.return_schedule.price
         return total
+    
+    
 
 
 
