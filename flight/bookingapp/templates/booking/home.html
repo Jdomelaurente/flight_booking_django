@@ -1,83 +1,312 @@
 {% extends 'booking/base.html' %}
-{% block title %} Home {% endblock %}
+{% block title %} Home
+{% endblock %}
 
 {% block content %}
-
-<div class="flex flex-col justify-center bg-white w-auto max-h-[171px] p-5 rounded-lg shadow-md mt-[400px]">
-    <!-- Radio buttons row -->
-  <div class="flex space-x-6 mb-4">
-    <div>
-      <input type="radio" id="oneway" name="trip" value="oneway" checked>
-      <label for="oneway" class="font-semibold">One-Way</label>
+{% load static %}
+<main class=" mx-auto  flex  justify-center relative">
+    <div class="absolute -top-4">
+        <img src="{% static 'bookingapp/images/bg-globe.svg' %}" alt="" class="w-[600px] h-auto" >
     </div>
-    <div>
-      <input type="radio" id="round" name="trip" value="round">
-      <label for="round" class="font-semibold">Round Trip</label>
+    <div class="z-10">
+        <div class="flex flex-1 justify-center flex-col gap-20 ">
+        
+           <!-- right -->
+                <div class="flex flex-1 items-center justify-center   ">
+                        <img src="{% static 'bookingapp/images/plane2.svg' %}" alt="" class="w-[500px] h-auto">
+                </div>
+        </div>
+        
+        <div class="w-full  bg-[#F8F8F8]  flex flex-col  items-center">
+            <h1 class=" text-5xl  syncopate-bold text-[#2975F7]">Travel around the Globe</h1>
+            <p class="font-medium text-sm">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+        </div>
+
+        <div class=" flex flex-col z-20 gap-3 mt-10 px-10   w-full">
+        <form action="{% url 'bookingapp:search_schedule' %}" method="POST">
+            {% csrf_token %}
+        <!-- Trip Type Toggle -->
+            <div class="flex ml-5 gap-5 mb-5 text-xs ">
+                <label   class="trip-btn active flex bg-[#F4EB08] py-2 px-5 rounded-full  shadow-md cursor-pointer transition">
+                    <input type="radio" name="trip_type" value="one_way" checked hidden>
+                    <span class="trip-btn active">One-way</span>
+                </label>
+
+                <label   class="trip-btn  flex  py-2 px-5 rounded-full  shadow-md cursor-pointer transition">
+                    <input type="radio" name="trip_type" value="round_trip" hidden>
+                    <span class="trip-btn active">Round-Trip</span>
+                </label>
+
+                <label   class="trip-btn  flex py-2 px-5 rounded-full  shadow-md cursor-pointer transition">
+                    <input type="radio" name="trip_type" value="trip_type"  hidden>
+                    <span class="trip-btn active">Multi-City</span>
+                </label>
+
+            </div>
+
+            <!-- Search Bar -->
+            <div class="flex flex-wrap shadow-md/20 bg-white rounded-4xl h-auto items-center justify-between px-8 py-4 gap-2">
+
+
+                <!-- From -->
+                <div class="flex flex-col flex-1 min-w-[150px] relative ">
+                    <label class=" text-gray-500 mb-2  text-xs">From</label>
+                    <input text="text" name="origin" id="fromHidden"  hidden>
+                    <input type="text"  id="fromInput"   
+                        class="poppins-bold text-sm text-gray-800 bg-gray-100 rounded-xl px-5 py-2 focus:outline-none focus:ring-2 focus:ring-[#2975F7] shadow-inner/20" placeholder="Enter your origin">
+
+
+                <ul id="fromDropdown"
+                        class="absolute top-[72px] left-0 w-full bg-white rounded-xl shadow-md hidden h-auto overflow-y-auto z-50">
+                        {% for origin in origins %}
+                        <li class="px-5 py-2 hover:bg-gray-100 cursor-pointer"
+                            data-id="{{ origin.id }}"
+                            data-value="{{ origin.code }} - {{ origin.location }}">
+                            {{ origin.code }} - {{ origin.location }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- To -->
+                <div class="flex flex-col flex-1 relative min-w-[150px] ">
+                    <label class=" text-gray-500 mb-2  text-xs">To</label>
+                    <input text="text" name="destination" id="toHidden"  hidden>
+                    <input type="text"  id="toInput"
+                        class="poppins-bold text-sm text-gray-800 bg-gray-100 rounded-xl px-5 py-2 focus:outline-none focus:ring-2 focus:ring-[#2975F7] shadow-inner/20" placeholder="Enter your destination" >
+            
+                    
+                <ul id="toDropdown"
+                        class="absolute top-[72px] left-0 w-full bg-white  rounded-xl shadow-md hidden h-auto overflow-y-auto z-50">
+                        {% for destination in destinations %}
+                        <li class="px-5 py-2 hover:bg-gray-100 cursor-pointer"
+                            data-id="{{ destination.id }}"
+                            data-value="{{ destination.code }} - {{ destination.location }}">
+                            {{ destination.code }} - {{ destination.location }}
+                        </li>
+                        {% endfor %}
+                    </ul>     
+                </div>
+
+                <!-- Departure -->
+                <div class="flex flex-col flex-1">
+                    <label class=" text-gray-500 mb-2 text-xs min-w-[150px] ">Departure</label>
+                    <input type="date" name="departure_date"
+                        class="poppins-bold text-sm text-gray-800 bg-gray-100 rounded-xl px-5 py-2 focus:outline-none focus:ring-2 focus:ring-[#2975F7] shadow-inner/20">
+                </div>
+
+                <!-- Return -->
+                <div id="returnField" class="flex flex-col flex-1 hidden ">
+                    <label class=" text-gray-500 mb-2 text-xs">Return</label>
+                    <input type="date" name="return_date"
+                        class="poppins-bold text-sm text-gray-800 bg-gray-100 rounded-xl px-5 py-2 focus:outline-none focus:ring-2 focus:ring-[#2975F7] shadow-inner/20">
+                </div>
+
+                <!-- Passenger -->
+                <div class="flex flex-col flex-1">
+                    <label class=" text-gray-500 mb-2 text-xs min-w-[150px]">Passenger</label>
+                    <div class="flex items-center bg-gray-100 rounded-xl  justify-around shadow-inner/20">
+                        <button type="button"
+                         class="px-3 py-2 text-lg  text-gray-600 hover:text-[#2975F7] cursor-pointer">-</button>
+                        <input type="text" value="1" name="passenger"
+                            class="poppins-bold text-sm text-center w-12 bg-gray-100 focus:outline-none ">
+                        <button type="button"
+                         class="px-3 py-2 text-lg  text-gray-600 hover:text-[#2975F7] cursor-pointer">+</button>
+                    </div>
+                </div>
+
+                <!-- Divider -->
+                <div class="w-px h-[60px] bg-gray-300 mx-5"></div>
+
+                <!-- Search Button -->
+                <div class="flex">
+                    <button type="submit"  id="searchBtn"
+                    class="bg-[#2975F7] hover:bg-[#1f5ed6] transition px-8 py-2 rounded-full text-white  shadow-md/20 hover:-translate-y-1 ease-in-out cursor-pointer">
+                        Search
+                    </button>
+                </div>
+            </div>
+        </form>    
     </div>
-    <div>
-      <input type="radio" id="multi" name="trip" value="multi">
-      <label for="multi" class="font-semibold">Multi-city</label>
-    </div>
-  </div>
-<form method="POST" action="{% url 'flight_schedule' %}">
-  {% csrf_token %}
-
-
-  <!-- Input fields row -->
-  <div class="flex justify-center items-stretch gap-4">
-
-    <!-- From -->
-    <div class="flex-1 border-2 p-2 w-[290px] flex flex-col justify-between">
-      <label for="from" class="text-sm">From</label>
-      <select name="from" id="from">
-          {% for from_airport in from_airports %}
-              <option value="{{ from_airport.origin_airport.id }}">
-                  {{ from_airport.origin_airport.name }} - {{ from_airport.origin_airport.code }}
-              </option>
-          {% endfor %}
-      </select>
-    </div>
-
-    <!-- To -->
-    <div class="border-2 p-2 w-[290px] flex flex-col justify-between">
-      <label for="to" class="text-sm">To</label>
-      <select name="to" id="to">
-          {% for to_airport in to_airports %}
-              <option value="{{ to_airport.destination_airport.id }}">
-                  {{ to_airport.destination_airport.name }} - {{ to_airport.destination_airport.code }}
-              </option>
-          {% endfor %}
-      </select>
-    </div>
-
-
-    <!-- DATE -->
-    <div class="flex border-2 p-2 flex-1 gap-6">
-      <div class="flex flex-col flex-1">
-        <label for="depart" class="text-sm">Depart</label>
-        <input type="date" id="depart" name="depart" value="2025-09-03" class="px-2 py-1 rounded">
-      </div>
-      <!-- <div class="flex flex-col flex-1">
-        <label for="return" class="text-sm">Return</label>
-        <input type="date" id="return" name="return" value="2025-09-06" class="px-2 py-1 rounded">
-      </div> -->
-    </div>
-
-    <!-- Passengers -->
-    <div class="border-2 p-2 flex flex-col justify-between">
-      <label for="passengers" class="text-sm">Passengers</label>
-      <select id="passengers" name="passengers" class="px-2 py-1">
-        <option value="1_adult_economy">1 adult, Economy</option>
-      </select>
-    </div>
-
-    <!-- Search -->
-    <button type="submit" class="px-10 bg-green-950 hover:bg-green-900 font-semibold text-white rounded flex items-center justify-center text-[16px]">
-      Search
-    </button>
-
-  </div>
-</form>
 </div>
 
+
+
+    </div>
+</main>
+
+<!-- JS for toggle + return field -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const tripBtns = document.querySelectorAll('.trip-btn');
+    const returnField = document.getElementById('returnField');
+
+    // Trip toggle
+    tripBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tripBtns.forEach(b => b.classList.remove('active', 'bg-[#F4EB08]'));
+            btn.classList.add('active', 'bg-[#F4EB08]');
+            if (btn.textContent.trim() === 'One-way') {
+                returnField.style.display = 'none';
+            } else {
+                returnField.style.display = 'flex';
+            }
+        });
+    });
+
+    // Passenger increment/decrement
+    const passengerInput = document.querySelector('input[type="text"][value="1"]');
+    const buttons = passengerInput.parentElement.querySelectorAll('button');
+    buttons[0].addEventListener('click', () => {
+        let val = parseInt(passengerInput.value) || 1;
+        if (val > 1) passengerInput.value = val - 1;
+    });
+    buttons[1].addEventListener('click', () => {
+        let val = parseInt(passengerInput.value) || 1;
+        passengerInput.value = val + 1;
+    });
+
+    // ===== Dropdown logic function (reusable) =====
+function setupDropdown(inputId, dropdownId, hiddenId, otherInputId, otherDropdownId) {
+    const input = document.getElementById(inputId);
+    const dropdown = document.getElementById(dropdownId);
+    const options = dropdown.querySelectorAll("li");
+    const otherInput = otherInputId ? document.getElementById(otherInputId) : null;
+    const otherDropdown = otherDropdownId ? document.getElementById(otherDropdownId) : null;
+    const hidden = document.getElementById(hiddenId);
+
+    // Show dropdown on focus
+    input.addEventListener("focus", () => {
+        positionDropdown();
+        dropdown.classList.remove("hidden");
+    });
+
+    // Position dropdown based on available space
+    function positionDropdown() {
+        const rect = input.getBoundingClientRect();
+        const dropdownHeight = dropdown.offsetHeight || 200; // fallback height
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+
+        if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+            // show above input
+            dropdown.style.top = "auto";
+            dropdown.style.bottom = `${input.offsetHeight + 4}px`;
+        } else {
+            // show below input
+            dropdown.style.top = `${input.offsetHeight + 4}px`;
+            dropdown.style.bottom = "auto";
+        }
+    }
+
+    // Filter options while typing
+    input.addEventListener("input", () => {
+        const filter = input.value.toLowerCase();
+        const otherValue = otherInput ? otherInput.value.trim().toLowerCase() : "";
+
+        options.forEach(option => {
+            const text = option.textContent.toLowerCase();
+            if (text.includes(filter) && option.dataset.value.toLowerCase() !== otherValue) {
+                option.style.display = "";
+            } else {
+                option.style.display = "none";
+            }
+        });
+
+        positionDropdown();
+        dropdown.classList.remove("hidden");
+    });
+
+    // Select option on click
+    options.forEach(option => {
+        option.addEventListener("click", () => {
+            input.value = option.dataset.value;
+            hidden.value = option.dataset.id;
+            dropdown.classList.add("hidden");
+
+            // Hide this option in the other dropdown
+            if (otherDropdown) {
+                otherDropdown.querySelectorAll("li").forEach(opt => {
+                    opt.style.display = (opt.dataset.value === input.value) ? "none" : "";
+                });
+            }
+        });
+    });
+
+    // Hide dropdown if clicked outside
+    document.addEventListener("click", (e) => {
+        if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add("hidden");
+        }
+    });
+
+    // Reposition dropdown on window resize/scroll
+    window.addEventListener("resize", positionDropdown);
+    window.addEventListener("scroll", positionDropdown, true);
+}
+
+
+    // Apply to From + To (cross check)
+    setupDropdown("fromInput", "fromDropdown", "fromHidden", "toInput", "toDropdown");
+    setupDropdown("toInput", "toDropdown", "toHidden","fromInput", "fromDropdown");
+
+    const searchBtn = document.getElementById('searchBtn');
+const fromInput = document.getElementById('fromInput');
+const toInput = document.getElementById('toInput');
+const departureInput = document.querySelector('input[name="departure_date"]');
+const returnInput = document.querySelector('input[name="return_date"]');
+const tripRadios = document.querySelectorAll('input[name="trip_type"]');
+
+function checkInputs() {
+    const tripType = document.querySelector('input[name="trip_type"]:checked').value;
+
+    // Required fields for One-way
+    let valid = fromInput.value.trim() !== '' &&
+                toInput.value.trim() !== '' &&
+                departureInput.value.trim() !== '';
+
+    // If round-trip, also require return date
+    if (tripType === 'round_trip') {
+        valid = valid && returnInput.value.trim() !== '';
+    }
+
+    searchBtn.disabled = !valid;
+
+    // Optional: visually indicate disabled
+    if (!valid) {
+        searchBtn.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+        searchBtn.classList.remove('hover:bg-[#1f5ed6]', 'hover:-translate-y-1');
+    } else {
+        searchBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+        searchBtn.classList.add('hover:bg-[#1f5ed6]', 'hover:-translate-y-1');
+    }
+}
+
+// Listen to changes
+[fromInput, toInput, departureInput, returnInput].forEach(input => {
+    input.addEventListener('input', checkInputs);
+});
+
+// Listen to trip type changes
+tripRadios.forEach(radio => {
+    radio.addEventListener('change', () => {
+        // Show/hide return field
+        if (radio.value === 'round_trip') {
+            returnField.style.display = 'flex';
+        } else {
+            returnField.style.display = 'none';
+            returnInput.value = ''; // reset return input
+        }
+        checkInputs();
+    });
+});
+
+// Initial check
+checkInputs();
+
+});
+</script>
+
+
 {% endblock %}
+

@@ -98,3 +98,6 @@ STATIC_URL = "static/"
 # Default primary key
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+STATICFILES_DIRS = [
+    BASE_DIR / "static",   # <--- this is your project-level static folder
+]
