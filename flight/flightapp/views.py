@@ -1516,7 +1516,7 @@ def payment_cancel(request, booking_id):
     return render(request, "cancel.html", {"message": "Payment canceled!"})
 
 
-def confirm_payment(request, booking_id):
+def payment_confirmation(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
 
     # Prevent duplicate payments
@@ -1539,9 +1539,9 @@ def confirm_payment(request, booking_id):
     messages.success(request, f"Booking #{booking.id} has been confirmed and paid.")
     return redirect("booking")
 
-
-from decimal import Decimal
-from django.utils import timezone
+from django.core.mail import EmailMessage
+from django.conf import settings
+from django.template.loader import render_to_string
 
 def create_checkout(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
@@ -1553,7 +1553,6 @@ def create_checkout(request, booking_id):
     # Calculate total amount and breakdown
     if booking.outbound_schedule:
         flight_schedule_date = booking.outbound_schedule.departure_time.date()
-        # ✅ Access route via flight
         route_base_price = booking.outbound_schedule.flight.route.base_price
         seat_name = booking.outbound_seat.seat_class.name if booking.outbound_seat else "Economy"
         seat_multiplier = booking.outbound_seat.seat_class.price_multiplier if booking.outbound_seat else Decimal("1.0")
@@ -1568,7 +1567,6 @@ def create_checkout(request, booking_id):
             booking_factor = Decimal("1.5")
 
         final_price = route_base_price * seat_multiplier * booking_factor
-
     else:
         flight_schedule_date = None
         route_base_price = 0
@@ -1585,6 +1583,33 @@ def create_checkout(request, booking_id):
         method="Manual",
         status="Completed"
     )
+
+
+    details = BookingDetail.objects.filter(booking=booking)
+    message = render_to_string("booking_confirmation.html", {
+        "booking": booking,
+        "payment": payment,
+        "details": details
+    })
+
+
+    # Send confirmation email
+    if booking.student.email:
+        subject = f"Booking Confirmed - {booking.id}"
+        message = render_to_string("booking_confirmation.html", {
+            "booking": booking,
+            "payment": payment,
+            "details": details,  # <-- Add this!
+        })
+        email = EmailMessage(
+            subject=subject,
+            body=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[booking.student.email]
+        )
+        email.content_subtype = "html"
+        email.send(fail_silently=False)
+
 
     # Pass calc to template
     calc = {
