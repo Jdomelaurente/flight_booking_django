@@ -20,6 +20,8 @@ urlpatterns = [
     path('flights/add/', views.add_flight, name='add_flight'),
     path('flights/update/<int:flight_id>/', views.update_flight, name='update_flight'),
     path('flights/delete/<int:flight_id>/', views.delete_flight, name='delete_flight'),
+    path("load-aircrafts/", views.load_aircrafts, name="load_aircrafts"),
+
 
     # route
     path('route/', views.route_view, name='route'),
@@ -83,6 +85,7 @@ urlpatterns = [
     path("payments/update/<int:payment_id>/", views.update_payment, name="update_payment"),
     path("payments/delete/<int:payment_id>/", views.delete_payment, name="delete_payment"),
     path('booking/return_schedules/<int:outbound_id>/', views.get_return_schedules, name='return_schedules'),
+    
 
 
     #check_in
@@ -113,5 +116,7 @@ urlpatterns = [
     path("payment/checkout/<int:booking_id>/", views.create_checkout, name="create_checkout"),
     path("payment/success/<int:booking_id>/", views.payment_success, name="payment_success"),
     path("payment/cancel/<int:booking_id>/", views.payment_cancel, name="payment_cancel"),
+
+
 
 ]

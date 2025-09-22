@@ -14,7 +14,6 @@
             <th class="border border-gray-400 px-4 py-2">Flight</th>
             <th class="border border-gray-400 px-4 py-2">Departure</th>
             <th class="border border-gray-400 px-4 py-2">Arrival</th>
-            <th class="border border-gray-400 px-4 py-2">Price</th>
             <th class="border border-gray-400 px-4 py-2">Status</th>
             <th class="border border-gray-400 px-4 py-2">Actions</th>
         </tr>
@@ -25,7 +24,6 @@
             <td class="border border-gray-400 px-4 py-2">{{ item.schedule.flight.flight_number }}</td>
             <td class="border border-gray-400 px-4 py-2">{{ item.schedule.departure_time }}</td>
             <td class="border border-gray-400 px-4 py-2">{{ item.schedule.arrival_time }}</td>
-            <td class="border border-gray-400 px-4 py-2 text-center font-semibold">₱{{ item.schedule.price }}</td>
             <td class="border border-gray-400 px-4 py-2 text-center font-semibold">
                 {% if item.status == 'Open' %}
                     <span class="text-green-600">{{ item.status }}</span>
