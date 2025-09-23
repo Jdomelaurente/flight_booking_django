@@ -160,7 +160,6 @@ from django.shortcuts import render
 from django.utils import timezone
 from datetime import datetime, timedelta
 from django.db.models import Sum, Count
-from django.db.models.functions import TruncMonth
 from django.http import JsonResponse
 from .models import Booking, Payment, Schedule
 
@@ -168,13 +167,15 @@ from .models import Booking, Payment, Schedule
 def admin_dashboard(request):
     date_filter = request.GET.get("date")
     date_range = request.GET.get("range")
-    flight_range = request.GET.get("flight_range")  # 👈 Added for flight schedule filter
+    flight_range = request.GET.get("flight_range")
+    revenue_type = request.GET.get("type", "route")  # 👈 New filter (default route)
+
     schedules = Schedule.objects.all()
     current_time = timezone.now()
     today = current_time.date()
 
     # -------------------
-    # Handle single date filter (calendar input)
+    # Handle single date filter
     # -------------------
     if date_filter:
         try:
@@ -284,13 +285,51 @@ def admin_dashboard(request):
         flight_schedule_labels = [day.strftime("%a") for day in days]
 
     # -------------------
-    # AJAX Response for chart updates
+    # Revenue Breakdown
+    # -------------------
+    if revenue_type == "class":
+        revenue_qs = Payment.objects.values("booking__outbound_seat__seat_class__name").annotate(
+            total=Sum("amount")
+        )
+        revenue_labels = [
+            r["booking__outbound_seat__seat_class__name"] or "Unknown" 
+            for r in revenue_qs
+        ]
+        revenue_data = [float(r["total"]) for r in revenue_qs]
+
+    else:  # revenue by route
+        revenue_qs = (
+            Payment.objects
+            .values(
+                "booking__outbound_schedule__flight__route__origin_airport__code",
+                "booking__outbound_schedule__flight__route__destination_airport__code",
+            )
+            .annotate(total=Sum("amount"))
+            .order_by("-total")
+        )
+
+        revenue_labels = [
+            f"{r['booking__outbound_schedule__flight__route__origin_airport__code']} → "
+            f"{r['booking__outbound_schedule__flight__route__destination_airport__code']}"
+            for r in revenue_qs
+        ]
+        revenue_data = [float(r["total"]) for r in revenue_qs]
+
+
+    # -------------------
+    # AJAX Response
     # -------------------
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        if request.GET.get("chart") == "flight":
+        chart_type = request.GET.get("chart")
+        if chart_type == "flight":
             return JsonResponse({
                 "labels": flight_schedule_labels,
                 "data": flight_schedule_data,
+            })
+        elif chart_type == "revenue":
+            return JsonResponse({
+                "labels": revenue_labels,
+                "data": revenue_data,
             })
         else:
             return JsonResponse({
@@ -305,7 +344,6 @@ def admin_dashboard(request):
         "schedule_data": schedule_data,
         "selected_date": selected_date,
         "username": request.session.get("username"),
-
 
         # Flight status counters
         "total_open": total_open,
@@ -324,6 +362,11 @@ def admin_dashboard(request):
         "total_tickets_sold": total_tickets_sold,
         "flight_schedule_labels": flight_schedule_labels,
         "flight_schedule_data": flight_schedule_data,
+
+        # Revenue Breakdown (default)
+        "revenue_labels": revenue_labels,
+        "revenue_data": revenue_data,
+
         "recent_bookings": recent_bookings,
     })
 
@@ -1539,9 +1582,14 @@ def payment_confirmation(request, booking_id):
     messages.success(request, f"Booking #{booking.id} has been confirmed and paid.")
     return redirect("booking")
 
+from decimal import Decimal
 from django.core.mail import EmailMessage
 from django.conf import settings
 from django.template.loader import render_to_string
+from django.utils import timezone
+from django.shortcuts import render, get_object_or_404
+from .models import Booking, BookingDetail, Payment
+
 
 def create_checkout(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
@@ -1576,6 +1624,15 @@ def create_checkout(request, booking_id):
         booking_factor = 1.0
         final_price = 0
 
+    # ✅ Ensure BookingDetail exists
+    BookingDetail.objects.get_or_create(
+        booking=booking,
+        flight=booking.outbound_schedule.flight if booking.outbound_schedule else None,
+        seat=booking.outbound_seat if booking.outbound_seat else None,
+        seat_class=booking.outbound_seat.seat_class if booking.outbound_seat else None,
+        defaults={"booking_date": timezone.now()},
+    )
+
     # Create payment record
     payment = Payment.objects.create(
         booking=booking,
@@ -1584,14 +1641,8 @@ def create_checkout(request, booking_id):
         status="Completed"
     )
 
-
+    # Fetch details
     details = BookingDetail.objects.filter(booking=booking)
-    message = render_to_string("booking_confirmation.html", {
-        "booking": booking,
-        "payment": payment,
-        "details": details
-    })
-
 
     # Send confirmation email
     if booking.student.email:
@@ -1599,7 +1650,7 @@ def create_checkout(request, booking_id):
         message = render_to_string("booking_confirmation.html", {
             "booking": booking,
             "payment": payment,
-            "details": details,  # <-- Add this!
+            "details": details,
         })
         email = EmailMessage(
             subject=subject,
@@ -1610,8 +1661,7 @@ def create_checkout(request, booking_id):
         email.content_subtype = "html"
         email.send(fail_silently=False)
 
-
-    # Pass calc to template
+    # Pass calculation breakdown to template
     calc = {
         "booking_date": booking.created_at.date(),
         "flight_schedule": flight_schedule_date,
@@ -1626,5 +1676,6 @@ def create_checkout(request, booking_id):
     return render(request, "payment_success.html", {
         "booking": booking,
         "payment": payment,
-        "calc": calc
+        "calc": calc,
+        "details": details
     })

@@ -102,8 +102,7 @@ class Airport(models.Model):
 class Route(models.Model):
     origin_airport = models.ForeignKey(Airport, on_delete=models.CASCADE, related_name="departures")
     destination_airport = models.ForeignKey(Airport, on_delete=models.CASCADE, related_name="arrivals")
-    base_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # 👈 Add this
-
+    base_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  
     def __str__(self):
         return f"{self.origin_airport.code} → {self.destination_airport.code}"
 
