@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "flightapp",
     "bookingapp",
+    "master",
 ]
 
 MIDDLEWARE = [
@@ -66,18 +67,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "flight.wsgi.application"
 
-# Database
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "flightdb",
-        "USER": "postgres",
-        "PASSWORD": "postgres",
-        "HOST": "localhost",
-        "PORT": "5432",
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'flightdb',        # must match the DB you created/imported
+        'USER': 'postgres',        # PostgreSQL superuser
+        'PASSWORD': 'Admin123',    # the password you set
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
-
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -98,3 +97,5 @@ STATIC_URL = "static/"
 # Default primary key
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Custom User Model
+AUTH_USER_MODEL = "master.User"

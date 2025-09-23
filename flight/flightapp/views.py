@@ -105,7 +105,7 @@ def register_view(request):
             role=role
         )
         messages.success(request, "Account created. Please login.")
-        return redirect("login")
+        return redirect("logins")
 
     return render(request, "register.html")
 
@@ -132,9 +132,9 @@ def login_view(request):
                 return redirect("login")  # fallback
         except User.DoesNotExist:
             messages.error(request, "Invalid username or password.")
-            return redirect("login")
+            return redirect("login1")
 
-    return render(request, "login.html")
+    return render(request, "login1.html")
 
 
 # LOGOUT
