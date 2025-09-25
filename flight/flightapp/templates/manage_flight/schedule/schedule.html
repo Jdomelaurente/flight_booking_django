@@ -19,40 +19,54 @@
         </tr>
     </thead>
     <tbody>
-        {% for item in schedule_data %}
-        <tr class="poppins-small">
-            <td class="border border-gray-400 px-4 py-2">{{ item.schedule.flight.flight_number }}</td>
-            <td class="border border-gray-400 px-4 py-2">{{ item.schedule.departure_time }}</td>
-            <td class="border border-gray-400 px-4 py-2">{{ item.schedule.arrival_time }}</td>
-            <td class="border border-gray-400 px-4 py-2 text-center font-semibold">
-                {% if item.status == 'Open' %}
-                    <span class="text-green-600">{{ item.status }}</span>
-                {% elif item.status == 'Closed' %}
-                    <span class="text-orange-600">{{ item.status }}</span>
-                {% elif item.status == 'On Flight' %}
-                    <span class="text-blue-600">{{ item.status }}</span>
-                {% elif item.status == 'Arrived' %}
-                    <span class="text-gray-600">{{ item.status }}</span>
-                {% else %}
-                    <span class="text-yellow-600">{{ item.status }}</span>
-                {% endif %}
-            </td>
+    {% for item in schedule_data %}
+    <tr class="poppins-small">
+        <td class="border border-gray-400 px-4 py-2">{{ item.schedule.flight.flight_number }}</td>
 
-            <td class="border border-gray-400 px-4 py-2 text-center space-x-2">
-                <a href="{% url 'update_schedule' item.schedule.id %}" class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded  inline-flex items-center">
-                    <i class="ph ph-pen mr-1"></i>Edit
-                </a>
-                <a href="{% url 'delete_schedule' item.schedule.id %}" onclick="return confirm('Are you sure?')" class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded  inline-flex items-center">
-                    <i class="ph ph-trash mr-1"></i>Delete
-                </a>
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="6" class="text-center py-4">No schedules available</td>
-        </tr>
-        {% endfor %}
-    </tbody>
+        <!-- Departure -->
+        <td class="border border-gray-400 px-4 py-2">
+            {{ item.schedule.departure_time|date:"M. d, Y, P" }}
+            ({{ item.schedule.flight.route.origin_airport.code }})
+        </td>
+
+        <!-- Arrival -->
+        <td class="border border-gray-400 px-4 py-2">
+            {{ item.schedule.arrival_time|date:"M. d, Y, P" }}
+            ({{ item.schedule.flight.route.destination_airport.code }})
+        </td>
+
+        <!-- Status -->
+        <td class="border border-gray-400 px-4 py-2 text-center font-semibold">
+            {% if item.status == 'Open' %}
+                <span class="text-green-600">{{ item.status }}</span>
+            {% elif item.status == 'Closed' %}
+                <span class="text-orange-600">{{ item.status }}</span>
+            {% elif item.status == 'On Flight' %}
+                <span class="text-blue-600">{{ item.status }}</span>
+            {% elif item.status == 'Arrived' %}
+                <span class="text-gray-600">{{ item.status }}</span>
+            {% else %}
+                <span class="text-yellow-600">{{ item.status }}</span>
+            {% endif %}
+        </td>
+
+        <!-- Actions -->
+        <td class="border border-gray-400 px-4 py-2 text-center space-x-2">
+            <a href="{% url 'update_schedule' item.schedule.id %}" class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded inline-flex items-center">
+                <i class="ph ph-pen mr-1"></i>Edit
+            </a>
+            <a href="{% url 'delete_schedule' item.schedule.id %}" onclick="return confirm('Are you sure?')" class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded inline-flex items-center">
+                <i class="ph ph-trash mr-1"></i>Delete
+            </a>
+        </td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="6" class="text-center py-4">No schedules available</td>
+    </tr>
+    {% endfor %}
+</tbody>
+
 </table>
 
 {% endblock %}

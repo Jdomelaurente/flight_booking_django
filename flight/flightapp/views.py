@@ -297,23 +297,20 @@ def admin_dashboard(request):
         ]
         revenue_data = [float(r["total"]) for r in revenue_qs]
 
-    else:  # revenue by route
+    else:  # revenue by airline
         revenue_qs = (
             Payment.objects
-            .values(
-                "booking__outbound_schedule__flight__route__origin_airport__code",
-                "booking__outbound_schedule__flight__route__destination_airport__code",
-            )
+            .values("booking__outbound_schedule__flight__airline__name")
             .annotate(total=Sum("amount"))
             .order_by("-total")
         )
 
         revenue_labels = [
-            f"{r['booking__outbound_schedule__flight__route__origin_airport__code']} → "
-            f"{r['booking__outbound_schedule__flight__route__destination_airport__code']}"
+            r["booking__outbound_schedule__flight__airline__name"] or "Unknown Airline"
             for r in revenue_qs
         ]
         revenue_data = [float(r["total"]) for r in revenue_qs]
+
 
 
     # -------------------
@@ -672,7 +669,9 @@ def add_route(request):
             base_price=base_price
         )
         return redirect("route")
-    return render(request, "manage_flight/route/add_route.html", {"airports": airports})
+
+    return render(request, "manage_flight/route/add_route.html", {"airports": airports, "filtered_destinations": airports})
+
 
 
 # Update 
@@ -736,29 +735,74 @@ def schedule_view(request):
 
 
 
-# Add schedule
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.utils.dateparse import parse_datetime
+from datetime import timedelta
+from .models import Flight, Schedule
+
 def add_schedule(request):
-    flights = Flight.objects.all()
+    flights = Flight.objects.all()  # for the dropdown
 
     if request.method == "POST":
         flight_id = request.POST.get("flight")
+        flight = get_object_or_404(Flight, id=flight_id)
+
         departure_time = request.POST.get("departure_time")
         arrival_time = request.POST.get("arrival_time")
+        price = request.POST.get("price")
 
-        flight = Flight.objects.get(id=flight_id)
+        # Convert to datetime
+        dep_time = parse_datetime(departure_time)
+        arr_time = parse_datetime(arrival_time)
 
-        # Schedule save() will auto-generate seats
+        if not dep_time or not arr_time:
+            messages.error(request, "Invalid date/time format.")
+            return redirect("add_schedule")
+
+        # Airports
+        origin = flight.route.origin_airport
+        destination = flight.route.destination_airport
+
+        # Check conflicts with 15-min allowance
+        allowance = timedelta(minutes=15)
+
+        conflict_dep = Schedule.objects.filter(
+            flight__route__origin_airport=origin,
+            departure_time__range=(dep_time - allowance, dep_time + allowance)
+        ).exists()
+
+        conflict_arr = Schedule.objects.filter(
+            flight__route__destination_airport=destination,
+            arrival_time__range=(arr_time - allowance, arr_time + allowance)
+        ).exists()
+
+        if conflict_dep:
+            messages.error(
+                request, f"Another flight is departing from {origin.code} within 15 minutes."
+            )
+            return redirect("add_schedule")
+
+        if conflict_arr:
+            messages.error(
+                request, f"Another flight is arriving at {destination.code} within 15 minutes."
+            )
+            return redirect("add_schedule")
+
+        # Save schedule if no conflicts
         Schedule.objects.create(
             flight=flight,
-            departure_time=departure_time,
-            arrival_time=arrival_time,
+            departure_time=dep_time,
+            arrival_time=arr_time,
+            price=price or flight.route.base_price,  # fallback to base price
+            status="Open"
         )
-
+        messages.success(request, "Schedule added successfully.")
         return redirect("schedule")
 
     return render(
-        request, 
-        "manage_flight/schedule/add_schedule.html", 
+        request,
+        "manage_flight/schedule/add_schedule.html",
         {"flights": flights}
     )
 
@@ -864,9 +908,31 @@ def delete_seat(request, seat_id):
 # ---------------------------
 
 # List 
+from django.utils import timezone
+from datetime import timedelta
+
 def booking_view(request):
+    # Auto-delete pending bookings older than 15 minutes
+    cutoff_time = timezone.now() - timedelta(minutes=10)
+    expired_bookings = Booking.objects.filter(status="Pending", created_at__lt=cutoff_time)
+
+    for booking in expired_bookings:
+        # Free outbound seat if exists
+        if booking.outbound_seat:
+            booking.outbound_seat.is_available = True
+            booking.outbound_seat.save()
+
+        # Free return seat if exists
+        if booking.return_seat:
+            booking.return_seat.is_available = True
+            booking.return_seat.save()
+
+        # Delete booking
+        booking.delete()
+
     bookings = Booking.objects.all().order_by('-created_at')
     return render(request, "booking_info/booking/booking.html", {"bookings": bookings})
+
 
 
 from datetime import date
@@ -892,9 +958,6 @@ def calculate_booking_price(schedule, seat):
     return round(base_price * float(seat_multiplier) * booking_factor, 2)
 
 # add
-from decimal import Decimal
-from django.utils import timezone
-
 def add_booking(request):
     students = Student.objects.all()
     schedules = Schedule.objects.all()
