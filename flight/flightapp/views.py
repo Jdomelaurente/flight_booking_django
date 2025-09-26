@@ -382,6 +382,76 @@ def seat_class_view(request):
     seat_classes = SeatClass.objects.all()
     return render(request, "asset/seat_class/seat_class.html", {"seat_classes": seat_classes})
     
+import openpyxl
+from django.contrib import messages
+
+# Import Seat Classes - Add new, show duplicates in file, don't block new entries
+def import_seat_classes(request):
+    if request.method == "POST" and request.FILES.get("file"):
+        file = request.FILES["file"]
+
+        try:
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
+
+            seen_names = set()
+            duplicates_in_file = set()
+            new_classes = []
+
+            # First pass: detect duplicates within the Excel file
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                name, _ = row
+                if not name:
+                    continue
+                clean_name = name.strip()
+                if clean_name in seen_names:
+                    duplicates_in_file.add(clean_name)
+                else:
+                    seen_names.add(clean_name)
+
+            # Second pass: add only new classes that are not duplicates in the file or DB
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                name, price_multiplier = row
+                if not name:
+                    continue
+                clean_name = name.strip()
+
+                # Skip if duplicate in file
+                if clean_name in duplicates_in_file:
+                    continue
+
+                # Skip if already exists in DB
+                if SeatClass.objects.filter(name__iexact=clean_name).exists():
+                    continue
+
+                # Add new seat class
+                SeatClass.objects.create(
+                    name=clean_name,
+                    price_multiplier=price_multiplier
+                )
+                new_classes.append(clean_name)
+
+            # Show messages
+            if duplicates_in_file:
+                messages.warning(
+                    request,
+                    f"Duplicate names found in the file (skipped): {', '.join(duplicates_in_file)}"
+                )
+
+            if new_classes:
+                messages.success(
+                    request,
+                    f"Successfully added: {', '.join(new_classes)}"
+                )
+            elif not duplicates_in_file:
+                messages.info(request, "No new seat classes to add.")
+
+        except Exception as e:
+            messages.error(request, f"Error importing seat classes: {e}")
+
+    return redirect("seat_class")
+
+
 
 # Add
 def add_seat_class(request):
@@ -423,6 +493,85 @@ def delete_seat_class(request, seat_class_id):
 def aircraft_view(request):
     aircrafts = Aircraft.objects.all()
     return render(request, 'asset/aircraft/aircraft.html', {"aircrafts": aircrafts})
+
+import openpyxl
+from django.contrib import messages
+
+def import_aircrafts(request):
+    if request.method == "POST" and request.FILES.get("file"):
+        file = request.FILES["file"]
+
+        try:
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
+
+            seen_aircrafts = set()
+            duplicates_in_file = set()
+            new_aircrafts = []
+
+            # First pass: detect duplicates in the Excel file
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                model, capacity, airline_name = row
+                if not model or not capacity or not airline_name:
+                    continue
+
+                key = (model.strip(), airline_name.strip())
+                if key in seen_aircrafts:
+                    duplicates_in_file.add(f"{model.strip()} ({airline_name.strip()})")
+                else:
+                    seen_aircrafts.add(key)
+
+            # Second pass: add only new aircraft
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                model, capacity, airline_name = row
+                if not model or not capacity or not airline_name:
+                    continue
+
+                key = (model.strip(), airline_name.strip())
+
+                # Skip if duplicate in file
+                if f"{model.strip()} ({airline_name.strip()})" in duplicates_in_file:
+                    continue
+
+                try:
+                    airline = Airline.objects.get(name__iexact=airline_name.strip())
+                except Airline.DoesNotExist:
+                    continue  # skip if airline not found
+
+                # Skip if already exists in DB
+                if Aircraft.objects.filter(model=model.strip(), airline=airline).exists():
+                    continue
+
+                # Add new aircraft
+                Aircraft.objects.create(
+                    model=model.strip(),
+                    capacity=capacity,
+                    airline=airline
+                )
+                new_aircrafts.append(f"{model.strip()} ({airline.name})")
+
+            # Show messages
+            if duplicates_in_file:
+                messages.warning(
+                    request,
+                    f"Duplicate aircraft found in the file (skipped): {', '.join(duplicates_in_file)}"
+                )
+
+            if new_aircrafts:
+                messages.success(
+                    request,
+                    f"Successfully added: {', '.join(new_aircrafts)}"
+                )
+            elif not duplicates_in_file:
+                messages.info(request, "No new aircraft to add.")
+
+        except Exception as e:
+            messages.error(request, f"Error importing aircraft: {e}")
+
+    return redirect("aircraft")
+
+
+
 
 # Add
 def add_aircraft(request):
@@ -479,6 +628,84 @@ def airline_view(request):
     airlines = Airline.objects.all()
     return render(request, "asset/airline/airline.html", {"airlines": airlines})
 
+import openpyxl
+from django.contrib import messages
+
+def import_airlines(request):
+    if request.method == "POST" and request.FILES.get("file"):
+        file = request.FILES["file"]
+
+        try:
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
+
+            seen_codes = set()
+            seen_names = set()
+            duplicates_in_file = set()
+            new_airlines = []
+
+            # First pass: detect duplicates in Excel file
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                code, name = row
+                if not code or not name:
+                    continue
+
+                clean_code = code.strip()
+                clean_name = name.strip()
+
+                # check for duplicates within Excel file (code or name)
+                if clean_code in seen_codes or clean_name.lower() in seen_names:
+                    duplicates_in_file.add(f"{clean_code} - {clean_name}")
+                else:
+                    seen_codes.add(clean_code)
+                    seen_names.add(clean_name.lower())
+
+            # Second pass: add only new airlines not in DB or duplicates in file
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                code, name = row
+                if not code or not name:
+                    continue
+
+                clean_code = code.strip()
+                clean_name = name.strip()
+
+                # Skip if duplicate in file
+                if f"{clean_code} - {clean_name}" in duplicates_in_file:
+                    continue
+
+                # Skip if already exists in DB (check by code or name)
+                if Airline.objects.filter(code__iexact=clean_code).exists() or \
+                   Airline.objects.filter(name__iexact=clean_name).exists():
+                    continue
+
+                # Create new airline
+                Airline.objects.create(
+                    code=clean_code,
+                    name=clean_name
+                )
+                new_airlines.append(f"{clean_code} - {clean_name}")
+
+            # Show messages
+            if duplicates_in_file:
+                messages.warning(
+                    request,
+                    f"Duplicate airlines found in the file (skipped): {', '.join(duplicates_in_file)}"
+                )
+
+            if new_airlines:
+                messages.success(
+                    request,
+                    f"Successfully added: {', '.join(new_airlines)}"
+                )
+            elif not duplicates_in_file:
+                messages.info(request, "No new airlines to add.")
+
+        except Exception as e:
+            messages.error(request, f"Error importing airlines: {e}")
+
+    return redirect("airline")
+
+
 # Add
 def add_airline(request):
     if request.method == "POST":
@@ -512,6 +739,80 @@ def delete_airline(request, airline_id):
 def airport_view(request):
     airports = Airport.objects.all()
     return render(request, "asset/airport/airport.html", {"airports": airports})
+
+import openpyxl
+from django.contrib import messages
+
+def import_airports(request):
+    if request.method == "POST" and request.FILES.get("file"):
+        file = request.FILES["file"]
+
+        try:
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
+
+            seen_codes = set()
+            duplicates_in_file = set()
+            new_airports = []
+
+            # First pass: detect duplicates in Excel file (by airport code)
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                code, name, location = row
+                if not code or not name:
+                    continue
+                clean_code = code.strip().upper()
+
+                if clean_code in seen_codes:
+                    duplicates_in_file.add(clean_code)
+                else:
+                    seen_codes.add(clean_code)
+
+            # Second pass: add only new airports not in file duplicates or DB
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                code, name, location = row
+                if not code or not name:
+                    continue
+                clean_code = code.strip().upper()
+                clean_name = name.strip()
+                clean_location = (location or "").strip()
+
+                # Skip if duplicate in file
+                if clean_code in duplicates_in_file:
+                    continue
+
+                # Skip if already exists in DB (check by code only, since it’s unique)
+                if Airport.objects.filter(code__iexact=clean_code).exists():
+                    continue
+
+                # Add new airport
+                Airport.objects.create(
+                    code=clean_code,
+                    name=clean_name,
+                    location=clean_location,
+                )
+                new_airports.append(f"{clean_code} - {clean_name}")
+
+            # Show messages
+            if duplicates_in_file:
+                messages.warning(
+                    request,
+                    f"Duplicate airport codes found in the file (skipped): {', '.join(duplicates_in_file)}"
+                )
+
+            if new_airports:
+                messages.success(
+                    request,
+                    f"Successfully added: {', '.join(new_airports)}"
+                )
+            elif not duplicates_in_file:
+                messages.info(request, "No new airports to add.")
+
+        except Exception as e:
+            messages.error(request, f"Error importing airports: {e}")
+
+    return redirect("airport")
+
+
 
 
 from django.db import IntegrityError
@@ -576,6 +877,83 @@ def flight_view(request):
         "airlines": airlines,
         "routes": routes
     })
+
+import pandas as pd
+from django.contrib import messages
+from django.core.exceptions import ObjectDoesNotExist
+
+def import_flights(request):
+    if request.method == "POST":
+        excel_file = request.FILES.get("file")
+
+        if not excel_file:
+            messages.error(request, "Please upload an Excel file.")
+            return redirect("flight")
+
+        try:
+            df = pd.read_excel(excel_file)
+
+            required_columns = ["Flight Number", "Airline", "Aircraft", "Route"]
+            for col in required_columns:
+                if col not in df.columns:
+                    messages.error(request, f"Missing column: {col}")
+                    return redirect("flight")
+
+            imported_count = 0
+            errors = []
+
+            for index, row in df.iterrows():
+                try:
+                    # Lookup airline
+                    airline = Airline.objects.get(name=row["Airline"])
+                    # Lookup aircraft
+                    aircraft = Aircraft.objects.get(model=row["Aircraft"], airline=airline)
+
+                    # Parse route string: "MNL-CEB"
+                    route_str = row["Route"]
+                    if "-" not in route_str:
+                        errors.append(f"Row {index+2}: Invalid route format '{route_str}'")
+                        continue
+                    origin_code, dest_code = route_str.split("-")
+
+                    # Lookup route
+                    route_qs = Route.objects.filter(
+                        origin_airport__code=origin_code.strip(),
+                        destination_airport__code=dest_code.strip()
+                    )
+                    if not route_qs.exists():
+                        errors.append(f"Row {index+2}: Route {origin_code}-{dest_code} not found")
+                        continue
+                    route = route_qs.first()
+
+                    # Create or update flight
+                    Flight.objects.update_or_create(
+                        flight_number=row["Flight Number"],
+                        defaults={
+                            "airline": airline,
+                            "aircraft": aircraft,
+                            "route": route,
+                        }
+                    )
+                    imported_count += 1
+
+                except Airline.DoesNotExist:
+                    errors.append(f"Row {index+2}: Airline '{row['Airline']}' not found")
+                except Aircraft.DoesNotExist:
+                    errors.append(f"Row {index+2}: Aircraft '{row['Aircraft']}' not found for airline '{row['Airline']}'")
+                except Exception as e:
+                    errors.append(f"Row {index+2}: Unexpected error: {e}")
+
+            # Display success and error messages
+            if imported_count:
+                messages.success(request, f"{imported_count} flights imported successfully.")
+            for err in errors:
+                messages.error(request, err)
+
+        except Exception as e:
+            messages.error(request, f"Error reading file: {e}")
+
+        return redirect("flight")
 
 
 
@@ -651,6 +1029,47 @@ def delete_flight(request, flight_id):
 def route_view(request):
     routes = Route.objects.all()
     return render(request, "manage_flight/route/route.html", {"routes": routes})
+
+def import_routes(request):
+    if request.method == "POST":
+        excel_file = request.FILES.get("file")
+
+        if not excel_file:
+            messages.error(request, "Please upload an Excel file.")
+            return redirect("route")
+
+        try:
+            df = pd.read_excel(excel_file)
+
+            required_columns = ["Origin Airport", "Destination Airport", "Base Price"]
+            for col in required_columns:
+                if col not in df.columns:
+                    messages.error(request, f"Missing column: {col}")
+                    return redirect("route")
+
+            imported_count = 0
+            for _, row in df.iterrows():
+                try:
+                    origin = Airport.objects.get(code=row["Origin Airport"])
+                    destination = Airport.objects.get(code=row["Destination Airport"])
+
+                    Route.objects.update_or_create(
+                        origin_airport=origin,
+                        destination_airport=destination,
+                        defaults={"base_price": row.get("Base Price", 0.00)}
+                    )
+                    imported_count += 1
+                except Airport.DoesNotExist:
+                    # skip if one of the airports doesn't exist
+                    continue  
+
+            messages.success(request, f"{imported_count} routes imported successfully.")
+        except Exception as e:
+            messages.error(request, f"Error importing file: {e}")
+
+        return redirect("route")
+
+
 
 # Add 
 def add_route(request):
@@ -733,12 +1152,113 @@ def schedule_view(request):
     }
     return render(request, "manage_flight/schedule/schedule.html", context)
 
-
-
-from django.shortcuts import render, redirect, get_object_or_404
+import openpyxl
 from django.contrib import messages
 from django.utils.dateparse import parse_datetime
 from datetime import timedelta
+from django.shortcuts import redirect
+from .models import Flight, Schedule
+
+def import_schedules(request):
+    if request.method == "POST" and request.FILES.get("file"):
+        file = request.FILES["file"]
+        errors = []
+        imported_count = 0
+        allowance = timedelta(minutes=15)  # 15-min conflict allowance
+
+        try:
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
+
+            # Expected Excel format:
+            # Flight Number | Departure Time | Arrival Time | Price
+            for idx, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
+                flight_number, departure_time, arrival_time, price = row
+
+                if not flight_number or not departure_time or not arrival_time:
+                    errors.append(f"Row {idx}: Missing required data")
+                    continue
+
+                # Get flight
+                try:
+                    flight = Flight.objects.get(flight_number=flight_number.strip())
+                except Flight.DoesNotExist:
+                    errors.append(f"Row {idx}: Flight '{flight_number}' not found")
+                    continue
+
+                # Parse datetimes
+                dep_time = parse_datetime(str(departure_time))
+                arr_time = parse_datetime(str(arrival_time))
+                if not dep_time or not arr_time:
+                    errors.append(f"Row {idx}: Invalid datetime format")
+                    continue
+
+                if dep_time >= arr_time:
+                    errors.append(f"Row {idx}: Departure time must be before arrival time")
+                    continue
+
+                origin = flight.route.origin_airport
+                destination = flight.route.destination_airport
+
+                # Check conflicts within 15 mins
+                conflict_dep = Schedule.objects.filter(
+                    flight__route__origin_airport=origin,
+                    departure_time__range=(dep_time - allowance, dep_time + allowance)
+                ).exists()
+                conflict_arr = Schedule.objects.filter(
+                    flight__route__destination_airport=destination,
+                    arrival_time__range=(arr_time - allowance, arr_time + allowance)
+                ).exists()
+
+                if conflict_dep:
+                    errors.append(
+                        f"Row {idx}: Another flight is departing from {origin.code} within 15 minutes."
+                    )
+                    continue
+
+                if conflict_arr:
+                    errors.append(
+                        f"Row {idx}: Another flight is arriving at {destination.code} within 15 minutes."
+                    )
+                    continue
+
+                # Avoid duplicates (same flight, same dep+arr)
+                if Schedule.objects.filter(
+                    flight=flight,
+                    departure_time=dep_time,
+                    arrival_time=arr_time
+                ).exists():
+                    errors.append(f"Row {idx}: Schedule already exists")
+                    continue
+
+                # Create schedule
+                Schedule.objects.create(
+                    flight=flight,
+                    departure_time=dep_time,
+                    arrival_time=arr_time,
+                    price=price or flight.route.base_price,
+                    status="Open"
+                )
+                imported_count += 1
+
+            # Messages
+            if imported_count:
+                messages.success(request, f"{imported_count} schedules imported successfully!")
+            for err in errors:
+                messages.error(request, err)
+
+        except Exception as e:
+            messages.error(request, f"Error reading file: {e}")
+
+    return redirect("schedule")
+
+
+
+
+from django.utils.dateparse import parse_datetime
+from datetime import timedelta
+from django.contrib import messages
+from django.shortcuts import render, redirect, get_object_or_404
 from .models import Flight, Schedule
 
 def add_schedule(request):
@@ -760,18 +1280,25 @@ def add_schedule(request):
             messages.error(request, "Invalid date/time format.")
             return redirect("add_schedule")
 
+        # Ensure departure is before arrival
+        if dep_time >= arr_time:
+            messages.error(request, "Departure time must be before arrival time.")
+            return redirect("add_schedule")
+
         # Airports
         origin = flight.route.origin_airport
         destination = flight.route.destination_airport
 
-        # Check conflicts with 15-min allowance
+        # 15-min allowance
         allowance = timedelta(minutes=15)
 
+        # Conflict: departure at same origin within ±15 mins
         conflict_dep = Schedule.objects.filter(
             flight__route__origin_airport=origin,
             departure_time__range=(dep_time - allowance, dep_time + allowance)
         ).exists()
 
+        # Conflict: arrival at same destination within ±15 mins
         conflict_arr = Schedule.objects.filter(
             flight__route__destination_airport=destination,
             arrival_time__range=(arr_time - allowance, arr_time + allowance)
@@ -789,12 +1316,12 @@ def add_schedule(request):
             )
             return redirect("add_schedule")
 
-        # Save schedule if no conflicts
+        # ✅ Save schedule
         Schedule.objects.create(
             flight=flight,
             departure_time=dep_time,
             arrival_time=arr_time,
-            price=price or flight.route.base_price,  # fallback to base price
+            price=price or flight.route.base_price,
             status="Open"
         )
         messages.success(request, "Schedule added successfully.")
@@ -805,6 +1332,7 @@ def add_schedule(request):
         "manage_flight/schedule/add_schedule.html",
         {"flights": flights}
     )
+
 
 
 
@@ -1376,6 +1904,42 @@ def delete_passenger(request, passsenger_id):
 def check_in_view(request):
     checkins = CheckInDetail.objects.select_related("booking_detail__booking").all()
     return render(request, "passenger_info/check_in/check_in.html", {"checkins": checkins})
+
+import openpyxl
+from django.contrib import messages
+from django.shortcuts import redirect
+from .models import Student
+
+def import_students(request):
+    if request.method == "POST" and request.FILES.get("file"):
+        file = request.FILES["file"]
+
+        try:
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
+
+            # Assuming first row is headers
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                student_number, first_name, last_name, email, phone, password = row
+
+                if not Student.objects.filter(student_number=student_number).exists():
+                    Student.objects.create(
+                        student_number=student_number,
+                        first_name=first_name,
+                        last_name=last_name,
+                        email=email,
+                        phone=phone or "",
+                        password=password or "12345"  # default if empty
+                    )
+
+            messages.success(request, "Students imported successfully!")
+        except Exception as e:
+            messages.error(request, f"Error importing students: {e}")
+
+    return redirect("student")
+
+
+
 
 # Add Check-In
 def add_checkin(request):

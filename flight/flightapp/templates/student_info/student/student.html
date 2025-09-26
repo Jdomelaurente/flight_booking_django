@@ -7,6 +7,16 @@
         <i class="ph ph-plus mr-2"></i>
         Add Student
     </a>
+
+      <form method="post" action="{% url 'import_students' %}" enctype="multipart/form-data" class="inline-flex items-center space-x-2 poppins">
+        {% csrf_token %}
+        <input type="file" name="file" accept=".xlsx,.xls"
+               class="border border-gray-300 rounded px-2 py-1">
+        <button type="submit" 
+                class="bg-blue-700 hover:bg-blue-800 text-white py-2 px-4 rounded poppins">
+            Import Excel
+        </button>
+    </form>
 </div>
 
 <table class="table-auto border-collapse border border-gray-400 w-full poppins">
