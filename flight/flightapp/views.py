@@ -385,7 +385,6 @@ def seat_class_view(request):
 import openpyxl
 from django.contrib import messages
 
-# Import Seat Classes - Add new, show duplicates in file, don't block new entries
 def import_seat_classes(request):
     if request.method == "POST" and request.FILES.get("file"):
         file = request.FILES["file"]
@@ -394,34 +393,28 @@ def import_seat_classes(request):
             wb = openpyxl.load_workbook(file)
             sheet = wb.active
 
-            seen_names = set()
             duplicates_in_file = set()
             new_classes = []
+            already_in_db = set(
+                SeatClass.objects.values_list("name", flat=True)
+            )
 
-            # First pass: detect duplicates within the Excel file
-            for row in sheet.iter_rows(min_row=2, values_only=True):
-                name, _ = row
-                if not name:
-                    continue
-                clean_name = name.strip()
-                if clean_name in seen_names:
-                    duplicates_in_file.add(clean_name)
-                else:
-                    seen_names.add(clean_name)
+            seen_names_in_pass2 = set()
 
-            # Second pass: add only new classes that are not duplicates in the file or DB
             for row in sheet.iter_rows(min_row=2, values_only=True):
                 name, price_multiplier = row
                 if not name:
                     continue
                 clean_name = name.strip()
 
-                # Skip if duplicate in file
-                if clean_name in duplicates_in_file:
+                # Detect duplicates inside file
+                if clean_name in seen_names_in_pass2:
+                    duplicates_in_file.add(clean_name)
                     continue
+                seen_names_in_pass2.add(clean_name)
 
                 # Skip if already exists in DB
-                if SeatClass.objects.filter(name__iexact=clean_name).exists():
+                if clean_name in already_in_db:
                     continue
 
                 # Add new seat class
@@ -505,50 +498,45 @@ def import_aircrafts(request):
             wb = openpyxl.load_workbook(file)
             sheet = wb.active
 
-            seen_aircrafts = set()
             duplicates_in_file = set()
             new_aircrafts = []
+            already_in_db = set(
+                Aircraft.objects.values_list("model", "airline__name")
+            )
 
-            # First pass: detect duplicates in the Excel file
+            seen_aircrafts_in_file = set()
+
             for row in sheet.iter_rows(min_row=2, values_only=True):
                 model, capacity, airline_name = row
                 if not model or not capacity or not airline_name:
                     continue
 
-                key = (model.strip(), airline_name.strip())
-                if key in seen_aircrafts:
-                    duplicates_in_file.add(f"{model.strip()} ({airline_name.strip()})")
-                else:
-                    seen_aircrafts.add(key)
+                clean_model = model.strip()
+                clean_airline = airline_name.strip()
+                key = (clean_model, clean_airline)
 
-            # Second pass: add only new aircraft
-            for row in sheet.iter_rows(min_row=2, values_only=True):
-                model, capacity, airline_name = row
-                if not model or not capacity or not airline_name:
+                # Detect duplicates inside file
+                if key in seen_aircrafts_in_file:
+                    duplicates_in_file.add(f"{clean_model} ({clean_airline})")
                     continue
+                seen_aircrafts_in_file.add(key)
 
-                key = (model.strip(), airline_name.strip())
-
-                # Skip if duplicate in file
-                if f"{model.strip()} ({airline_name.strip()})" in duplicates_in_file:
+                # Skip if already exists in DB
+                if key in already_in_db:
                     continue
 
                 try:
-                    airline = Airline.objects.get(name__iexact=airline_name.strip())
+                    airline = Airline.objects.get(name__iexact=clean_airline)
                 except Airline.DoesNotExist:
                     continue  # skip if airline not found
 
-                # Skip if already exists in DB
-                if Aircraft.objects.filter(model=model.strip(), airline=airline).exists():
-                    continue
-
                 # Add new aircraft
                 Aircraft.objects.create(
-                    model=model.strip(),
+                    model=clean_model,
                     capacity=capacity,
                     airline=airline
                 )
-                new_aircrafts.append(f"{model.strip()} ({airline.name})")
+                new_aircrafts.append(f"{clean_model} ({airline.name})")
 
             # Show messages
             if duplicates_in_file:
@@ -569,7 +557,6 @@ def import_aircrafts(request):
             messages.error(request, f"Error importing aircraft: {e}")
 
     return redirect("aircraft")
-
 
 
 
@@ -639,12 +626,14 @@ def import_airlines(request):
             wb = openpyxl.load_workbook(file)
             sheet = wb.active
 
-            seen_codes = set()
-            seen_names = set()
             duplicates_in_file = set()
             new_airlines = []
+            already_in_db_codes = set(Airline.objects.values_list("code", flat=True))
+            already_in_db_names = set(Airline.objects.values_list("name", flat=True))
 
-            # First pass: detect duplicates in Excel file
+            seen_codes_in_file = set()
+            seen_names_in_file = set()
+
             for row in sheet.iter_rows(min_row=2, values_only=True):
                 code, name = row
                 if not code or not name:
@@ -653,32 +642,18 @@ def import_airlines(request):
                 clean_code = code.strip()
                 clean_name = name.strip()
 
-                # check for duplicates within Excel file (code or name)
-                if clean_code in seen_codes or clean_name.lower() in seen_names:
+                # Detect duplicates inside file (by code or name)
+                if (clean_code in seen_codes_in_file) or (clean_name.lower() in seen_names_in_file):
                     duplicates_in_file.add(f"{clean_code} - {clean_name}")
-                else:
-                    seen_codes.add(clean_code)
-                    seen_names.add(clean_name.lower())
+                    continue
+                seen_codes_in_file.add(clean_code)
+                seen_names_in_file.add(clean_name.lower())
 
-            # Second pass: add only new airlines not in DB or duplicates in file
-            for row in sheet.iter_rows(min_row=2, values_only=True):
-                code, name = row
-                if not code or not name:
+                # Skip if already exists in DB (by code or name)
+                if clean_code in already_in_db_codes or clean_name in already_in_db_names:
                     continue
 
-                clean_code = code.strip()
-                clean_name = name.strip()
-
-                # Skip if duplicate in file
-                if f"{clean_code} - {clean_name}" in duplicates_in_file:
-                    continue
-
-                # Skip if already exists in DB (check by code or name)
-                if Airline.objects.filter(code__iexact=clean_code).exists() or \
-                   Airline.objects.filter(name__iexact=clean_name).exists():
-                    continue
-
-                # Create new airline
+                # Add new airline
                 Airline.objects.create(
                     code=clean_code,
                     name=clean_name
@@ -751,37 +726,31 @@ def import_airports(request):
             wb = openpyxl.load_workbook(file)
             sheet = wb.active
 
-            seen_codes = set()
             duplicates_in_file = set()
             new_airports = []
+            already_in_db_codes = set(
+                Airport.objects.values_list("code", flat=True)
+            )
 
-            # First pass: detect duplicates in Excel file (by airport code)
+            seen_codes_in_file = set()
+
             for row in sheet.iter_rows(min_row=2, values_only=True):
                 code, name, location = row
                 if not code or not name:
                     continue
-                clean_code = code.strip().upper()
 
-                if clean_code in seen_codes:
-                    duplicates_in_file.add(clean_code)
-                else:
-                    seen_codes.add(clean_code)
-
-            # Second pass: add only new airports not in file duplicates or DB
-            for row in sheet.iter_rows(min_row=2, values_only=True):
-                code, name, location = row
-                if not code or not name:
-                    continue
                 clean_code = code.strip().upper()
                 clean_name = name.strip()
                 clean_location = (location or "").strip()
 
-                # Skip if duplicate in file
-                if clean_code in duplicates_in_file:
+                # Detect duplicates inside file
+                if clean_code in seen_codes_in_file:
+                    duplicates_in_file.add(clean_code)
                     continue
+                seen_codes_in_file.add(clean_code)
 
-                # Skip if already exists in DB (check by code only, since it’s unique)
-                if Airport.objects.filter(code__iexact=clean_code).exists():
+                # Skip if already exists in DB (unique by code)
+                if clean_code in already_in_db_codes:
                     continue
 
                 # Add new airport
@@ -811,7 +780,6 @@ def import_airports(request):
             messages.error(request, f"Error importing airports: {e}")
 
     return redirect("airport")
-
 
 
 
@@ -1031,43 +999,88 @@ def route_view(request):
     return render(request, "manage_flight/route/route.html", {"routes": routes})
 
 def import_routes(request):
-    if request.method == "POST":
-        excel_file = request.FILES.get("file")
-
-        if not excel_file:
-            messages.error(request, "Please upload an Excel file.")
-            return redirect("route")
+    if request.method == "POST" and request.FILES.get("file"):
+        file = request.FILES["file"]
 
         try:
-            df = pd.read_excel(excel_file)
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
 
-            required_columns = ["Origin Airport", "Destination Airport", "Base Price"]
-            for col in required_columns:
-                if col not in df.columns:
-                    messages.error(request, f"Missing column: {col}")
-                    return redirect("route")
+            duplicates_in_file = set()
+            invalid_routes = set()
+            new_routes = []
 
-            imported_count = 0
-            for _, row in df.iterrows():
+            # Collect already existing routes in DB as a set of keys "ORIGIN-DEST"
+            already_in_db = set(
+                f"{r.origin_airport.code.upper()}-{r.destination_airport.code.upper()}"
+                for r in Route.objects.select_related("origin_airport", "destination_airport")
+            )
+
+            seen_routes_in_file = set()
+
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                origin_code, destination_code, base_price = row
+                if not origin_code or not destination_code:
+                    continue
+
+                clean_origin = origin_code.strip().upper()
+                clean_destination = destination_code.strip().upper()
+                route_key = f"{clean_origin}-{clean_destination}"
+
+                # 🚫 Prevent routes with same origin and destination
+                if clean_origin == clean_destination:
+                    invalid_routes.add(route_key)
+                    continue
+
+                # Detect duplicates inside file
+                if route_key in seen_routes_in_file:
+                    duplicates_in_file.add(route_key)
+                    continue
+                seen_routes_in_file.add(route_key)
+
+                # Skip if already exists in DB
+                if route_key in already_in_db:
+                    continue
+
                 try:
-                    origin = Airport.objects.get(code=row["Origin Airport"])
-                    destination = Airport.objects.get(code=row["Destination Airport"])
-
-                    Route.objects.update_or_create(
-                        origin_airport=origin,
-                        destination_airport=destination,
-                        defaults={"base_price": row.get("Base Price", 0.00)}
-                    )
-                    imported_count += 1
+                    origin = Airport.objects.get(code__iexact=clean_origin)
+                    destination = Airport.objects.get(code__iexact=clean_destination)
                 except Airport.DoesNotExist:
-                    # skip if one of the airports doesn't exist
-                    continue  
+                    continue  # Skip if airport not found in DB
 
-            messages.success(request, f"{imported_count} routes imported successfully.")
+                # Add new route
+                Route.objects.create(
+                    origin_airport=origin,
+                    destination_airport=destination,
+                    base_price=base_price or 0.00,
+                )
+                new_routes.append(route_key)
+
+            # Show messages
+            if invalid_routes:
+                messages.warning(
+                    request,
+                    f"Invalid routes skipped (same origin & destination): {', '.join(invalid_routes)}"
+                )
+
+            if duplicates_in_file:
+                messages.warning(
+                    request,
+                    f"Duplicate routes found in the file (skipped): {', '.join(duplicates_in_file)}"
+                )
+
+            if new_routes:
+                messages.success(
+                    request,
+                    f"Successfully added routes: {', '.join(new_routes)}"
+                )
+            elif not duplicates_in_file and not invalid_routes:
+                messages.info(request, "No new routes to add.")
+
         except Exception as e:
-            messages.error(request, f"Error importing file: {e}")
+            messages.error(request, f"Error importing routes: {e}")
 
-        return redirect("route")
+    return redirect("route")
 
 
 
