@@ -318,6 +318,8 @@ def select_seat(request):
     selected_seats = request.session.get("selected_seats", {})  # { passenger_id: {"depart": "A1", "return": "B1"} }
 
     context = {
+        'depart_schedule' : depart_schedule,
+        'return_schedule' : return_schedule,
         "depart_seats": depart_seats,
         "return_seats": return_seats,
         "passengers": passengers,

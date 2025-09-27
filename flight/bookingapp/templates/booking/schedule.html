@@ -290,6 +290,27 @@
                 {% if return_schedules %}
                     <div id="return-section" class="w-full  rounded-2xl flex-col flex   mt-10">
                         <div class="border border-gray-400 w-full h-0 my-10"> </div>
+                                <!-- date -->
+ 
+                        <div class="flex w-full gap-0.5 scrollbar-hide justify-center  py-3">
+                            <!-- left arrow -->
+                            <div class="border flex-none w-[50px] h-[82px] flex items-center justify-center rounded-l-2xl border-[#B2B2B2] shadow-md/30">
+                                <img src="{% static 'bookingapp/images/Expand_left.svg' %}" alt="">
+                            </div>
+
+                            <!-- date cards -->
+                            {% for i in dates %}
+                            <div class="flex-none min-w-[140px] border justify-center flex items-center flex-col space-y-2 py-3 border-[#B2B2B2] shadow-md/30 rounded-sm">
+                                <p class="font-semibold text-sm">08 May 2025</p>
+                                <p class="text-[10px]">PHP <strong class="text-[10px]">1,123.00</strong></p>
+                            </div>
+                            {% endfor %}
+
+                            <!-- right arrow -->
+                            <div class="border flex-none w-[50px] h-[82px] flex items-center justify-center rounded-r-2xl border-[#B2B2B2] shadow-md/30">
+                                <img src="{% static 'bookingapp/images/Expand_right.svg' %}" alt="">
+                            </div>
+                        </div>
 
                         <div>
                             <p class=" text-[#828282] text-sm poppins-regular">Select returning flight</p>
