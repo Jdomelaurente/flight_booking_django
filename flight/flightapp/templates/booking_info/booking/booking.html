@@ -87,7 +87,8 @@
 
             <!-- Pay -->
             <a href="{% url 'create_checkout' booking.id %}" 
-            class="bg-green-600 hover:bg-green-700 text-white p-1 rounded inline-flex items-center">
+            class="bg-green-600 hover:bg-green-700 text-white p-1 rounded inline-flex items-center"
+            onclick="return confirm('Confirm payment for this booking?');">
                 <i class="ph ph-credit-card mr-2"></i>Pay
             </a>
         </td>

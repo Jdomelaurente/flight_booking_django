@@ -1,11 +1,24 @@
 {% extends "master.html" %}
 {% block content %}
-<div class="max-w-lg mx-auto bg-green-100 p-6 rounded shadow">
-    <h2 class="text-2xl font-bold mb-4 text-green-700">Payment Successful 🎉</h2>
-    <p>Booking <strong>#{{ booking.id }}</strong> is now <span class="text-green-600">Confirmed</span>.</p>
-    <p>Amount Paid: ₱{{ payment.amount }}</p>
-    <p>Method: {{ payment.method }}</p>
-    <p>Status: {{ payment.status }}</p>
-    <a href="{% url 'booking' %}" class="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded">Back to Bookings</a>
-</div>
+<h2>Payment Successful!</h2>
+<p>Your booking has been confirmed.</p> <br>
+
+<h3>Booking Details</h3>
+<p><strong>Booking ID:</strong> {{ booking.id }}</p>
+<p><strong>Status:</strong> {{ booking.status }}</p>
+<p><strong>Amount Paid:</strong> ₱{{ payment.amount }}</p>  <br>
+
+<h3>Example Calculation</h3>
+<p><strong>Booking Date:</strong> {{ calc.booking_date }}</p>
+<p><strong>Flight Schedule:</strong> {{ calc.flight_schedule }} 
+    (difference = {{ calc.days_diff }} day{% if calc.days_diff != 1 %}s{% endif %} → 
+    {% if calc.booking_factor == 1.5 %}last-minute{% elif calc.booking_factor == 1.0 %}standard{% else %}early booking{% endif %})
+</p>
+<p><strong>Route Base Price:</strong> ₱{{ calc.route_base_price }}</p>
+<p><strong>Seat:</strong> {{ calc.seat_name }} (×{{ calc.seat_multiplier }})</p>
+<p><strong>Booking Factor:</strong> {{ calc.booking_factor }}</p>
+<p><strong>Final Price:</strong> ₱{{ calc.final_price }}</p>
+
+<a href="{% url 'booking' %}">Back to Bookings</a>
+
 {% endblock %}

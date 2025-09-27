@@ -7,12 +7,36 @@
         <i class="ph ph-plus mr-2"></i>
         Add Aircraft
     </a>
+
+    <!-- Import Excel Form -->
+    <form method="post" action="{% url 'import_aircrafts' %}" enctype="multipart/form-data" class="inline-flex items-center space-x-2 poppins ml-4">
+        {% csrf_token %}
+        <input type="file" name="file" accept=".xlsx,.xls" 
+               class="border border-gray-300 rounded px-2 py-1">
+        <button type="submit" 
+                class="bg-blue-700 hover:bg-blue-800 text-white py-2 px-4 rounded poppins">
+            Import Excel
+        </button>
+    </form>
 </div>
+
+{# ✅ Messages Section #}
+{% if messages %}
+<div class="mb-4">
+    {% for message in messages %}
+        <div class="p-3 rounded mb-2 
+                    {% if message.tags == 'success' %} bg-green-100 text-green-800 border border-green-300 
+                    {% elif message.tags == 'error' %} bg-red-100 text-red-800 border border-red-300 
+                    {% else %} bg-gray-100 text-gray-800 border border-gray-300 {% endif %}">
+            {{ message }}
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
 
 <table class="table-auto border-collapse border border-gray-400 w-full poppins">
     <thead>
         <tr class="bg-gray-200">
-            <th class="border border-gray-400 px-4 py-2">ID</th>
             <th class="border border-gray-400 px-4 py-2">Model</th>
             <th class="border border-gray-400 px-4 py-2">Capacity</th>
             <th class="border border-gray-400 px-4 py-2">Airline</th>
@@ -22,7 +46,6 @@
     <tbody>
         {% for aircraft in aircrafts %}
         <tr class="poppins-small">
-            <td class="border border-gray-400 px-4 py-2">{{ aircraft.id }}</td>
             <td class="border border-gray-400 px-4 py-2">{{ aircraft.model }}</td>
             <td class="border border-gray-400 px-4 py-2">{{ aircraft.capacity }}</td>
             <td class="border border-gray-400 px-4 py-2">{{ aircraft.airline.name }} ({{ aircraft.airline.code }})</td>

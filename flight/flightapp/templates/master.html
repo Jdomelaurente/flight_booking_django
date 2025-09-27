@@ -19,9 +19,9 @@
   <style>
     .sidebar { background-color: #053322; }
     .rotate-180 { transform: rotate(180deg); }
-    .unbounded { font-family: 'Unbounded', sans-serif; font-size: 20px; }
-    .poppins { font-family: 'Poppins', sans-serif; font-size: 14px; }
-    .poppins-small { font-family: 'Poppins', sans-serif; font-size: 12px; }
+    .unbounded { font-family: 'Unbounded', sans-serif; font-size: 14px; }
+    .poppins { font-family: 'Poppins', sans-serif; font-size: 10px; }
+    .poppins-small { font-family: 'Poppins', sans-serif; font-size: 8px; }
     .submenu a { display: block; }
   </style>
 </head>
@@ -52,8 +52,8 @@
       <i class="ph ph-caret-down transition-transform" id="caret-flightMgmt"></i>
     </button>
     <div id="flightMgmt" class="submenu hidden pl-8 text-sm">
-      <a href="{% url 'flight' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Flights</a>
       <a href="{% url 'route' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Routes</a>
+      <a href="{% url 'flight' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Flights</a>
       <a href="{% url 'schedule' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Schedules</a>
       <a href="{% url 'seat' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Seats</a>
     </div>
@@ -121,28 +121,6 @@
 
   <!-- Main Content -->
   <main id="mainContent" class="flex-1 p-6 transition-all duration-300 ml-16">
-    <div class="flex justify-end items-center relative mb-6">
-      <!-- Profile Button -->
-      <button onclick="toggleSubmenu('profileMenu')" 
-        class="flex items-center bg-[#053322] px-4 py-1 rounded shadow hover:shadow-md transition poppins">
-        <i class="ph ph-user-circle text-white text-2xl"></i>
-        <span class="ml-3 text-white">{{ username }}</span>
-        <i class="ph ph-caret-down ml-2 text-white"></i>
-      </button>
-
-      <!-- Profile Dropdown -->
-      <div id="profileMenu" 
-        class="absolute right-0 top-full mt-2 w-48 bg-white shadow-lg rounded-lg hidden z-10">
-        <a href="{% url 'profile' %}" 
-          class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-          <i class="ph ph-user mr-2"></i> Profile
-        </a>
-        <a href="{% url 'logout' %}" 
-          class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-          <i class="ph ph-sign-out mr-2"></i> Logout
-        </a>
-      </div>
-    </div>
 
     {% block content %}
     {% endblock %}
@@ -178,18 +156,6 @@ function toggleSidebar() {
   }
 }
 
-// Submenu toggle
-function toggleSubmenu(menuId) {
-  const sidebar = document.getElementById("sidebar");
-  if (sidebar.classList.contains("w-16")) return; // collapsed
-  const menu = document.getElementById(menuId);
-  const caret = document.getElementById("caret-" + menuId);
-  if (menu) {
-    menu.classList.toggle("hidden");
-    if (caret) caret.classList.toggle("rotate-180");
-  }
-}
-
 // Initialize sidebar on page load
 document.addEventListener("DOMContentLoaded", function() {
   const sidebar = document.getElementById("sidebar");
@@ -220,6 +186,23 @@ document.addEventListener("DOMContentLoaded", function() {
     main.style.marginLeft = "16rem";
   }
 });
+
+
+function toggleSubmenu(id) {
+  const submenu = document.getElementById(id);
+  const caret = document.getElementById(`caret-${id}`);
+
+  if (submenu.classList.contains("hidden")) {
+    submenu.classList.remove("hidden");
+    caret.classList.add("rotate-180");
+  } else {
+    submenu.classList.add("hidden");
+    caret.classList.remove("rotate-180");
+  }
+}
+
+
+
 </script>
 
 </body>

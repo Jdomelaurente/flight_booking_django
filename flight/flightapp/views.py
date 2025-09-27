@@ -160,7 +160,6 @@ from django.shortcuts import render
 from django.utils import timezone
 from datetime import datetime, timedelta
 from django.db.models import Sum, Count
-from django.db.models.functions import TruncMonth
 from django.http import JsonResponse
 from .models import Booking, Payment, Schedule
 
@@ -168,13 +167,15 @@ from .models import Booking, Payment, Schedule
 def admin_dashboard(request):
     date_filter = request.GET.get("date")
     date_range = request.GET.get("range")
-    flight_range = request.GET.get("flight_range")  # 👈 Added for flight schedule filter
+    flight_range = request.GET.get("flight_range")
+    revenue_type = request.GET.get("type", "route")  # 👈 New filter (default route)
+
     schedules = Schedule.objects.all()
     current_time = timezone.now()
     today = current_time.date()
 
     # -------------------
-    # Handle single date filter (calendar input)
+    # Handle single date filter
     # -------------------
     if date_filter:
         try:
@@ -284,13 +285,48 @@ def admin_dashboard(request):
         flight_schedule_labels = [day.strftime("%a") for day in days]
 
     # -------------------
-    # AJAX Response for chart updates
+    # Revenue Breakdown
+    # -------------------
+    if revenue_type == "class":
+        revenue_qs = Payment.objects.values("booking__outbound_seat__seat_class__name").annotate(
+            total=Sum("amount")
+        )
+        revenue_labels = [
+            r["booking__outbound_seat__seat_class__name"] or "Unknown" 
+            for r in revenue_qs
+        ]
+        revenue_data = [float(r["total"]) for r in revenue_qs]
+
+    else:  # revenue by airline
+        revenue_qs = (
+            Payment.objects
+            .values("booking__outbound_schedule__flight__airline__name")
+            .annotate(total=Sum("amount"))
+            .order_by("-total")
+        )
+
+        revenue_labels = [
+            r["booking__outbound_schedule__flight__airline__name"] or "Unknown Airline"
+            for r in revenue_qs
+        ]
+        revenue_data = [float(r["total"]) for r in revenue_qs]
+
+
+
+    # -------------------
+    # AJAX Response
     # -------------------
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        if request.GET.get("chart") == "flight":
+        chart_type = request.GET.get("chart")
+        if chart_type == "flight":
             return JsonResponse({
                 "labels": flight_schedule_labels,
                 "data": flight_schedule_data,
+            })
+        elif chart_type == "revenue":
+            return JsonResponse({
+                "labels": revenue_labels,
+                "data": revenue_data,
             })
         else:
             return JsonResponse({
@@ -305,7 +341,6 @@ def admin_dashboard(request):
         "schedule_data": schedule_data,
         "selected_date": selected_date,
         "username": request.session.get("username"),
-
 
         # Flight status counters
         "total_open": total_open,
@@ -324,6 +359,11 @@ def admin_dashboard(request):
         "total_tickets_sold": total_tickets_sold,
         "flight_schedule_labels": flight_schedule_labels,
         "flight_schedule_data": flight_schedule_data,
+
+        # Revenue Breakdown (default)
+        "revenue_labels": revenue_labels,
+        "revenue_data": revenue_data,
+
         "recent_bookings": recent_bookings,
     })
 
@@ -342,6 +382,69 @@ def seat_class_view(request):
     seat_classes = SeatClass.objects.all()
     return render(request, "asset/seat_class/seat_class.html", {"seat_classes": seat_classes})
     
+import openpyxl
+from django.contrib import messages
+
+def import_seat_classes(request):
+    if request.method == "POST" and request.FILES.get("file"):
+        file = request.FILES["file"]
+
+        try:
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
+
+            duplicates_in_file = set()
+            new_classes = []
+            already_in_db = set(
+                SeatClass.objects.values_list("name", flat=True)
+            )
+
+            seen_names_in_pass2 = set()
+
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                name, price_multiplier = row
+                if not name:
+                    continue
+                clean_name = name.strip()
+
+                # Detect duplicates inside file
+                if clean_name in seen_names_in_pass2:
+                    duplicates_in_file.add(clean_name)
+                    continue
+                seen_names_in_pass2.add(clean_name)
+
+                # Skip if already exists in DB
+                if clean_name in already_in_db:
+                    continue
+
+                # Add new seat class
+                SeatClass.objects.create(
+                    name=clean_name,
+                    price_multiplier=price_multiplier
+                )
+                new_classes.append(clean_name)
+
+            # Show messages
+            if duplicates_in_file:
+                messages.warning(
+                    request,
+                    f"Duplicate names found in the file (skipped): {', '.join(duplicates_in_file)}"
+                )
+
+            if new_classes:
+                messages.success(
+                    request,
+                    f"Successfully added: {', '.join(new_classes)}"
+                )
+            elif not duplicates_in_file:
+                messages.info(request, "No new seat classes to add.")
+
+        except Exception as e:
+            messages.error(request, f"Error importing seat classes: {e}")
+
+    return redirect("seat_class")
+
+
 
 # Add
 def add_seat_class(request):
@@ -383,6 +486,79 @@ def delete_seat_class(request, seat_class_id):
 def aircraft_view(request):
     aircrafts = Aircraft.objects.all()
     return render(request, 'asset/aircraft/aircraft.html', {"aircrafts": aircrafts})
+
+import openpyxl
+from django.contrib import messages
+
+def import_aircrafts(request):
+    if request.method == "POST" and request.FILES.get("file"):
+        file = request.FILES["file"]
+
+        try:
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
+
+            duplicates_in_file = set()
+            new_aircrafts = []
+            already_in_db = set(
+                Aircraft.objects.values_list("model", "airline__name")
+            )
+
+            seen_aircrafts_in_file = set()
+
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                model, capacity, airline_name = row
+                if not model or not capacity or not airline_name:
+                    continue
+
+                clean_model = model.strip()
+                clean_airline = airline_name.strip()
+                key = (clean_model, clean_airline)
+
+                # Detect duplicates inside file
+                if key in seen_aircrafts_in_file:
+                    duplicates_in_file.add(f"{clean_model} ({clean_airline})")
+                    continue
+                seen_aircrafts_in_file.add(key)
+
+                # Skip if already exists in DB
+                if key in already_in_db:
+                    continue
+
+                try:
+                    airline = Airline.objects.get(name__iexact=clean_airline)
+                except Airline.DoesNotExist:
+                    continue  # skip if airline not found
+
+                # Add new aircraft
+                Aircraft.objects.create(
+                    model=clean_model,
+                    capacity=capacity,
+                    airline=airline
+                )
+                new_aircrafts.append(f"{clean_model} ({airline.name})")
+
+            # Show messages
+            if duplicates_in_file:
+                messages.warning(
+                    request,
+                    f"Duplicate aircraft found in the file (skipped): {', '.join(duplicates_in_file)}"
+                )
+
+            if new_aircrafts:
+                messages.success(
+                    request,
+                    f"Successfully added: {', '.join(new_aircrafts)}"
+                )
+            elif not duplicates_in_file:
+                messages.info(request, "No new aircraft to add.")
+
+        except Exception as e:
+            messages.error(request, f"Error importing aircraft: {e}")
+
+    return redirect("aircraft")
+
+
 
 # Add
 def add_aircraft(request):
@@ -439,6 +615,72 @@ def airline_view(request):
     airlines = Airline.objects.all()
     return render(request, "asset/airline/airline.html", {"airlines": airlines})
 
+import openpyxl
+from django.contrib import messages
+
+def import_airlines(request):
+    if request.method == "POST" and request.FILES.get("file"):
+        file = request.FILES["file"]
+
+        try:
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
+
+            duplicates_in_file = set()
+            new_airlines = []
+            already_in_db_codes = set(Airline.objects.values_list("code", flat=True))
+            already_in_db_names = set(Airline.objects.values_list("name", flat=True))
+
+            seen_codes_in_file = set()
+            seen_names_in_file = set()
+
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                code, name = row
+                if not code or not name:
+                    continue
+
+                clean_code = code.strip()
+                clean_name = name.strip()
+
+                # Detect duplicates inside file (by code or name)
+                if (clean_code in seen_codes_in_file) or (clean_name.lower() in seen_names_in_file):
+                    duplicates_in_file.add(f"{clean_code} - {clean_name}")
+                    continue
+                seen_codes_in_file.add(clean_code)
+                seen_names_in_file.add(clean_name.lower())
+
+                # Skip if already exists in DB (by code or name)
+                if clean_code in already_in_db_codes or clean_name in already_in_db_names:
+                    continue
+
+                # Add new airline
+                Airline.objects.create(
+                    code=clean_code,
+                    name=clean_name
+                )
+                new_airlines.append(f"{clean_code} - {clean_name}")
+
+            # Show messages
+            if duplicates_in_file:
+                messages.warning(
+                    request,
+                    f"Duplicate airlines found in the file (skipped): {', '.join(duplicates_in_file)}"
+                )
+
+            if new_airlines:
+                messages.success(
+                    request,
+                    f"Successfully added: {', '.join(new_airlines)}"
+                )
+            elif not duplicates_in_file:
+                messages.info(request, "No new airlines to add.")
+
+        except Exception as e:
+            messages.error(request, f"Error importing airlines: {e}")
+
+    return redirect("airline")
+
+
 # Add
 def add_airline(request):
     if request.method == "POST":
@@ -472,6 +714,73 @@ def delete_airline(request, airline_id):
 def airport_view(request):
     airports = Airport.objects.all()
     return render(request, "asset/airport/airport.html", {"airports": airports})
+
+import openpyxl
+from django.contrib import messages
+
+def import_airports(request):
+    if request.method == "POST" and request.FILES.get("file"):
+        file = request.FILES["file"]
+
+        try:
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
+
+            duplicates_in_file = set()
+            new_airports = []
+            already_in_db_codes = set(
+                Airport.objects.values_list("code", flat=True)
+            )
+
+            seen_codes_in_file = set()
+
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                code, name, location = row
+                if not code or not name:
+                    continue
+
+                clean_code = code.strip().upper()
+                clean_name = name.strip()
+                clean_location = (location or "").strip()
+
+                # Detect duplicates inside file
+                if clean_code in seen_codes_in_file:
+                    duplicates_in_file.add(clean_code)
+                    continue
+                seen_codes_in_file.add(clean_code)
+
+                # Skip if already exists in DB (unique by code)
+                if clean_code in already_in_db_codes:
+                    continue
+
+                # Add new airport
+                Airport.objects.create(
+                    code=clean_code,
+                    name=clean_name,
+                    location=clean_location,
+                )
+                new_airports.append(f"{clean_code} - {clean_name}")
+
+            # Show messages
+            if duplicates_in_file:
+                messages.warning(
+                    request,
+                    f"Duplicate airport codes found in the file (skipped): {', '.join(duplicates_in_file)}"
+                )
+
+            if new_airports:
+                messages.success(
+                    request,
+                    f"Successfully added: {', '.join(new_airports)}"
+                )
+            elif not duplicates_in_file:
+                messages.info(request, "No new airports to add.")
+
+        except Exception as e:
+            messages.error(request, f"Error importing airports: {e}")
+
+    return redirect("airport")
+
 
 
 from django.db import IntegrityError
@@ -529,7 +838,111 @@ def delete_airport(request, airport_id):
 # List
 def flight_view(request):
     flights = Flight.objects.all()
-    return render(request, "manage_flight/flight/flight.html", {"flights": flights})
+    airlines = Airline.objects.all()
+    routes = Route.objects.all()
+    return render(request, "manage_flight/flight/flight.html", {
+        "flights": flights,
+        "airlines": airlines,
+        "routes": routes
+    })
+
+import pandas as pd
+from django.contrib import messages
+from django.core.exceptions import ObjectDoesNotExist
+
+def import_flights(request):
+    if request.method == "POST" and request.FILES.get("file"):
+        file = request.FILES["file"]
+
+        try:
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
+
+            duplicates_in_file = set()
+            new_flights = []
+            errors = []
+
+            # Already in DB (flight numbers)
+            already_in_db = set(Flight.objects.values_list("flight_number", flat=True))
+
+            seen_flight_numbers = set()
+
+            for idx, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
+                flight_number, airline_name, aircraft_model, route_str = row
+                if not flight_number or not airline_name or not aircraft_model or not route_str:
+                    continue
+
+                clean_flight_number = str(flight_number).strip()
+
+                # Check duplicate in file (only skip if it was already processed once)
+                if clean_flight_number in seen_flight_numbers:
+                    duplicates_in_file.add(clean_flight_number)
+                    continue
+                seen_flight_numbers.add(clean_flight_number)
+
+                # Skip if already exists in DB
+                if clean_flight_number in already_in_db:
+                    continue
+
+                # Validate airline
+                try:
+                    airline = Airline.objects.get(name__iexact=airline_name.strip())
+                except Airline.DoesNotExist:
+                    errors.append(f"Row {idx}: Airline '{airline_name}' not found")
+                    continue
+
+                # Validate aircraft
+                try:
+                    aircraft = Aircraft.objects.get(model__iexact=aircraft_model.strip(), airline=airline)
+                except Aircraft.DoesNotExist:
+                    errors.append(f"Row {idx}: Aircraft '{aircraft_model}' not found for airline '{airline_name}'")
+                    continue
+
+                # Parse route
+                if "-" not in route_str:
+                    errors.append(f"Row {idx}: Invalid route format '{route_str}'")
+                    continue
+                origin_code, dest_code = [x.strip().upper() for x in route_str.split("-", 1)]
+
+                try:
+                    route = Route.objects.get(
+                        origin_airport__code=origin_code,
+                        destination_airport__code=dest_code
+                    )
+                except Route.DoesNotExist:
+                    errors.append(f"Row {idx}: Route {origin_code}-{dest_code} not found")
+                    continue
+
+                # Create flight
+                Flight.objects.create(
+                    flight_number=clean_flight_number,
+                    airline=airline,
+                    aircraft=aircraft,
+                    route=route,
+                )
+                new_flights.append(clean_flight_number)  # ✅ mark as added
+
+            # Show messages
+            if duplicates_in_file:
+                messages.warning(
+                    request,
+                    f"Duplicate flight numbers in file (skipped): {', '.join(duplicates_in_file)}"
+                )
+            if new_flights:
+                messages.success(
+                    request,
+                    f"Successfully added flights: {', '.join(new_flights)}"
+                )
+            if errors:
+                for err in errors:
+                    messages.error(request, err)
+            elif not new_flights and not duplicates_in_file:
+                messages.info(request, "No new flights to add.")
+
+        except Exception as e:
+            messages.error(request, f"Error importing flights: {e}")
+
+    return redirect("flight")
 
 
 # Add 
@@ -538,7 +951,7 @@ def add_flight(request):
         flight_number = request.POST.get("flight_number")
         airline_id = request.POST.get("airline")
         aircraft_id = request.POST.get("aircraft")
-        route_id = request.POST.get("route")  # ✅ Only route, no origin/destination
+        route_id = request.POST.get("route")
 
         airline = Airline.objects.get(id=airline_id)
         aircraft = Aircraft.objects.get(id=aircraft_id)
@@ -548,13 +961,13 @@ def add_flight(request):
             flight_number=flight_number,
             airline=airline,
             aircraft=aircraft,
-            route=route,   # ✅ this links to both origin + destination
+            route=route,
         )
         return redirect("flight")
 
-    airlines = Airline.objects.all()
-    routes = Route.objects.all()
-    return render(request, "manage_flight/flight/add_flight.html", {"airlines": airlines, "routes": routes})
+    # ⬇️ not used anymore since modal form is inside flight.html
+    return redirect("flight")
+
 
 
 # AJAX endpoint to load aircraft based on airline
@@ -586,10 +999,14 @@ def update_flight(request, flight_id):
     })
 
 # Delete flight
+from django.views.decorators.http import require_POST
+
+@require_POST
 def delete_flight(request, flight_id):
     flight = get_object_or_404(Flight, pk=flight_id)
     flight.delete()
     return redirect("flight")
+
 
 
 # ---------------------------
@@ -601,17 +1018,113 @@ def route_view(request):
     routes = Route.objects.all()
     return render(request, "manage_flight/route/route.html", {"routes": routes})
 
+def import_routes(request):
+    if request.method == "POST" and request.FILES.get("file"):
+        file = request.FILES["file"]
+
+        try:
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
+
+            duplicates_in_file = set()
+            invalid_routes = set()
+            new_routes = []
+
+            # Collect already existing routes in DB as a set of keys "ORIGIN-DEST"
+            already_in_db = set(
+                f"{r.origin_airport.code.upper()}-{r.destination_airport.code.upper()}"
+                for r in Route.objects.select_related("origin_airport", "destination_airport")
+            )
+
+            seen_routes_in_file = set()
+
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                origin_code, destination_code, base_price = row
+                if not origin_code or not destination_code:
+                    continue
+
+                clean_origin = origin_code.strip().upper()
+                clean_destination = destination_code.strip().upper()
+                route_key = f"{clean_origin}-{clean_destination}"
+
+                # 🚫 Prevent routes with same origin and destination
+                if clean_origin == clean_destination:
+                    invalid_routes.add(route_key)
+                    continue
+
+                # Detect duplicates inside file
+                if route_key in seen_routes_in_file:
+                    duplicates_in_file.add(route_key)
+                    continue
+                seen_routes_in_file.add(route_key)
+
+                # Skip if already exists in DB
+                if route_key in already_in_db:
+                    continue
+
+                try:
+                    origin = Airport.objects.get(code__iexact=clean_origin)
+                    destination = Airport.objects.get(code__iexact=clean_destination)
+                except Airport.DoesNotExist:
+                    continue  # Skip if airport not found in DB
+
+                # Add new route
+                Route.objects.create(
+                    origin_airport=origin,
+                    destination_airport=destination,
+                    base_price=base_price or 0.00,
+                )
+                new_routes.append(route_key)
+
+            # Show messages
+            if invalid_routes:
+                messages.warning(
+                    request,
+                    f"Invalid routes skipped (same origin & destination): {', '.join(invalid_routes)}"
+                )
+
+            if duplicates_in_file:
+                messages.warning(
+                    request,
+                    f"Duplicate routes found in the file (skipped): {', '.join(duplicates_in_file)}"
+                )
+
+            if new_routes:
+                messages.success(
+                    request,
+                    f"Successfully added routes: {', '.join(new_routes)}"
+                )
+            elif not duplicates_in_file and not invalid_routes:
+                messages.info(request, "No new routes to add.")
+
+        except Exception as e:
+            messages.error(request, f"Error importing routes: {e}")
+
+    return redirect("route")
+
+
+
 # Add 
 def add_route(request):
     airports = Airport.objects.all()
     if request.method == "POST":
         origin_id = request.POST.get("origin_airport")
         destination_id = request.POST.get("destination_airport")
+        base_price = request.POST.get("base_price", 0.00)
+
         origin = get_object_or_404(Airport, pk=origin_id)
         destination = get_object_or_404(Airport, pk=destination_id)
-        Route.objects.create(origin_airport=origin, destination_airport=destination)
+
+        Route.objects.create(
+            origin_airport=origin,
+            destination_airport=destination,
+            base_price=base_price
+        )
         return redirect("route")
-    return render(request, "manage_flight/route/add_route.html", {"airports": airports})
+
+    return render(request, "manage_flight/route/add_route.html", {"airports": airports, "filtered_destinations": airports})
+
+
 
 # Update 
 def update_route(request, route_id):
@@ -620,9 +1133,11 @@ def update_route(request, route_id):
     if request.method == "POST":
         route.origin_airport = get_object_or_404(Airport, pk=request.POST.get("origin_airport"))
         route.destination_airport = get_object_or_404(Airport, pk=request.POST.get("destination_airport"))
+        route.base_price = request.POST.get("base_price", route.base_price)
         route.save()
         return redirect("route")
     return render(request, "manage_flight/route/update_route.html", {"route": route, "airports": airports})
+
 
 # Delete 
 def delete_route(request, route_id):
@@ -670,35 +1185,211 @@ def schedule_view(request):
     }
     return render(request, "manage_flight/schedule/schedule.html", context)
 
+import openpyxl
+from django.contrib import messages
+from django.utils.dateparse import parse_datetime
+from datetime import timedelta
+from django.shortcuts import redirect
+from .models import Flight, Schedule
+
+def import_schedules(request):
+    if request.method == "POST" and request.FILES.get("file"):
+        file = request.FILES["file"]
+        errors = []
+        new_schedules = []
+        allowance = timedelta(minutes=15)  # 15-min conflict allowance
+
+        try:
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
+
+            seen_in_file = set()  # to detect duplicate rows inside Excel
+
+            # Expected Excel format:
+            # Flight Number | Departure Time | Arrival Time | Price
+            for idx, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
+                flight_number, departure_time, arrival_time, price = row
+
+                if not flight_number or not departure_time or not arrival_time:
+                    errors.append(f"Row {idx}: Missing required data")
+                    continue
+
+                # Get flight
+                try:
+                    flight = Flight.objects.get(flight_number=str(flight_number).strip())
+                except Flight.DoesNotExist:
+                    errors.append(f"Row {idx}: Flight '{flight_number}' not found")
+                    continue
+
+                # Parse datetimes properly
+                dep_time = departure_time if isinstance(departure_time, datetime) else parse_datetime(str(departure_time))
+                arr_time = arrival_time if isinstance(arrival_time, datetime) else parse_datetime(str(arrival_time))
+                if not dep_time or not arr_time:
+                    errors.append(f"Row {idx}: Invalid datetime format")
+                    continue
+
+                if dep_time >= arr_time:
+                    errors.append(f"Row {idx}: Departure time must be before arrival time")
+                    continue
+
+                # Check if this exact row already appeared in the same Excel
+                row_key = (flight.id, dep_time, arr_time)
+                if row_key in seen_in_file:
+                    errors.append(f"Row {idx}: Duplicate schedule in file (skipped)")
+                    continue
+                seen_in_file.add(row_key)
+
+                origin = flight.route.origin_airport
+                destination = flight.route.destination_airport
+
+                # 🔹 Departure conflict check (same origin, within 15 mins)
+                conflict_dep = Schedule.objects.filter(
+                    flight__route__origin_airport=origin
+                ).exclude(
+                    flight=flight,
+                    departure_time=dep_time,
+                    arrival_time=arr_time
+                ).filter(
+                    departure_time__gte=dep_time - allowance,
+                    departure_time__lte=dep_time + allowance
+                ).exists()
+
+                # 🔹 Arrival conflict check (same destination, within 15 mins)
+                conflict_arr = Schedule.objects.filter(
+                    flight__route__destination_airport=destination
+                ).exclude(
+                    flight=flight,
+                    departure_time=dep_time,
+                    arrival_time=arr_time
+                ).filter(
+                    arrival_time__gte=arr_time - allowance,
+                    arrival_time__lte=arr_time + allowance
+                ).exists()
+
+                if conflict_dep:
+                    errors.append(
+                        f"Row {idx}: Another flight is departing from {origin.code} within 15 minutes."
+                    )
+                    continue
+
+                if conflict_arr:
+                    errors.append(
+                        f"Row {idx}: Another flight is arriving at {destination.code} within 15 minutes."
+                    )
+                    continue
+
+                # Avoid duplicates (same flight, same dep+arr in DB)
+                if Schedule.objects.filter(
+                    flight=flight,
+                    departure_time=dep_time,
+                    arrival_time=arr_time
+                ).exists():
+                    errors.append(f"Row {idx}: Schedule already exists in database")
+                    continue
+
+                # Create schedule
+                Schedule.objects.create(
+                    flight=flight,
+                    departure_time=dep_time,
+                    arrival_time=arr_time,
+                    price=price or flight.route.base_price,
+                    status="Open"
+                )
+                new_schedules.append(f"{flight_number} ({dep_time.strftime('%Y-%m-%d %H:%M')})")
+
+            # Messages
+            if new_schedules:
+                messages.success(request, f"Successfully added schedules: {', '.join(new_schedules)}")
+            for err in errors:
+                messages.error(request, err)
+            if not new_schedules and not errors:
+                messages.info(request, "No new schedules to add.")
+
+        except Exception as e:
+            messages.error(request, f"Error reading file: {e}")
+
+    return redirect("schedule")
 
 
-# Add schedule
+
+from django.utils.dateparse import parse_datetime
+from datetime import timedelta
+from django.contrib import messages
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Flight, Schedule
+
 def add_schedule(request):
-    flights = Flight.objects.all()
+    flights = Flight.objects.all()  # for the dropdown
 
     if request.method == "POST":
         flight_id = request.POST.get("flight")
+        flight = get_object_or_404(Flight, id=flight_id)
+
         departure_time = request.POST.get("departure_time")
         arrival_time = request.POST.get("arrival_time")
-        price = request.POST.get("price")  # if you want to include price
+        price = request.POST.get("price")
 
-        flight = Flight.objects.get(id=flight_id)
+        # Convert to datetime
+        dep_time = parse_datetime(departure_time)
+        arr_time = parse_datetime(arrival_time)
 
-        # Schedule save() will auto-generate seats
+        if not dep_time or not arr_time:
+            messages.error(request, "Invalid date/time format.")
+            return redirect("add_schedule")
+
+        # Ensure departure is before arrival
+        if dep_time >= arr_time:
+            messages.error(request, "Departure time must be before arrival time.")
+            return redirect("add_schedule")
+
+        # Airports
+        origin = flight.route.origin_airport
+        destination = flight.route.destination_airport
+
+        # 15-min allowance
+        allowance = timedelta(minutes=15)
+
+        # Conflict: departure at same origin within ±15 mins
+        conflict_dep = Schedule.objects.filter(
+            flight__route__origin_airport=origin,
+            departure_time__range=(dep_time - allowance, dep_time + allowance)
+        ).exists()
+
+        # Conflict: arrival at same destination within ±15 mins
+        conflict_arr = Schedule.objects.filter(
+            flight__route__destination_airport=destination,
+            arrival_time__range=(arr_time - allowance, arr_time + allowance)
+        ).exists()
+
+        if conflict_dep:
+            messages.error(
+                request, f"Another flight is departing from {origin.code} within 15 minutes."
+            )
+            return redirect("add_schedule")
+
+        if conflict_arr:
+            messages.error(
+                request, f"Another flight is arriving at {destination.code} within 15 minutes."
+            )
+            return redirect("add_schedule")
+
+        # ✅ Save schedule
         Schedule.objects.create(
             flight=flight,
-            departure_time=departure_time,
-            arrival_time=arrival_time,
-            price=price
+            departure_time=dep_time,
+            arrival_time=arr_time,
+            price=price or flight.route.base_price,
+            status="Open"
         )
-
+        messages.success(request, "Schedule added successfully.")
         return redirect("schedule")
 
     return render(
-        request, 
-        "manage_flight/schedule/add_schedule.html", 
+        request,
+        "manage_flight/schedule/add_schedule.html",
         {"flights": flights}
     )
+
 
 
 
@@ -802,19 +1493,56 @@ def delete_seat(request, seat_id):
 # ---------------------------
 
 # List 
+from django.utils import timezone
+from datetime import timedelta
+
 def booking_view(request):
+    # Auto-delete pending bookings older than 15 minutes
+    cutoff_time = timezone.now() - timedelta(minutes=10)
+    expired_bookings = Booking.objects.filter(status="Pending", created_at__lt=cutoff_time)
+
+    for booking in expired_bookings:
+        # Free outbound seat if exists
+        if booking.outbound_seat:
+            booking.outbound_seat.is_available = True
+            booking.outbound_seat.save()
+
+        # Free return seat if exists
+        if booking.return_seat:
+            booking.return_seat.is_available = True
+            booking.return_seat.save()
+
+        # Delete booking
+        booking.delete()
+
     bookings = Booking.objects.all().order_by('-created_at')
     return render(request, "booking_info/booking/booking.html", {"bookings": bookings})
 
-# Add
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from .models import Student, Schedule, Seat, Booking
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from .models import Student, Schedule, Seat, Booking
 
+from datetime import date
+
+def calculate_booking_price(schedule, seat):
+    # 1. Route Base Price
+    route = schedule.flight.route
+    base_price = route.base_price  
+
+    # 2. Seat Multiplier
+    seat_multiplier = seat.seat_class.price_multiplier if seat and seat.seat_class else 1.0
+
+    # 3. Days Before Flight → Booking Factor
+    days_diff = (schedule.departure_time.date() - date.today()).days
+    if days_diff >= 30:
+        booking_factor = 0.8
+    elif 7 <= days_diff < 30:
+        booking_factor = 1.0
+    else:  # 1–6 days
+        booking_factor = 1.5
+
+    # Final Price
+    return round(base_price * float(seat_multiplier) * booking_factor, 2)
+
+# add
 def add_booking(request):
     students = Student.objects.all()
     schedules = Schedule.objects.all()
@@ -823,92 +1551,87 @@ def add_booking(request):
     if request.method == "POST":
         student_id = request.POST.get("student")
         trip_type = request.POST.get("trip_type")
-        status = request.POST.get("status", "pending")
-
-        if not student_id:
-            messages.error(request, "Student is required.")
-            return redirect("add_booking")
+        status = request.POST.get("status", "Pending")
 
         student = get_object_or_404(Student, id=student_id)
 
-        # ------------------------------
-        # Handle booking types
-        # ------------------------------
+        def calculate_price(schedule, seat):
+            if not schedule:
+                return Decimal("0.00")
+
+            base_price = schedule.flight.route.base_price
+            multiplier = seat.seat_class.price_multiplier if seat else Decimal("1.0")
+
+            days_diff = (schedule.departure_time.date() - timezone.now().date()).days
+            if days_diff >= 30:
+                factor = Decimal("0.8")
+            elif 7 <= days_diff <= 29:
+                factor = Decimal("1.0")
+            else:
+                factor = Decimal("1.5")
+
+            return base_price * multiplier * factor
+
+        # One-way booking
         if trip_type == "one_way":
-            outbound_id = request.POST.get("outbound_schedule")
-            if not outbound_id:
-                messages.error(request, "Outbound schedule is required.")
-                return redirect("add_booking")
+            outbound_schedule = get_object_or_404(Schedule, id=request.POST.get("outbound_schedule"))
+            outbound_seat = Seat.objects.filter(id=request.POST.get("outbound_seat")).first()
 
-            outbound_schedule = get_object_or_404(Schedule, id=outbound_id)
-            outbound_seat_id = request.POST.get("outbound_seat") or None
-            outbound_seat = Seat.objects.get(id=outbound_seat_id) if outbound_seat_id else None
+            price = calculate_price(outbound_schedule, outbound_seat)
 
-            Booking.objects.create(
+            booking = Booking.objects.create(
                 student=student,
                 trip_type="one_way",
                 outbound_schedule=outbound_schedule,
                 outbound_seat=outbound_seat,
-                status=status
+                status=status,
+                price=price
             )
 
+            if outbound_seat:
+                outbound_seat.is_available = False
+                outbound_seat.save()
+
+        # Round trip booking
         elif trip_type == "round_trip":
-            outbound_id = request.POST.get("outbound_schedule")
-            return_id = request.POST.get("return_schedule")
+            outbound_schedule = get_object_or_404(Schedule, id=request.POST.get("outbound_schedule"))
+            return_schedule = get_object_or_404(Schedule, id=request.POST.get("return_schedule"))
 
-            if not outbound_id or not return_id:
-                messages.error(request, "Both outbound and return schedules are required.")
-                return redirect("add_booking")
+            outbound_seat = Seat.objects.filter(id=request.POST.get("outbound_seat")).first()
+            return_seat = Seat.objects.filter(id=request.POST.get("return_seat")).first()
 
-            outbound_schedule = get_object_or_404(Schedule, id=outbound_id)
-            return_schedule = get_object_or_404(Schedule, id=return_id)
+            outbound_price = calculate_price(outbound_schedule, outbound_seat)
+            return_price = calculate_price(return_schedule, return_seat)
+            total_price = outbound_price + return_price
 
-            outbound_seat_id = request.POST.get("outbound_seat") or None
-            return_seat_id = request.POST.get("return_seat") or None
-
-            outbound_seat = Seat.objects.get(id=outbound_seat_id) if outbound_seat_id else None
-            return_seat = Seat.objects.get(id=return_seat_id) if return_seat_id else None
-
-            Booking.objects.create(
+            booking = Booking.objects.create(
                 student=student,
                 trip_type="round_trip",
                 outbound_schedule=outbound_schedule,
                 outbound_seat=outbound_seat,
                 return_schedule=return_schedule,
                 return_seat=return_seat,
-                status=status
+                status=status,
+                price=total_price
             )
 
-        elif trip_type == "multi_city":
-            segment_num = 1
-            while True:
-                schedule_id = request.POST.get(f"multi_schedule_{segment_num}")
-                if not schedule_id:
-                    break
-
-                schedule = get_object_or_404(Schedule, id=schedule_id)
-                seat_id = request.POST.get(f"multi_seat_{segment_num}") or None
-                seat = Seat.objects.get(id=seat_id) if seat_id else None
-
-                Booking.objects.create(
-                    student=student,
-                    trip_type="multi_city",
-                    outbound_schedule=schedule,   # reuse outbound field for segment
-                    outbound_seat=seat,
-                    status=status
-                )
-
-                segment_num += 1
+            if outbound_seat:
+                outbound_seat.is_available = False
+                outbound_seat.save()
+            if return_seat:
+                return_seat.is_available = False
+                return_seat.save()
 
         messages.success(request, "Booking successfully created.")
         return redirect("booking")
 
-    # ⚠️ Important: Always return an HttpResponse on GET
     return render(request, "booking_info/booking/add_booking.html", {
         "students": students,
         "schedules": schedules,
         "seats": seats,
     })
+
+
 
 # 🔹 API endpoint to fetch seats for a schedule
 def get_seats_for_schedule(request, schedule_id):
@@ -957,33 +1680,38 @@ def update_booking(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
     students = Student.objects.all()
     schedules = Schedule.objects.all()
+    seats = Seat.objects.filter(is_available=True) | Seat.objects.filter(id=booking.seat.id if booking.seat else None)
 
     if request.method == "POST":
         student_id = request.POST.get("student")
+        schedule_id = request.POST.get("schedule")
+        seat_id = request.POST.get("seat")
         status = request.POST.get("status")
 
+        # Free previous seat if changed
+        if booking.seat and (not seat_id or int(seat_id) != booking.seat.id):
+            booking.seat.is_available = True
+            booking.seat.save()
+
         booking.student = get_object_or_404(Student, id=student_id)
+        booking.schedule = get_object_or_404(Schedule, id=schedule_id)
+        booking.seat = get_object_or_404(Seat, id=seat_id) if seat_id else None
         booking.status = status
         booking.save()
 
-        # ✅ Mark seats unavailable only when confirmed
-        if status == "confirmed":
-            if booking.outbound_seat:
-                booking.outbound_seat.is_available = False
-                booking.outbound_seat.save()
-            if booking.return_seat:
-                booking.return_seat.is_available = False
-                booking.return_seat.save()
-        else:
-            # If booking is not confirmed, keep seats available
-            if booking.outbound_seat:
-                booking.outbound_seat.is_available = True
-                booking.outbound_seat.save()
-            if booking.return_seat:
-                booking.return_seat.is_available = True
-                booking.return_seat.save()
+        # Mark new seat as unavailable
+        if booking.seat:
+            booking.seat.is_available = False
+            booking.seat.save()
 
-        return redirect("booking_info/booking/update_booking.html")
+        return redirect("booking")
+    
+    return render(request, "booking_info/booking/update_booking.html", {
+        "booking": booking,
+        "students": students,
+        "schedules": schedules,
+        "seats": seats,
+    })
 
 # Delete 
 def delete_booking(request, booking_id):
@@ -993,8 +1721,6 @@ def delete_booking(request, booking_id):
         booking.seat.save()
     booking.delete()
     return redirect("booking")
-
-    
 
 # ---------------------------
 # Payment
@@ -1236,6 +1962,65 @@ def check_in_view(request):
     checkins = CheckInDetail.objects.select_related("booking_detail__booking").all()
     return render(request, "passenger_info/check_in/check_in.html", {"checkins": checkins})
 
+import openpyxl
+from django.contrib import messages
+from django.shortcuts import redirect
+from .models import Student
+
+def import_students(request):
+    if request.method == "POST" and request.FILES.get("file"):
+        file = request.FILES["file"]
+        errors = []
+        imported_students = []
+
+        try:
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
+
+            for idx, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
+                student_number, first_name, middle_initial, last_name, email, phone, password = row
+
+                # Check required fields
+                if not student_number or not first_name or not last_name or not email:
+                    errors.append(f"Row {idx}: Missing required data (Student Number, First Name, Last Name, or Email)")
+                    continue
+
+                # Check for duplicates
+                if Student.objects.filter(student_number=student_number).exists():
+                    errors.append(f"Row {idx}: Student number '{student_number}' already exists")
+                    continue
+                if Student.objects.filter(email=email).exists():
+                    errors.append(f"Row {idx}: Email '{email}' already exists")
+                    continue
+
+                # Create student
+                Student.objects.create(
+                    student_number=student_number,
+                    first_name=first_name,
+                    middle_initial=middle_initial or "",
+                    last_name=last_name,
+                    email=email,
+                    phone=phone or "",
+                    password=password or "12345"  # default password if empty
+                )
+                imported_students.append(student_number)
+
+            # Messages
+            if imported_students:
+                messages.success(
+                    request, f"Successfully imported students: {', '.join(imported_students)}"
+                )
+            for err in errors:
+                messages.error(request, err)
+            if not imported_students and not errors:
+                messages.info(request, "No students were imported.")
+
+        except Exception as e:
+            messages.error(request, f"Error importing students: {e}")
+
+    return redirect("student")
+
+
 # Add Check-In
 def add_checkin(request):
     booking_details = BookingDetail.objects.all()
@@ -1397,181 +2182,207 @@ def delete_tracklog(request, tracklog_id):
     messages.success(request, "TrackLog deleted successfully!")
     return redirect("tracklog")
 
+# --------------------------------sa payment og email ni -----------------
 
-
-import base64
-import requests
-from django.conf import settings
-from django.shortcuts import redirect, render, get_object_or_404
-from django.urls import reverse
-from django.http import JsonResponse
-from .models import Booking, Payment
-
-
-def create_checkout(request, booking_id):
-    booking = get_object_or_404(Booking, id=booking_id)
-    amount = int(booking.total_amount * 100)  # PayMongo needs cents
-
-    url = "https://api.paymongo.com/v1/checkout_sessions"
-
-    # Encode API key in Base64
-    secret_key = settings.PAYMONGO_SECRET_KEY  # e.g. "sk_test_xxx"
-    auth_key = base64.b64encode(f"{secret_key}:".encode()).decode("utf-8")
-
-    headers = {
-        "accept": "application/json",
-        "content-type": "application/json",
-        "authorization": f"Basic {auth_key}"
-    }
-
-    payload = {
-        "data": {
-            "attributes": {
-                "line_items": [
-                    {
-                        "name": f"Booking #{booking.id}",
-                        "quantity": 1,
-                        "currency": "PHP",
-                        "amount": amount
-                    }
-                ],
-                "payment_method_types": ["gcash", "card"],
-                "success_url": request.build_absolute_uri(
-                    reverse("payment_success", args=[booking.id])
-                ),
-                "cancel_url": request.build_absolute_uri(
-                    reverse("payment_cancel", args=[booking.id])
-                )
-            }
-        }
-    }
-
-    response = requests.post(url, headers=headers, json=payload)
-    data = response.json()
-
-    # Handle errors
-    if response.status_code != 200:
-        return JsonResponse({"error": data}, status=response.status_code)
-
-    checkout_url = data["data"]["attributes"]["checkout_url"]
-
-    # ✅ Create a pending Payment record
-    Payment.objects.create(
-        booking=booking,
-        amount=booking.total_amount,
-        method="GCash",   # or detect from request if user chooses
-        status="Pending"
-    )
-
-    return redirect(checkout_url)
-
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
+from django.contrib import messages
 from django.core.mail import EmailMessage
 from django.conf import settings
 from .models import Booking, Payment, BookingDetail, SeatClass
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from .models import Booking, Payment
+
+from datetime import date
+
+from datetime import date
+from decimal import Decimal
+from django.utils import timezone
 
 def payment_success(request, booking_id):
-    booking = get_object_or_404(Booking, id=booking_id)
+    booking = get_object_or_404(Booking, pk=booking_id)
+    payment = Payment.objects.filter(booking=booking).last()
 
-    # Update booking status
+    # Create payment if it doesn't exist
+    if not payment:
+        payment = Payment.objects.create(
+            booking=booking,
+            amount=booking.price,
+            payment_method="Manual",
+            status="Paid"
+        )
+
     booking.status = "Confirmed"
     booking.save()
 
-    # Update payment
-    try:
-        payment = Payment.objects.filter(booking=booking).latest("payment_date")
-        payment.status = "Completed"
-        payment.save()
-    except Payment.DoesNotExist:
-        payment = None
+    # ----------------------------
+    # Calculation for one-way / outbound
+    # ----------------------------
+    if booking.outbound_schedule:
+        flight_schedule_date = booking.outbound_schedule.departure_time.date()
+        route_base_price = booking.outbound_schedule.route.base_price
+        seat_name = booking.outbound_seat.seat_class.name if booking.outbound_seat else "Economy"
+        seat_multiplier = booking.outbound_seat.seat_class.price_multiplier if booking.outbound_seat else Decimal("1.0")
+        days_diff = (flight_schedule_date - booking.created_at.date()).days
 
-    # Create BookingDetail entries if they don't exist
-    if not booking.details.exists():
-        default_class = SeatClass.objects.first()  # fallback if seat_class is missing
+        # Determine booking factor
+        if days_diff >= 30:
+            booking_factor = Decimal("0.8")
+        elif 7 <= days_diff <= 29:
+            booking_factor = Decimal("1.0")
+        else:
+            booking_factor = Decimal("1.5")
 
-        if booking.outbound_schedule:
-            BookingDetail.objects.create(
-                booking=booking,
-                flight=booking.outbound_schedule.flight,
-                seat=booking.outbound_seat,
-                seat_class=booking.outbound_seat.seat_class if booking.outbound_seat else default_class
-            )
+        final_price = route_base_price * seat_multiplier * booking_factor
+    else:
+        flight_schedule_date = None
+        route_base_price = 0
+        seat_name = "Economy"
+        seat_multiplier = 1.0
+        days_diff = 0
+        booking_factor = 1.0
+        final_price = 0
 
-        if booking.return_schedule:
-            BookingDetail.objects.create(
-                booking=booking,
-                flight=booking.return_schedule.flight,
-                seat=booking.return_seat,
-                seat_class=booking.return_seat.seat_class if booking.return_seat else default_class
-            )
-
-    # Get all booking details
-    booking_details = booking.details.all()
-
-    # Send confirmation email
-    if booking.student.email:
-        email = EmailMessage(
-            subject=f"Booking Confirmed - {booking.id}",
-            body=render(
-                request,
-                "booking_confirmation.html",
-                {"booking": booking, "payment": payment, "details": booking_details},
-            ).content.decode("utf-8"),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to=[booking.student.email],
-        )
-        email.content_subtype = "html"
-        email.send(fail_silently=False)
-
-    return render(request, "success.html", {
+    context = {
         "booking": booking,
         "payment": payment,
-        "details": booking_details
-    })
+        "calc": {
+            "booking_date": booking.created_at.date(),
+            "flight_schedule": flight_schedule_date,
+            "days_diff": days_diff,
+            "route_base_price": route_base_price,
+            "seat_name": seat_name,
+            "seat_multiplier": seat_multiplier,
+            "booking_factor": booking_factor,
+            "final_price": final_price,
+        }
+    }
 
-
-
+    return render(request, "payment_success.html", context)
 
 
 
 def payment_cancel(request, booking_id):
+    return render(request, "cancel.html", {"message": "Payment canceled!"})
+
+
+def payment_confirmation(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
-    booking.status = "Pending"
+
+    # Prevent duplicate payments
+    if booking.status == "Confirmed":
+        messages.info(request, f"Booking #{booking.id} is already confirmed and paid.")
+        return redirect("booking")
+
+    # Confirm the booking
+    booking.status = "Confirmed"
     booking.save()
 
-    # If payment exists, mark it failed
-    try:
-        payment = Payment.objects.get(booking=booking)
-        payment.status = "Failed"
-        payment.save()
-    except Payment.DoesNotExist:
-        payment = None
-
-    return render(request, "cancel.html", {
-        "booking": booking,
-        "payment": payment
-    })
-
-def send_booking_email(booking):
-    subject = f"Booking Confirmation - {booking.id}"
-    message = f"""
-    Hello {booking.student.name},
-
-    Your booking has been confirmed!
-
-    Booking Details:
-    Flight: {booking.schedule.flight}
-    Date: {booking.schedule.date}
-    Seat: {booking.seat.number}
-    Amount Paid: {booking.payment.amount}
-
-    Thank you for booking with us!
-    """
-    recipient_list = [booking.student.email]
-    send_mail(
-        subject,
-        message,
-        settings.DEFAULT_FROM_EMAIL,
-        recipient_list,
-        fail_silently=False,
+    # Record the payment
+    Payment.objects.create(
+        booking=booking,
+        amount=getattr(booking, "total_amount", 0),  # fallback if no total_amount
+        method="Manual",
+        status="Completed"
     )
+
+    messages.success(request, f"Booking #{booking.id} has been confirmed and paid.")
+    return redirect("booking")
+
+from decimal import Decimal
+from django.core.mail import EmailMessage
+from django.conf import settings
+from django.template.loader import render_to_string
+from django.utils import timezone
+from django.shortcuts import render, get_object_or_404
+from .models import Booking, BookingDetail, Payment
+
+
+def create_checkout(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id)
+
+    # Mark booking as confirmed
+    booking.status = "Confirmed"
+    booking.save()
+
+    # Calculate total amount and breakdown
+    if booking.outbound_schedule:
+        flight_schedule_date = booking.outbound_schedule.departure_time.date()
+        route_base_price = booking.outbound_schedule.flight.route.base_price
+        seat_name = booking.outbound_seat.seat_class.name if booking.outbound_seat else "Economy"
+        seat_multiplier = booking.outbound_seat.seat_class.price_multiplier if booking.outbound_seat else Decimal("1.0")
+        days_diff = (flight_schedule_date - booking.created_at.date()).days
+
+        # Determine booking factor
+        if days_diff >= 30:
+            booking_factor = Decimal("0.8")
+        elif 7 <= days_diff <= 29:
+            booking_factor = Decimal("1.0")
+        else:
+            booking_factor = Decimal("1.5")
+
+        final_price = route_base_price * seat_multiplier * booking_factor
+    else:
+        flight_schedule_date = None
+        route_base_price = 0
+        seat_name = "Economy"
+        seat_multiplier = 1.0
+        days_diff = 0
+        booking_factor = 1.0
+        final_price = 0
+
+    # ✅ Ensure BookingDetail exists
+    BookingDetail.objects.get_or_create(
+        booking=booking,
+        flight=booking.outbound_schedule.flight if booking.outbound_schedule else None,
+        seat=booking.outbound_seat if booking.outbound_seat else None,
+        seat_class=booking.outbound_seat.seat_class if booking.outbound_seat else None,
+        defaults={"booking_date": timezone.now()},
+    )
+
+    # Create payment record
+    payment = Payment.objects.create(
+        booking=booking,
+        amount=final_price,
+        method="Manual",
+        status="Completed"
+    )
+
+    # Fetch details
+    details = BookingDetail.objects.filter(booking=booking)
+
+    # Send confirmation email
+    if booking.student.email:
+        subject = f"Booking Confirmed - {booking.id}"
+        message = render_to_string("booking_confirmation.html", {
+            "booking": booking,
+            "payment": payment,
+            "details": details,
+        })
+        email = EmailMessage(
+            subject=subject,
+            body=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[booking.student.email]
+        )
+        email.content_subtype = "html"
+        email.send(fail_silently=False)
+
+    # Pass calculation breakdown to template
+    calc = {
+        "booking_date": booking.created_at.date(),
+        "flight_schedule": flight_schedule_date,
+        "days_diff": days_diff,
+        "route_base_price": route_base_price,
+        "seat_name": seat_name,
+        "seat_multiplier": seat_multiplier,
+        "booking_factor": booking_factor,
+        "final_price": final_price,
+    }
+
+    return render(request, "payment_success.html", {
+        "booking": booking,
+        "payment": payment,
+        "calc": calc,
+        "details": details
+    })

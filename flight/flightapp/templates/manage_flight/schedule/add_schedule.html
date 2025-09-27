@@ -4,6 +4,18 @@
     <h2 class="text-2xl font-bold mb-6">Add Schedule</h2>
     <form method="post" class="space-y-4">
         {% csrf_token %}
+
+        <!-- 🔹 Error/Success Messages -->
+        {% if messages %}
+          <div class="mb-4">
+            {% for message in messages %}
+              <p class="bg-red-100 text-red-700 px-4 py-2 rounded mb-2">
+                {{ message }}
+              </p>
+            {% endfor %}
+          </div>
+        {% endif %}
+
         <div>
             <label class="block font-semibold mb-1">Flight:</label>
             <select name="flight" class="w-full border rounded px-3 py-2 focus:outline-none focus:border-blue-500">
@@ -19,10 +31,6 @@
         <div>
             <label class="block font-semibold mb-1">Arrival Time:</label>
             <input type="datetime-local" name="arrival_time" class="w-full border rounded px-3 py-2" required>
-        </div>
-        <div>
-            <label class="block font-semibold mb-1">Price (₱):</label>
-            <input type="number" step="0.01" name="price" class="w-full border rounded px-3 py-2" placeholder="Enter price" required>
         </div>
 
         <div class="flex items-center justify-between mt-6">

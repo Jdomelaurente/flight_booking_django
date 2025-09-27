@@ -102,9 +102,11 @@ class Airport(models.Model):
 class Route(models.Model):
     origin_airport = models.ForeignKey(Airport, on_delete=models.CASCADE, related_name="departures")
     destination_airport = models.ForeignKey(Airport, on_delete=models.CASCADE, related_name="arrivals")
-
+    base_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  
+    
     def __str__(self):
         return f"{self.origin_airport.code} → {self.destination_airport.code}"
+
 
 
 class Flight(models.Model):
@@ -193,6 +195,7 @@ class PassengerInfo(models.Model):
 
 class Student(models.Model):
     first_name = models.CharField(max_length=100)
+    middle_initial = models.CharField(max_length=5, null=True, blank=True)  # optional
     last_name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=255)  # hashed password
@@ -200,8 +203,14 @@ class Student(models.Model):
     student_number = models.CharField(max_length=50, unique=True)
 
     def __str__(self):
+        if self.middle_initial:
+            return f"{self.student_number} - {self.first_name} {self.middle_initial}. {self.last_name}"
         return f"{self.student_number} - {self.first_name} {self.last_name}"
 
+
+
+from decimal import Decimal
+from datetime import date
 
 class Booking(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
@@ -214,22 +223,48 @@ class Booking(models.Model):
     outbound_seat = models.ForeignKey(Seat, related_name="outbound_bookings", on_delete=models.SET_NULL, null=True, blank=True)
     return_seat = models.ForeignKey(Seat, related_name="return_bookings", on_delete=models.SET_NULL, null=True, blank=True)
     status = models.CharField(max_length=20, default="Pending")
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Booking {self.id} - {self.student.first_name} {self.student.last_name}"
+    
+    @property
+    def payment(self):
+        return self.payment_set.last() 
 
     @property
     def total_amount(self):
-        total = 0
+        total = Decimal("0.00")
+
+        def calculate_price(schedule, seat):
+            if not schedule:
+                return Decimal("0.00")
+
+            base_price = schedule.flight.route.base_price  # ✅ use Route base price
+            multiplier = seat.seat_class.price_multiplier if seat else Decimal("1.0")
+
+            # Booking factor based on how far in advance
+            days_diff = (schedule.departure_time.date() - self.created_at.date()).days
+            if days_diff >= 30:
+                factor = Decimal("0.8")
+            elif 7 <= days_diff <= 29:
+                factor = Decimal("1.0")
+            else:
+                factor = Decimal("1.5")
+
+            return base_price * multiplier * factor
+
         if self.outbound_schedule:
-            total += self.outbound_schedule.price  # assumes Schedule has price
+            total += calculate_price(self.outbound_schedule, self.outbound_seat)
+
         if self.return_schedule:
-            total += self.return_schedule.price
+            total += calculate_price(self.return_schedule, self.return_seat)
+
         return total
 
 
-
+    
 
 class BookingDetail(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="details")

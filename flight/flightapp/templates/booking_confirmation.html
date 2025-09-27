@@ -1,47 +1,140 @@
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Booking Confirmation</title>
   <style>
-    body { font-family: Arial, sans-serif; }
-    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-    th { background-color: #f2f2f2; }
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f4f7;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 700px;
+      margin: 20px auto;
+      background-color: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+    }
+    .header {
+      background-color: #ec4899;
+      color: white;
+      text-align: center;
+      padding: 20px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .section {
+      padding: 20px;
+      border-bottom: 1px dashed #e2e8f0;
+    }
+    .section:last-child {
+      border-bottom: none;
+    }
+    .section-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: #555555;
+      margin-bottom: 5px;
+    }
+    .info {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      color: #111827;
+    }
+    .details-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 15px;
+    }
+    .details-table th, .details-table td {
+      border: 1px solid #e2e8f0;
+      padding: 8px;
+      text-align: left;
+      font-size: 14px;
+    }
+    .details-table th {
+      background-color: #f9fafb;
+    }
+    .total {
+      font-size: 16px;
+      font-weight: bold;
+      text-align: right;
+      margin-top: 10px;
+      color: #111827;
+    }
+    .footer {
+      text-align: center;
+      font-size: 12px;
+      color: #888888;
+      padding: 15px;
+    }
+    @media only screen and (max-width: 600px) {
+      .container {
+        width: 95% !important;
+      }
+      .info {
+        font-size: 16px;
+      }
+      .details-table th, .details-table td {
+        font-size: 12px;
+        padding: 6px;
+      }
+    }
   </style>
 </head>
 <body>
-  <h2>Booking Confirmed!</h2>
-  <p>Hello {{ booking.student.first_name }} {{ booking.student.last_name }},</p>
-  <p>Your booking has been confirmed. Here are the details:</p>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      Booking Confirmed!
+    </div>
 
-  <table>
-    <tr>
-      <th>Passenger</th>
-      <th>Flight</th>
-      <th>Route</th>
-      <th>Seat</th>
-      <th>Seat Class</th>
-      <th>Booking Date</th>
-    </tr>
-    {% for detail in details %}
-    <tr>
-      <td>{{ detail.booking.student.first_name }} {{ detail.booking.student.last_name }}</td>
-      <td>{{ detail.flight.flight_number }}</td>
-      <td>{{ detail.flight.route.origin_airport.code }} → {{ detail.flight.route.destination_airport.code }}</td>
-      <td>{% if detail.seat %}{{ detail.seat.seat_number }}{% else %}-{% endif %}</td>
-      <td>{% if detail.seat_class %}{{ detail.seat_class.name }}{% else %}-{% endif %}</td>
-      <td>{{ detail.booking_date }}</td>
-    </tr>
-    {% endfor %}
-  </table>
+    <!-- Passenger Info -->
+    <div class="section">
+      <div class="section-title">Passenger</div>
+      <div class="info">{{ booking.student.first_name }} {{ booking.student.last_name }}</div>
+    </div>
 
-  <p>Total Paid: 
-    {% if payment %}
-      ₱{{ payment.amount }}
-    {% else %}
-      N/A
-    {% endif %}
-  </p>
+    <!-- Flight Details -->
+    <div class="section">
+      <div class="section-title">Flight Information</div>
+      <table class="details-table">
+        <tr>
+          <th>Flight</th>
+          <th>Route</th>
+          <th>Seat</th>
+          <th>Class</th>
+          <th>Date</th>
+        </tr>
+        {% for detail in details %}
+        <tr>
+          <td>{{ detail.flight.flight_number }}</td>
+          <td>{{ detail.flight.route.origin_airport.code }} → {{ detail.flight.route.destination_airport.code }}</td>
+          <td>{% if detail.seat %}{{ detail.seat.seat_number }}{% else %}-{% endif %}</td>
+          <td>{% if detail.seat_class %}{{ detail.seat_class.name }}{% else %}-{% endif %}</td>
+          <td>{{ detail.booking_date }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
 
-  <p>Thank you for booking with us!</p>
+    <!-- Total Paid -->
+    <div class="section">
+      <div class="total">
+        Total Paid: {% if payment %}₱{{ payment.amount }}{% else %}N/A{% endif %}
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      Thank you for booking with <strong>Flight Booking Simulator</strong>!
+    </div>        
+  </div>
 </body>
 </html>
