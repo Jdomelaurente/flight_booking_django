@@ -851,78 +851,98 @@ from django.contrib import messages
 from django.core.exceptions import ObjectDoesNotExist
 
 def import_flights(request):
-    if request.method == "POST":
-        excel_file = request.FILES.get("file")
-
-        if not excel_file:
-            messages.error(request, "Please upload an Excel file.")
-            return redirect("flight")
+    if request.method == "POST" and request.FILES.get("file"):
+        file = request.FILES["file"]
 
         try:
-            df = pd.read_excel(excel_file)
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
 
-            required_columns = ["Flight Number", "Airline", "Aircraft", "Route"]
-            for col in required_columns:
-                if col not in df.columns:
-                    messages.error(request, f"Missing column: {col}")
-                    return redirect("flight")
-
-            imported_count = 0
+            duplicates_in_file = set()
+            new_flights = []
             errors = []
 
-            for index, row in df.iterrows():
+            # Already in DB (flight numbers)
+            already_in_db = set(Flight.objects.values_list("flight_number", flat=True))
+
+            seen_flight_numbers = set()
+
+            for idx, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
+                flight_number, airline_name, aircraft_model, route_str = row
+                if not flight_number or not airline_name or not aircraft_model or not route_str:
+                    continue
+
+                clean_flight_number = str(flight_number).strip()
+
+                # Check duplicate in file (only skip if it was already processed once)
+                if clean_flight_number in seen_flight_numbers:
+                    duplicates_in_file.add(clean_flight_number)
+                    continue
+                seen_flight_numbers.add(clean_flight_number)
+
+                # Skip if already exists in DB
+                if clean_flight_number in already_in_db:
+                    continue
+
+                # Validate airline
                 try:
-                    # Lookup airline
-                    airline = Airline.objects.get(name=row["Airline"])
-                    # Lookup aircraft
-                    aircraft = Aircraft.objects.get(model=row["Aircraft"], airline=airline)
-
-                    # Parse route string: "MNL-CEB"
-                    route_str = row["Route"]
-                    if "-" not in route_str:
-                        errors.append(f"Row {index+2}: Invalid route format '{route_str}'")
-                        continue
-                    origin_code, dest_code = route_str.split("-")
-
-                    # Lookup route
-                    route_qs = Route.objects.filter(
-                        origin_airport__code=origin_code.strip(),
-                        destination_airport__code=dest_code.strip()
-                    )
-                    if not route_qs.exists():
-                        errors.append(f"Row {index+2}: Route {origin_code}-{dest_code} not found")
-                        continue
-                    route = route_qs.first()
-
-                    # Create or update flight
-                    Flight.objects.update_or_create(
-                        flight_number=row["Flight Number"],
-                        defaults={
-                            "airline": airline,
-                            "aircraft": aircraft,
-                            "route": route,
-                        }
-                    )
-                    imported_count += 1
-
+                    airline = Airline.objects.get(name__iexact=airline_name.strip())
                 except Airline.DoesNotExist:
-                    errors.append(f"Row {index+2}: Airline '{row['Airline']}' not found")
-                except Aircraft.DoesNotExist:
-                    errors.append(f"Row {index+2}: Aircraft '{row['Aircraft']}' not found for airline '{row['Airline']}'")
-                except Exception as e:
-                    errors.append(f"Row {index+2}: Unexpected error: {e}")
+                    errors.append(f"Row {idx}: Airline '{airline_name}' not found")
+                    continue
 
-            # Display success and error messages
-            if imported_count:
-                messages.success(request, f"{imported_count} flights imported successfully.")
-            for err in errors:
-                messages.error(request, err)
+                # Validate aircraft
+                try:
+                    aircraft = Aircraft.objects.get(model__iexact=aircraft_model.strip(), airline=airline)
+                except Aircraft.DoesNotExist:
+                    errors.append(f"Row {idx}: Aircraft '{aircraft_model}' not found for airline '{airline_name}'")
+                    continue
+
+                # Parse route
+                if "-" not in route_str:
+                    errors.append(f"Row {idx}: Invalid route format '{route_str}'")
+                    continue
+                origin_code, dest_code = [x.strip().upper() for x in route_str.split("-", 1)]
+
+                try:
+                    route = Route.objects.get(
+                        origin_airport__code=origin_code,
+                        destination_airport__code=dest_code
+                    )
+                except Route.DoesNotExist:
+                    errors.append(f"Row {idx}: Route {origin_code}-{dest_code} not found")
+                    continue
+
+                # Create flight
+                Flight.objects.create(
+                    flight_number=clean_flight_number,
+                    airline=airline,
+                    aircraft=aircraft,
+                    route=route,
+                )
+                new_flights.append(clean_flight_number)  # ✅ mark as added
+
+            # Show messages
+            if duplicates_in_file:
+                messages.warning(
+                    request,
+                    f"Duplicate flight numbers in file (skipped): {', '.join(duplicates_in_file)}"
+                )
+            if new_flights:
+                messages.success(
+                    request,
+                    f"Successfully added flights: {', '.join(new_flights)}"
+                )
+            if errors:
+                for err in errors:
+                    messages.error(request, err)
+            elif not new_flights and not duplicates_in_file:
+                messages.info(request, "No new flights to add.")
 
         except Exception as e:
-            messages.error(request, f"Error reading file: {e}")
+            messages.error(request, f"Error importing flights: {e}")
 
-        return redirect("flight")
-
+    return redirect("flight")
 
 
 # Add 
@@ -1176,12 +1196,14 @@ def import_schedules(request):
     if request.method == "POST" and request.FILES.get("file"):
         file = request.FILES["file"]
         errors = []
-        imported_count = 0
+        new_schedules = []
         allowance = timedelta(minutes=15)  # 15-min conflict allowance
 
         try:
             wb = openpyxl.load_workbook(file)
             sheet = wb.active
+
+            seen_in_file = set()  # to detect duplicate rows inside Excel
 
             # Expected Excel format:
             # Flight Number | Departure Time | Arrival Time | Price
@@ -1194,14 +1216,14 @@ def import_schedules(request):
 
                 # Get flight
                 try:
-                    flight = Flight.objects.get(flight_number=flight_number.strip())
+                    flight = Flight.objects.get(flight_number=str(flight_number).strip())
                 except Flight.DoesNotExist:
                     errors.append(f"Row {idx}: Flight '{flight_number}' not found")
                     continue
 
-                # Parse datetimes
-                dep_time = parse_datetime(str(departure_time))
-                arr_time = parse_datetime(str(arrival_time))
+                # Parse datetimes properly
+                dep_time = departure_time if isinstance(departure_time, datetime) else parse_datetime(str(departure_time))
+                arr_time = arrival_time if isinstance(arrival_time, datetime) else parse_datetime(str(arrival_time))
                 if not dep_time or not arr_time:
                     errors.append(f"Row {idx}: Invalid datetime format")
                     continue
@@ -1210,17 +1232,38 @@ def import_schedules(request):
                     errors.append(f"Row {idx}: Departure time must be before arrival time")
                     continue
 
+                # Check if this exact row already appeared in the same Excel
+                row_key = (flight.id, dep_time, arr_time)
+                if row_key in seen_in_file:
+                    errors.append(f"Row {idx}: Duplicate schedule in file (skipped)")
+                    continue
+                seen_in_file.add(row_key)
+
                 origin = flight.route.origin_airport
                 destination = flight.route.destination_airport
 
-                # Check conflicts within 15 mins
+                # 🔹 Departure conflict check (same origin, within 15 mins)
                 conflict_dep = Schedule.objects.filter(
-                    flight__route__origin_airport=origin,
-                    departure_time__range=(dep_time - allowance, dep_time + allowance)
+                    flight__route__origin_airport=origin
+                ).exclude(
+                    flight=flight,
+                    departure_time=dep_time,
+                    arrival_time=arr_time
+                ).filter(
+                    departure_time__gte=dep_time - allowance,
+                    departure_time__lte=dep_time + allowance
                 ).exists()
+
+                # 🔹 Arrival conflict check (same destination, within 15 mins)
                 conflict_arr = Schedule.objects.filter(
-                    flight__route__destination_airport=destination,
-                    arrival_time__range=(arr_time - allowance, arr_time + allowance)
+                    flight__route__destination_airport=destination
+                ).exclude(
+                    flight=flight,
+                    departure_time=dep_time,
+                    arrival_time=arr_time
+                ).filter(
+                    arrival_time__gte=arr_time - allowance,
+                    arrival_time__lte=arr_time + allowance
                 ).exists()
 
                 if conflict_dep:
@@ -1235,13 +1278,13 @@ def import_schedules(request):
                     )
                     continue
 
-                # Avoid duplicates (same flight, same dep+arr)
+                # Avoid duplicates (same flight, same dep+arr in DB)
                 if Schedule.objects.filter(
                     flight=flight,
                     departure_time=dep_time,
                     arrival_time=arr_time
                 ).exists():
-                    errors.append(f"Row {idx}: Schedule already exists")
+                    errors.append(f"Row {idx}: Schedule already exists in database")
                     continue
 
                 # Create schedule
@@ -1252,19 +1295,20 @@ def import_schedules(request):
                     price=price or flight.route.base_price,
                     status="Open"
                 )
-                imported_count += 1
+                new_schedules.append(f"{flight_number} ({dep_time.strftime('%Y-%m-%d %H:%M')})")
 
             # Messages
-            if imported_count:
-                messages.success(request, f"{imported_count} schedules imported successfully!")
+            if new_schedules:
+                messages.success(request, f"Successfully added schedules: {', '.join(new_schedules)}")
             for err in errors:
                 messages.error(request, err)
+            if not new_schedules and not errors:
+                messages.info(request, "No new schedules to add.")
 
         except Exception as e:
             messages.error(request, f"Error reading file: {e}")
 
     return redirect("schedule")
-
 
 
 
@@ -1926,32 +1970,55 @@ from .models import Student
 def import_students(request):
     if request.method == "POST" and request.FILES.get("file"):
         file = request.FILES["file"]
+        errors = []
+        imported_students = []
 
         try:
             wb = openpyxl.load_workbook(file)
             sheet = wb.active
 
-            # Assuming first row is headers
-            for row in sheet.iter_rows(min_row=2, values_only=True):
-                student_number, first_name, last_name, email, phone, password = row
+            for idx, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
+                student_number, first_name, middle_initial, last_name, email, phone, password = row
 
-                if not Student.objects.filter(student_number=student_number).exists():
-                    Student.objects.create(
-                        student_number=student_number,
-                        first_name=first_name,
-                        last_name=last_name,
-                        email=email,
-                        phone=phone or "",
-                        password=password or "12345"  # default if empty
-                    )
+                # Check required fields
+                if not student_number or not first_name or not last_name or not email:
+                    errors.append(f"Row {idx}: Missing required data (Student Number, First Name, Last Name, or Email)")
+                    continue
 
-            messages.success(request, "Students imported successfully!")
+                # Check for duplicates
+                if Student.objects.filter(student_number=student_number).exists():
+                    errors.append(f"Row {idx}: Student number '{student_number}' already exists")
+                    continue
+                if Student.objects.filter(email=email).exists():
+                    errors.append(f"Row {idx}: Email '{email}' already exists")
+                    continue
+
+                # Create student
+                Student.objects.create(
+                    student_number=student_number,
+                    first_name=first_name,
+                    middle_initial=middle_initial or "",
+                    last_name=last_name,
+                    email=email,
+                    phone=phone or "",
+                    password=password or "12345"  # default password if empty
+                )
+                imported_students.append(student_number)
+
+            # Messages
+            if imported_students:
+                messages.success(
+                    request, f"Successfully imported students: {', '.join(imported_students)}"
+                )
+            for err in errors:
+                messages.error(request, err)
+            if not imported_students and not errors:
+                messages.info(request, "No students were imported.")
+
         except Exception as e:
             messages.error(request, f"Error importing students: {e}")
 
     return redirect("student")
-
-
 
 
 # Add Check-In

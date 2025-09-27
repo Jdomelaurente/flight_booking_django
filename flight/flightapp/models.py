@@ -195,6 +195,7 @@ class PassengerInfo(models.Model):
 
 class Student(models.Model):
     first_name = models.CharField(max_length=100)
+    middle_initial = models.CharField(max_length=5, null=True, blank=True)  # optional
     last_name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=255)  # hashed password
@@ -202,7 +203,10 @@ class Student(models.Model):
     student_number = models.CharField(max_length=50, unique=True)
 
     def __str__(self):
+        if self.middle_initial:
+            return f"{self.student_number} - {self.first_name} {self.middle_initial}. {self.last_name}"
         return f"{self.student_number} - {self.first_name} {self.last_name}"
+
 
 
 from decimal import Decimal
