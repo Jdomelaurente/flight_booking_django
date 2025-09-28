@@ -1,0 +1,1090 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Booking Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #2f3b52, #1f2a3d);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 1.5rem 1rem;
+            position: fixed;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            letter-spacing: 0.5px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+            padding: 0.75rem;
+            background: rgba(255,255,255,0.08);
+            border-radius: 10px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.9rem;
+        }
+
+        .welcome-text {
+            font-weight: 600;
+        }
+
+        .user-role {
+            opacity: 0.7;
+            font-size: 0.8rem;
+        }
+
+        .nav-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.7rem 1rem;
+            color: #fff;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            border-radius: 8px;
+            transition: background 0.3s, transform 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background-color: #3b4a6b;
+            transform: translateX(5px);
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .nav-icon {
+            font-size: 1.2rem;
+        }
+
+        .dropdown-arrow {
+            font-size: 0.8rem;
+            transition: transform 0.3s ease;
+        }
+
+        .dropdown-content {
+            display: none;
+            flex-direction: column;
+            background-color: #3b4a6b;
+            margin-top: 0.3rem;
+            border-radius: 8px;
+            overflow: hidden;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .dropdown-item {
+            padding: 0.55rem 1.8rem;
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background-color: #4a5a7b;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 1rem;
+        }
+
+        .logout-btn {
+            width: 100%;
+            background-color: #3b4a6b;
+            border: none;
+            color: #fff;
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        .logout-btn:hover {
+            background-color: #4a5a7b;
+            transform: scale(1.02);
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 260px;
+            padding: 2rem;
+            flex-grow: 1;
+            min-height: 100vh;
+            transition: margin-left 0.3s ease-in-out;
+        }
+
+        /* Flight Booking Form */
+        .booking-container {
+            background-color: #fff;
+            padding: 30px;
+            border: 1px solid black;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            max-width: 700px;
+            margin: auto;
+        }
+
+        .booking-container h1 {
+            text-align: center;
+            color: #ec2244;
+            margin-bottom: 25px;
+        }
+
+        .booking-container label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .booking-container input,
+        .booking-container select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        .booking-container button {
+            background-color: #1976d2;
+            color: white;
+            padding: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .booking-container button:hover {
+            background-color: #1565c0;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 2% auto;
+            padding: 20px;
+            border: none;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 85%;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal h2 {
+            color: #1976d2;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .passenger-form {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            background-color: #f9f9f9;
+        }
+
+        .passenger-form h4 {
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #1976d2;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .form-group.small {
+            flex: 0 0 80px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: normal;
+        }
+
+        .submit-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+
+        .submit-btn:hover {
+            background-color: #45a049;
+        }
+
+        /* Success Modal */
+        #successModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        #successModal div {
+            background: #fff;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            width: 300px;
+            position: relative;
+        }
+
+        #successModal div h2 {
+            margin-top: 15px;
+            color: #4caf50;
+        }
+
+        @keyframes rotateCheck {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #successModal div .checkmark {
+            font-size: 50px;
+            color: #4caf50;
+            animation: rotateCheck 1s linear infinite;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 220px;
+            }
+            .main-content {
+                margin-left: 220px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                transform: translateX(-100%);
+                z-index: 1000;
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            .menu-toggle {
+                display: block;
+                position: fixed;
+                top: 1rem;
+                left: 1rem;
+                background: #2f3b52;
+                color: #fff;
+                padding: 0.5rem 0.8rem;
+                border-radius: 6px;
+                cursor: pointer;
+                z-index: 1100;
+                font-size: 1.2rem;
+            }
+            .modal-content {
+                width: 95%;
+                margin: 5% auto;
+                padding: 15px;
+            }
+            .form-row {
+                flex-direction: column;
+            }
+            .form-group.small {
+                flex: 1;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .logo {
+                font-size: 1.1rem;
+            }
+            .nav-link {
+                font-size: 0.85rem;
+                padding: 0.6rem;
+            }
+            .dropdown-item {
+                font-size: 0.8rem;
+                padding: 0.5rem 1.2rem;
+            }
+            .logout-btn {
+                font-size: 0.85rem;
+                padding: 0.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="menu-toggle">☰</div>
+
+    <aside class="sidebar">
+        <div>
+            <div class="logo">
+                <div class="logo-icon">✈️</div>
+                Flight Booking
+            </div>
+
+            <div class="user-info">
+                <div class="user-avatar">👨‍💼</div>
+                <div class="user-details">
+                    <div class="welcome-text">Welcome, {{ request.user.username }}</div>
+                    <div class="user-role">{{ request.user.role }}</div>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <!-- Sidebar Items -->
+                <div class="nav-item">
+                    <a href="#" class="nav-link">
+                        <div class="nav-left"><span class="nav-icon">🏠</span>Dashboard</div>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a class="nav-link">
+                        <div class="nav-left"><span class="nav-icon">📚</span>Manage Class</div>
+                        <span class="dropdown-arrow">▼</span>
+                    </a>
+                    <div class="dropdown-content">
+                        <a href="{% url 'Cclass' %}" class="dropdown-item">➕ Create Subject</a>
+                        <a href="{% url 'Section_List' %}" class="dropdown-item">👥 Sections</a>
+                    </div>
+                </div>
+                <div class="nav-item">
+                    <a class="nav-link">
+                        <div class="nav-left"><span class="nav-icon">📊</span>Grades</div>
+                        <span class="dropdown-arrow">▼</span>
+                    </a>
+                    <div class="dropdown-content">
+                        <a href="#" class="dropdown-item">⭐ View Grades</a>
+                    </div>
+                </div>
+                <div class="nav-item">
+                    <a class="nav-link">
+                        <div class="nav-left"><span class="nav-icon">👨‍🎓</span>Student Info</div>
+                        <span class="dropdown-arrow">▼</span>
+                    </a>
+                    <div class="dropdown-content">
+                        <a href="#" class="dropdown-item">👥 Students</a>
+                        <a href="#" class="dropdown-item">📈 Student Tracking</a>
+                    </div>
+                </div>
+                <div class="nav-item">
+                    <a class="nav-link">
+                        <div class="nav-left"><span class="nav-icon">⚙️</span>Account Info</div>
+                        <span class="dropdown-arrow">▼</span>
+                    </a>
+                    <div class="dropdown-content">
+                        <a href="#" class="dropdown-item">👤 Accounts</a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+
+        <div class="sidebar-footer">
+            <a href="/logout"><button class="logout-btn">Logout</button></a>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <div class="booking-container">
+            <h1>CREATE TASK</h1>
+            <form id="bookingForm" method="POST">
+                {% csrf_token %}
+
+                <!-- Trip Type -->
+                <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                    <div style="flex:1; min-width:150px;">
+                        <label for="trip_type">Trip Type:</label>
+                        <select name="trip_type" id="trip_type" required>
+                            <option value="">Select trip type</option>
+                            <option value="one_way">One Way</option>
+                            <option value="round_trip">Round Trip</option>
+                            <option value="multi_city">Multi City</option>
+                            <option value="non_stop">Non Stop</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Single Route -->
+                <div id="singleRoute" style="display:none;">
+                    <div style="display:flex; gap:15px; flex-wrap:wrap; flex-direction:column;">
+
+                        <!-- Route + Departure Date -->
+                        <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                            <!-- Departure Date -->
+                            <div style="flex:1; min-width:150px;" id="departureWrapper">
+                                <label for="departure_date">Departure Date:</label>
+                                <input type="date" name="departure_date" id="departure_date">
+                            </div>
+
+                            <!-- Return Date -->
+                            <div style="flex:1; min-width:150px; display:none;" id="returnDateWrapper">
+                                <label for="return_date">Return Date:</label>
+                                <input type="date" name="return_date" id="return_date">
+                            </div>
+                        </div>
+
+                        <!-- Route -->
+                        <div style="flex:1; min-width:150px;">
+                            <label for="route">Route:</label>
+                            <select name="route" id="route">
+                                <option value="">Select dates first</option>
+                            </select>
+                        </div>
+
+                        <!-- Duration -->
+                        <div style="flex:1; min-width:150px; margin-top:10px;" id="durationWrapper">
+                            <label for="duration">Duration</label>
+                            <input type="datetime-local" name="duration" id="duration">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Multi-city -->
+                <div id="multiCityContainer" style="display:none; flex-direction:column; gap:10px;">
+                    <div id="multiCityFlights"></div>
+                    <button type="button" id="addFlightBtn">+ Add another flight</button>
+                </div>
+
+                <!-- Passenger Counts -->
+                <div style="display:flex; gap:15px; flex-wrap:wrap; margin-top:15px;">
+                    <div style="flex:1; min-width:100px;">
+                        <label for="adults">Adults:</label>
+                        <input type="number" name="adults" id="adults" value="1" min="1" required>
+                    </div>
+                    <div style="flex:1; min-width:100px;">
+                        <label for="children">Children:</label>
+                        <input type="number" name="children" id="children" value="0" min="0">
+                    </div>
+                    <div style="flex:1; min-width:100px;">
+                        <label for="infants_on_lap">Infants on Lap:</label>
+                        <input type="number" name="infants_on_lap" id="infants_on_lap" value="0" min="0">
+                    </div>
+                </div>
+
+                <!-- Class & Seat -->
+                <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                    <div style="flex:1; min-width:150px;">
+                        <label for="travel_class">Class:</label>
+                        <select name="travel_class" id="travel_class" required>
+                            <option value="economy">Economy</option>
+                            <option value="premium_economy">Premium Economy</option>
+                            <option value="business">Business</option>
+                        </select>
+                    </div>
+                    <div style="flex:1; min-width:150px;">
+                        <label for="seat_preference">Seat Preference:</label>
+                        <select name="seat_preference" id="seat_preference">
+                            <option value="">No preference</option>
+                            <option value="window">Window</option>
+                            <option value="aisle">Aisle</option>
+                            <option value="middle">Middle</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
+                    <a href="{% url 'Section_List' %}" style="text-decoration: none;">
+                        <button type="button" id="backBtn" style="background-color: #6c757d; color: white; padding: 12px 24px; font-size: 16px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s;">
+                            ← Back
+                        </button>
+                    </a>
+                    <button type="button" id="confirmBtn" style="background-color: #007bff; color: white; padding: 12px 24px; font-size: 16px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s;">Confirm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Passenger Details Modal -->
+    <div id="passengerModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5);">
+        <div style="background-color: #fefefe; margin: 5% auto; padding: 20px; border: none; border-radius: 10px; width: 90%; max-width: 800px; max-height: 80%; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Passenger Details</h2>
+                <span class="close" style="color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+            </div>
+            
+            <form id="passengerForm" method="POST">
+                {% csrf_token %}
+                
+                <!-- Hidden fields to transfer data from main form -->
+                <input type="hidden" name="trip_type" id="modal_trip_type">
+                <input type="hidden" name="route" id="modal_route">
+                <input type="hidden" name="departure_date" id="modal_departure_date">
+                <input type="hidden" name="return_date" id="modal_return_date">
+                <input type="hidden" name="duration" id="modal_duration">
+                <input type="hidden" name="adults" id="modal_adults">
+                <input type="hidden" name="children" id="modal_children">
+                <input type="hidden" name="infants_on_lap" id="modal_infants_on_lap">
+                <input type="hidden" name="travel_class" id="modal_travel_class">
+                <input type="hidden" name="seat_preference" id="modal_seat_preference">
+                <input type="hidden" name="passenger_count" id="passenger_count">
+                
+                <!-- Hidden fields for multi-city -->
+                <div id="hiddenMultiCityFields"></div>
+                
+                <!-- Passenger details will be generated here -->
+                <div id="passengerDetails"></div>
+                
+                <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
+                    <button type="button" onclick="document.getElementById('passengerModal').style.display='none'; document.body.style.overflow='auto';" style="background-color: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Cancel</button>
+                    <button type="submit" style="background-color: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Book Flight</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const tripType = document.getElementById("trip_type");
+        const singleRoute = document.getElementById("singleRoute");
+        const multiCityContainer = document.getElementById("multiCityContainer");
+        const multiCityFlights = document.getElementById("multiCityFlights");
+        const returnDateWrapper = document.getElementById("returnDateWrapper");
+        const addFlightBtn = document.getElementById("addFlightBtn");
+        const confirmBtn = document.getElementById("confirmBtn");
+        const modal = document.getElementById("passengerModal");
+        const closeModal = document.getElementsByClassName("close")[0];
+        const passengerDetailsDiv = document.getElementById("passengerDetails");
+        const passengerCountField = document.getElementById("passenger_count");
+        const passengerForm = document.getElementById("passengerForm");
+        const departureDateInput = document.getElementById("departure_date");
+        const returnDateInput = document.getElementById("return_date");
+        const routeSelect = document.getElementById("route");
+
+        let flightCount = 0;
+
+        // Store all available schedules from backend
+        const allSchedules = [
+            {% for schedule in schedules %}
+            {
+                id: "{{ schedule.flight.route.id }}",
+                date: "{{ schedule.departure_time|date:'Y-m-d' }}",
+                origin: "{{ schedule.flight.route.origin_airport.code }}",
+                destination: "{{ schedule.flight.route.destination_airport.code }}",
+                text: "{{ schedule.flight.route.origin_airport.code }} → {{ schedule.flight.route.destination_airport.code }}"
+            },
+            {% endfor %}
+        ];
+
+        // Handle trip type change
+        tripType.addEventListener("change", function() {
+            const trip = this.value;
+            
+            // Reset everything
+            singleRoute.style.display = "none";
+            multiCityContainer.style.display = "none";
+            returnDateWrapper.style.display = "none";
+            routeSelect.innerHTML = '<option value="">Select dates first</option>';
+            departureDateInput.value = "";
+            returnDateInput.value = "";
+
+            if (trip === "one_way" || trip === "non_stop") {
+                singleRoute.style.display = "block";
+                returnDateWrapper.style.display = "none";
+            } else if (trip === "round_trip") {
+                singleRoute.style.display = "block";
+                returnDateWrapper.style.display = "block";
+            } else if (trip === "multi_city") {
+                multiCityContainer.style.display = "flex";
+                multiCityFlights.innerHTML = "";
+                flightCount = 0;
+                createFlightRow();
+                createFlightRow();
+            }
+        });
+
+        // Filter routes for one-way and non-stop
+        function filterOneWayRoutes() {
+            const depDate = departureDateInput.value;
+            
+            if (!depDate) {
+                routeSelect.innerHTML = '<option value="">Select departure date first</option>';
+                return;
+            }
+
+            const filtered = allSchedules.filter(s => s.date === depDate);
+            
+            routeSelect.innerHTML = '';
+            if (filtered.length === 0) {
+                routeSelect.innerHTML = '<option value="">No flights available for this date</option>';
+            } else {
+                routeSelect.innerHTML = '<option value="">Select a route</option>';
+                filtered.forEach(schedule => {
+                    const option = document.createElement("option");
+                    option.value = schedule.id;
+                    option.textContent = schedule.text;
+                    routeSelect.appendChild(option);
+                });
+            }
+        }
+
+        // Filter routes for round trip
+        function filterRoundTripRoutes() {
+            const depDate = departureDateInput.value;
+            const retDate = returnDateInput.value;
+            
+            if (!depDate || !retDate) {
+                routeSelect.innerHTML = '<option value="">Select both departure and return dates</option>';
+                return;
+            }
+
+            const outbound = allSchedules.filter(s => s.date === depDate);
+            const inbound = allSchedules.filter(s => s.date === retDate);
+            
+            routeSelect.innerHTML = '';
+            
+            if (outbound.length === 0 || inbound.length === 0) {
+                routeSelect.innerHTML = '<option value="">No round trip flights available</option>';
+                return;
+            }
+
+            routeSelect.innerHTML = '<option value="">Select a round trip route</option>';
+            
+            // Find matching round trips
+            outbound.forEach(out => {
+                inbound.forEach(ret => {
+                    if (out.origin === ret.destination && out.destination === ret.origin) {
+                        const option = document.createElement("option");
+                        option.value = out.id + "|" + ret.id;
+                        option.textContent = `${out.origin} → ${out.destination} / ${ret.origin} → ${ret.destination}`;
+                        routeSelect.appendChild(option);
+                    }
+                });
+            });
+
+            if (routeSelect.options.length === 1) {
+                routeSelect.innerHTML = '<option value="">No valid round trip routes available</option>';
+            }
+        }
+
+        // Listen for date changes
+        departureDateInput.addEventListener("change", function() {
+            const trip = tripType.value;
+            if (trip === "one_way" || trip === "non_stop") {
+                filterOneWayRoutes();
+            } else if (trip === "round_trip") {
+                filterRoundTripRoutes();
+            }
+        });
+
+        returnDateInput.addEventListener("change", function() {
+            if (tripType.value === "round_trip") {
+                filterRoundTripRoutes();
+            }
+        });
+
+        // Multi-city flight row creation
+        function createFlightRow() {
+            flightCount++;
+            const div = document.createElement("div");
+            div.className = "multi-flight";
+            div.style.cssText = "display: flex; gap: 10px; align-items: center; margin-bottom: 10px;";
+            
+            div.innerHTML = `
+                <div style="flex:1;">
+                    <label>From:</label>
+                    <input type="text" name="from_${flightCount}" placeholder="Origin" required>
+                </div>
+                <div style="flex:1;">
+                    <label>To:</label>
+                    <input type="text" name="to_${flightCount}" placeholder="Destination" required>
+                </div>
+                <div style="flex:1;">
+                    <label>Date:</label>
+                    <input type="date" name="date_${flightCount}" required>
+                </div>
+                <div style="flex:1;">
+                    <label>Duration:</label>
+                    <input type="datetime-local" name="duration_${flightCount}">
+                </div>
+                <button type="button" class="removeFlightBtn" style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">✖</button>
+            `;
+            
+            div.querySelector(".removeFlightBtn").addEventListener("click", () => {
+                if (multiCityFlights.children.length > 2) {
+                    div.remove();
+                }
+            });
+            
+            multiCityFlights.appendChild(div);
+        }
+
+        addFlightBtn.addEventListener("click", createFlightRow);
+
+        // Generate passenger fields
+        function generatePassengerFields(adults, children, infants) {
+            passengerDetailsDiv.innerHTML = "";
+            const total = adults + children + infants;
+            passengerCountField.value = total;
+
+            if (total === 0) {
+                passengerDetailsDiv.innerHTML = '<p style="text-align: center; color: #666;">No passengers specified.</p>';
+                return;
+            }
+
+            let index = 1;
+
+            function createPassenger(type, number) {
+                const passengerDiv = document.createElement("div");
+                passengerDiv.className = "passenger-form";
+                passengerDiv.style.cssText = `
+                    border: 2px solid #007bff;
+                    padding: 20px;
+                    margin-bottom: 20px;
+                    border-radius: 8px;
+                    background-color: #f8f9fa;
+                `;
+                
+                passengerDiv.innerHTML = `
+                    <h4 style="margin: 0 0 15px 0; color: #007bff;">${type} ${number}</h4>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">
+                        <div style="flex: 1; min-width: 120px;">
+                            <label>Title:</label>
+                            <select name="title_${index}" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                                <option value="Mr.">Mr.</option>
+                                <option value="Ms.">Ms.</option>
+                                <option value="Mrs.">Mrs.</option>
+                                <option value="Dr.">Dr.</option>
+                            </select>
+                        </div>
+                        <div style="flex: 2; min-width: 180px;">
+                            <label>First Name:</label>
+                            <input type="text" name="first_name_${index}" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <div style="flex: 0.5; min-width: 80px;">
+                            <label>M.I.:</label>
+                            <input type="text" name="mi_${index}" maxlength="1" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <div style="flex: 2; min-width: 180px;">
+                            <label>Last Name:</label>
+                            <input type="text" name="last_name_${index}" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <label>Birth Year:</label>
+                            <input type="number" name="year_${index}" placeholder="YYYY" min="1900" max="2025" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label>Birth Month:</label>
+                            <input type="number" name="month_${index}" placeholder="MM" min="1" max="12" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label>Birth Day:</label>
+                            <input type="number" name="day_${index}" placeholder="DD" min="1" max="31" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <div style="flex: 2;">
+                            <label>Nationality:</label>
+                            <input type="text" name="nationality_${index}" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label>Passport Number:</label>
+                        <input type="text" name="passport_${index}" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    </div>
+                    <div style="display: flex; gap: 30px;">
+                        <label><input type="checkbox" name="declaration_${index}"> I agree to terms</label>
+                        <label><input type="checkbox" name="pwd_${index}"> PWD</label>
+                    </div>
+                `;
+                
+                passengerDetailsDiv.appendChild(passengerDiv);
+                index++;
+            }
+
+            // Generate forms for each passenger
+            for (let i = 1; i <= adults; i++) createPassenger("Adult", i);
+            for (let i = 1; i <= children; i++) createPassenger("Child", i);
+            for (let i = 1; i <= infants; i++) createPassenger("Infant", i);
+        }
+
+        // Transfer data to modal
+        function transferDataToModal() {
+            // Transfer basic form data
+            document.getElementById("modal_trip_type").value = tripType.value;
+            document.getElementById("modal_route").value = routeSelect.value;
+            document.getElementById("modal_departure_date").value = departureDateInput.value;
+            document.getElementById("modal_return_date").value = returnDateInput.value;
+            document.getElementById("modal_duration").value = document.getElementById("duration").value;
+            document.getElementById("modal_adults").value = document.getElementById("adults").value;
+            document.getElementById("modal_children").value = document.getElementById("children").value;
+            document.getElementById("modal_infants_on_lap").value = document.getElementById("infants_on_lap").value;
+            document.getElementById("modal_travel_class").value = document.getElementById("travel_class").value;
+            document.getElementById("modal_seat_preference").value = document.getElementById("seat_preference").value;
+
+            // Handle multi-city
+            const hiddenFields = document.getElementById("hiddenMultiCityFields");
+            hiddenFields.innerHTML = "";
+            
+            if (tripType.value === "multi_city") {
+                document.querySelectorAll(".multi-flight").forEach((flight, idx) => {
+                    const num = idx + 1;
+                    const from = flight.querySelector(`input[name="from_${num}"]`)?.value || "";
+                    const to = flight.querySelector(`input[name="to_${num}"]`)?.value || "";
+                    const date = flight.querySelector(`input[name="date_${num}"]`)?.value || "";
+                    const duration = flight.querySelector(`input[name="duration_${num}"]`)?.value || "";
+                    
+                    hiddenFields.innerHTML += `
+                        <input type="hidden" name="from_${num}" value="${from}">
+                        <input type="hidden" name="to_${num}" value="${to}">
+                        <input type="hidden" name="date_${num}" value="${date}">
+                        <input type="hidden" name="duration_${num}" value="${duration}">
+                    `;
+                });
+                
+                // Add total multi-city count
+                hiddenFields.innerHTML += `<input type="hidden" name="multi_city_count" value="${multiCityFlights.children.length}">`;
+            }
+
+            // Generate passenger forms
+            const adults = parseInt(document.getElementById("adults").value) || 0;
+            const children = parseInt(document.getElementById("children").value) || 0;
+            const infants = parseInt(document.getElementById("infants_on_lap").value) || 0;
+            generatePassengerFields(adults, children, infants);
+        }
+
+        // Show modal on confirm (FIXED - now works for ALL trip types)
+        confirmBtn.addEventListener("click", function(e) {
+            e.preventDefault();
+            
+            const trip = tripType.value;
+            
+            // Basic validation
+            if (!trip) {
+                alert("Please select a trip type.");
+                return;
+            }
+            
+            // Validate based on trip type
+            if (trip === "one_way" || trip === "non_stop") {
+                if (!departureDateInput.value || !routeSelect.value) {
+                    alert("Please select departure date and route.");
+                    return;
+                }
+            } else if (trip === "round_trip") {
+                if (!departureDateInput.value || !returnDateInput.value || !routeSelect.value) {
+                    alert("Please select both departure and return dates, and a route.");
+                    return;
+                }
+            } else if (trip === "multi_city") {
+                let valid = true;
+                document.querySelectorAll(".multi-flight").forEach((flight, idx) => {
+                    const num = idx + 1;
+                    const from = flight.querySelector(`input[name="from_${num}"]`)?.value;
+                    const to = flight.querySelector(`input[name="to_${num}"]`)?.value;
+                    const date = flight.querySelector(`input[name="date_${num}"]`)?.value;
+                    if (!from || !to || !date) valid = false;
+                });
+                if (!valid) {
+                    alert("Please fill in all multi-city flight details.");
+                    return;
+                }
+            }
+            
+            const adults = parseInt(document.getElementById("adults").value) || 0;
+            if (adults === 0) {
+                alert("At least one adult passenger is required.");
+                return;
+            }
+            
+            // Transfer data and show modal
+            transferDataToModal();
+            modal.style.display = "block";
+            document.body.style.overflow = "hidden";
+        });
+
+        // Close modal
+        closeModal.addEventListener("click", function() {
+            modal.style.display = "none";
+            document.body.style.overflow = "auto";
+        });
+
+        window.addEventListener("click", function(event) {
+            if (event.target === modal) {
+                modal.style.display = "none";
+                document.body.style.overflow = "auto";
+            }
+        });
+    });
+    </script>
+</body>
+</html>

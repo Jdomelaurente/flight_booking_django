@@ -1,0 +1,428 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flight Booking Simulator</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f5f7fa;
+        display: flex;
+        min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+        width: 260px;
+        background: linear-gradient(180deg, #2f3b52, #1f2a3d);
+        color: #fff;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 1.5rem 1rem;
+        position: fixed;
+        box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+    }
+
+    /* Logo */
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 2rem;
+        letter-spacing: 0.5px;
+    }
+    .logo-icon {
+        width: 40px;
+        height: 40px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+    }
+
+    /* User Info */
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 2rem;
+        padding: 0.75rem;
+        background: rgba(255,255,255,0.08);
+        border-radius: 10px;
+    }
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+    .user-details {
+        display: flex;
+        flex-direction: column;
+        font-size: 0.9rem;
+    }
+    .welcome-text { font-weight: 600; }
+    .user-role { opacity: 0.7; font-size: 0.8rem; }
+
+    /* Sidebar Menu */
+    .nav-menu { display: flex; flex-direction: column; gap: 0.3rem; }
+    .nav-item { position: relative; }
+    .nav-link {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.7rem 1rem;
+        color: #fff;
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.95rem;
+        border-radius: 8px;
+        transition: background 0.3s, transform 0.2s;
+        cursor: pointer;
+    }
+    .nav-link:hover, .nav-link.active { 
+        background-color: #3b4a6b; 
+        transform: translateX(5px);
+    }
+
+    .nav-left {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .nav-icon { font-size: 1.2rem; }
+    .dropdown-arrow { font-size: 0.8rem; transition: transform 0.3s ease; }
+
+    /* Dropdown Menu */
+    .dropdown-content {
+        display: none;
+        flex-direction: column;
+        background-color: #3b4a6b;
+        margin-top: 0.3rem;
+        border-radius: 8px;
+        overflow: hidden;
+        animation: fadeIn 0.3s ease;
+        margin-left: 10px;
+    }
+    .dropdown-item {
+        padding: 0.55rem 1.8rem;
+        color: #fff;
+        text-decoration: none;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: background 0.2s;
+    }
+    .dropdown-item:hover, 
+    .dropdown-item.active { 
+        background-color: #7685a6; 
+        font-weight: 600;
+    }
+
+    /* Sidebar Footer */
+    .sidebar-footer {
+        margin-top: auto;
+        padding-top: 1rem;
+    }
+    .logout-btn {
+        width: 100%;
+        background-color: #3b4a6b;
+        border: none;
+        color: #fff;
+        padding: 0.7rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.3s, transform 0.2s;
+    }
+    .logout-btn:hover { 
+        background-color: #4a5a7b; 
+        transform: scale(1.02);
+    }
+
+    /* Main Content */
+    .main-content {
+        margin-left: 260px;
+        padding: 2rem;
+        flex-grow: 1;
+    }
+
+    /* Page Title */
+    .form-title {
+        text-align: center;
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        color: #2f3b52;
+    }
+
+    /* Card-like container */
+    .form-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 2rem;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    }
+
+    /* Input groups */
+    .form-group {
+        margin-bottom: 1.2rem;
+        display: flex;
+        flex-direction: column;
+    }
+    label {
+        font-weight: 600;
+        margin-bottom: 0.4rem;
+        color: #333;
+    }
+    input, select {
+        padding: 0.7rem;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        font-size: 1rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus, select:focus {
+        border-color: #2f3b52;
+        box-shadow: 0 0 5px rgba(47,59,82,0.2);
+        outline: none;
+    }
+
+    /* Button */
+    .button-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 1.5rem;
+    }
+    .submit-btn {
+        background: #127552;
+        color: #fff;
+        padding: 0.75rem 2rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.3s, transform 0.2s;
+    }
+    .submit-btn:hover {
+        background: #2b9e76;
+        transform: translateY(-2px);
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .button-class {
+        display: inline-block;
+        text-decoration: none;
+        background-color: #2f3b52;
+        color: #ffffff;
+        padding: 12px 24px;
+        font-size: 17px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-weight: 500;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+
+        position: relative;
+        top: -1px;
+        left: 10px;
+    }
+
+    .button-class:hover {
+        background-color: #3b4a6b;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .button-class:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+</style>
+</head>
+<body>
+{% if messages %}
+  {% for message in messages %}
+    <script>
+        alert("{{ message }}");
+    </script>
+  {% endfor %}
+{% endif %}
+
+<aside class="sidebar">
+    <div>
+        <div class="logo"><div class="logo-icon">✈️</div>Flight Booking</div>
+        <div class="user-info">
+            <div class="user-avatar">👨‍💼</div>
+            <div class="user-details">
+                <div class="welcome-text">Welcome, {{ request.user.username }}</div>
+                <div class="user-role">{{ request.user.role }}</div>
+            </div>
+        </div>
+
+
+        <nav class="nav-menu">
+            <div class="nav-item">
+                <a href="#" class="nav-link">
+                    <div class="nav-left"><span class="nav-icon">🏠</span>Dashboard</div>
+                </a>
+            </div>
+
+            <div class="nav-item">
+                <a class="nav-link active">
+                    <div class="nav-left"><span class="nav-icon">📚</span>Manage Class</div>
+                    <span class="dropdown-arrow" style="transform: rotate(180deg);">▼</span>
+                </a>
+                <div class="dropdown-content" style="display: flex;">
+                    <a href="{% url 'CreateClass' %}" class="dropdown-item active">➕ Create Subject</a>
+                    <a href="{% url 'Section_List' %}" class="dropdown-item">👥 Sections</a>
+                </div>
+            </div>
+
+            <div class="nav-item">
+                <a class="nav-link">
+                    <div class="nav-left"><span class="nav-icon">📊</span>Grades</div>
+                    <span class="dropdown-arrow">▼</span>
+                </a>
+                <div class="dropdown-content">
+                    <a href="#" class="dropdown-item">⭐ View Grades</a>
+                </div>
+            </div>
+
+            <div class="nav-item">
+                <a class="nav-link">
+                    <div class="nav-left"><span class="nav-icon">👨‍🎓</span>Student Info</div>
+                    <span class="dropdown-arrow">▼</span>
+                </a>
+                <div class="dropdown-content">
+                    <a href="#" class="dropdown-item">👥 Students</a>
+                    <a href="#" class="dropdown-item">📈 Student Tracking</a>
+                </div>
+            </div>
+
+            <div class="nav-item">
+                <a class="nav-link">
+                    <div class="nav-left"><span class="nav-icon">⚙️</span>Account Info</div>
+                    <span class="dropdown-arrow">▼</span>
+                </a>
+                <div class="dropdown-content">
+                    <a href="#" class="dropdown-item">👤 Accounts</a>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <div class="sidebar-footer">
+        <a href="/logout">
+            <button class="logout-btn">Logout</button>
+        </a>
+    </div>
+</aside>
+
+<main class="main-content">
+    <div>
+        <a href="{% url 'Cclass' %}" class="button-class">BACK</a>
+    </div>
+    <h1 class="form-title">Create Subject</h1>
+
+    <div class="form-container">
+        <!-- Form connected to Django view -->
+        <form id="create-class-form" method="POST">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="subject_code">Subject Code</label>
+                <input type="text" id="subject_code" name="subject_code" placeholder="e.g. IT 101" required>
+            </div>
+
+            <div class="form-group">
+                <label for="subject_title">Subject Title</label>
+                <input type="text" id="subject_title" name="subject_title" placeholder="e.g. Introduction to IT" required>
+            </div>
+
+            <div class="form-group">
+            <label for="instructor">Instructor</label>
+            <!-- visible display -->
+            <input type="text" id="instructor_display" value="{{ request.user.get_full_name|default:request.user.username }}" readonly />
+            <!-- hidden value sent to server -->
+            <input type="hidden" name="instructor" id="instructor" value="{{ request.user.get_full_name|default:request.user.username }}" />
+            </div>
+
+            <div class="form-group">
+                <label for="schedule">Schedule</label>
+                <input type="text" id="schedule" name="schedule" placeholder="e.g. Mon/Wed 7:30–9:00 AM">
+            </div>
+
+            <div class="form-group">
+                <label for="semester">Semester</label>
+                <select id="semester" name="semester" required>
+                    <option value="1st">1st Semester</option>
+                    <option value="2nd">2nd Semester</option>
+                    <option value="summer">Summer</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="academic_year">Academic Year</label>
+                <input type="text" id="academic_year" name="academic_year" placeholder="2025–2026" required>
+            </div>
+
+            <div class="button-container">
+                <button type="submit" class="submit-btn">Create</button>
+            </div>
+        </form>
+    </div>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            const dropdown = this.nextElementSibling;
+            if(dropdown && dropdown.classList.contains('dropdown-content')) {
+                const isOpen = dropdown.style.display === 'flex';
+                document.querySelectorAll('.dropdown-content').forEach(d => d.style.display = 'none');
+                document.querySelectorAll('.dropdown-arrow').forEach(a => a.style.transform = 'rotate(0deg)');
+                dropdown.style.display = isOpen ? 'none' : 'flex';
+                this.querySelector('.dropdown-arrow').style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+                e.preventDefault();
+            } else {
+                navLinks.forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            }
+        });
+    });
+
+    const logoutBtn = document.querySelector('.logout-btn');
+    logoutBtn.addEventListener('click', function() {
+        if(confirm('Are you sure you want to logout?')) console.log('Logging out...');
+    });
+});
+</script>
+
+</body>
+</html>
