@@ -3,17 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Admin Dashboard</title>
-<<<<<<< HEAD
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Font Awesome -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <style>
-    .sidebar {
-      background-color: #053322; /* Custom dark green */
-    }
-
-=======
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -34,71 +23,11 @@
     .poppins { font-family: 'Poppins', sans-serif; font-size: 10px; }
     .poppins-small { font-family: 'Poppins', sans-serif; font-size: 8px; }
     .submenu a { display: block; }
->>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
   </style>
 </head>
 <body class="h-screen bg-gray-100 flex">
 
   <!-- Sidebar -->
-<<<<<<< HEAD
-  <nav class="w-64 text-white flex flex-col p-4 fixed h-full overflow-y-auto sidebar">
-    <h4 class="text-center text-2xl font-bold mb-6">Flight Admin</h4>
-
-    <a href="{% url 'dashboard' %}" class="flex justify-between items-center py-2 px-4 hover:bg-green-900 rounded">
-      <span class="flex items-center">
-        <i class="fas fa-home mr-2"></i> Dashboard
-      </span>
-    </a>
-
-    <!-- Flight Management -->
-    <button class="w-full text-left px-4 py-2 hover:bg-green-900 flex justify-between items-center rounded" onclick="toggleMenu('flightMgmt')">
-      <span><i class="fas fa-plane mr-2"></i> Manage Flights</span><i class="fas fa-caret-down"></i>
-    </button>
-    <div id="flightMgmt" class="hidden pl-6 text-sm">
-      <a href="{% url 'flight' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Flights</a>
-      <a href="{% url 'route' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Routes</a>
-      <a href="{% url 'schedule' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Schedules</a>
-      <a href="{% url 'seat' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Seats</a>
-    </div>
-
-    <!-- Assets -->
-    <button class="w-full text-left px-4 py-2 hover:bg-green-900 flex justify-between items-center rounded" onclick="toggleMenu('assets')">
-      <span><i class="fas fa-box mr-2"></i> Assets</span><i class="fas fa-caret-down"></i>
-    </button>
-    <div id="assets" class="hidden pl-6 text-sm">
-      <a href="{% url 'airport' %}" class="block py-2 px-2 hover:bg-green-700 rounded">Airports</a>
-      <a href="{% url 'airline' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Airlines</a>
-      <a href="{% url 'aircraft' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Aircraft</a>
-      <a href="{% url 'seat_class' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Seat Classes</a>
-    </div>
-
-     <!-- Bookings -->
-    <button class="w-full text-left px-4 py-2 hover:bg-green-900 flex justify-between items-center rounded" onclick="toggleMenu('bookings')">
-      <span><i class="fas fa-receipt mr-2"></i> Bookings Info</span><i class="fas fa-caret-down"></i>
-    </button>
-    <div id="bookings" class="hidden pl-6 text-sm">
-      <a href="{% url 'booking_detail' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Booking Details</a>
-      <a href="{% url 'booking' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Booking</a>
-      <a href="{% url 'payment' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Payments</a>
-    </div>
-
-    <!-- Passengers -->
-    <button class="w-full text-left px-4 py-2 hover:bg-green-900 flex justify-between items-center rounded" onclick="toggleMenu('passenger')">
-      <span><i class="fas fa-user-friends mr-2"></i> Passengers Info</span><i class="fas fa-caret-down"></i>
-    </button>
-    <div id="passenger" class="hidden pl-6 text-sm">
-      <a href="{% url 'passenger' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Passengers</a>
-      <a href="{% url 'check_in' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Check-Ins</a>
-    </div>
-
-    <!-- Student info -->
-    <button class="w-full text-left px-4 py-2 hover:bg-green-900 flex justify-between items-center rounded" onclick="toggleMenu('student')">
-      <span><i class="fas fa-user mr-2"></i> Student Info</span><i class="fas fa-caret-down"></i>
-    </button>
-    <div id="student" class="hidden pl-6 text-sm">
-      <a href="{% url 'student' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Student</a>
-      <a href="{% url 'tracklog' %}" class="block py-2 px-2 hover:bg-green-800 rounded">Track Log</a>
-=======
   <nav id="sidebar" class="w-16 sidebar text-white flex flex-col items-center py-4 transition-all duration-300 fixed h-screen z-50">
 
     <!-- Toggle Button -->
@@ -186,68 +115,17 @@
     <div id="student" class="submenu hidden pl-8 text-sm">
       <a href="{% url 'student' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Student</a>
       <a href="{% url 'tracklog' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Track Log</a>
->>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
     </div>
 
   </nav>
 
-<<<<<<< HEAD
-<main class="ml-64 p-6 w-full overflow-y-auto ">
-  <div class="flex justify-end items-center ml-64 relative"> 
-    <!-- relative makes the dropdown anchor properly -->
-
-    <!-- Profile Button -->
-    <button onclick="toggleMenu('profileMenu')" 
-      class="flex items-center bg-[#053322] px-4 py-2 rounded-lg shadow hover:shadow-md transition ">
-      <i class="fas fa-user-circle text-white text-2xl"></i>
-       <span class="ml-3 text-white font-medium">{{ username }}</span>
-      <i class="fas fa-caret-down ml-2 text-sm text-white"></i>
-    </button>
-
-    <!-- Dropdown -->
-    <div id="profileMenu" 
-      class="absolute right-0 top-full mt-2 w-48 bg-white shadow-lg rounded-lg hidden z-10">
-      <a href="{% url 'profile' %}"  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-        <i class="fas fa-user mr-2"></i> Profile
-      </a>
-      <a href="{% url 'logout' %}" 
-        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-        <i class="fas fa-sign-out-alt mr-2"></i> Logout
-      </a>
-    </div>
-  </div>
-
-  <!-- Main Content -->
-=======
   <!-- Main Content -->
   <main id="mainContent" class="flex-1 p-6 transition-all duration-300 ml-16">
 
->>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
     {% block content %}
     {% endblock %}
   </main>
 
-<<<<<<< HEAD
-  <script>
-    function toggleMenu(id) {
-  document.getElementById(id).classList.toggle('hidden');
-    }
-
-    function toggleMenu(id) {
-      const menu = document.getElementById(id);
-      menu.classList.toggle("hidden");
-    }
-
-    // Optional: Close profile dropdown if clicked outside
-    window.addEventListener('click', function (e) {
-      const profileMenu = document.getElementById('profileMenu');
-      const button = document.querySelector('[onclick="toggleMenu(\'profileMenu\')"]');
-      if (!profileMenu.contains(e.target) && !button.contains(e.target)) {
-        profileMenu.classList.add('hidden');
-      }
-    });
-  </script>
-=======
 <script>
 // Sidebar expand/collapse with localStorage
 function toggleSidebar() {
@@ -326,7 +204,6 @@ function toggleSubmenu(id) {
 
 
 </script>
->>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
 
 </body>
 </html>

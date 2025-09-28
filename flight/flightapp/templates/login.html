@@ -1,12 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<<<<<<< HEAD
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-=======
   <meta charset="UTF-8">
   <title>Admin Dashboard Login</title>
 
@@ -24,29 +18,15 @@
     .poppins { font-family: 'Poppins', sans-serif; }
     .poppins-small { font-family: 'Poppins', sans-serif; font-size: 12px; }
   </style>
->>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
 
 <!-- Header -->
-<<<<<<< HEAD
-<header class="bg-green-900 text-white p-9 shadow-md">
-=======
 <header class="bg-green-900 text-white p-4 shadow-md">
->>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
 </header>
 
 <!-- Main Content -->
 <main class="flex-grow flex items-center justify-center">
-<<<<<<< HEAD
-    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h2 class="text-2xl font-bold mb-6 text-center">Login</h2>
-
-        {% if messages %}
-            <div class="mb-4">
-                {% for message in messages %}
-                    <div class="p-3 rounded bg-red-100 text-red-700">{{ message }}</div>
-=======
     <div class="bg-white p-4 rounded shadow-md w-full max-w-sm">
         <h2 class="text-xl font-bold mb-5 text-center unbounded">Login</h2>
 
@@ -57,24 +37,10 @@
                         <i class="ph ph-warning-circle mr-2 text-red-700"></i>
                         {{ message }}
                     </div>
->>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
                 {% endfor %}
             </div>
         {% endif %}
 
-<<<<<<< HEAD
-        <form method="POST">
-            {% csrf_token %}
-            <label class="block font-semibold mb-1">Username:</label>
-            <input type="text" name="username"
-                  class="w-full bg-gray-100 p-2 border rounded shadow-inner" required>
-
-            <label class="block font-semibold mb-1 mt-3">Password:</label>
-            <input type="password" name="password"
-                   class="w-full bg-gray-100 p-2 border rounded shadow-inner" required>
-
-            <button class="w-full mt-4 bg-green-900 text-white p-2 rounded hover:bg-green-800">
-=======
         <form method="POST" class="space-y-3">
             {% csrf_token %}
 
@@ -98,30 +64,20 @@
             <button type="submit" 
                     class="w-full mt-3 bg-green-900 text-white p-2  hover:bg-green-800 font-semibold poppins flex items-center justify-center text-sm">
                 <i class="ph ph-sign-in mr-2"></i>
->>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
                 Login
             </button>
         </form>
 
-<<<<<<< HEAD
-        <p class="text-center text-sm mt-4">No account? 
-=======
         <!-- Register Link -->
         <p class="text-center mt-3 poppins-small text-sm">No account? 
->>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
             <a href="{% url 'register' %}" class="text-green-800 hover:underline">Register</a>
         </p>
     </div>
 </main>
 
 <!-- Footer -->
-<<<<<<< HEAD
-<footer class="bg-green-900 text-white text-center p-5 text-sm">
-    &copy;2025 All rights reserved.
-=======
 <footer class="bg-green-900 text-white text-center p-2 poppins-small text-sm">
     &copy; 2025 All rights reserved.
->>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
 </footer>
 
 </body>

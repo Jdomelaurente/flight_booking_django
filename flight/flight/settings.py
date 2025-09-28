@@ -23,6 +23,7 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 DEBUG = True
 
+
 ALLOWED_HOSTS = ["*"]
 
 # Application definition
@@ -99,3 +100,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Custom User Model
 AUTH_USER_MODEL = "master.User"
+
+STATICFILES_DIRS = [
+    BASE_DIR / "static",   # <--- this is your project-level static folder
+]
