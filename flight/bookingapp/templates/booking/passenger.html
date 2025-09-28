@@ -138,19 +138,21 @@
 
                     <!-- passenger sidebar -->
                     <div class="w-[200px] bg-gray-200">
-                        {% for passenger in passenger_range %}
+                        {% for passenger in passenger_list %}
                             <div class="py-5 flex justify-center passenger-tab cursor-pointer {% if forloop.first %}bg-white border-l-8 border-[#2975F7] z-10{% endif %}" 
-                                data-passenger="{{ passenger }}">
-                                <p class="text-xs">Passenger {{ passenger }}</p>
+                                data-passenger="{{ passenger.number }}">
+                                <p class="text-xs">Passenger {{ passenger.number }} ({{ passenger.type }})</p>
                             </div>
                         {% endfor %}
+
                     </div>
 
                     <!-- passenger forms -->
-                    <div class="w-full mx-20 py-15">
-                        {% for passenger in passenger_range %}
-                        <div class="passenger-form {% if not forloop.first %}hidden{% endif %}" id="passenger-form-{{ passenger }}">
-                            <h1 class="text-lg font-bold">Passenger {{ passenger }} </h1>
+                   <div class="w-full relative mx-20 py-15 min-h-[500px]">
+                        {% for passenger in passenger_list %}
+                        <div class="passenger-form absolute top-7 left-0 w-full transition-opacity duration-300 {% if not forloop.first %}invisible opacity-0{% else %}opacity-100{% endif %}" 
+                            id="passenger-form-{{ passenger.number }}">
+                            <h1 class="text-lg font-bold">Passenger {{ passenger.number }} ({{ passenger.type }})</h1>
                             <p class="text-xs text-gray-500">
                                 Please make sure that you enter your name exactly as it is shown on your Valid ID
                             </p>
@@ -160,7 +162,7 @@
                                 <div class="flex-1 flex flex-col max-w-[100px]">
                                     <label class="text-sm flex">Gender <p class="text-red-500">*</p></label>
                                     
-                                    <select id="" name="gender_{{ passenger }}" placeholder="Mr/Mrs" class="border py-2 px-1">
+                                    <select id="" name="gender_{{ passenger.number }}" class="border py-2 px-1">
                                         <option value="" hidden> </option>
                                         <option value="male">male</option>
                                         <option value="female">female</option>
@@ -168,15 +170,18 @@
                                 </div>
                                 <div class="flex-1 flex flex-col">
                                     <label class="text-sm flex">First name <p class="text-red-500">*</p></label>
-                                    <input type="text" name="first_name_{{ passenger }}" placeholder="Juan" class="border py-2 px-1">
+                                    <input type="text" name="first_name_{{ passenger.number }}" placeholder="Juan" class="border py-2 px-1">
+
                                 </div>
                                 <div class="flex-1 flex flex-col">
                                     <label class="text-sm flex">Last name <p class="text-red-500">*</p></label>
-                                    <input type="text" name="last_name_{{ passenger }}" placeholder="Dela Cruz" class="border py-2 px-1">
+                                    <input type="text" name="last_name_{{ passenger.number }}" placeholder="Dela Cruz" class="border py-2 px-1">
+
                                 </div>
                                 <div class="flex-1 flex flex-col max-w-[100px]">
                                     <label class="text-sm flex">M.I.</label>
-                                    <input type="text" name="mi_{{ passenger }}" placeholder="L" class="border py-2 px-1">
+                                    <input type="text" name="mi_{{ passenger.number }}" placeholder="L" class="border py-2 px-1">
+
                                 </div>
                             </div>
 
@@ -188,7 +193,7 @@
                                         <div class="flex flex-col w-[120px]">
                                             <label class="text-sm flex">Day <p class="text-red-500">*</p></label>
                                             <!-- <input type="text"  placeholder="30" class="border py-2 px-1"> -->
-                                            <select name="dob_day_{{ passenger }}" id=""  class="border py-2 px-1">
+                                            <select name="dob_day_{{ passenger.number }}" id=""  class="border py-2 px-1">
                                                 <option hidden></option>
                                                 <option value="1">1</option>
                                                 <option value="2">2</option>
@@ -226,7 +231,7 @@
                                         </div>
                                         <div class="flex flex-col w-[120px]">
                                             <label class="text-sm flex">Month <p class="text-red-500">*</p></label>
-                                            <select name="dob_month_{{ passenger }}" class="border py-2 px-1">
+                                            <select name="dob_month_{{  passenger.number }}" class="border py-2 px-1">
                                                 <option hidden></option>
                                                 <option value="1">Jan</option>
                                                 <option value="2">Feb</option>
@@ -244,7 +249,7 @@
                                         </div>
                                         <div class="flex flex-col w-[120px]">
                                             <label class="text-sm flex">Year <p class="text-red-500">*</p></label>
-                                            <select id="dob-year-{{ passenger }}" name="dob_year_{{ passenger }}" class="border py-2 px-1">
+                                            <select id="dob-year-{{ passenger }}" name="dob_year_{{  passenger.number }}" class="border py-2 px-1">
                                                 <option hidden></option>
                                             </select>
 
@@ -257,22 +262,22 @@
                             <div class="flex-1 flex mt-5 space-x-5">
                                 <div class="flex flex-col flex-1">
                                     <label class="text-sm flex">Passport <p class="text-red-500">*</p></label>
-                                    <input type="text" name="passport_{{ passenger }}" placeholder="DASD4D44ASD" class="border py-2 px-1">
+                                    <input type="text" name="passport_{{  passenger.number }}" placeholder="DASD4D44ASD" class="border py-2 px-1">
                                 </div>
                                 <div class="flex flex-col flex-1">
                                     <label class="text-sm flex">Nationality <p class="text-red-500">*</p></label>
-                                    <input type="text" name="nationality_{{ passenger }}" placeholder="Philippines" class="border py-2 px-1">
+                                    <input type="text" name="nationality_{{  passenger.number }}" placeholder="Philippines" class="border py-2 px-1">
                                 </div>
                             </div>
 
                             <!-- Checkboxes -->
                             <div class="flex-1 flex flex-col mt-5 space-x-5">
                                 <div class="flex gap-2 flex-1">
-                                    <input type="checkbox" name="declaration_{{ passenger }}">
+                                    <input type="checkbox" name="declaration_{{  passenger.number }}">
                                     <label class="text-xs">I have a declaration / request</label>
                                 </div>
                                 <div class="flex gap-2 flex-1">
-                                    <input type="checkbox" name="pwd_{{ passenger }}">
+                                    <input type="checkbox" name="pwd_{{  passenger.number }}">
                                     <label class="text-xs">I am a Person with Disability</label>
                                 </div>
                             </div>
@@ -280,7 +285,7 @@
                             <!-- Next passenger button -->
                             <div class="flex-1 flex flex-col mt-5 items-end space-x-5">
                                 {% if not forloop.last %}
-                                <button type="button" class="next-passenger shadow-sm/20 hover:bg-gray-100 flex items-center py-1 px-5 text-[#2975F7] hover:text-[#2975F7]/80 rounded-full cursor-pointer justify-center gap-2" data-current="{{ passenger }}">
+                                <button type="button" class="next-passenger shadow-sm/20 hover:bg-gray-100 flex items-center py-1 px-5 text-[#2975F7] hover:text-[#2975F7]/80 rounded-full cursor-pointer justify-center gap-2" data-current="{{ passenger.number }}">
                                     Next passenger
                                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#2975F7" viewBox="0 0 22 22">
                                         <path d="M6 13h8.09l-3.3 3.29 1.42 1.42 5.7-5.71-5.7-5.71-1.42 1.42 3.3 3.29H6z"></path>
@@ -381,50 +386,131 @@
 <!-- JS to switch passengers -->
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+
+    let validationTriggered = false; // track if "Next" or submit clicked
+
     function showPassenger(passenger) {
         // Hide all forms
-        document.querySelectorAll(".passenger-form").forEach(form => form.classList.add("hidden"));
-        // Show selected form
-        let form = document.getElementById(`passenger-form-${passenger}`);
-        if (form) form.classList.remove("hidden");
-
-        // Update sidebar highlight
-        document.querySelectorAll(".passenger-tab").forEach(tab => {
-            tab.classList.remove("bg-white", "border-l-8", "border-[#2975F7]", "z-10");
+        document.querySelectorAll(".passenger-form").forEach(form => {
+            form.classList.add("invisible", "opacity-0");
+            form.classList.remove("opacity-100");
         });
-        let tab = document.querySelector(`.passenger-tab[data-passenger="${passenger}"]`);
-        if (tab) tab.classList.add("bg-white", "border-l-8", "border-[#2975F7]", "z-10");
+
+        // Show selected form
+        const form = document.getElementById(`passenger-form-${passenger}`);
+        if (form) {
+            form.classList.remove("invisible");
+            form.classList.add("opacity-100");
+        }
+
+        // Reset all tabs
+        document.querySelectorAll(".passenger-tab").forEach(tab => {
+            tab.classList.remove("bg-white", "border-l-8", "border-[#2975F7]", "z-10", "bg-red-100", "text-red-600");
+        });
+
+        // Highlight active tab if complete (or if validation triggered)
+        const activeTab = document.querySelector(`.passenger-tab[data-passenger="${passenger}"]`);
+        if (activeTab) {
+            if (validationTriggered && isPassengerIncomplete(passenger)) {
+                activeTab.classList.add("bg-red-100", "text-red-600");
+            } else {
+                activeTab.classList.add("bg-white", "border-l-8", "border-[#2975F7]", "z-10");
+            }
+        }
+
+        // Highlight incomplete tabs if validation triggered
+        if (validationTriggered) highlightIncompletePassengers();
     }
 
-    // Handle Next button
+    function validatePassenger(passengerNumber) {
+        const form = document.getElementById(`passenger-form-${passengerNumber}`);
+        const requiredFields = form.querySelectorAll(
+            "[name^='first_name_'], [name^='last_name_'], [name^='gender_'], [name^='dob_day_'], [name^='dob_month_'], [name^='dob_year_'], [name^='passport_'], [name^='nationality_']"
+        );
+
+        let valid = true;
+        requiredFields.forEach(field => {
+            if (!field.value || field.value.trim() === "") {
+                field.classList.add("border-red-500");
+                valid = false;
+            } else {
+                field.classList.remove("border-red-500");
+            }
+        });
+
+        return valid;
+    }
+
+    function isPassengerIncomplete(passengerNumber) {
+        return !validatePassenger(passengerNumber);
+    }
+
+    function highlightIncompletePassengers() {
+        document.querySelectorAll(".passenger-tab").forEach(tab => {
+            const passenger = parseInt(tab.dataset.passenger);
+            if (isPassengerIncomplete(passenger)) {
+                tab.classList.add("bg-red-100", "text-red-600");
+                tab.classList.remove("bg-white", "border-l-8", "border-[#2975F7]");
+            }
+        });
+    }
+
+    // Next buttons
     document.querySelectorAll(".next-passenger").forEach(btn => {
         btn.addEventListener("click", () => {
-            let current = parseInt(btn.dataset.current);
-            showPassenger(current + 1);
+            const current = parseInt(btn.dataset.current);
+            validationTriggered = true; // mark that validation started
+            if (validatePassenger(current)) {
+                showPassenger(current + 1);
+            } else {
+                showPassenger(current); // stay on incomplete
+            }
         });
     });
 
-    // Handle sidebar clicks
+    // Sidebar clicks
     document.querySelectorAll(".passenger-tab").forEach(tab => {
         tab.addEventListener("click", () => {
-            let passenger = parseInt(tab.dataset.passenger);
+            const passenger = parseInt(tab.dataset.passenger);
+
+            // Validate all previous passengers only if validation started
+            if (validationTriggered) {
+                for (let i = 1; i < passenger; i++) {
+                    validatePassenger(i);
+                }
+            }
+
             showPassenger(passenger);
         });
     });
 
-    // find all year dropdowns (in case you have multiple passengers)
+    // Populate year dropdowns
     document.querySelectorAll("select[name^='dob_year_']").forEach(select => {
         const currentYear = new Date().getFullYear();
-        const startYear = 1900;
-
-        for (let year = currentYear; year >= startYear; year--) {
-            let option = document.createElement("option");
+        for (let year = currentYear; year >= 1900; year--) {
+            const option = document.createElement("option");
             option.value = year;
             option.textContent = year;
             select.appendChild(option);
         }
     });
 
-});    
+    // Form submission
+    const form = document.querySelector("form");
+    form.addEventListener("submit", function(e) {
+        validationTriggered = true; // mark that validation started
+        const totalPassengers = {{ passenger_list|length }};
+        let allValid = true;
+        for (let i = 1; i <= totalPassengers; i++) {
+            if (!validatePassenger(i)) allValid = false;
+        }
+        highlightIncompletePassengers();
+        if (!allValid) e.preventDefault();
+    });
+});
 </script>
+
+
+
+
 {% endblock %}

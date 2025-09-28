@@ -27,7 +27,6 @@ def home(request):
     return HttpResponse(templates.render(context, request))
 
 
-""" get all inputs from home  """
 @login_required
 def search_flight(request):
     if request.method == 'POST':
@@ -36,32 +35,36 @@ def search_flight(request):
         destination = request.POST.get('destination')
         departure_date = request.POST.get('departure_date')
         return_date = request.POST.get('return_date')
-        passenger_count = request.POST.get('passenger')
-
-        if not trip_type and not origin and not destination and not departure_date and not return_date and not passenger_count:
+        adults = int(request.POST.get('adults', 1))
+        children = int(request.POST.get('children', 0))
+        infants = int(request.POST.get('infants', 0))
+        
+        if not trip_type and not origin and not destination and not departure_date and not return_date and (adults + children + infants == 0):
             return redirect('bookingapp:main')
 
         if trip_type:
             request.session['trip_type'] = trip_type
-            print(f" trip type:  {trip_type}")
         if origin:    
-            request.session['origin'] =  int(origin)
-            print(f" origin {origin}")
+            request.session['origin'] = int(origin)
         if destination:
             request.session['destination'] = int(destination)
-            print(f" destination {destination}")
         if departure_date:    
             request.session['departure_date'] = departure_date
-            print( f" departure_date {departure_date}")
         if return_date:    
             request.session['return_date'] = return_date
-           
-            print( f" return_date {return_date}")
-        if passenger_count:    
-            request.session['passenger_count'] = int(passenger_count)
-            print(f" passenger_count {passenger_count}")
 
+        request.session['adults'] = adults
+        request.session['children'] = children
+        request.session['infants'] = infants
+        request.session['passenger_count'] = adults + children + infants
         request.session['seat'] = None
+
+        # Print all session data to console
+        # print("=== Current Session Data ===")
+        # for key, value in request.session.items():
+        #     print(f"{key}: {value}")
+        # print("============================")
+
         return redirect("bookingapp:flight_schedules")
 
 @never_cache
@@ -91,7 +94,7 @@ def flight_schedules(request):
         return_schedules = Schedule.objects.filter(
             flight__route__origin_airport=destination,
             flight__route__destination_airport=origin,
-           
+           departure_time__date=return_obj.date()
         )
     else:
         return_date = None
@@ -112,7 +115,7 @@ def flight_schedules(request):
         "destination": destination,
         "departure_date": departure_date,
         "return_date": return_date,
-        "pasenger_count": passenger_count,
+        "passenger_count": passenger_count,
         "schedules": schedules,
         "return_schedules": return_schedules,
         'dates': dates,
@@ -242,62 +245,77 @@ def confirm_schedule(request):
 """ Enter a passenger information """
 @login_required
 def passenger_information(request):
-    """ get session passenger_count """
-    passenger_count = request.session.get('passenger_count')
-    if not passenger_count:
-            return redirect('bookingapp:home')  # change 'home' if your URL name is different
+    """ Enter passenger information """
+    # Get session counts
+    adults = request.session.get('adults', 1)
+    children = request.session.get('children', 0)
+    infants = request.session.get('infants', 0)
 
-    print("Passenger count in session:", passenger_count)
+    total_passengers = adults + children + infants
+    if total_passengers == 0:
+        return redirect('bookingapp:home')
+
+    # Create a structured list of passengers with type
+    passenger_list = []
+    for i in range(1, adults + 1):
+        passenger_list.append({"number": i, "type": "Adult"})
+    for i in range(1, children + 1):
+        passenger_list.append({"number": adults + i, "type": "Child"})
+    for i in range(1, infants + 1):
+        passenger_list.append({"number": adults + children + i, "type": "Infant"})
+
+    request.session['passenger_count'] = total_passengers
 
     student = None
-    if request.session.get("student_id"):
-        student = Student.objects.get(id=request.session["student_id"])
+    student_id = request.session.get("student_id")
+    if student_id:
+        student = Student.objects.filter(id=student_id).first()
 
-    template = loader.get_template('booking/passenger.html')
     context = {
-        'passenger_range': range(1, passenger_count + 1),
+        'passenger_list': passenger_list,
         'student': student,
     }
-    return HttpResponse(template.render(context, request))
-
+    return render(request, 'booking/passenger.html', context)
 
 
 @login_required
 def save_passengers(request):
+    if request.method != 'POST':
+        return redirect('bookingapp:passenger_information')
+
     passenger_count = request.session.get('passenger_count', 1)
-    if request.method == 'POST':
-        passengers = []
+    passengers = []
 
-        """ store all the passenger """
-        for i in range(1, passenger_count+1):
-            passenger_data = {
-                "gender": request.POST.get(f"gender_{i}"),
-                "first_name": request.POST.get(f"first_name_{i}"),
-                "last_name": request.POST.get(f"last_name_{i}"),
-                "mi": request.POST.get(f"mi_{i}"),
-                "dob_day": request.POST.get(f"dob_day_{i}"),
-                "dob_month": request.POST.get(f"dob_month_{i}"),
-                "dob_year": request.POST.get(f"dob_year_{i}"),
-                "passport": request.POST.get(f"passport_{i}"),
-                "nationality": request.POST.get(f"nationality_{i}"),
-            }
-            
-            passengers.append(passenger_data)
-
-        
-        """ store contact booker """
-        contact_info = {
-            "first_name": request.POST.get("f_name_contact"),
-            "last_name": request.POST.get("l_name_contact"),
-            "mi": request.POST.get("m_name_contact"),
-            "number": request.POST.get("number_contact"),
-            "email": request.POST.get("email_contact"),
+    # Store all passengers
+    for i in range(1, passenger_count + 1):
+        passenger_data = {
+            "gender": request.POST.get(f"gender_{i}", "").strip(),
+            "first_name": request.POST.get(f"first_name_{i}", "").strip(),
+            "mi": request.POST.get(f"mi_{i}", "").strip(),  # middle name
+            "last_name": request.POST.get(f"last_name_{i}", "").strip(),
+            "dob_day": request.POST.get(f"dob_day_{i}", "").strip(),
+            "dob_month": request.POST.get(f"dob_month_{i}", "").strip(),
+            "dob_year": request.POST.get(f"dob_year_{i}", "").strip(),
+            "passport": request.POST.get(f"passport_{i}", "").strip(),
+            "nationality": request.POST.get(f"nationality_{i}", "").strip(),
         }
+        passengers.append(passenger_data)
 
-        request.session['passengers'] = passengers
-        request.session['contact_info'] = contact_info
+    # Store contact info for the booker
+    contact_info = {
+        "first_name": request.POST.get("f_name_contact", "").strip(),
+        "mi": request.POST.get("m_name_contact", "").strip(),
+        "last_name": request.POST.get("l_name_contact", "").strip(),
+        "number": request.POST.get("number_contact", "").strip(),
+        "email": request.POST.get("email_contact", "").strip(),
+    }
 
-        return redirect('bookingapp:select_seat')
+    request.session['passengers'] = passengers
+    request.session['contact_info'] = contact_info
+    request.session.modified = True
+
+    return redirect('bookingapp:select_seat')
+
 
 @login_required
 def select_seat(request):
@@ -433,8 +451,6 @@ from django.contrib import messages
 from datetime import date
 
 @login_required
-@login_required
-@login_required
 def confirm_booking(request):
     passengers = request.session.get('passengers', [])
     seats = request.session.get('selected_seats', {})
@@ -451,7 +467,7 @@ def confirm_booking(request):
     student = Student.objects.get(id=student_id)
 
     try:
-        with transaction.atomic():
+       with transaction.atomic():
             # 1️⃣ Create Booking
             booking = Booking.objects.create(
                 student=student,
@@ -460,6 +476,9 @@ def confirm_booking(request):
                 return_schedule=return_schedule,
                 status="Pending"
             )
+
+            outbound_seat_obj = None
+            return_seat_obj = None
 
             # 2️⃣ Create PassengerInfo and BookingDetail
             for idx, p in enumerate(passengers):
@@ -479,14 +498,14 @@ def confirm_booking(request):
                     phone=student.phone
                 )
 
-                # Assign seats in BookingDetail, but **do not mark unavailable yet**
-                depart_seat_obj = Seat.objects.get(schedule=depart_schedule, seat_number=depart_seat_number)
-                BookingDetail.objects.create(
-                    booking=booking,
-                    flight=depart_schedule.flight,
-                    seat=depart_seat_obj,
-                    seat_class=depart_seat_obj.seat_class
-                )
+                if depart_seat_number:
+                    outbound_seat_obj = Seat.objects.get(schedule=depart_schedule, seat_number=depart_seat_number)
+                    BookingDetail.objects.create(
+                        booking=booking,
+                        flight=depart_schedule.flight,
+                        seat=outbound_seat_obj,
+                        seat_class=outbound_seat_obj.seat_class
+                    )
 
                 if return_schedule and return_seat_number:
                     return_seat_obj = Seat.objects.get(schedule=return_schedule, seat_number=return_seat_number)
@@ -497,7 +516,15 @@ def confirm_booking(request):
                         seat_class=return_seat_obj.seat_class
                     )
 
+            # 3️⃣ Update booking with seats
+            if outbound_seat_obj:
+                booking.outbound_seat = outbound_seat_obj
+            if return_seat_obj:
+                booking.return_seat = return_seat_obj
+            booking.save()
+
             request.session['current_booking_id'] = booking.id
+
 
     except Exception as e:
         messages.error(request, f"Error creating booking: {str(e)}")
@@ -744,7 +771,7 @@ def login_view(request):
 
     return HttpResponse(template.render(context, request))
 
-@redirect_if_logged_in
+
 def logout_view(request):
     request.session.flush()
     messages.success(request, "You have been logged out.")

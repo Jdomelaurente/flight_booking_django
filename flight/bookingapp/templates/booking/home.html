@@ -103,17 +103,65 @@
                 </div>
 
                 <!-- Passenger -->
-                <div class="flex flex-col flex-1">
-                    <label class=" text-gray-500 mb-2 text-xs min-w-[150px]">Passenger</label>
-                    <div class="flex items-center bg-gray-100 rounded-xl  justify-around shadow-inner/20">
-                        <button type="button"
-                         class="px-3 py-2 text-lg  text-gray-600 hover:text-[#2975F7] cursor-pointer">-</button>
-                        <input type="text" value="1" name="passenger"
-                            class="poppins-bold text-sm text-center w-12 bg-gray-100 focus:outline-none ">
-                        <button type="button"
-                         class="px-3 py-2 text-lg  text-gray-600 hover:text-[#2975F7] cursor-pointer">+</button>
+                <!-- Passenger -->
+                <div class="flex flex-col flex-1 relative">
+                    <label class="text-gray-500 mb-2 text-xs min-w-[150px]">Passengers</label>
+
+                    <!-- Trigger input -->
+                    <div id="passengerBox" 
+                        class="flex items-center bg-gray-100 rounded-xl justify-between px-4 py-2 cursor-pointer shadow-inner/20">
+                        <span id="passengerSummary" class="poppins-bold text-sm text-gray-800">1 Adult</span>
+                        <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+
+                    <!-- Dropdown -->
+                    <div id="passengerDropdown" 
+                        class="absolute top-[65px] left-0 w-64 bg-white rounded-xl shadow-md p-4 hidden z-50">
+
+                        <!-- Adult -->
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-sm">Adults</span>
+                            <div class="flex items-center gap-2">
+                                <button type="button" data-type="adult" class="decrement px-2 py-1 bg-gray-200 rounded">-</button>
+                                <input type="text" id="adultCount" name="adults" value="1" 
+                                    class="w-8 text-center border-none focus:outline-none" readonly>
+                                <button type="button" data-type="adult" class="increment px-2 py-1 bg-gray-200 rounded">+</button>
+                            </div>
+                        </div>
+
+                        <!-- Children -->
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-sm">Children</span>
+                            <div class="flex items-center gap-2">
+                                <button type="button" data-type="child" class="decrement px-2 py-1 bg-gray-200 rounded">-</button>
+                                <input type="text" id="childCount" name="children" value="0" 
+                                    class="w-8 text-center border-none focus:outline-none" readonly>
+                                <button type="button" data-type="child" class="increment px-2 py-1 bg-gray-200 rounded">+</button>
+                            </div>
+                        </div>
+
+                        <!-- Infants -->
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-sm">Infants</span>
+                            <div class="flex items-center gap-2">
+                                <button type="button" data-type="infant" class="decrement px-2 py-1 bg-gray-200 rounded">-</button>
+                                <input type="text" id="infantCount" name="infants" value="0" 
+                                    class="w-8 text-center border-none focus:outline-none" readonly>
+                                <button type="button" data-type="infant" class="increment px-2 py-1 bg-gray-200 rounded">+</button>
+                            </div>
+                        </div>
+
+                        <!-- Done -->
+                        <div class="flex justify-end mt-3">
+                            <button type="button" id="donePassenger" 
+                                    class="bg-[#2975F7] text-white px-4 py-1 rounded-full text-sm">Done</button>
+                        </div>
                     </div>
                 </div>
+
 
                 <!-- Divider -->
                 <div class="w-px h-[60px] bg-gray-300 mx-5"></div>
@@ -155,16 +203,73 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // Passenger increment/decrement
-    const passengerInput = document.querySelector('input[type="text"][value="1"]');
-    const buttons = passengerInput.parentElement.querySelectorAll('button');
-    buttons[0].addEventListener('click', () => {
-        let val = parseInt(passengerInput.value) || 1;
-        if (val > 1) passengerInput.value = val - 1;
-    });
-    buttons[1].addEventListener('click', () => {
-        let val = parseInt(passengerInput.value) || 1;
-        passengerInput.value = val + 1;
-    });
+   // ===== Passenger Selection Dropdown =====
+        const passengerBox = document.getElementById("passengerBox");
+        const passengerDropdown = document.getElementById("passengerDropdown");
+        const passengerSummary = document.getElementById("passengerSummary");
+        const donePassenger = document.getElementById("donePassenger");
+
+        const counts = {
+            adult: 1,
+            child: 0,
+            infant: 0
+        };
+
+        // Toggle dropdown
+        passengerBox.addEventListener("click", () => {
+            passengerDropdown.classList.toggle("hidden");
+        });
+
+        // Increment/Decrement
+        document.querySelectorAll("#passengerDropdown button").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const type = btn.dataset.type;
+                if (!type) return;
+
+                if (btn.classList.contains("increment")) {
+                    if (type === "infant" && counts.infant >= counts.adult) {
+                        alert("Number of infants cannot exceed number of adults.");
+                        return;
+                    }
+                    counts[type]++;
+                } else if (btn.classList.contains("decrement") && counts[type] > 0) {
+                    if (type === "adult" && counts[type] === 1) return; // min 1 adult
+                    if (type === "adult" && counts.infant > counts.adult - 1) {
+                        counts.infant = counts.adult - 1;
+                    }
+                    counts[type]--;
+                }
+
+                // Update form inputs
+                document.getElementById("adultCount").value = counts.adult;
+                document.getElementById("childCount").value = counts.child;
+                document.getElementById("infantCount").value = counts.infant;
+
+                updateSummary();
+            });
+        });
+
+        // Update summary text
+        function updateSummary() {
+            let parts = [];
+            if (counts.adult > 0) parts.push(`${counts.adult} Adult${counts.adult > 1 ? "s" : ""}`);
+            if (counts.child > 0) parts.push(`${counts.child} Child${counts.child > 1 ? "ren" : ""}`);
+            if (counts.infant > 0) parts.push(`${counts.infant} Infant${counts.infant > 1 ? "s" : ""}`);
+            passengerSummary.textContent = parts.join(", ");
+        }
+
+        // Done button
+        donePassenger.addEventListener("click", () => {
+            passengerDropdown.classList.add("hidden");
+        });
+
+        // Hide dropdown when clicking outside
+        document.addEventListener("click", (e) => {
+            if (!passengerBox.contains(e.target) && !passengerDropdown.contains(e.target)) {
+                passengerDropdown.classList.add("hidden");
+            }
+        });
+
 
     // ===== Dropdown logic function (reusable) =====
 function setupDropdown(inputId, dropdownId, hiddenId, otherInputId, otherDropdownId) {
