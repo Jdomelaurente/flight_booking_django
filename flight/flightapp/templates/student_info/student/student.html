@@ -60,6 +60,9 @@
             <th class="border border-gray-400 px-4 py-2">Student Number</th>
             <th class="border border-gray-400 px-4 py-2">First Name</th>
             <th class="border border-gray-400 px-4 py-2">Middle Initial</th>
+<<<<<<< HEAD
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
+=======
 >>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
             <th class="border border-gray-400 px-4 py-2">Last Name</th>
             <th class="border border-gray-400 px-4 py-2">Email</th>
@@ -70,6 +73,7 @@
     <tbody>
         {% for student in students %}
 <<<<<<< HEAD
+<<<<<<< HEAD
         <tr>
             <td class="border border-gray-400 px-4 py-2">{{ student.id }}</td>
             <td class="border border-gray-400 px-4 py-2">{{ student.student_number }}</td>
@@ -78,6 +82,11 @@
         <tr class="poppins-small">
             <td class="border border-gray-400 px-4 py-2">{{ student.student_number }}</td>
             <td class="border border-gray-400 px-4 py-2">{{ student.first_name }}</td>
+=======
+        <tr class="poppins-small">
+            <td class="border border-gray-400 px-4 py-2">{{ student.student_number }}</td>
+            <td class="border border-gray-400 px-4 py-2">{{ student.first_name }}</td>
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
             <td class="border border-gray-400 px-4 py-2">
                 {% if student.middle_initial %}
                     {{ student.middle_initial }}
@@ -85,6 +94,9 @@
                     -
                 {% endif %}
             </td>
+<<<<<<< HEAD
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
+=======
 >>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
             <td class="border border-gray-400 px-4 py-2">{{ student.last_name }}</td>
             <td class="border border-gray-400 px-4 py-2">{{ student.email }}</td>
@@ -114,7 +126,11 @@
         {% empty %}
         <tr>
 <<<<<<< HEAD
+<<<<<<< HEAD
             <td colspan="7" class="text-center py-4">No students available</td>
+=======
+            <td colspan="8" class="text-center py-4">No students available</td>
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
 =======
             <td colspan="8" class="text-center py-4">No students available</td>
 >>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3

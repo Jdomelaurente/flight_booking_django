@@ -98,9 +98,6 @@ STATIC_URL = "static/"
 # Default primary key
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Custom User Model
-AUTH_USER_MODEL = "master.User"
-
 STATICFILES_DIRS = [
     BASE_DIR / "static",   # <--- this is your project-level static folder
 ]
