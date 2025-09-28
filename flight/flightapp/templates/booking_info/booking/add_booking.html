@@ -5,6 +5,10 @@
     <form method="post" class="space-y-4">
         {% csrf_token %}
 
+<<<<<<< HEAD
+=======
+        <!-- 🔹 Student -->
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
         <div>
             <label class="block font-semibold mb-1">Student:</label>
             <select name="student" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
@@ -14,15 +18,40 @@
             </select>
         </div>
 
+<<<<<<< HEAD
         <div>
             <label class="block font-semibold mb-1">Schedule:</label>
             <select name="schedule" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
                 {% for schedule in schedules %}
                 <option value="{{ schedule.id }}">{{ schedule.flight.flight_number }} ({{ schedule.departure_time|date:"Y-m-d H:i" }})</option>
+=======
+        <!-- 🔹 Trip Type -->
+        <div>
+            <label class="block font-semibold mb-1">Trip Type:</label>
+            <select id="trip_type" name="trip_type" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                <option value="one_way" selected>One-Way</option>
+                <option value="round_trip">Round-Trip</option>
+                <option value="multi_city">Multi-City</option>
+            </select>
+        </div>
+
+        <!-- 🔹 Outbound Schedule -->
+        <div id="outbound_section">
+            <label class="block font-semibold mb-1">Outbound Schedule (Open Only):</label>
+            <select id="outbound_schedule" name="outbound_schedule" 
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                <option value="">-- Select Outbound Schedule --</option>
+                {% for schedule in schedules %}
+                <option value="{{ schedule.id }}">
+                    {{ schedule.flight.flight_number }} 
+                    ({{ schedule.flight.route.origin_airport.code }} → {{ schedule.flight.route.destination_airport.code }}) - {{ schedule.departure_time|date:"Y-m-d H:i" }}
+                </option>
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
                 {% endfor %}
             </select>
         </div>
 
+<<<<<<< HEAD
         <div>
             <label class="block font-semibold mb-1">Seat (Optional):</label>
             <select name="seat" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
@@ -42,6 +71,48 @@
             </select>
         </div>
 
+=======
+        <!-- 🔹 Outbound Seat -->
+        <div id="outbound_seat_section">
+            <label class="block font-semibold mb-1">Outbound Seat (Optional):</label>
+            <select id="outbound_seat" name="outbound_seat" 
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                <option value="">-- Select Seat --</option>
+            </select>
+        </div>
+
+        <!-- 🔹 Return Schedule & Seat (Round-Trip Only) -->
+        <div id="return_section" class="hidden">
+            <label class="block font-semibold mb-1">Return Schedule (Open Only):</label>
+            <select id="return_schedule" name="return_schedule" 
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                <option value="">-- Select Return Schedule --</option>
+            </select>
+
+            <div class="mt-2">
+                <label class="block font-semibold mb-1">Return Seat (Optional):</label>
+                <select id="return_seat" name="return_seat" 
+                        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                    <option value="">-- Select Seat --</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 🔹 Multi-City Section -->
+        <div id="multi_city_section" class="hidden">
+            <div id="segments_container"></div>
+            <button type="button" id="add_segment_btn" 
+                    class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded">
+                + Add Segment
+            </button>
+        </div>
+
+        <!-- 🔹 Status (Auto-handled) -->
+        <input type="hidden" name="status" value="Pending">
+
+
+        <!-- 🔹 Buttons -->
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
         <div class="flex items-center justify-between mt-6">
             <button type="submit" 
                     class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
@@ -54,4 +125,122 @@
         </div>
     </form>
 </div>
+<<<<<<< HEAD
+=======
+
+<script>
+const tripType = document.getElementById("trip_type");
+const outboundSection = document.getElementById("outbound_section");
+const outboundSeatSection = document.getElementById("outbound_seat_section");
+const returnSection = document.getElementById("return_section");
+const multiCitySection = document.getElementById("multi_city_section");
+const segmentsContainer = document.getElementById("segments_container");
+const addSegmentBtn = document.getElementById("add_segment_btn");
+
+// 🔹 Switch Trip Type
+tripType.addEventListener("change", function() {
+    if (this.value === "one_way") {
+        outboundSection.classList.remove("hidden");
+        outboundSeatSection.classList.remove("hidden");
+        returnSection.classList.add("hidden");
+        multiCitySection.classList.add("hidden");
+    } else if (this.value === "round_trip") {
+        outboundSection.classList.remove("hidden");
+        outboundSeatSection.classList.remove("hidden");
+        returnSection.classList.remove("hidden");
+        multiCitySection.classList.add("hidden");
+    } else if (this.value === "multi_city") {
+        outboundSection.classList.add("hidden");
+        outboundSeatSection.classList.add("hidden");
+        returnSection.classList.add("hidden");
+        multiCitySection.classList.remove("hidden");
+        segmentsContainer.innerHTML = "";
+    }
+});
+
+// 🔹 Fetch seats dynamically
+function fetchSeats(scheduleId, seatDropdownId) {
+    const seatDropdown = document.getElementById(seatDropdownId);
+    seatDropdown.innerHTML = '<option value="">-- Select Seat --</option>';
+
+    if (scheduleId) {
+        fetch(`/booking/seats/${scheduleId}/`)
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(seat => {
+                    const option = document.createElement("option");
+                    option.value = seat.id;
+                    option.textContent = seat.label;
+                    if (!seat.is_available) {
+                        option.disabled = true;
+                        option.classList.add("text-gray-400");
+                    }
+                    seatDropdown.appendChild(option);
+                });
+            });
+    }
+}
+
+// 🔹 Outbound schedule → seats + return schedules
+document.getElementById("outbound_schedule").addEventListener("change", function() {
+    fetchSeats(this.value, "outbound_seat");
+
+    // Return schedule fetcher
+    const returnDropdown = document.getElementById("return_schedule");
+    returnDropdown.innerHTML = '<option value="">-- Select Return Schedule --</option>';
+
+    if(this.value) {
+        fetch(`/booking/return_schedules/${this.value}/`)
+            .then(res => res.json())
+            .then(data => {
+                data.forEach(s => {
+                    const opt = document.createElement("option");
+                    opt.value = s.id;
+                    opt.textContent = `${s.flight_number} (${s.origin} → ${s.destination}) - ${s.departure_time}`;
+                    returnDropdown.appendChild(opt);
+                });
+            });
+    }
+});
+
+// 🔹 Return schedule → seats
+document.getElementById("return_schedule").addEventListener("change", function() {
+    fetchSeats(this.value, "return_seat");
+});
+
+// 🔹 Multi-city segments
+let segmentCount = 0;
+addSegmentBtn.addEventListener("click", function() {
+    segmentCount++;
+    const segmentDiv = document.createElement("div");
+    segmentDiv.classList.add("border", "p-3", "mb-2", "rounded", "bg-gray-50");
+    segmentDiv.innerHTML = `
+        <label class="block font-semibold mb-1">Segment ${segmentCount} Schedule:</label>
+        <select name="multi_schedule_${segmentCount}" 
+                id="multi_schedule_${segmentCount}" 
+                class="w-full border rounded px-3 py-2 mb-2">
+            <option value="">-- Select Schedule --</option>
+            {% for schedule in schedules %}
+            <option value="{{ schedule.id }}">
+                {{ schedule.flight.flight_number }} 
+                ({{ schedule.flight.route.origin_airport.code }} → {{ schedule.flight.route.destination_airport.code }}) - {{ schedule.departure_time|date:"Y-m-d H:i" }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <label class="block font-semibold mb-1">Segment ${segmentCount} Seat:</label>
+        <select name="multi_seat_${segmentCount}" 
+                id="multi_seat_${segmentCount}" 
+                class="w-full border rounded px-3 py-2">
+            <option value="">-- Select Seat --</option>
+        </select>
+    `;
+    segmentsContainer.appendChild(segmentDiv);
+
+    document.getElementById(`multi_schedule_${segmentCount}`).addEventListener("change", function() {
+        fetchSeats(this.value, `multi_seat_${segmentCount}`);
+    });
+});
+</script>
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
 {% endblock %}

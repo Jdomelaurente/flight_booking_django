@@ -2,6 +2,7 @@
 {% block content %}
 <div class="max-w-lg mx-auto bg-white shadow-lg rounded-lg p-6">
     <h2 class="text-2xl font-bold mb-6">Add Route</h2>
+<<<<<<< HEAD
     <form method="post" class="space-y-4">
         {% csrf_token %}
 
@@ -35,4 +36,48 @@
         </div>
     </form>
 </div>
+=======
+    <form method="POST">
+        {% csrf_token %}
+        
+        <label class="block mb-2">Origin:</label>
+        <select id="origin_airport" name="origin_airport" required class="border px-3 py-2 rounded w-full mb-4">
+            <option value="">--Select Origin--</option>
+            {% for airport in airports %}
+                <option value="{{ airport.id }}">{{ airport.code }} - {{ airport.name }}</option>
+            {% endfor %}
+        </select>
+
+        <label class="block mb-2">Destination:</label>
+        <select id="destination_airport" name="destination_airport" required class="border px-3 py-2 rounded w-full mb-4">
+            <option value="">--Select Destination--</option>
+            {% for airport in airports %}
+                <option value="{{ airport.id }}">{{ airport.code }} - {{ airport.name }}</option>
+            {% endfor %}
+        </select>
+
+        <label class="block mb-2">Base Price (₱):</label>
+        <input type="number" step="0.01" name="base_price" class="border px-3 py-2 rounded w-full mb-4" required>
+
+        <button type="submit" class="bg-green-800 hover:bg-green-900 text-white py-2 px-4 rounded">Add Route</button>
+    </form>
+</div>
+
+<script>
+    const originSelect = document.getElementById("origin_airport");
+    const destinationSelect = document.getElementById("destination_airport");
+
+    originSelect.addEventListener("change", function() {
+        const originId = this.value;
+        for (let option of destinationSelect.options) {
+            option.disabled = option.value === originId && originId !== "";
+        }
+
+        // Reset destination if previously selected is now disabled
+        if (destinationSelect.value === originId) {
+            destinationSelect.value = "";
+        }
+    });
+</script>
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
 {% endblock %}
