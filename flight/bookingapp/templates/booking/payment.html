@@ -1,45 +1,40 @@
 {% extends 'booking/base.html' %}
-{% block title %} Payment
-{% endblock  %}
+{% load static %}   {# <-- THIS LINE IS REQUIRED #}
+
+{% block title %} Payment {% endblock %}
 
 {% block content %}
-<div class="w-full flex flex-col  items-center ">
-    <div class="flex flex-col w-full">
-        <h1 class="text-2xl font-bold">Payment Method</h1>
-        <p class="text-xs">How would you like to pay?</p>
-    </div>
-    
-    <div class="flex flex-col w-[777px] h-[334px] bg-green-950  px-1 pb-10 mb-5">
-        <h1 class="text-white text-2xl py-2">E-Wallet</h1>
-        <div class="flex-1 flex flex-col justify-center gap-10 px-5 bg-white z-1">
-            <div>
-                <input type="radio">
-                <label for="" class="font-semibold">Gcash</label>
-            </div>
-            <div>
-                <input type="radio">
-                <label for="" class="font-semibold">PayMaya</label>
-            </div>
-            <div>
-                <input type="radio">
-                <label for="" class="font-semibold">PayPal</label>
-            </div>
-        </div>
-    </div>
+<main class="mx-auto flex flex-col items-center py-10">
 
-    <div class="flex  w-[777px] h-[121px] bg-white shadow-2xl  px-5 py-10 justify-center items-center gap-5 border-t-2 border-green-950 ">
-        <input type="radio">
-        <label for="" class="text-xs">I fully understand that all information is handled is handled in accordance with CSUCC Privacy Policy in effect at the  time of booking, CSUCC also reserves the right information with the goverment authorities partners of the purpose comleting the booking transaction needed for the flight</label>
-    </div>
+    <h1 class="text-3xl font-bold mb-8">Choose Payment Method (Temporary)</h1>
 
-    <div class="w-[777px]  py-3 flex justify-end  ">
-        <button class="flex bg-green-950 hover:bg-green-950/80 px-20 py-2 text-white">Submit</button>
-    </div>
+    <form method="POST" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-5xl">
+        {% csrf_token %}
+        
+       {% for method, label in payment_methods %}
+        <label class="payment-option border rounded-lg p-6 flex flex-col items-center cursor-pointer hover:shadow-lg transition-all duration-200">
+            <img src="{% static 'bookingapp/images/' %}{{ method }}.png" alt="{{ label }}" class="w-20 h-20 mb-4">
+            <span class="font-semibold text-lg">{{ label }}</span>
+            <input type="radio" name="payment_method" value="{{ method }}" class="mt-2" required>
+        </label>
+        {% endfor %}
 
 
- 
-</div>
+        <button type="submit" class="col-span-full mt-6 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all">
+            Confirm Payment
+        </button>
+    </form>
 
+</main>
 
-
-{% endblock  %}
+<script>
+    // Make the whole card clickable
+    document.querySelectorAll('.payment-option').forEach(option => {
+        option.addEventListener('click', () => {
+            option.querySelector('input[type="radio"]').checked = true;
+            document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('border-yellow-500'));
+            option.classList.add('border-yellow-500');
+        });
+    });
+</script>
+{% endblock %}
