@@ -36,7 +36,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "flightapp",
     "bookingapp",
-    "master",
+    "Instructorapp",
 ]
 
 MIDDLEWARE = [
@@ -65,7 +65,7 @@ TEMPLATES = [
         },
     },
 ]
-AUTH_USER_MODEL = 'master.User'
+AUTH_USER_MODEL = 'Instructorapp.User'
 
 WSGI_APPLICATION = "flight.wsgi.application"
 

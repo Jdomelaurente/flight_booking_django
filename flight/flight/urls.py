@@ -22,7 +22,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('flightapp.urls')),
     path('booking_app/', include('bookingapp.urls')),
-    path('master/', include('master.urls')),
+    path('Instructorapp/', include('Instructorapp.urls')),
 
 
 ]
