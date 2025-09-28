@@ -65,6 +65,7 @@ TEMPLATES = [
         },
     },
 ]
+AUTH_USER_MODEL = 'master.User'
 
 WSGI_APPLICATION = "flight.wsgi.application"
 
