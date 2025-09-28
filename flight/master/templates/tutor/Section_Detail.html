@@ -606,7 +606,8 @@
         </div>
     </aside>
 
-    <main class="main-content">
+    
+<main class="main-content">
         <!-- Back button and Task Icon row -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
             <a href="{% url 'Section_List' %}" style="display: inline-block; background: #4a5a7b; color: #fff; padding: 0.5rem 1rem; border-radius: 8px; font-weight: 600; text-decoration: none; transition: 0.3s;">
@@ -671,6 +672,8 @@
             {% endif %}
         </div>
 
+
+
         <!-- Excel Table -->
         <div style="overflow-x: auto;">
             <table style="width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 6px 15px rgba(0,0,0,0.1);">
@@ -703,8 +706,6 @@
         </div>
     </main>
 
-
-
     <!-- MAIN Task Modal -->
     <div class="modal fade task-modal" id="taskModal" tabindex="-1" aria-labelledby="taskModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -717,52 +718,147 @@
                 </div>
                 <div class="modal-body" style="padding: 1.5rem; max-height: 600px; overflow-y: auto;">
                     {% if bookings %}
-                        {% for booking in bookings %}
-                            <div class="booking-card">
-                                <!-- Passenger Icon opens passenger modal -->
-                                <div class="passenger-icon {% if not booking.passenger_set.exists %}no-passengers{% endif %}"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#passengerModal{{ forloop.counter }}"
-                                    title="{% if booking.passenger_set.exists %}View Passenger Details{% else %}No Passenger Information{% endif %}">
-                                    👥
-                                </div>
+                        <div style="display: grid; gap: 1.5rem;">
+                            {% for booking in bookings %}
+                                <div style="{% if booking.duration and booking.duration < now %}background: #e8e8e8; border: 2px solid #999;{% else %}background: #fff; border: 2px solid #127552;{% endif %} border-radius: 12px; padding: 1.5rem; box-shadow: 0 6px 15px rgba(0,0,0,0.1);">
+                                    <!-- Header with Status -->
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                        <h4 style="color: #2f3b52; margin: 0; font-weight: 600;">Task " {{ forloop.counter }} "</h4>
+                                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                            {% if booking.duration %}
+                                                {% if booking.duration > now %}
+                                                    <span style="background: #28a745; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
+                                                        ✅ Active
+                                                    </span>
+                                                {% else %}
+                                                    <span style="background: #dc3545; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
+                                                        ⏰ Passed Deadline
+                                                    </span>
+                                                {% endif %}
+                                            {% endif %}
+                                            {% if booking.passengers.exists %}
+                                                <span style="background: #17a2b8; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
+                                                    👥 {{ booking.passengers.count }} Passenger{{ booking.passengers.count|pluralize }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
 
-                                <div class="booking-header">
-                                    <h6 class="booking-title">Flight Booking #{{ forloop.counter }}</h6>
-                                    <span class="booking-date">{{ booking.created_at|date:"M d, Y H:i" }}</span>
-                                </div>
-                                <div class="booking-details">
-                                    <div class="detail-item"><span class="detail-label">Route</span> <span class="detail-value">{{ booking.get_route_display }}</span></div>
-                                    <div class="detail-item"><span class="detail-label">Trip Type</span> <span class="detail-value">{{ booking.get_trip_type_display }}</span></div>
-                                    <div class="detail-item"><span class="detail-label">Travel Class</span> <span class="detail-value">{{ booking.get_travel_class_display }}</span></div>
-                                    <div class="detail-item"><span class="detail-label">Departure Date</span> <span class="detail-value">{{ booking.departure_date }}</span></div>
-                                    {% if booking.return_date %}
-                                    <div class="detail-item"><span class="detail-label">Return Date</span> <span class="detail-value">{{ booking.return_date }}</span></div>
-                                    {% endif %}
-                                    <div class="detail-item"><span class="detail-label">Passengers</span> <span class="detail-value">{{ booking.adults }} Adult(s), {{ booking.children }} Children, {{ booking.infants_on_lap }} Infant(s)</span></div>
-                                    {% if booking.seat_preference %}
-                                    <div class="detail-item"><span class="detail-label">Seat Preference</span> <span class="detail-value">{{ booking.seat_preference }}</span></div>
-                                    {% endif %}
-                                </div>
+                                    <!-- Trip Type and Duration -->
+                                    <div style="margin-bottom: 1rem;">
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; font-size: 0.9rem;">
+                                            <div><strong>Trip Type:</strong> {{ booking.get_trip_type_display }}</div>
+                                            <div><strong>Class:</strong> {{ booking.get_travel_class_display }}</div>
+                                            {% if booking.duration %}
+                                            <div style="grid-column: 1 / -1;"><strong>Duration/Deadline:</strong> 
+                                                <span style="{% if booking.duration > now %}color: #28a745;{% else %}color: #dc3545;{% endif %} font-weight: 600;">
+                                                    {{ booking.duration|date:"M d, Y H:i" }}
+                                                </span>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
 
-                                <div class="booking-actions">
-                                    <div style="display: flex; gap: 0.5rem;">
-                                        {% if booking.passenger_set.exists %}
-                                        <button class="passenger-toggle"
-                                            onclick="togglePassengerInfo({{ forloop.counter }})"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#passengerModal{{ forloop.counter }}">
-                                            👤 View Passengers
-                                        </button>
+                                    <!-- Route Information -->
+                                    <div style="margin-bottom: 1rem; padding: 1rem; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #17a2b8;">
+                                        {% if booking.trip_type == 'multi_city' %}
+                                            <h6 style="color: #17a2b8; font-weight: 600; margin-bottom: 0.5rem;">Multi-City Route</h6>
+                                            {% if booking.legs.exists %}
+                                                {% for leg in booking.legs.all %}
+                                                    <div style="margin-bottom: 0.5rem; padding: 0.5rem; background: white; border-radius: 6px;">
+                                                        <div style="font-weight: 600; color: #2f3b52;">{{ leg.origin }} → {{ leg.destination }}</div>
+                                                        <div style="font-size: 0.85rem; color: #666;">
+                                                            Departure: {{ leg.departure_date|date:"M d, Y" }}
+                                                            {% if leg.duration %}
+                                                            | Duration: {{ leg.duration|date:"M d, Y H:i" }}
+                                                            {% endif %}
+                                                            {% if leg.return_date %}
+                                                            | Return: {{ leg.return_date|date:"M d, Y" }}
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            {% else %}
+                                                <div style="color: #666; font-style: italic;">No multi-city legs specified</div>
+                                            {% endif %}
+                                        {% else %}
+                                            <h6 style="color: #17a2b8; font-weight: 600; margin-bottom: 0.5rem;">Route Details</h6>
+                                            <div style="font-weight: 600; color: #2f3b52; margin-bottom: 0.3rem;">
+                                                {{ booking.route_display }}
+                                            </div>
+                                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.85rem; color: #666;">
+                                                <div>Departure: {{ booking.departure_date|date:"M d, Y" }}</div>
+                                                {% if booking.return_date %}
+                                                <div>Return: {{ booking.return_date|date:"M d, Y" }}</div>
+                                                {% endif %}
+                                            </div>
                                         {% endif %}
                                     </div>
-                                    <div class="action-buttons">
-                                        <a href="#" class="action-btn edit">✏️ Edit</a>
-                                        <a href="#" class="action-btn delete">🗑️ Delete</a>
+
+                                    <!-- Passenger Summary -->
+                                    <div style="margin-bottom: 1rem; font-size: 0.9rem;">
+                                        <div style="display: flex; gap: 1rem;">
+                                            <span><strong>Adults:</strong> {{ booking.adults }}</span>
+                                            {% if booking.children > 0 %}<span><strong>Children:</strong> {{ booking.children }}</span>{% endif %}
+                                            {% if booking.infants_on_lap > 0 %}<span><strong>Infants:</strong> {{ booking.infants_on_lap }}</span>{% endif %}
+                                        </div>
+                                        {% if booking.seat_preference %}
+                                        <div style="margin-top: 0.5rem;"><strong>Seat Preference:</strong> {{ booking.seat_preference }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Passenger Details Button -->
+                                    {% if booking.passengers.exists %}
+                                    <div style="margin-bottom: 1rem;">
+                                        <button onclick="togglePassengerDetailsModal({{ forloop.counter }})" style="width: 100%; background: #17a2b8; color: white; border: none; padding: 0.8rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.3s;">
+                                            👥 View Passenger Details
+                                        </button>
+                                        <div id="passengerDetailsModal{{ forloop.counter }}" style="display: none; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                                            {% for passenger in booking.passengers.all %}
+                                            <div style="margin-bottom: 1rem; padding: 0.8rem; background: white; border-radius: 6px; border-left: 3px solid #17a2b8;">
+                                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                                                    <div>
+                                                        <div style="font-weight: 600; color: #2f3b52;">
+                                                            {{ passenger.title }} {{ passenger.first_name }} 
+                                                            {% if passenger.middle_initial %}{{ passenger.middle_initial }}.{% endif %} 
+                                                            {{ passenger.last_name }}
+                                                        </div>
+                                                        <div style="font-size: 0.85rem; color: #666;">
+                                                            {% if passenger.dob %}DOB: {{ passenger.dob|date:"M d, Y" }}{% endif %}
+                                                            {% if passenger.nationality %} | Nationality: {{ passenger.nationality }}{% endif %}
+                                                        </div>
+                                                        {% if passenger.passport %}
+                                                        <div style="font-size: 0.85rem; color: #666;">Passport: {{ passenger.passport }}</div>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                                                        {% if passenger.has_declaration %}
+                                                        <span style="background: #28a745; color: white; padding: 0.2rem 0.4rem; border-radius: 10px; font-size: 0.7rem; font-weight: 600; text-align: center;">✓ Declaration</span>
+                                                        {% endif %}
+                                                        {% if passenger.is_pwd %}
+                                                        <span style="background: #e74c3c; color: white; padding: 0.2rem 0.4rem; border-radius: 10px; font-size: 0.7rem; font-weight: 600; text-align: center;">♿ PWD</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+
+                                    <!-- Action Buttons -->
+                                    <div style="display: flex; gap: 0.5rem; justify-content: space-between;">
+                                        <div style="font-size: 0.8rem; color: #666;">
+                                            Created: {{ booking.created_at|date:"M d, Y H:i" }}
+                                        </div>
+                                        <div style="display: flex; gap: 0.5rem;">
+                                            <button style="background: #127552; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem; cursor: pointer;">✏️ Edit</button>
+                                            <button style="background: #c0392b; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem; cursor: pointer;">🗑️ Delete</button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        {% endfor %}
+                            {% endfor %}
+                        </div>
                     {% else %}
                         <div style="text-align: center; padding: 3rem; color: #888;">
                             <div style="font-size: 4rem; margin-bottom: 1rem;">📋</div>
@@ -795,17 +891,31 @@
                     <div style="margin-bottom: 1rem; padding: 1rem; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #17a2b8;">
                         <h6 style="color: #17a2b8; font-weight: 600; margin-bottom: 0.5rem;">Flight Details</h6>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.8rem;">
-                            <div><strong>Route:</strong> {{ booking.get_route_display }}</div>
+                            <div><strong>Route:</strong> {{ booking.route_display }}</div>
                             <div><strong>Date:</strong> {{ booking.departure_date }}</div>
                             <div><strong>Class:</strong> {{ booking.get_travel_class_display }}</div>
                             <div><strong>Type:</strong> {{ booking.get_trip_type_display }}</div>
+                            {% if booking.trip_type == 'multi_city' and booking.legs.exists %}
+                            <div style="grid-column: 1 / -1;"><strong>Multi-City Legs:</strong> {{ booking.legs.count }} legs</div>
+                            {% endif %}
                         </div>
+                        
+                        {% if booking.trip_type == 'multi_city' and booking.legs.exists %}
+                        <div style="margin-top: 0.8rem;">
+                            <h6 style="color: #17a2b8; font-weight: 600; margin-bottom: 0.5rem;">Multi-City Details</h6>
+                            {% for leg in booking.legs.all %}
+                            <div style="margin-bottom: 0.3rem; font-size: 0.9rem; color: #666;">
+                                <strong>{{ forloop.counter }}.</strong> {{ leg.origin }} → {{ leg.destination }} ({{ leg.departure_date|date:"M d, Y" }})
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                     </div>
 
-                    {% if booking.passenger_set.exists %}
-                        <h6 style="color: #495057; font-weight: 600; margin-bottom: 1rem;">Passengers ({{ booking.passenger_set.count }})</h6>
+                    {% if booking.passengers.exists %}
+                        <h6 style="color: #495057; font-weight: 600; margin-bottom: 1rem;">Passengers ({{ booking.passengers.count }})</h6>
                         <div class="passenger-list">
-                            {% for passenger in booking.passenger_set.all %}
+                            {% for passenger in booking.passengers.all %}
                             <div class="passenger-item" style="margin-bottom: 1rem; padding: 1rem; border: 1px solid #e9ecef; border-radius: 8px; background-color: #f8f9fa;">
                                 <div class="passenger-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
                                     <div class="passenger-name" style="font-size: 1.1rem; color: #127552; font-weight: 600;">
@@ -848,7 +958,7 @@
                                 {% if booking.infants_on_lap > 0 %}
                                 <div><strong>Infants:</strong> {{ booking.infants_on_lap }}</div>
                                 {% endif %}
-                                <div><strong>Total Passengers:</strong> {{ booking.passenger_set.count }}</div>
+                                <div><strong>Total Passengers:</strong> {{ booking.passengers.count }}</div>
                             </div>
                         </div>
                     {% else %}
@@ -937,6 +1047,38 @@
             } else if (passengerInfo) {
                 passengerInfo.classList.add('show');
                 button.innerHTML = '👤 Hide Passengers';
+            }
+        }
+
+        // Function to toggle passenger details in booking cards
+        function togglePassengerDetails(bookingId) {
+            const passengerDetails = document.getElementById('passengerDetails' + bookingId);
+            const button = event.target;
+
+            if (passengerDetails.style.display === 'none' || passengerDetails.style.display === '') {
+                passengerDetails.style.display = 'block';
+                button.innerHTML = '👥 Hide Passenger Details';
+                button.style.background = '#6c757d';
+            } else {
+                passengerDetails.style.display = 'none';
+                button.innerHTML = '👥 View Passenger Details';
+                button.style.background = '#17a2b8';
+            }
+        }
+
+        // Function to toggle passenger details in modal
+        function togglePassengerDetailsModal(bookingId) {
+            const passengerDetails = document.getElementById('passengerDetailsModal' + bookingId);
+            const button = event.target;
+
+            if (passengerDetails.style.display === 'none' || passengerDetails.style.display === '') {
+                passengerDetails.style.display = 'block';
+                button.innerHTML = '👥 Hide Passenger Details';
+                button.style.background = '#6c757d';
+            } else {
+                passengerDetails.style.display = 'none';
+                button.innerHTML = '👥 View Passenger Details';
+                button.style.background = '#17a2b8';
             }
         }
     </script>

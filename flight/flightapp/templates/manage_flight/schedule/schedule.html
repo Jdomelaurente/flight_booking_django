@@ -1,11 +1,80 @@
 {% extends "master.html" %}
 {% block content %}
 <div class="items-center mb-5">
+<<<<<<< HEAD
+    <h1 class="text-2xl font-bold mb-5">Schedules Table</h1>
+    <a href="{% url 'add_schedule' %}" 
+       class="bg-green-800 hover:bg-green-900 text-white py-2 px-4 rounded inline-flex items-center">
+        <i class="fas fa-plus mr-2"></i> Add Schedule
+    </a>
+</div>
+
+<table class="table-auto border-collapse border border-gray-400 w-full">
+    <thead>
+    <tr class="bg-gray-200">
+        <th class="border border-gray-400 px-4 py-2">Flight</th>
+        <th class="border border-gray-400 px-4 py-2">Departure</th>
+        <th class="border border-gray-400 px-4 py-2">Arrival</th>
+        <th class="border border-gray-400 px-4 py-2">Price</th> <!-- NEW -->
+        <th class="border border-gray-400 px-4 py-2">Status</th>
+        <th class="border border-gray-400 px-4 py-2">Actions</th>
+    </tr>
+</thead>
+<tbody>
+    {% for item in schedule_data %}
+    <tr>
+        <td class="border border-gray-400 px-4 py-2">{{ item.schedule.flight.flight_number }}</td>
+        <td class="border border-gray-400 px-4 py-2">{{ item.schedule.departure_time }}</td>
+        <td class="border border-gray-400 px-4 py-2">{{ item.schedule.arrival_time }}</td>
+        <td class="border border-gray-400 px-4 py-2 text-center font-semibold">₱{{ item.schedule.price }}</td> <!-- NEW -->
+        <td class="border border-gray-400 px-4 py-2 text-center font-semibold">
+            {% if item.status == 'Standby' %}
+                <span class="text-yellow-600">Standby</span>
+            {% elif item.status == 'On Flight' %}
+                <span class="text-blue-600">On Flight</span>
+            {% else %}
+                <span class="text-green-600">Arrived</span>
+            {% endif %}
+        </td>
+        <td class="border border-gray-400 px-4 py-2 text-center space-x-2">
+            <a href="{% url 'update_schedule' item.schedule.id %}" class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm inline-flex items-center">
+                <i class="fas fa-edit mr-1"></i>Edit
+            </a>
+            <a href="{% url 'delete_schedule' item.schedule.id %}" onclick="return confirm('Are you sure?')" class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-sm inline-flex items-center">
+                <i class="fas fa-trash-alt mr-1"></i>Delete
+=======
     <h1 class="unbounded">Schedules Table</h1>
     <a href="{% url 'add_schedule' %}" 
        class="bg-green-800 hover:bg-green-900 text-white py-2 px-4 rounded inline-flex items-center poppins">
         <i class="ph ph-plus mr-2"></i> Add Schedule
     </a>
+
+        <form method="post" action="{% url 'import_schedules' %}" enctype="multipart/form-data" class="inline-flex items-center space-x-2 poppins">
+        {% csrf_token %}
+        <input type="file" name="file" accept=".xlsx,.xls" class="border border-gray-300 rounded px-2 py-1">
+        <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white py-2 px-4 rounded poppins">
+            Import Excel
+        </button>
+    </form>
+
+    <!-- ✅ Messages Section -->
+    {% if messages %}
+    <div class="mt-4">
+        {% for message in messages %}
+            <div class="px-4 py-2 rounded mb-2 
+                        {% if message.tags == 'success' %}
+                            bg-green-100 text-green-700 border border-green-400
+                        {% elif message.tags == 'error' %}
+                            bg-red-100 text-red-700 border border-red-400
+                        {% else %}
+                            bg-gray-100 text-gray-700 border border-gray-400
+                        {% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
 </div>
 
 <table class="table-auto border-collapse border border-gray-400 w-full poppins">
@@ -14,47 +83,65 @@
             <th class="border border-gray-400 px-4 py-2">Flight</th>
             <th class="border border-gray-400 px-4 py-2">Departure</th>
             <th class="border border-gray-400 px-4 py-2">Arrival</th>
-            <th class="border border-gray-400 px-4 py-2">Price</th>
             <th class="border border-gray-400 px-4 py-2">Status</th>
             <th class="border border-gray-400 px-4 py-2">Actions</th>
         </tr>
     </thead>
     <tbody>
-        {% for item in schedule_data %}
-        <tr class="poppins-small">
-            <td class="border border-gray-400 px-4 py-2">{{ item.schedule.flight.flight_number }}</td>
-            <td class="border border-gray-400 px-4 py-2">{{ item.schedule.departure_time }}</td>
-            <td class="border border-gray-400 px-4 py-2">{{ item.schedule.arrival_time }}</td>
-            <td class="border border-gray-400 px-4 py-2 text-center font-semibold">₱{{ item.schedule.price }}</td>
-            <td class="border border-gray-400 px-4 py-2 text-center font-semibold">
-                {% if item.status == 'Open' %}
-                    <span class="text-green-600">{{ item.status }}</span>
-                {% elif item.status == 'Closed' %}
-                    <span class="text-orange-600">{{ item.status }}</span>
-                {% elif item.status == 'On Flight' %}
-                    <span class="text-blue-600">{{ item.status }}</span>
-                {% elif item.status == 'Arrived' %}
-                    <span class="text-gray-600">{{ item.status }}</span>
-                {% else %}
-                    <span class="text-yellow-600">{{ item.status }}</span>
-                {% endif %}
-            </td>
+    {% for item in schedule_data %}
+    <tr class="poppins-small">
+        <td class="border border-gray-400 px-4 py-2">{{ item.schedule.flight.flight_number }}</td>
 
-            <td class="border border-gray-400 px-4 py-2 text-center space-x-2">
-                <a href="{% url 'update_schedule' item.schedule.id %}" class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded  inline-flex items-center">
-                    <i class="ph ph-pen mr-1"></i>Edit
-                </a>
-                <a href="{% url 'delete_schedule' item.schedule.id %}" onclick="return confirm('Are you sure?')" class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded  inline-flex items-center">
-                    <i class="ph ph-trash mr-1"></i>Delete
-                </a>
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="6" class="text-center py-4">No schedules available</td>
-        </tr>
-        {% endfor %}
-    </tbody>
+        <!-- Departure -->
+        <td class="border border-gray-400 px-4 py-2">
+            {{ item.schedule.departure_time|date:"M. d, Y, P" }}
+            ({{ item.schedule.flight.route.origin_airport.code }})
+        </td>
+        
+
+        <!-- Arrival -->
+        <td class="border border-gray-400 px-4 py-2">
+            {{ item.schedule.arrival_time|date:"M. d, Y, P" }}
+            ({{ item.schedule.flight.route.destination_airport.code }})
+        </td>
+
+        <!-- Status -->
+        <td class="border border-gray-400 px-4 py-2 text-center font-semibold">
+            {% if item.status == 'Open' %}
+                <span class="text-green-600">{{ item.status }}</span>
+            {% elif item.status == 'Closed' %}
+                <span class="text-orange-600">{{ item.status }}</span>
+            {% elif item.status == 'On Flight' %}
+                <span class="text-blue-600">{{ item.status }}</span>
+            {% elif item.status == 'Arrived' %}
+                <span class="text-gray-600">{{ item.status }}</span>
+            {% else %}
+                <span class="text-yellow-600">{{ item.status }}</span>
+            {% endif %}
+        </td>
+
+        <!-- Actions -->
+        <td class="border border-gray-400 px-4 py-2 text-center space-x-2">
+            <a href="{% url 'update_schedule' item.schedule.id %}" class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded inline-flex items-center">
+                <i class="ph ph-pen mr-1"></i>Edit
+            </a>
+            <a href="{% url 'delete_schedule' item.schedule.id %}" onclick="return confirm('Are you sure?')" class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded inline-flex items-center">
+                <i class="ph ph-trash mr-1"></i>Delete
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
+            </a>
+        </td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="6" class="text-center py-4">No schedules available</td>
+    </tr>
+    {% endfor %}
+</tbody>
+<<<<<<< HEAD
+</table>
+=======
+
 </table>
 
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
 {% endblock %}

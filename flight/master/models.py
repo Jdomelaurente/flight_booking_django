@@ -86,8 +86,6 @@ class ExcelRowData(models.Model):
 
 
 # models.py
-
-
 class Booking(models.Model):
     section = models.ForeignKey("Section", on_delete=models.CASCADE, related_name="bookings")
 
@@ -104,36 +102,28 @@ class Booking(models.Model):
         ('business', 'Business'),
     ]
 
-    ROUTE_CHOICES = [
-        ('manila_cebu', 'Manila → Cebu'),
-        ('cebu_manila', 'Cebu → Manila'),
-        ('manila_davao', 'Manila → Davao'),
-        ('davao_manila', 'Davao → Manila'),
-        # add more routes if needed
-    ]
-
     trip_type = models.CharField(max_length=20, choices=TRIP_TYPE_CHOICES)
-    route = models.CharField(max_length=50, choices=ROUTE_CHOICES)
+    route = models.CharField(max_length=50, null=True, blank=True)
     departure_date = models.DateField()
     return_date = models.DateField(null=True, blank=True)
+    duration = models.DateTimeField(null=True, blank=True)
     adults = models.PositiveIntegerField(default=1)
     children = models.PositiveIntegerField(default=0)
     infants_on_lap = models.PositiveIntegerField(default=0)
     travel_class = models.CharField(max_length=20, choices=CLASS_CHOICES)
     seat_preference = models.CharField(max_length=20, blank=True)
-
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.route} ({self.trip_type})"
+        route_str = str(self.route) if self.route else "No Route"
+        return f"{route_str} ({self.trip_type})"
 
 
 class Passenger(models.Model):
-    # Keep the ForeignKey without related_name for now to use default passenger_set
-    booking = models.ForeignKey('Booking', on_delete=models.CASCADE)
+    booking = models.ForeignKey('Booking', on_delete=models.CASCADE, related_name="passengers")
     title = models.CharField(max_length=10, default="N/A")
     first_name = models.CharField(max_length=100, null=False, blank=False)
-    middle_initial = models.CharField(max_length=50, null=True, blank=True)  # optional
+    middle_initial = models.CharField(max_length=50, null=True, blank=True)
     last_name = models.CharField(max_length=100, null=False, blank=False)
     dob = models.DateField(null=False, blank=False)
     nationality = models.CharField(max_length=100, null=False, blank=False)
@@ -143,3 +133,15 @@ class Passenger(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+
+
+class MultiCityLeg(models.Model):
+    booking = models.ForeignKey("Booking", on_delete=models.CASCADE, related_name="legs")
+    origin = models.CharField(max_length=100)
+    destination = models.CharField(max_length=100)
+    departure_date = models.DateField()
+    duration = models.DateTimeField(null=True, blank=True)
+    return_date = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.origin} → {self.destination}"

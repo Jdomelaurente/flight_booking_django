@@ -1,14 +1,33 @@
 {% extends "master.html" %}
 {% block content %}
 <div class="items-center mb-5">
+<<<<<<< HEAD
+    <h1 class="text-2xl font-bold mb-5">Bookings Table</h1>
+    <a href="{% url 'add_booking' %}" 
+       class="bg-green-800 hover:bg-green-900 text-white py-2 px-4 rounded inline-flex items-center">
+        <i class="fas fa-plus mr-2"></i>
+=======
     <h1 class="unbounded">Bookings Table</h1>
     <a href="{% url 'add_booking' %}" 
        class="bg-green-800 hover:bg-green-900 text-white py-2 px-4 rounded inline-flex items-center poppins">
         <i class="ph ph-plus mr-2"></i>
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
         Add Booking
     </a>
 </div>
 
+<<<<<<< HEAD
+<table class="table-auto border-collapse border border-gray-400 w-full">
+    <thead>
+        <tr class="bg-gray-200">
+            <th class="border border-gray-400 px-4 py-2">ID</th>
+            <th class="border border-gray-400 px-4 py-2">Student</th>
+            <th class="border border-gray-400 px-4 py-2">Flight</th>
+            <th class="border border-gray-400 px-4 py-2">Seat</th>
+            <th class="border border-gray-400 px-4 py-2">Status</th>
+            <th class="border border-gray-400 px-4 py-2">Created At</th>
+            <th class="border border-gray-400 px-4 py-2">Actions</th>
+=======
 <table class="table-auto border-collapse border border-gray-400 w-full poppins">
     <thead>
         <tr class="bg-gray-200">
@@ -22,10 +41,20 @@
             <th class="border border-gray-400 p-2">Status</th>
             <th class="border border-gray-400 p-2">Created At</th>
             <th class="border border-gray-400 p-2">Actions</th>
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
         </tr>
     </thead>
     <tbody>
         {% for booking in bookings %}
+<<<<<<< HEAD
+        <tr>
+            <td class="border border-gray-400 px-4 py-2">{{ booking.id }}</td>
+            <td class="border border-gray-400 px-4 py-2">{{ booking.student.first_name }} {{ booking.student.last_name }}</td>
+            <td class="border border-gray-400 px-4 py-2">{{ booking.schedule.flight.flight_number }}</td>
+            <td class="border border-gray-400 px-4 py-2">
+                {% if booking.seat %}
+                    {{ booking.seat.seat_number }}
+=======
         <tr class="poppins-small">
             <td class="border border-gray-400 p-2">{{ booking.id }}</td>
             <td class="border border-gray-400 p-2">{{ booking.student.first_name }} {{ booking.student.last_name }}</td>
@@ -35,10 +64,29 @@
             <td class="border border-gray-400 p-2">
                 {% if booking.outbound_seat %}
                     {{ booking.outbound_seat.seat_number }}
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
                 {% else %}
                     N/A
                 {% endif %}
             </td>
+<<<<<<< HEAD
+            <td class="border border-gray-400 px-4 py-2">{{ booking.status }}</td>
+            <td class="border border-gray-400 px-4 py-2">{{ booking.created_at|date:"Y-m-d H:i" }}</td>
+            <td class="border border-gray-400 px-4 py-2 text-center space-x-2">
+                <a href="{% url 'update_booking' booking.id %}" 
+                   class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm inline-flex items-center">
+                    <i class="fas fa-edit mr-1"></i>Edit
+                </a>
+                <a href="{% url 'delete_booking' booking.id %}" 
+                   class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-sm inline-flex items-center">
+                    <i class="fas fa-trash-alt mr-1"></i>Delete
+                </a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7" class="text-center py-4">No bookings available</td>
+=======
             
             <!-- Return (if round-trip) -->
             <td class="border border-gray-400 p-2">
@@ -87,7 +135,8 @@
 
             <!-- Pay -->
             <a href="{% url 'create_checkout' booking.id %}" 
-            class="bg-green-600 hover:bg-green-700 text-white p-1 rounded inline-flex items-center">
+            class="bg-green-600 hover:bg-green-700 text-white p-1 rounded inline-flex items-center"
+            onclick="return confirm('Confirm payment for this booking?');">
                 <i class="ph ph-credit-card mr-2"></i>Pay
             </a>
         </td>
@@ -96,6 +145,7 @@
         {% empty %}
         <tr>
             <td colspan="10" class="text-center py-4">No bookings available</td>
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
         </tr>
         {% endfor %}
     </tbody>

@@ -5,7 +5,10 @@
     <form method="post" class="space-y-4">
         {% csrf_token %}
 
+<<<<<<< HEAD
+=======
         <!-- 🔹 Student -->
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
         <div>
             <label class="block font-semibold mb-1">Student:</label>
             <select name="student" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
@@ -15,6 +18,13 @@
             </select>
         </div>
 
+<<<<<<< HEAD
+        <div>
+            <label class="block font-semibold mb-1">Schedule:</label>
+            <select name="schedule" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                {% for schedule in schedules %}
+                <option value="{{ schedule.id }}">{{ schedule.flight.flight_number }} ({{ schedule.departure_time|date:"Y-m-d H:i" }})</option>
+=======
         <!-- 🔹 Trip Type -->
         <div>
             <label class="block font-semibold mb-1">Trip Type:</label>
@@ -36,10 +46,32 @@
                     {{ schedule.flight.flight_number }} 
                     ({{ schedule.flight.route.origin_airport.code }} → {{ schedule.flight.route.destination_airport.code }}) - {{ schedule.departure_time|date:"Y-m-d H:i" }}
                 </option>
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
                 {% endfor %}
             </select>
         </div>
 
+<<<<<<< HEAD
+        <div>
+            <label class="block font-semibold mb-1">Seat (Optional):</label>
+            <select name="seat" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                <option value="">-- Select Seat --</option>
+                {% for seat in seats %}
+                <option value="{{ seat.id }}">{{ seat.seat_number }} - {{ seat.seat_class.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="block font-semibold mb-1">Status:</label>
+            <select name="status" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                <option value="Pending">Pending</option>
+                <option value="Confirmed">Confirmed</option>
+                <option value="Cancelled">Cancelled</option>
+            </select>
+        </div>
+
+=======
         <!-- 🔹 Outbound Seat -->
         <div id="outbound_seat_section">
             <label class="block font-semibold mb-1">Outbound Seat (Optional):</label>
@@ -80,6 +112,7 @@
 
 
         <!-- 🔹 Buttons -->
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
         <div class="flex items-center justify-between mt-6">
             <button type="submit" 
                     class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
@@ -92,6 +125,8 @@
         </div>
     </form>
 </div>
+<<<<<<< HEAD
+=======
 
 <script>
 const tripType = document.getElementById("trip_type");
@@ -207,4 +242,5 @@ addSegmentBtn.addEventListener("click", function() {
     });
 });
 </script>
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
 {% endblock %}

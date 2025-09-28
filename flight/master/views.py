@@ -1,8 +1,4 @@
 from django.shortcuts import render, redirect, get_object_or_404
-
-
-
-
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -10,11 +6,9 @@ from django.db import IntegrityError
 from django.http import HttpResponseForbidden
 from django.urls import reverse
 from django import forms
-
 from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-
 # Models
 from .models import Class, SectionGroup, Section, Students, User, ExcelRowData, Booking, Passenger
 # Forms
@@ -23,17 +17,14 @@ import openpyxl
 from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_protect
 from .forms import CustomUserCreationForm
-
-
-
+from flightapp.models import Route, Schedule  # adjust app name if different
 from flightapp.models import Route   # ✅ import Route from flightapp
-
-
-
-
-
+from .models import MultiCityLeg
+from django.utils.dateparse import parse_date, parse_datetime
+from datetime import date
+from django.utils.timezone import make_aware
 User = get_user_model()
-
+from django.utils import timezone
 
 
 @csrf_protect   # ✅ ensure CSRF token is required & generated
@@ -373,13 +364,13 @@ def import_students_excel(request, pk):
 def section_detail(request, pk):
     section = get_object_or_404(Section, pk=pk)
     row_objects = ExcelRowData.objects.filter(section=section)
-
+    
     # Search Excel rows
     query = request.GET.get("q", "").strip()
     if query:
         # SQLite-safe search: filter manually
         row_objects = [row for row in row_objects if query.lower() in str(row.data).lower()]
-
+    
     headers = []
     rows = []
     if row_objects:
@@ -387,17 +378,42 @@ def section_detail(request, pk):
         headers = list(first_row.keys())
         for obj in row_objects:
             rows.append({"id": obj.id, "values": list(obj.data.values())})
-
-    # Fetch Bookings - Remove prefetch_related for now to debug
-    bookings = Booking.objects.filter(section=section).order_by('-created_at')
-
+    
+    # Fetch Bookings with related data - properly handle route relationships
+    bookings = Booking.objects.filter(section=section).prefetch_related(
+        'passengers',  # From Passenger model: related_name="passengers"
+        'legs'         # From MultiCityLeg model: related_name="legs"
+    ).order_by('-created_at')
+    
+    # Process route information for each booking
+    for booking in bookings:
+        if booking.route:
+            try:
+                # Check if route is a numeric ID (database ID) or actual route code
+                if booking.route.isdigit():
+                    # It's a route ID, fetch the actual route object
+                    route_obj = Route.objects.select_related('origin_airport', 'destination_airport').get(id=int(booking.route))
+                    # Display as ORIGIN-DESTINATION format
+                    booking.route_display = f"{route_obj.origin_airport.code}-{route_obj.destination_airport.code}"
+                else:
+                    # It's already a route code string, display as is
+                    booking.route_display = booking.route
+            except (Route.DoesNotExist, ValueError):
+                # If route ID doesn't exist or invalid, show the raw value
+                booking.route_display = booking.route
+        else:
+            booking.route_display = "Route not specified"
+    
     return render(request, "tutor/Section_Detail.html", {
         "section": section,
         "headers": headers,
         "rows": rows,
         "query": query,
         "bookings": bookings,
+        "now": timezone.now(),  # Add current time for duration comparison
     })
+
+
 
 @login_required
 def delete_excel_row(request, pk):
@@ -439,42 +455,72 @@ def edit_student(request, pk):
 
 
 
-
-
-#instructions
 def book_flight(request, section_id):
     section = get_object_or_404(Section, id=section_id)
 
-    # ✅ fetch all routes from flightapp
+    # ✅ fetch all routes
     routes = Route.objects.select_related("origin_airport", "destination_airport").all()
 
+    # ✅ fetch all schedules with related flight + routes
+    schedules = Schedule.objects.select_related("flight__route__origin_airport", "flight__route__destination_airport").all()
+
     if request.method == "POST":
-        # Required booking fields
         trip_type = request.POST.get("trip_type", "one_way")
-        route = request.POST.get("route", "manila_cebu")
+        route_id = request.POST.get("route")
         departure_date = request.POST.get("departure_date")
         return_date = request.POST.get("return_date") or None
+        duration = request.POST.get("duration") or None
         travel_class = request.POST.get("travel_class", "economy")
         adults = int(request.POST.get("adults", 1))
         children = int(request.POST.get("children", 0))
         infants_on_lap = int(request.POST.get("infants_on_lap", 0))
         seat_preference = request.POST.get("seat_preference", "")
 
-        # Ensure departure_date is provided
         if not departure_date:
             return render(request, "Create/Create_Instruction.html", {
                 "section": section,
-                "routes": routes,   # ✅ make sure routes are still passed on error
+                "routes": routes,
+                "schedules": schedules,
                 "error": "Departure date is required."
             })
 
-        # Create Booking
+        # ✅ Handle multi-city booking
+        multi_city_data = []
+        if trip_type == "multi_city":
+            i = 1
+            while f"from_{i}" in request.POST:
+                origin = request.POST.get(f"from_{i}")
+                dest = request.POST.get(f"to_{i}")
+                date = request.POST.get(f"date_{i}")
+                leg_duration = request.POST.get(f"duration_{i}") or None
+                if origin and dest and date:
+                    multi_city_data.append({
+                        "origin": origin,
+                        "destination": dest,
+                        "date": parse_date(date),
+                        "duration": make_aware(parse_datetime(leg_duration)) if leg_duration else None,  # Fix timezone
+                    })
+                i += 1
+
+        # ✅ Store the original route format for display
+        original_route = route_id
+        
+        # ✅ Handle round trip route parsing - but keep original format for storage
+        if trip_type == "round_trip" and route_id and "|" in route_id:
+            # Keep the full route for display (e.g., "BXU-CEB|CEB-BXU")
+            # You can split for processing if needed, but store the complete route
+            outbound_route_id, return_route_id = route_id.split("|")
+            # For round trip, you might want to store the complete route or just outbound
+            # Keeping original format for better display
+        
+        # ✅ Create the main booking
         booking = Booking.objects.create(
             section=section,
             trip_type=trip_type,
-            route=route,
+            route=original_route,  # Store the original route format (like BXU-CEB or BXU-CEB|CEB-BXU)
             departure_date=parse_date(departure_date),
             return_date=parse_date(return_date) if return_date else None,
+            duration=make_aware(parse_datetime(duration)) if duration else None,  # Fix timezone warning
             adults=adults,
             children=children,
             infants_on_lap=infants_on_lap,
@@ -482,7 +528,18 @@ def book_flight(request, section_id):
             seat_preference=seat_preference,
         )
 
-        # Create actual passengers
+        # ✅ Handle multi-city legs
+        if multi_city_data:
+            for leg in multi_city_data:
+                MultiCityLeg.objects.create(
+                    booking=booking,
+                    origin=leg["origin"],
+                    destination=leg["destination"],
+                    departure_date=leg["date"],
+                    duration=leg["duration"],
+                )
+
+        # ✅ Handle passengers
         passenger_count = int(request.POST.get("passenger_count", 1))
         for p in range(1, passenger_count + 1):
             first_name = request.POST.get(f"first_name_{p}", "").strip()
@@ -490,13 +547,11 @@ def book_flight(request, section_id):
             middle_initial = request.POST.get(f"mi_{p}", "").strip() or None
 
             if not first_name or not last_name:
-                continue  # Skip incomplete entries
+                continue
 
-            # Parse date of birth properly
             dob_year = request.POST.get(f'year_{p}')
             dob_month = request.POST.get(f'month_{p}')
             dob_day = request.POST.get(f'day_{p}')
-            
             dob = None
             if dob_year and dob_month and dob_day:
                 try:
@@ -504,11 +559,9 @@ def book_flight(request, section_id):
                 except:
                     dob = None
 
-            # Get nationality and passport
             nationality = request.POST.get(f"nationality_{p}", "").strip()
             passport = request.POST.get(f"passport_{p}", "").strip()
 
-            # Only create passenger if we have required fields
             if first_name and last_name and dob and nationality and passport:
                 Passenger.objects.create(
                     booking=booking,
@@ -525,8 +578,8 @@ def book_flight(request, section_id):
 
         return redirect("Section_Detail", pk=section.id)
 
-    # ✅ pass routes into GET request context
     return render(request, "Create/Create_Instruction.html", {
         "section": section,
         "routes": routes,
+        "schedules": schedules,
     })

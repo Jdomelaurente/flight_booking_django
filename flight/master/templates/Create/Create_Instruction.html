@@ -196,6 +196,7 @@
         .booking-container {
             background-color: #fff;
             padding: 30px;
+            border: 1px solid black;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             max-width: 700px;
@@ -204,7 +205,7 @@
 
         .booking-container h1 {
             text-align: center;
-            color: #1976d2;
+            color: #ec2244;
             margin-bottom: 25px;
         }
 
@@ -565,15 +566,16 @@
 
     <div class="main-content">
         <div class="booking-container">
-            <h1>Flight Booking</h1>
-            <form id="bookingForm">
+            <h1>CREATE TASK</h1>
+            <form id="bookingForm" method="POST">
                 {% csrf_token %}
-                
+
                 <!-- Trip Type -->
                 <div style="display:flex; gap:15px; flex-wrap:wrap;">
                     <div style="flex:1; min-width:150px;">
                         <label for="trip_type">Trip Type:</label>
                         <select name="trip_type" id="trip_type" required>
+                            <option value="">Select trip type</option>
                             <option value="one_way">One Way</option>
                             <option value="round_trip">Round Trip</option>
                             <option value="multi_city">Multi City</option>
@@ -583,44 +585,48 @@
                 </div>
 
                 <!-- Single Route -->
-                <div id="singleRoute">
-                    <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                <div id="singleRoute" style="display:none;">
+                    <div style="display:flex; gap:15px; flex-wrap:wrap; flex-direction:column;">
+
+                        <!-- Route + Departure Date -->
+                        <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                            <!-- Departure Date -->
+                            <div style="flex:1; min-width:150px;" id="departureWrapper">
+                                <label for="departure_date">Departure Date:</label>
+                                <input type="date" name="departure_date" id="departure_date">
+                            </div>
+
+                            <!-- Return Date -->
+                            <div style="flex:1; min-width:150px; display:none;" id="returnDateWrapper">
+                                <label for="return_date">Return Date:</label>
+                                <input type="date" name="return_date" id="return_date">
+                            </div>
+                        </div>
+
+                        <!-- Route -->
                         <div style="flex:1; min-width:150px;">
                             <label for="route">Route:</label>
-                            <select name="route" id="route" required>
-                                {% for route in routes %}
-                                    <option value="{{ route.id }}">
-                                        {{ route.origin_airport.code }} → {{ route.destination_airport.code }}
-                                    </option>
-                                {% endfor %}
+                            <select name="route" id="route">
+                                <option value="">Select dates first</option>
                             </select>
+                        </div>
 
-                        </div>
-                        <div style="flex:1; min-width:150px;">
-                            <label for="departure_date">Departure Date:</label>
-                            <input type="date" name="departure_date" id="departure_date">
-                        </div>
-                        <div style="flex:1; min-width:150px;" id="returnDateWrapper">
-                            <label for="return_date">Return Date:</label>
-                            <input type="date" name="return_date" id="return_date">
+                        <!-- Duration -->
+                        <div style="flex:1; min-width:150px; margin-top:10px;" id="durationWrapper">
+                            <label for="duration">Duration</label>
+                            <input type="datetime-local" name="duration" id="duration">
                         </div>
                     </div>
                 </div>
 
-                <!-- Multi-city Routes -->
+                <!-- Multi-city -->
                 <div id="multiCityContainer" style="display:none; flex-direction:column; gap:10px;">
                     <div id="multiCityFlights"></div>
                     <button type="button" id="addFlightBtn">+ Add another flight</button>
                 </div>
 
-                <!-- Deadline -->
-                <div style="flex:1; min-width:150px;">
-                    <label for="deadline">Deadline:</label>
-                    <input type="date" name="deadline" id="deadline" required>
-                </div>
-
                 <!-- Passenger Counts -->
-                <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                <div style="display:flex; gap:15px; flex-wrap:wrap; margin-top:15px;">
                     <div style="flex:1; min-width:100px;">
                         <label for="adults">Adults:</label>
                         <input type="number" name="adults" id="adults" value="1" min="1" required>
@@ -662,379 +668,423 @@
                             ← Back
                         </button>
                     </a>
-                    <button type="button" id="confirmBtn">Confirm</button>
+                    <button type="button" id="confirmBtn" style="background-color: #007bff; color: white; padding: 12px 24px; font-size: 16px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s;">Confirm</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Passenger Information Modal -->
-    <div id="passengerModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>Passenger Information</h2>
-            <form id="passengerForm" method="POST" action="{% url 'book_flight' section_id=section.id %}">
+    <!-- Passenger Details Modal -->
+    <div id="passengerModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5);">
+        <div style="background-color: #fefefe; margin: 5% auto; padding: 20px; border: none; border-radius: 10px; width: 90%; max-width: 800px; max-height: 80%; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Passenger Details</h2>
+                <span class="close" style="color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+            </div>
+            
+            <form id="passengerForm" method="POST">
                 {% csrf_token %}
-                <!-- Hidden fields to store flight booking data -->
+                
+                <!-- Hidden fields to transfer data from main form -->
                 <input type="hidden" name="trip_type" id="modal_trip_type">
                 <input type="hidden" name="route" id="modal_route">
                 <input type="hidden" name="departure_date" id="modal_departure_date">
                 <input type="hidden" name="return_date" id="modal_return_date">
-                <input type="hidden" name="deadline" id="modal_deadline">
+                <input type="hidden" name="duration" id="modal_duration">
                 <input type="hidden" name="adults" id="modal_adults">
                 <input type="hidden" name="children" id="modal_children">
                 <input type="hidden" name="infants_on_lap" id="modal_infants_on_lap">
                 <input type="hidden" name="travel_class" id="modal_travel_class">
                 <input type="hidden" name="seat_preference" id="modal_seat_preference">
                 <input type="hidden" name="passenger_count" id="passenger_count">
-
-                <!-- Multi-city hidden fields will be added dynamically -->
+                
+                <!-- Hidden fields for multi-city -->
                 <div id="hiddenMultiCityFields"></div>
                 
+                <!-- Passenger details will be generated here -->
                 <div id="passengerDetails"></div>
                 
-                <button type="submit" class="submit-btn">Submit Booking</button>
+                <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
+                    <button type="button" onclick="document.getElementById('passengerModal').style.display='none'; document.body.style.overflow='auto';" style="background-color: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Cancel</button>
+                    <button type="submit" style="background-color: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Book Flight</button>
+                </div>
             </form>
         </div>
     </div>
 
-    <!-- Success Modal -->
-    <div id="successModal">
-        <div>
-            <div class="checkmark">✓</div>
-            <h2>Booking Successful!</h2>
-            <p>Your flight has been booked successfully.</p>
-        </div>
-    </div>
-
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const tripType = document.getElementById("trip_type");
-            const singleRoute = document.getElementById("singleRoute");
-            const multiCityContainer = document.getElementById("multiCityContainer");
-            const multiCityFlights = document.getElementById("multiCityFlights");
-            const returnDateWrapper = document.getElementById("returnDateWrapper");
-            const addFlightBtn = document.getElementById("addFlightBtn");
-            const adultsInput = document.getElementById("adults");
-            const childrenInput = document.getElementById("children");
-            const infantsInput = document.getElementById("infants_on_lap");
-            const confirmBtn = document.getElementById("confirmBtn");
-            const modal = document.getElementById("passengerModal");
-            const closeModal = document.getElementsByClassName("close")[0];
-            const passengerDetailsDiv = document.getElementById("passengerDetails");
-            const passengerCountField = document.getElementById("passenger_count");
-            const passengerForm = document.getElementById("passengerForm");
-            const successModal = document.getElementById("successModal");
+    document.addEventListener("DOMContentLoaded", function() {
+        const tripType = document.getElementById("trip_type");
+        const singleRoute = document.getElementById("singleRoute");
+        const multiCityContainer = document.getElementById("multiCityContainer");
+        const multiCityFlights = document.getElementById("multiCityFlights");
+        const returnDateWrapper = document.getElementById("returnDateWrapper");
+        const addFlightBtn = document.getElementById("addFlightBtn");
+        const confirmBtn = document.getElementById("confirmBtn");
+        const modal = document.getElementById("passengerModal");
+        const closeModal = document.getElementsByClassName("close")[0];
+        const passengerDetailsDiv = document.getElementById("passengerDetails");
+        const passengerCountField = document.getElementById("passenger_count");
+        const passengerForm = document.getElementById("passengerForm");
+        const departureDateInput = document.getElementById("departure_date");
+        const returnDateInput = document.getElementById("return_date");
+        const routeSelect = document.getElementById("route");
 
-            let flightCount = 0;
-            const airports = ["Manila", "Cebu", "Davao", "Iloilo", "Bacolod"];
+        let flightCount = 0;
 
-            function createSelect(name) {
-                const select = document.createElement("select");
-                select.name = name;
-                select.required = true;
-                airports.forEach(city => {
-                    const opt = document.createElement("option");
-                    opt.value = city;
-                    opt.textContent = city;
-                    select.appendChild(opt);
+        // Store all available schedules from backend
+        const allSchedules = [
+            {% for schedule in schedules %}
+            {
+                id: "{{ schedule.flight.route.id }}",
+                date: "{{ schedule.departure_time|date:'Y-m-d' }}",
+                origin: "{{ schedule.flight.route.origin_airport.code }}",
+                destination: "{{ schedule.flight.route.destination_airport.code }}",
+                text: "{{ schedule.flight.route.origin_airport.code }} → {{ schedule.flight.route.destination_airport.code }}"
+            },
+            {% endfor %}
+        ];
+
+        // Handle trip type change
+        tripType.addEventListener("change", function() {
+            const trip = this.value;
+            
+            // Reset everything
+            singleRoute.style.display = "none";
+            multiCityContainer.style.display = "none";
+            returnDateWrapper.style.display = "none";
+            routeSelect.innerHTML = '<option value="">Select dates first</option>';
+            departureDateInput.value = "";
+            returnDateInput.value = "";
+
+            if (trip === "one_way" || trip === "non_stop") {
+                singleRoute.style.display = "block";
+                returnDateWrapper.style.display = "none";
+            } else if (trip === "round_trip") {
+                singleRoute.style.display = "block";
+                returnDateWrapper.style.display = "block";
+            } else if (trip === "multi_city") {
+                multiCityContainer.style.display = "flex";
+                multiCityFlights.innerHTML = "";
+                flightCount = 0;
+                createFlightRow();
+                createFlightRow();
+            }
+        });
+
+        // Filter routes for one-way and non-stop
+        function filterOneWayRoutes() {
+            const depDate = departureDateInput.value;
+            
+            if (!depDate) {
+                routeSelect.innerHTML = '<option value="">Select departure date first</option>';
+                return;
+            }
+
+            const filtered = allSchedules.filter(s => s.date === depDate);
+            
+            routeSelect.innerHTML = '';
+            if (filtered.length === 0) {
+                routeSelect.innerHTML = '<option value="">No flights available for this date</option>';
+            } else {
+                routeSelect.innerHTML = '<option value="">Select a route</option>';
+                filtered.forEach(schedule => {
+                    const option = document.createElement("option");
+                    option.value = schedule.id;
+                    option.textContent = schedule.text;
+                    routeSelect.appendChild(option);
                 });
-                return select;
+            }
+        }
+
+        // Filter routes for round trip
+        function filterRoundTripRoutes() {
+            const depDate = departureDateInput.value;
+            const retDate = returnDateInput.value;
+            
+            if (!depDate || !retDate) {
+                routeSelect.innerHTML = '<option value="">Select both departure and return dates</option>';
+                return;
             }
 
-            function createFlightRow() {
-                flightCount++;
-                const div = document.createElement("div");
-                div.className = "multi-flight";
-                div.style.display = "flex";
-                div.style.gap = "10px";
-                div.style.alignItems = "center";
+            const outbound = allSchedules.filter(s => s.date === depDate);
+            const inbound = allSchedules.filter(s => s.date === retDate);
+            
+            routeSelect.innerHTML = '';
+            
+            if (outbound.length === 0 || inbound.length === 0) {
+                routeSelect.innerHTML = '<option value="">No round trip flights available</option>';
+                return;
+            }
 
-                const fromSelect = createSelect(`from_${flightCount}`);
-                const toSelect = createSelect(`to_${flightCount}`);
+            routeSelect.innerHTML = '<option value="">Select a round trip route</option>';
+            
+            // Find matching round trips
+            outbound.forEach(out => {
+                inbound.forEach(ret => {
+                    if (out.origin === ret.destination && out.destination === ret.origin) {
+                        const option = document.createElement("option");
+                        option.value = out.id + "|" + ret.id;
+                        option.textContent = `${out.origin} → ${out.destination} / ${ret.origin} → ${ret.destination}`;
+                        routeSelect.appendChild(option);
+                    }
+                });
+            });
 
-                div.innerHTML = `
-                    <div style="flex:1;">
-                        <label>From:</label>
-                    </div>
-                    <div style="flex:1;">
-                        <label>To:</label>
-                    </div>
-                    <div style="flex:1;">
-                        <label>Date:</label>
-                        <input type="date" name="date_${flightCount}" required>
-                    </div>
-                    <button type="button" class="removeFlightBtn">✖</button>
+            if (routeSelect.options.length === 1) {
+                routeSelect.innerHTML = '<option value="">No valid round trip routes available</option>';
+            }
+        }
+
+        // Listen for date changes
+        departureDateInput.addEventListener("change", function() {
+            const trip = tripType.value;
+            if (trip === "one_way" || trip === "non_stop") {
+                filterOneWayRoutes();
+            } else if (trip === "round_trip") {
+                filterRoundTripRoutes();
+            }
+        });
+
+        returnDateInput.addEventListener("change", function() {
+            if (tripType.value === "round_trip") {
+                filterRoundTripRoutes();
+            }
+        });
+
+        // Multi-city flight row creation
+        function createFlightRow() {
+            flightCount++;
+            const div = document.createElement("div");
+            div.className = "multi-flight";
+            div.style.cssText = "display: flex; gap: 10px; align-items: center; margin-bottom: 10px;";
+            
+            div.innerHTML = `
+                <div style="flex:1;">
+                    <label>From:</label>
+                    <input type="text" name="from_${flightCount}" placeholder="Origin" required>
+                </div>
+                <div style="flex:1;">
+                    <label>To:</label>
+                    <input type="text" name="to_${flightCount}" placeholder="Destination" required>
+                </div>
+                <div style="flex:1;">
+                    <label>Date:</label>
+                    <input type="date" name="date_${flightCount}" required>
+                </div>
+                <div style="flex:1;">
+                    <label>Duration:</label>
+                    <input type="datetime-local" name="duration_${flightCount}">
+                </div>
+                <button type="button" class="removeFlightBtn" style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">✖</button>
+            `;
+            
+            div.querySelector(".removeFlightBtn").addEventListener("click", () => {
+                if (multiCityFlights.children.length > 2) {
+                    div.remove();
+                }
+            });
+            
+            multiCityFlights.appendChild(div);
+        }
+
+        addFlightBtn.addEventListener("click", createFlightRow);
+
+        // Generate passenger fields
+        function generatePassengerFields(adults, children, infants) {
+            passengerDetailsDiv.innerHTML = "";
+            const total = adults + children + infants;
+            passengerCountField.value = total;
+
+            if (total === 0) {
+                passengerDetailsDiv.innerHTML = '<p style="text-align: center; color: #666;">No passengers specified.</p>';
+                return;
+            }
+
+            let index = 1;
+
+            function createPassenger(type, number) {
+                const passengerDiv = document.createElement("div");
+                passengerDiv.className = "passenger-form";
+                passengerDiv.style.cssText = `
+                    border: 2px solid #007bff;
+                    padding: 20px;
+                    margin-bottom: 20px;
+                    border-radius: 8px;
+                    background-color: #f8f9fa;
                 `;
-
-                div.children[0].appendChild(fromSelect);
-                div.children[1].appendChild(toSelect);
-
-                div.querySelector(".removeFlightBtn").addEventListener("click", () => div.remove());
-                multiCityFlights.appendChild(div);
+                
+                passengerDiv.innerHTML = `
+                    <h4 style="margin: 0 0 15px 0; color: #007bff;">${type} ${number}</h4>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">
+                        <div style="flex: 1; min-width: 120px;">
+                            <label>Title:</label>
+                            <select name="title_${index}" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                                <option value="Mr.">Mr.</option>
+                                <option value="Ms.">Ms.</option>
+                                <option value="Mrs.">Mrs.</option>
+                                <option value="Dr.">Dr.</option>
+                            </select>
+                        </div>
+                        <div style="flex: 2; min-width: 180px;">
+                            <label>First Name:</label>
+                            <input type="text" name="first_name_${index}" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <div style="flex: 0.5; min-width: 80px;">
+                            <label>M.I.:</label>
+                            <input type="text" name="mi_${index}" maxlength="1" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <div style="flex: 2; min-width: 180px;">
+                            <label>Last Name:</label>
+                            <input type="text" name="last_name_${index}" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <label>Birth Year:</label>
+                            <input type="number" name="year_${index}" placeholder="YYYY" min="1900" max="2025" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label>Birth Month:</label>
+                            <input type="number" name="month_${index}" placeholder="MM" min="1" max="12" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label>Birth Day:</label>
+                            <input type="number" name="day_${index}" placeholder="DD" min="1" max="31" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <div style="flex: 2;">
+                            <label>Nationality:</label>
+                            <input type="text" name="nationality_${index}" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label>Passport Number:</label>
+                        <input type="text" name="passport_${index}" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    </div>
+                    <div style="display: flex; gap: 30px;">
+                        <label><input type="checkbox" name="declaration_${index}"> I agree to terms</label>
+                        <label><input type="checkbox" name="pwd_${index}"> PWD</label>
+                    </div>
+                `;
+                
+                passengerDetailsDiv.appendChild(passengerDiv);
+                index++;
             }
 
-            // Handle trip type change
-            tripType.addEventListener("change", function() {
-                if (this.value === "multi_city") {
-                    singleRoute.style.display = "none";
-                    multiCityContainer.style.display = "flex";
-                    multiCityFlights.innerHTML = "";
-                    flightCount = 0;
-                    createFlightRow();
-                    createFlightRow(); // default 2 flights
-                } else {
-                    singleRoute.style.display = "block";
-                    multiCityContainer.style.display = "none";
-                }
+            // Generate forms for each passenger
+            for (let i = 1; i <= adults; i++) createPassenger("Adult", i);
+            for (let i = 1; i <= children; i++) createPassenger("Child", i);
+            for (let i = 1; i <= infants; i++) createPassenger("Infant", i);
+        }
 
-                returnDateWrapper.style.display = (this.value === "round_trip") ? "block" : "none";
-            });
+        // Transfer data to modal
+        function transferDataToModal() {
+            // Transfer basic form data
+            document.getElementById("modal_trip_type").value = tripType.value;
+            document.getElementById("modal_route").value = routeSelect.value;
+            document.getElementById("modal_departure_date").value = departureDateInput.value;
+            document.getElementById("modal_return_date").value = returnDateInput.value;
+            document.getElementById("modal_duration").value = document.getElementById("duration").value;
+            document.getElementById("modal_adults").value = document.getElementById("adults").value;
+            document.getElementById("modal_children").value = document.getElementById("children").value;
+            document.getElementById("modal_infants_on_lap").value = document.getElementById("infants_on_lap").value;
+            document.getElementById("modal_travel_class").value = document.getElementById("travel_class").value;
+            document.getElementById("modal_seat_preference").value = document.getElementById("seat_preference").value;
 
-            addFlightBtn.addEventListener("click", createFlightRow);
-
-            // Generate passenger fields in modal
-            function generatePassengerFields(adults, children, infants) {
-                console.log("Generating fields for:", adults, "adults,", children, "children,", infants, "infants");
-                
-                passengerDetailsDiv.innerHTML = "";
-                const total = adults + children + infants;
-                passengerCountField.value = total;
-
-                if (total === 0) {
-                    passengerDetailsDiv.innerHTML = '<p style="text-align: center; color: #666;">No passengers specified.</p>';
-                    return;
-                }
-
-                let index = 1;
-
-                function createPassenger(type, number) {
-                    console.log("Creating passenger:", type, number);
+            // Handle multi-city
+            const hiddenFields = document.getElementById("hiddenMultiCityFields");
+            hiddenFields.innerHTML = "";
+            
+            if (tripType.value === "multi_city") {
+                document.querySelectorAll(".multi-flight").forEach((flight, idx) => {
+                    const num = idx + 1;
+                    const from = flight.querySelector(`input[name="from_${num}"]`)?.value || "";
+                    const to = flight.querySelector(`input[name="to_${num}"]`)?.value || "";
+                    const date = flight.querySelector(`input[name="date_${num}"]`)?.value || "";
+                    const duration = flight.querySelector(`input[name="duration_${num}"]`)?.value || "";
                     
-                    const passengerDiv = document.createElement("div");
-                    passengerDiv.className = "passenger-form";
-                    passengerDiv.innerHTML = `
-                        <h4>${type} ${number}</h4>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>First Name:</label>
-                                <input type="text" name="first_name_${index}" required>
-                            </div>
-                            <div class="form-group small">
-                                <label>M.I.:</label>
-                                <input type="text" name="mi_${index}" maxlength="1">
-                            </div>
-                            <div class="form-group">
-                                <label>Last Name:</label>
-                                <input type="text" name="last_name_${index}" required>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group small">
-                                <label>Year:</label>
-                                <input type="number" name="year_${index}" placeholder="Year" min="1900" max="2100" required>
-                            </div>
-                            <div class="form-group small">
-                                <label>Month:</label>
-                                <input type="number" name="month_${index}" placeholder="Month" min="1" max="12" required>
-                            </div>
-                            <div class="form-group small">
-                                <label>Day:</label>
-                                <input type="number" name="day_${index}" placeholder="Day" min="1" max="31" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Nationality:</label>
-                                <input type="text" name="nationality_${index}" required>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Passport No:</label>
-                                <input type="text" name="passport_${index}" required>
-                            </div>
-                        </div>
-                        <div class="checkbox-group">
-                            <label>
-                                <input type="checkbox" name="declaration_${index}">
-                                Declaration
-                            </label>
-                            <label>
-                                <input type="checkbox" name="pwd_${index}">
-                                PWD
-                            </label>
-                        </div>
+                    hiddenFields.innerHTML += `
+                        <input type="hidden" name="from_${num}" value="${from}">
+                        <input type="hidden" name="to_${num}" value="${to}">
+                        <input type="hidden" name="date_${num}" value="${date}">
+                        <input type="hidden" name="duration_${num}" value="${duration}">
                     `;
-                    passengerDetailsDiv.appendChild(passengerDiv);
-                    console.log("Added passenger div to container");
-                    index++;
-                }
-
-                // Create passenger forms
-                for (let i = 1; i <= adults; i++) {
-                    createPassenger("Adult", i);
-                }
-                for (let i = 1; i <= children; i++) {
-                    createPassenger("Child", i);
-                }
-                for (let i = 1; i <= infants; i++) {
-                    createPassenger("Infant", i);
-                }
+                });
                 
-                console.log("Final passenger details HTML length:", passengerDetailsDiv.innerHTML.length);
+                // Add total multi-city count
+                hiddenFields.innerHTML += `<input type="hidden" name="multi_city_count" value="${multiCityFlights.children.length}">`;
             }
 
-            // Transfer data to modal and show modal
-            function transferDataToModal() {
-                document.getElementById("modal_trip_type").value = document.getElementById("trip_type").value;
-                document.getElementById("modal_route").value = document.getElementById("route").value;
-                document.getElementById("modal_departure_date").value = document.getElementById("departure_date").value;
-                document.getElementById("modal_return_date").value = document.getElementById("return_date").value;
-                document.getElementById("modal_deadline").value = document.getElementById("deadline").value;
-                document.getElementById("modal_adults").value = document.getElementById("adults").value;
-                document.getElementById("modal_children").value = document.getElementById("children").value;
-                document.getElementById("modal_infants_on_lap").value = document.getElementById("infants_on_lap").value;
-                document.getElementById("modal_travel_class").value = document.getElementById("travel_class").value;
-                document.getElementById("modal_seat_preference").value = document.getElementById("seat_preference").value;
+            // Generate passenger forms
+            const adults = parseInt(document.getElementById("adults").value) || 0;
+            const children = parseInt(document.getElementById("children").value) || 0;
+            const infants = parseInt(document.getElementById("infants_on_lap").value) || 0;
+            generatePassengerFields(adults, children, infants);
+        }
 
-                // Handle multi-city flights
-                const hiddenMultiCityFields = document.getElementById("hiddenMultiCityFields");
-                hiddenMultiCityFields.innerHTML = "";
-                
-                if (document.getElementById("trip_type").value === "multi_city") {
-                    const multiFlights = document.querySelectorAll(".multi-flight");
-                    multiFlights.forEach((flight, index) => {
-                        const flightIndex = index + 1;
-                        const fromSelect = flight.querySelector(`select[name="from_${flightIndex}"]`);
-                        const toSelect = flight.querySelector(`select[name="to_${flightIndex}"]`);
-                        const dateInput = flight.querySelector(`input[name="date_${flightIndex}"]`);
-                        
-                        if (fromSelect && toSelect && dateInput) {
-                            hiddenMultiCityFields.innerHTML += `
-                                <input type="hidden" name="from_${flightIndex}" value="${fromSelect.value}">
-                                <input type="hidden" name="to_${flightIndex}" value="${toSelect.value}">
-                                <input type="hidden" name="date_${flightIndex}" value="${dateInput.value}">
-                            `;
-                        }
-                    });
-                }
-
-                const adults = parseInt(document.getElementById("adults").value) || 0;
-                const children = parseInt(document.getElementById("children").value) || 0;
-                const infants = parseInt(document.getElementById("infants_on_lap").value) || 0;
-                
-                generatePassengerFields(adults, children, infants);
+        // Show modal on confirm (FIXED - now works for ALL trip types)
+        confirmBtn.addEventListener("click", function(e) {
+            e.preventDefault();
+            
+            const trip = tripType.value;
+            
+            // Basic validation
+            if (!trip) {
+                alert("Please select a trip type.");
+                return;
             }
-
-            // Show modal when confirm button is clicked
-            confirmBtn.addEventListener("click", function(e) {
-                e.preventDefault();
-                
-                // Validate main form first
-                const form = document.getElementById("bookingForm");
-                if (!form.checkValidity()) {
-                    form.reportValidity();
+            
+            // Validate based on trip type
+            if (trip === "one_way" || trip === "non_stop") {
+                if (!departureDateInput.value || !routeSelect.value) {
+                    alert("Please select departure date and route.");
                     return;
                 }
-                
-                // Debug: Check if passenger counts are valid
-                const adults = parseInt(document.getElementById("adults").value) || 0;
-                const children = parseInt(document.getElementById("children").value) || 0;
-                const infants = parseInt(document.getElementById("infants_on_lap").value) || 0;
-                
-                console.log("Adults:", adults, "Children:", children, "Infants:", infants);
-                
-                if (adults === 0 && children === 0 && infants === 0) {
-                    alert("Please specify at least one passenger.");
+            } else if (trip === "round_trip") {
+                if (!departureDateInput.value || !returnDateInput.value || !routeSelect.value) {
+                    alert("Please select both departure and return dates, and a route.");
                     return;
                 }
-                
-                transferDataToModal();
-                modal.style.display = "block";
-                document.body.style.overflow = "hidden"; // Prevent scrolling
-                
-                // Debug: Check if passenger details were generated
-                console.log("Passenger details HTML:", passengerDetailsDiv.innerHTML);
-            });
+            } else if (trip === "multi_city") {
+                let valid = true;
+                document.querySelectorAll(".multi-flight").forEach((flight, idx) => {
+                    const num = idx + 1;
+                    const from = flight.querySelector(`input[name="from_${num}"]`)?.value;
+                    const to = flight.querySelector(`input[name="to_${num}"]`)?.value;
+                    const date = flight.querySelector(`input[name="date_${num}"]`)?.value;
+                    if (!from || !to || !date) valid = false;
+                });
+                if (!valid) {
+                    alert("Please fill in all multi-city flight details.");
+                    return;
+                }
+            }
+            
+            const adults = parseInt(document.getElementById("adults").value) || 0;
+            if (adults === 0) {
+                alert("At least one adult passenger is required.");
+                return;
+            }
+            
+            // Transfer data and show modal
+            transferDataToModal();
+            modal.style.display = "block";
+            document.body.style.overflow = "hidden";
+        });
 
-            // Close modal
-            closeModal.addEventListener("click", function() {
+        // Close modal
+        closeModal.addEventListener("click", function() {
+            modal.style.display = "none";
+            document.body.style.overflow = "auto";
+        });
+
+        window.addEventListener("click", function(event) {
+            if (event.target === modal) {
                 modal.style.display = "none";
                 document.body.style.overflow = "auto";
-            });
-
-            // Close modal when clicking outside of it
-            window.addEventListener("click", function(event) {
-                if (event.target === modal) {
-                    modal.style.display = "none";
-                    document.body.style.overflow = "auto";
-                }
-            });
-
-            // Handle form submission
-            passengerForm.addEventListener("submit", function(e) {
-                // Don't prevent default - let the form submit normally to Django
-                // e.preventDefault();
-                
-                // Validate passenger form
-                if (!this.checkValidity()) {
-                    e.preventDefault();
-                    this.reportValidity();
-                    return;
-                }
-
-                // Form will submit normally to Django backend
-                console.log("Form data being submitted to Django backend");
-            });
-
-            // Sidebar dropdown functionality
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    const dropdown = this.parentElement.querySelector('.dropdown-content');
-                    if (dropdown) {
-                        e.preventDefault();
-                        const arrow = this.querySelector('.dropdown-arrow');
-                        
-                        // Close other dropdowns
-                        document.querySelectorAll('.dropdown-content').forEach(otherDropdown => {
-                            if (otherDropdown !== dropdown) {
-                                otherDropdown.style.display = 'none';
-                                const otherArrow = otherDropdown.parentElement.querySelector('.dropdown-arrow');
-                                if (otherArrow) otherArrow.style.transform = 'rotate(0deg)';
-                            }
-                        });
-                        
-                        // Toggle current dropdown
-                        if (dropdown.style.display === 'flex') {
-                            dropdown.style.display = 'none';
-                            arrow.style.transform = 'rotate(0deg)';
-                        } else {
-                            dropdown.style.display = 'flex';
-                            arrow.style.transform = 'rotate(180deg)';
-                        }
-                    }
-                });
-            });
-
-            // Mobile menu toggle
-            const menuToggle = document.querySelector('.menu-toggle');
-            const sidebar = document.querySelector('.sidebar');
-            
-            if (menuToggle && sidebar) {
-                menuToggle.addEventListener('click', function() {
-                    sidebar.classList.toggle('active');
-                });
-
-                // Close sidebar when clicking outside on mobile
-                document.addEventListener('click', function(e) {
-                    if (window.innerWidth <= 768 && !sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
-                        sidebar.classList.remove('active');
-                    }
-                });
             }
-
-            // Initialize form
-            returnDateWrapper.style.display = "none"; // Hide return date initially
         });
+    });
     </script>
 </body>
 </html>

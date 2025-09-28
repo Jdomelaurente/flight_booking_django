@@ -1,18 +1,56 @@
 {% extends "master.html" %}
 {% block content %}
 <div class="items-center mb-5">
+<<<<<<< HEAD
+    <h1 class="text-2xl font-bold mb-5">Seat Classes Table</h1>
+    <a href="{% url 'add_seat_class' %}" 
+       class="bg-green-800 hover:bg-green-900 text-white py-2 px-4 rounded inline-flex items-center">
+        <i class="fas fa-plus mr-2"></i>
+        Add Seat Class
+    </a>
+</div>
+
+<table class="table-auto border-collapse border border-gray-400 w-full">
+    <thead>
+        <tr class="bg-gray-200">
+            <th class="border border-gray-400 px-4 py-2">ID</th>
+=======
     <h1 class="unbounded">Seat Classes Table</h1>
     <a href="{% url 'add_seat_class' %}" 
        class="bg-green-800 hover:bg-green-900 text-white py-2 px-4 rounded inline-flex items-center poppins">
         <i class="ph ph-plus mr-2"></i>
         Add Seat Class
     </a>
+
+    <form method="post" action="{% url 'import_seat_classes' %}" enctype="multipart/form-data" class="inline-flex items-center space-x-2 ml-4 poppins">
+        {% csrf_token %}
+        <input type="file" name="file" accept=".xlsx,.xls"
+               class="border border-gray-300 rounded px-2 py-1">
+        <button type="submit"
+                class="bg-blue-700 hover:bg-blue-800 text-white py-2 px-4 rounded poppins">
+            Import Excel
+        </button>
+    </form>
 </div>
+
+{# ✅ Messages Section #}
+{% if messages %}
+<div class="mb-4">
+    {% for message in messages %}
+        <div class="p-3 rounded mb-2 
+                    {% if message.tags == 'success' %} bg-green-100 text-green-800 border border-green-300 
+                    {% elif message.tags == 'error' %} bg-red-100 text-red-800 border border-red-300 
+                    {% else %} bg-gray-100 text-gray-800 border border-gray-300 {% endif %}">
+            {{ message }}
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
 
 <table class="table-auto border-collapse border border-gray-400 w-full poppins">
     <thead>
         <tr class="bg-gray-200">
-            <th class="border border-gray-400 px-4 py-2">ID</th>
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
             <th class="border border-gray-400 px-4 py-2">Name</th>
             <th class="border border-gray-400 px-4 py-2">Price Multiplier</th>
             <th class="border border-gray-400 px-4 py-2">Actions</th>
@@ -20,18 +58,31 @@
     </thead>
     <tbody>
         {% for seat_class in seat_classes %}
-        <tr class="poppins-small">
+<<<<<<< HEAD
+        <tr>
             <td class="border border-gray-400 px-4 py-2">{{ seat_class.id }}</td>
+=======
+        <tr class="poppins-small">
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
             <td class="border border-gray-400 px-4 py-2">{{ seat_class.name }}</td>
             <td class="border border-gray-400 px-4 py-2">{{ seat_class.price_multiplier }}</td>
             <td class="border border-gray-400 px-4 py-2 text-center space-x-2">
                 <a href="{% url 'update_seat_class' seat_class.id %}" 
+<<<<<<< HEAD
+                   class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm inline-flex items-center">
+                    <i class="fas fa-edit mr-1"></i>Edit
+                </a>
+                <a href="{% url 'delete_seat_class' seat_class.id %}" 
+                   class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-sm inline-flex items-center">
+                    <i class="fas fa-trash-alt mr-1"></i>Delete
+=======
                    class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded inline-flex items-center">
                     <i class="ph ph-pen mr-1"></i>Edit
                 </a>
                 <a href="{% url 'delete_seat_class' seat_class.id %}" 
                    class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded inline-flex items-center">
                     <i class="ph ph-trash mr-1"></i>Delete
+>>>>>>> 89a292197b6c61062b72c9b66de9aafd50baeff3
                 </a>
             </td>
         </tr>
