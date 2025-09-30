@@ -561,50 +561,95 @@
                 font-size: 2rem;
             }
         }
+
+        .nav-item.active > .nav-link {
+            background: #7685A6;   /* your green */
+            color: #fff;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .dropdown-item.active {
+            background: #7685A6;
+            color: white;
+            border-radius: 5px;
+        }
+
     </style>
 </head>
 <body>
     <div class="menu-toggle">☰</div>
     
-    <aside class="sidebar">
-        <div>
-            <div class="logo"><div class="logo-icon">✈️</div>Flight Booking</div>
-            <div class="user-info">
-                <div class="user-avatar">👨‍💼</div>
-                <div class="user-details">
-                    <div class="welcome-text">Welcome, {{ request.user.username }}</div>
-                    <div class="user-role">{{ request.user.role }}</div>
+
+<aside class="sidebar">
+    <div>
+        <div class="logo"><div class="logo-icon">✈️</div>Flight Booking</div>
+        <div class="user-info">
+            <div class="user-avatar">👨‍💼</div>
+            <div class="user-details">
+                <div class="welcome-text">Welcome, {{ request.user.username }}</div>
+                <div class="user-role">{{ request.user.role }}</div>
+            </div>
+        </div>
+
+
+        <nav class="nav-menu">
+            <div class="nav-item">
+                <a href="#" class="nav-link"><div class="nav-left"><span class="nav-icon">🏠</span>Dashboard</div></a>
+            </div>
+
+            <div class="nav-item">
+                <a class="nav-link active">
+                    <div class="nav-left"><span class="nav-icon">📚</span>Manage Class</div>
+                    <span class="dropdown-arrow" style="transform: rotate(180deg);">▼</span>
+                </a>
+                <div class="dropdown-content" style="display: flex;">
+                    <a href="{% url 'Cclass' %}" class="dropdown-item">➕ Create Subject</a>
+                    <a href="{% url 'Section_List' %}" class="dropdown-item active">👥 Sections</a>
                 </div>
             </div>
-            <nav class="nav-menu">
-                <div class="nav-item"><a href="#" class="nav-link"><div class="nav-left"><span class="nav-icon">🏠</span>Dashboard</div></a></div>
-                <div class="nav-item">
-                    <a class="nav-link"><div class="nav-left"><span class="nav-icon">📚</span>Manage Class</div><span class="dropdown-arrow">▼</span></a>
-                    <div class="dropdown-content">
-                        <a href="{% url 'Cclass' %}" class="dropdown-item">➕ Create Subject</a>
-                        <a href="{% url 'Section_List' %}" class="dropdown-item active">👥 Sections</a>
-                    </div>
+
+            <div class="nav-item">
+                <a class="nav-link">
+                    <div class="nav-left"><span class="nav-icon">📊</span>Grades</div>
+                    <span class="dropdown-arrow">▼</span>
+                </a>
+                <div class="dropdown-content">
+                    <a href="#" class="dropdown-item">⭐ View Grades</a>
                 </div>
-                <div class="nav-item"><a class="nav-link"><div class="nav-left"><span class="nav-icon">📋</span>Manage Instructions</div><span class="dropdown-arrow">▼</span></a>
-                    <div class="dropdown-content"><a href="#" class="dropdown-item">📄 Instructions</a></div>
+            </div>
+
+            <div class="nav-item">
+                <a class="nav-link">
+                    <div class="nav-left"><span class="nav-icon">👨‍🎓</span>Student Info</div>
+                    <span class="dropdown-arrow">▼</span>
+                </a>
+                <div class="dropdown-content">
+                    <a href="#" class="dropdown-item">👥 Students</a>
+                    <a href="#" class="dropdown-item">📈 Student Tracking</a>
                 </div>
-                <div class="nav-item"><a class="nav-link"><div class="nav-left"><span class="nav-icon">📊</span>Grades</div><span class="dropdown-arrow">▼</span></a>
-                    <div class="dropdown-content"><a href="#" class="dropdown-item">⭐ View Grades</a></div>
+            </div>
+
+            <div class="nav-item">
+                <a class="nav-link">
+                    <div class="nav-left"><span class="nav-icon">⚙️</span>Account Info</div>
+                    <span class="dropdown-arrow">▼</span>
+                </a>
+                <div class="dropdown-content">
+                    <a href="#" class="dropdown-item">👤 Accounts</a>
                 </div>
-                <div class="nav-item"><a class="nav-link"><div class="nav-left"><span class="nav-icon">👨‍🎓</span>Student Info</div><span class="dropdown-arrow">▼</span></a>
-                    <div class="dropdown-content"><a href="#" class="dropdown-item">👥 Students</a><a href="#" class="dropdown-item">📈 Student Tracking</a></div>
-                </div>
-                <div class="nav-item"><a class="nav-link"><div class="nav-left"><span class="nav-icon">⚙️</span>Account Info</div><span class="dropdown-arrow">▼</span></a>
-                    <div class="dropdown-content"><a href="#" class="dropdown-item">👤 Accounts</a></div>
-                </div>
-            </nav>
-        </div>
-        <div class="sidebar-footer">
-            <a href="/logout">
-                <button class="logout-btn">Logout</button>
-            </a>
-        </div>
-    </aside>
+            </div>
+        </nav>
+    </div>
+    <div class="sidebar-footer">
+        <a href="/logout">
+            <button class="logout-btn">Logout</button>
+        </a>
+    </div>
+
+</aside>
+
+
 
     
 <main class="main-content">
@@ -626,7 +671,7 @@
         </div>
 
         <!-- Section Name -->
-        <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 1rem; color: #2f3b52;">{{ section.name }}</h1>
+        <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 1rem; color: #2f3b52;">Section :  {{ section.name }}</h1>
 
         <!-- Actions and Search row -->
         <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
@@ -638,14 +683,6 @@
                 <a href="{% url 'create_students' section.pk %}" style="background: #127552; color: #fff; padding: 0.6rem 1rem; border-radius: 8px; font-weight: 600; text-decoration: none; transition: 0.3s;">
                     👨‍🎓 Add Student
                 </a>
-                <form method="POST" enctype="multipart/form-data" action="{% url 'import_students_excel' section.pk %}">
-                    {% csrf_token %}
-                    <input type="file" name="excel_file" accept=".xls,.xlsx" required style="display:none;" id="excelInput">
-                    <label for="excelInput" style="background:#f39c12; color:#fff; padding:0.6rem 1rem; border-radius:8px; font-weight:600; cursor:pointer; transition:0.3s;">
-                        📂 Import Excel
-                    </label>
-                    <button type="submit" style="display:none;" id="submitExcel"></button>
-                </form>
             </div>
 
             <!-- Right side - Search -->
@@ -677,7 +714,7 @@
         <!-- Excel Table -->
         <div style="overflow-x: auto;">
             <table style="width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 6px 15px rgba(0,0,0,0.1);">
-                <thead style="background: #127552; color: #fff; text-align: left;">
+                <thead style="background: #127552; color: #fff; text-align: center;">
                     <tr>
                         <th style="padding: 0.9rem;">#</th>
                         {% for header in headers %}
@@ -689,7 +726,7 @@
                 <tbody>
                     {% if rows %}
                         {% for row in rows %}
-                            <tr style="border-bottom: 1px solid #e0e0e0; transition: background 0.3s;">
+                            <tr style="border-bottom: 1px solid #e0e0e0; transition: background 0.3s; text-align: center;">
                                 <td style="padding: 0.9rem;">{{ forloop.counter }}</td>
                                 {% for col in row.values %}<td style="padding: 0.9rem;">{{ col }}</td>{% endfor %}
                                 <td style="padding: 0.5rem; display: flex; gap: 0.4rem;">
@@ -1102,6 +1139,40 @@
                 searchButton.addEventListener("click", filterRows);
             }
         });
+    </script>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                const dropdown = this.nextElementSibling;
+                if(dropdown && dropdown.classList.contains('dropdown-content')) {
+                    const isOpen = dropdown.style.display === 'flex';
+                    document.querySelectorAll('.dropdown-content').forEach(d => d.style.display = 'none');
+                    document.querySelectorAll('.dropdown-arrow').forEach(a => a.style.transform = 'rotate(0deg)');
+                    dropdown.style.display = isOpen ? 'none' : 'flex';
+                    this.querySelector('.dropdown-arrow').style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+                    e.preventDefault();
+                } else {
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                }
+            });
+        });
+
+        const logoutBtn = document.querySelector('.logout-btn');
+        logoutBtn.addEventListener('click', function() {
+            if(confirm('Are you sure you want to logout?')) console.log('Logging out...');
+        });
+
+        // Toggle sidebar on mobile
+        const toggle = document.querySelector('.menu-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        toggle.addEventListener('click', function() {
+            sidebar.classList.toggle('active');
+        });
+    });
     </script>
     </body>
 </html>

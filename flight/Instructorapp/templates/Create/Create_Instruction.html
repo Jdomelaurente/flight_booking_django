@@ -491,18 +491,29 @@
                 padding: 0.6rem;
             }
         }
+
+        
+        .nav-item.active > .nav-link {
+            background: #7685A6;   /* your green */
+            color: #fff;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .dropdown-item.active {
+            background: #7685A6;
+            color: white;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="menu-toggle">☰</div>
 
+
     <aside class="sidebar">
         <div>
-            <div class="logo">
-                <div class="logo-icon">✈️</div>
-                Flight Booking
-            </div>
-
+            <div class="logo"><div class="logo-icon">✈️</div>Flight Booking</div>
             <div class="user-info">
                 <div class="user-avatar">👨‍💼</div>
                 <div class="user-details">
@@ -511,23 +522,23 @@
                 </div>
             </div>
 
+
             <nav class="nav-menu">
-                <!-- Sidebar Items -->
                 <div class="nav-item">
-                    <a href="#" class="nav-link">
-                        <div class="nav-left"><span class="nav-icon">🏠</span>Dashboard</div>
-                    </a>
+                    <a href="#" class="nav-link"><div class="nav-left"><span class="nav-icon">🏠</span>Dashboard</div></a>
                 </div>
+
                 <div class="nav-item">
-                    <a class="nav-link">
+                    <a class="nav-link active">
                         <div class="nav-left"><span class="nav-icon">📚</span>Manage Class</div>
-                        <span class="dropdown-arrow">▼</span>
+                        <span class="dropdown-arrow" style="transform: rotate(180deg);">▼</span>
                     </a>
-                    <div class="dropdown-content">
+                    <div class="dropdown-content" style="display: flex;">
                         <a href="{% url 'Cclass' %}" class="dropdown-item">➕ Create Subject</a>
-                        <a href="{% url 'Section_List' %}" class="dropdown-item">👥 Sections</a>
+                        <a href="{% url 'Section_List' %}" class="dropdown-item active">👥 Sections</a>
                     </div>
                 </div>
+
                 <div class="nav-item">
                     <a class="nav-link">
                         <div class="nav-left"><span class="nav-icon">📊</span>Grades</div>
@@ -537,6 +548,7 @@
                         <a href="#" class="dropdown-item">⭐ View Grades</a>
                     </div>
                 </div>
+
                 <div class="nav-item">
                     <a class="nav-link">
                         <div class="nav-left"><span class="nav-icon">👨‍🎓</span>Student Info</div>
@@ -547,6 +559,7 @@
                         <a href="#" class="dropdown-item">📈 Student Tracking</a>
                     </div>
                 </div>
+
                 <div class="nav-item">
                     <a class="nav-link">
                         <div class="nav-left"><span class="nav-icon">⚙️</span>Account Info</div>
@@ -558,10 +571,12 @@
                 </div>
             </nav>
         </div>
-
         <div class="sidebar-footer">
-            <a href="/logout"><button class="logout-btn">Logout</button></a>
+            <a href="/logout">
+                <button class="logout-btn">Logout</button>
+            </a>
         </div>
+
     </aside>
 
     <div class="main-content">
@@ -1083,6 +1098,40 @@
                 modal.style.display = "none";
                 document.body.style.overflow = "auto";
             }
+        });
+    });
+    </script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                const dropdown = this.nextElementSibling;
+                if(dropdown && dropdown.classList.contains('dropdown-content')) {
+                    const isOpen = dropdown.style.display === 'flex';
+                    document.querySelectorAll('.dropdown-content').forEach(d => d.style.display = 'none');
+                    document.querySelectorAll('.dropdown-arrow').forEach(a => a.style.transform = 'rotate(0deg)');
+                    dropdown.style.display = isOpen ? 'none' : 'flex';
+                    this.querySelector('.dropdown-arrow').style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+                    e.preventDefault();
+                } else {
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                }
+            });
+        });
+
+        const logoutBtn = document.querySelector('.logout-btn');
+        logoutBtn.addEventListener('click', function() {
+            if(confirm('Are you sure you want to logout?')) console.log('Logging out...');
+        });
+
+        // Toggle sidebar on mobile
+        const toggle = document.querySelector('.menu-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        toggle.addEventListener('click', function() {
+            sidebar.classList.toggle('active');
         });
     });
     </script>

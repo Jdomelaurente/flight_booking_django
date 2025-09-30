@@ -1,22 +1,29 @@
-# forms.py
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
 import re
 
-User = get_user_model()  # ✅ use your custom user model
+User = get_user_model()
 
 class CustomUserCreationForm(UserCreationForm):
     email = forms.EmailField(required=True, help_text="Only @gmail.com or @csucc.edu.ph emails allowed")
+    role = forms.ChoiceField(
+        choices=[('', '-- Select Role --')] + list(User.ROLE_CHOICES),
+        required=True,
+        widget=forms.Select(attrs={
+            'class': 'form-control ps-5 rounded-pill'
+        })
+    )
 
     class Meta:
-        model = User  # ✅ now it uses master.User
-        fields = ("username", "email", "password1", "password2")
+        model = User
+        fields = ("username", "email", "password1", "password2", "role")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control ps-5 rounded-pill'
+            if field_name != 'role':  # role already has its class
+                field.widget.attrs['class'] = 'form-control ps-5 rounded-pill'
             field.widget.attrs['placeholder'] = field.label
 
     def clean_username(self):
@@ -38,3 +45,9 @@ class CustomUserCreationForm(UserCreationForm):
         if not re.search(r'\d', password) or not re.search(r'[A-Za-z]', password):
             raise forms.ValidationError("Password must contain both letters and numbers.")
         return password
+    
+    def clean_role(self):
+        role = self.cleaned_data.get("role")
+        if not role:
+            raise forms.ValidationError("Please select a role.")
+        return role

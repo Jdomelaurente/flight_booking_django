@@ -272,6 +272,7 @@
   {% endfor %}
 {% endif %}
 
+
 <aside class="sidebar">
     <div>
         <div class="logo"><div class="logo-icon">✈️</div>Flight Booking</div>
@@ -286,9 +287,7 @@
 
         <nav class="nav-menu">
             <div class="nav-item">
-                <a href="#" class="nav-link">
-                    <div class="nav-left"><span class="nav-icon">🏠</span>Dashboard</div>
-                </a>
+                <a href="#" class="nav-link"><div class="nav-left"><span class="nav-icon">🏠</span>Dashboard</div></a>
             </div>
 
             <div class="nav-item">
@@ -297,8 +296,8 @@
                     <span class="dropdown-arrow" style="transform: rotate(180deg);">▼</span>
                 </a>
                 <div class="dropdown-content" style="display: flex;">
-                    <a href="{% url 'CreateClass' %}" class="dropdown-item active">➕ Create Subject</a>
-                    <a href="{% url 'Section_List' %}" class="dropdown-item">👥 Sections</a>
+                    <a href="{% url 'Cclass' %}" class="dropdown-item">➕ Create Subject</a>
+                    <a href="{% url 'Section_List' %}" class="dropdown-item active">👥 Sections</a>
                 </div>
             </div>
 
@@ -334,14 +333,13 @@
             </div>
         </nav>
     </div>
-
     <div class="sidebar-footer">
         <a href="/logout">
             <button class="logout-btn">Logout</button>
         </a>
     </div>
-</aside>
 
+</aside>
 
 <main class="main-content">
     <div>
@@ -351,71 +349,230 @@
     <h1 class="form-title">Add Students to {{ section.name }}</h1>
 
     <div class="form-container">
+        <!-- Search Box with better design -->
+        <div class="form-group" style="position: relative;">
+            <label for="student-search" style="font-weight: 600; margin-bottom: 0.5rem; display: block; color: #333;">Search Student</label>
+            <div style="position: relative;">
+                <input type="text" id="student-search" placeholder="Search by name or student number..." 
+                       style="display:block; padding: 0.75rem 2.5rem 0.75rem 1rem; width: 100%; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; transition: border-color 0.3s ease; box-sizing: border-box;">
+                <span style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: #999; font-size: 1.2rem;">🔍</span>
+            </div>
+        </div>
+
+        <!-- Dropdown for students -->
+        <div class="form-group">
+            <label for="student-dropdown" style="font-weight: 600; margin-bottom: 0.5rem; display: block; color: #333;">Select Student</label>
+            <select id="student-dropdown" 
+                    style="display:block; padding: 0.75rem; width: 100%; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; background-color: white; cursor: pointer; transition: border-color 0.3s ease; box-sizing: border-box;">
+                <option value="">-- Select a student --</option>
+            </select>
+        </div>
+
+        <!-- Selected students list -->
+        <div id="selected-students-container" style="margin-bottom: 1.5rem;">
+            <h3 style="color: #333; border-bottom: 3px solid #667eea; padding-bottom: 0.5rem;">Selected Students (<span id="student-count">0</span>)</h3>
+            <div id="selected-students-list" style="border: 2px dashed #ddd; border-radius: 12px; padding: 1.5rem; min-height: 120px; background: #fafafa;">
+                <p style="color: #999; text-align: center; margin: 0;">No students selected yet</p>
+            </div>
+        </div>
+
+        <!-- Save button -->
         <form method="POST" id="student-form">
             {% csrf_token %}
-
-            <!-- Dropdown for how many students -->
-            <div class="form-group">
-                <label for="count">How many students?</label>
-                <select id="count" name="count" required>
-                    {% for i in count_range %}
-                        <option value="{{ i }}">{{ i }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <!-- Dynamic fields will appear here -->
-            <div id="students-container"></div>
-
+            <input type="hidden" name="selected_students" id="selected-students-input">
             <div class="button-container">
-                <button type="submit" class="submit-btn">Save Students</button>
+                <button type="submit" class="submit-btn" id="save-all-btn" disabled 
+                        style="opacity: 0.5; cursor: not-allowed;">
+                    Save Students
+                </button>
             </div>
         </form>
     </div>
 </main>
 
-<!-- ✅ Safely dump headers into JSON -->
-{{ headers|json_script:"headers-data" }}
+<!-- Pass student data to JavaScript -->
+{{ all_students|json_script:"students-data" }}
+{{ existing_student_numbers|json_script:"existing-students" }}
+
+<style>
+#student-search:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+#student-dropdown:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+#save-all-btn:not(:disabled) {
+    opacity: 1 !important;
+    cursor: pointer !important;
+}
+
+#save-all-btn:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.student-item-enter {
+    animation: slideIn 0.3s ease;
+}
+</style>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const countSelect = document.getElementById("count");
-    const container = document.getElementById("students-container");
+    const searchInput = document.getElementById("student-search");
+    const dropdown = document.getElementById("student-dropdown");
+    const selectedList = document.getElementById("selected-students-list");
+    const studentCount = document.getElementById("student-count");
+    const saveAllBtn = document.getElementById("save-all-btn");
+    const selectedStudentsInput = document.getElementById("selected-students-input");
 
-    // ✅ Parse headers safely from backend
-    const headers = JSON.parse(document.getElementById("headers-data").textContent);
+    const allStudents = JSON.parse(document.getElementById("students-data").textContent);
+    const existingStudents = JSON.parse(document.getElementById("existing-students").textContent);
+    
+    let selectedStudents = [];
 
-    function generateFields() {
-        container.innerHTML = ""; 
-        const count = parseInt(countSelect.value);
-
-        for (let i = 1; i <= count; i++) {
-            const div = document.createElement("div");
-            div.className = "student-fields";
-            div.style = "margin-bottom: 1rem; padding: 1rem; border: 1px solid #ccc; border-radius: 8px;";
-
-            let innerHTML = `<h3>Student ${i}</h3>`;
-
-            headers.forEach(header => {
-                // detect field type (basic)
-                let inputType = "text";
-                if (header.toLowerCase().includes("email")) inputType = "email";
-                if (header.toLowerCase().includes("id")) inputType = "text"; // still text to allow alphanumeric
-
-                innerHTML += `
-                    <label>${header}:</label>
-                    <input type="${inputType}" name="${header}_${i}" required
-                           style="display:block; margin-bottom:0.5rem; padding:0.4rem; width:100%;">
-                `;
-            });
-
-            div.innerHTML = innerHTML;
-            container.appendChild(div);
-        }
+    // Load all students initially
+    function loadAllStudents() {
+        dropdown.innerHTML = '<option value="">-- Select a student --</option>';
+        
+        allStudents.forEach(student => {
+            const isAlreadyAdded = existingStudents.includes(student.fields.student_number);
+            const isSelected = selectedStudents.some(s => s.pk === student.pk);
+            const disabledAttr = (isAlreadyAdded || isSelected) ? 'disabled' : '';
+            let label = '';
+            if (isAlreadyAdded) label = ' (Already in section)';
+            if (isSelected) label = ' (Already selected)';
+            
+            const option = document.createElement('option');
+            option.value = student.pk;
+            option.textContent = `${student.fields.student_number} - ${student.fields.first_name} ${student.fields.last_name}${label}`;
+            option.disabled = isAlreadyAdded || isSelected;
+            option.dataset.student = JSON.stringify(student);
+            dropdown.appendChild(option);
+        });
     }
 
-    generateFields(); // run initially
-    countSelect.addEventListener("change", generateFields);
+    // Initial load
+    loadAllStudents();
+
+    // Search functionality
+    searchInput.addEventListener("input", function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        dropdown.innerHTML = '<option value="">-- Select a student --</option>';
+        
+        const studentsToShow = searchTerm.length === 0 ? allStudents : allStudents.filter(student => {
+            const fullName = `${student.fields.first_name} ${student.fields.last_name}`.toLowerCase();
+            const studentNumber = student.fields.student_number.toLowerCase();
+            return fullName.includes(searchTerm) || studentNumber.includes(searchTerm);
+        });
+
+        studentsToShow.forEach(student => {
+            const isAlreadyAdded = existingStudents.includes(student.fields.student_number);
+            const isSelected = selectedStudents.some(s => s.pk === student.pk);
+            const disabledAttr = (isAlreadyAdded || isSelected) ? 'disabled' : '';
+            let label = '';
+            if (isAlreadyAdded) label = ' (Already in section)';
+            if (isSelected) label = ' (Already selected)';
+            
+            const option = document.createElement('option');
+            option.value = student.pk;
+            option.textContent = `${student.fields.student_number} - ${student.fields.first_name} ${student.fields.last_name}${label}`;
+            option.disabled = isAlreadyAdded || isSelected;
+            option.dataset.student = JSON.stringify(student);
+            dropdown.appendChild(option);
+        });
+
+        // Reset dropdown selection when search changes
+        dropdown.value = '';
+    });
+
+    // Dropdown selection - Automatic addition
+    dropdown.addEventListener("change", function() {
+        if (!this.value) return;
+
+        const selectedOption = this.options[this.selectedIndex];
+        const currentStudent = JSON.parse(selectedOption.dataset.student);
+        
+        // Automatically add student to list
+        selectedStudents.push(currentStudent);
+        updateSelectedList();
+        
+        // Reload dropdown to update disabled states
+        loadAllStudents();
+        
+        // Clear search
+        searchInput.value = '';
+    });
+
+    // Update selected students list
+    function updateSelectedList() {
+        studentCount.textContent = selectedStudents.length;
+        
+        if (selectedStudents.length === 0) {
+            selectedList.innerHTML = '<p style="color: #999; text-align: center; margin: 0;">No students selected yet</p>';
+            saveAllBtn.disabled = true;
+            return;
+        }
+
+        selectedList.innerHTML = '';
+        selectedStudents.forEach((student, index) => {
+            const div = document.createElement('div');
+            div.className = 'student-item-enter';
+            div.style = "padding: 1rem; margin-bottom: 0.75rem; background: white; border-left: 4px solid #667eea; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);";
+            div.innerHTML = `
+                <div>
+                    <strong style="color: #667eea; font-size: 1.1rem;">${student.fields.student_number}</strong>
+                    <span style="color: #333;"> - ${student.fields.first_name} ${student.fields.middle_initial || ''} ${student.fields.last_name}</span>
+                    <br>
+                    <small style="color: #666;">${student.fields.email} ${student.fields.phone ? '• ' + student.fields.phone : ''}</small>
+                </div>
+                <button type="button" class="remove-btn" data-index="${index}" 
+                        style="padding: 0.5rem 1rem; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background 0.2s ease;">
+                    Remove
+                </button>
+            `;
+            selectedList.appendChild(div);
+        });
+
+        // Add remove button listeners
+        document.querySelectorAll('.remove-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const index = parseInt(this.dataset.index);
+                selectedStudents.splice(index, 1);
+                updateSelectedList();
+                loadAllStudents(); // Reload to re-enable removed student
+            });
+            
+            btn.addEventListener('mouseenter', function() {
+                this.style.background = '#c82333';
+            });
+            
+            btn.addEventListener('mouseleave', function() {
+                this.style.background = '#dc3545';
+            });
+        });
+
+        saveAllBtn.disabled = false;
+        
+        // Update hidden input with student IDs
+        selectedStudentsInput.value = JSON.stringify(selectedStudents.map(s => s.pk));
+    }
 });
 </script>
 

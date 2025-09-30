@@ -10,14 +10,15 @@ from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 # Models
-from .models import Class, SectionGroup, Section, Students, User, ExcelRowData, Booking, Passenger
+from .models import Class, SectionGroup, Section, User, ExcelRowData, Booking, Passenger
+
 # Forms
 import pandas as pd
 import openpyxl
 from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_protect
 from .forms import CustomUserCreationForm
-from flightapp.models import Route, Schedule  # adjust app name if different
+from flightapp.models import Route, Schedule , Student
 from flightapp.models import Route   # ✅ import Route from flightapp
 from .models import MultiCityLeg
 from django.utils.dateparse import parse_date, parse_datetime
@@ -26,17 +27,27 @@ from django.utils.timezone import make_aware
 User = get_user_model()
 from django.utils import timezone
 
+from django.core.serializers import serialize
+import json
 
-@csrf_protect   # ✅ ensure CSRF token is required & generated
+@csrf_protect
 def registerPage(request):
+    # ✅ Redirect if already logged in
+    if request.user.is_authenticated:
+        if request.user.role == 'Instructor':
+            return redirect('dashboard')
+        elif request.user.role == 'Student':
+            return redirect('student_dashboard')
+        elif request.user.role == 'Admin':
+            return redirect('admin_dashboard')
+    
     success = False
     if request.method == "POST":
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            login(request, user)
+            user = form.save()  # User with role is saved to database
             success = True
-            return redirect("login")  # ✅ redirect after success
+            return redirect("login")
     else:
         form = CustomUserCreationForm()
 
@@ -50,42 +61,96 @@ def registerPage(request):
         },
     )
 
-
-# Login view
 def loginPage(request):
+    # ✅ Redirect if already logged in
+    if request.user.is_authenticated:
+        if request.user.role == 'Instructor':
+            return redirect('dashboard')
+        elif request.user.role == 'Student':
+            return redirect('student_dashboard')
+        elif request.user.role == 'Admin':
+            return redirect('admin_dashboard')
+        return redirect('dashboard')
+    
     if request.method == "POST":
         username = request.POST.get('username')
         password = request.POST.get('password')
 
         if not User.objects.filter(username=username).exists():
-            return render(request, "tutor/login.html", {"error": "Username does not exist", "form": AuthenticationForm()})
+            return render(request, "tutor/login.html", {
+                "error": "Username does not exist",
+                "form": AuthenticationForm()
+            })
 
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect("dashboard")
+            
+            # ✅ Check for 'next' parameter to redirect to intended page
+            next_url = request.GET.get('next') or request.POST.get('next')
+            if next_url:
+                return redirect(next_url)
+            
+            # Role-based redirect
+            if user.role == 'Instructor':
+                return redirect("dashboard")  # dashboard.html for Instructor
+            elif user.role == 'Student':
+                return redirect("student_dashboard")  # Student_dashboard.html
+            elif user.role == 'Admin':
+                return redirect("admin_dashboard")  # admin dashboard if you have one
+            else:
+                return redirect("dashboard")  # default fallback
         else:
-            return render(request, "tutor/login.html", {"error": "Invalid password", "form": AuthenticationForm()})
+            return render(request, "tutor/login.html", {
+                "error": "Invalid password",
+                "form": AuthenticationForm()
+            })
     else:
         form = AuthenticationForm()
     return render(request, "tutor/login.html", {"form": form})
 
+# NEW: Student dashboard view
+@login_required(login_url='login')
+def student_dashboard(request):
+    # ✅ Ensure only students can access this
+    if request.user.role != 'Student':
+        return HttpResponseForbidden("Access Denied: Students only")
+    
+    return render(request, 'tutor/Student_dashboard.html')
+
+@login_required(login_url='login')
+def admin_dashboard(request):
+    # ✅ Ensure only admins can access this
+    if request.user.role != 'Admin':
+        return HttpResponseForbidden("Access Denied: Admins only")
+    
+    return render(request, 'tutor/admin_dashboard.html')
+
 # Logout view
+@login_required(login_url='login')
 def logoutPage(request):
     logout(request)
     return redirect("login")
 
 # Create your views here.
-@login_required
+@login_required(login_url='login')
 def dashboard(request):
+    # ✅ Ensure only instructors can access this
+    if request.user.role != 'Instructor':
+        return HttpResponseForbidden("Access Denied: Instructors only")
+    
     return render(request, 'tutor/Dashboard.html')
 
 # Class List
 
-@login_required
+@login_required(login_url='login')
 def Cclass(request):
+    # ✅ Ensure only instructors can access this
+    if request.user.role != 'Instructor':
+        return HttpResponseForbidden("Access Denied: Instructors only")
+    
     query = request.GET.get('q', '')
-    classes_list = Class.objects.filter(user=request.user).order_by('id')  # ✅ only user’s classes
+    classes_list = Class.objects.filter(user=request.user).order_by('id')  # ✅ only user's classes
 
     if query:
         classes_list = classes_list.filter(
@@ -109,8 +174,12 @@ def Cclass(request):
 
 
 # Create Class
-@login_required
+@login_required(login_url='login')
 def CreateClass(request):
+    # ✅ Ensure only instructors can access this
+    if request.user.role != 'Instructor':
+        return HttpResponseForbidden("Access Denied: Instructors only")
+    
     if request.method == "POST":
         subject_code = request.POST.get("subject_code")
         subject_title = request.POST.get("subject_title")
@@ -136,8 +205,12 @@ def CreateClass(request):
 #Edit Class
 
 
-@login_required
+@login_required(login_url='login')
 def EditClass(request, id):
+    # ✅ Ensure only instructors can access this
+    if request.user.role != 'Instructor':
+        return HttpResponseForbidden("Access Denied: Instructors only")
+    
     cls = get_object_or_404(Class, id=id, user=request.user)
 
 
@@ -156,8 +229,12 @@ def EditClass(request, id):
 #Delete Class
 
 
-@login_required
+@login_required(login_url='login')
 def DeleteClass(request, id):
+    # ✅ Ensure only instructors can access this
+    if request.user.role != 'Instructor':
+        return HttpResponseForbidden("Access Denied: Instructors only")
+    
     cls = get_object_or_404(Class, id=id, user=request.user)
 
     cls.delete()
@@ -166,11 +243,12 @@ def DeleteClass(request, id):
 
 
 
-
-
-
-@login_required
+@login_required(login_url='login')
 def Section_List(request):
+    # ✅ Ensure only instructors can access this
+    if request.user.role != 'Instructor':
+        return HttpResponseForbidden("Access Denied: Instructors only")
+    
     groups = SectionGroup.objects.filter(user=request.user).prefetch_related("sections")
 
     colors = ["#1976d2", "#f57c00", "#388e3c", "#c2185b", "#6a1b9a", "#00838f", "#d81b60"]
@@ -193,8 +271,12 @@ def Section_List(request):
 
     return render(request, "tutor/Section_List.html", {"groups": groups})
 
-@login_required
+@login_required(login_url='login')
 def Create_Section(request):
+    # ✅ Ensure only instructors can access this
+    if request.user.role != 'Instructor':
+        return HttpResponseForbidden("Access Denied: Instructors only")
+    
     if request.method == "POST":
         subject_code = request.POST.get("subject_code")
         num_sections = int(request.POST.get("num_sections"))
@@ -234,9 +316,13 @@ def Create_Section(request):
 # Update Section View
 
 
-@login_required
+@login_required(login_url='login')
 def Update_section(request, pk):
-    group = get_object_or_404(SectionGroup, pk=pk)
+    # ✅ Ensure only instructors can access this
+    if request.user.role != 'Instructor':
+        return HttpResponseForbidden("Access Denied: Instructors only")
+    
+    group = get_object_or_404(SectionGroup, pk=pk, user=request.user)  # ✅ Added user filter
     sections = group.sections.all()
 
     # Fetch both subject_code and subject_title
@@ -282,8 +368,12 @@ def Update_section(request, pk):
 
 # ✅ Delete SectionGroup
 
-@login_required
+@login_required(login_url='login')
 def Delete_section(request, id):
+    # ✅ Ensure only instructors can access this
+    if request.user.role != 'Instructor':
+        return HttpResponseForbidden("Access Denied: Instructors only")
+    
     group = get_object_or_404(SectionGroup, id=id, user=request.user)
 
     group.delete()
@@ -292,83 +382,108 @@ def Delete_section(request, id):
 
 
 
-
-
-
-@login_required
+@login_required(login_url='login')
 def create_students(request, pk):
+    # ✅ Ensure only instructors can access this
+    if request.user.role != 'Instructor':
+        return HttpResponseForbidden("Access Denied: Instructors only")
+    
     section = get_object_or_404(Section, pk=pk)
-
-    # Get headers dynamically from first uploaded Excel row
-    row_objects = ExcelRowData.objects.filter(section=section)
-    headers = []
-    if row_objects.exists():
-        headers = list(row_objects.first().data.keys())
-
+    
+    # ✅ Verify section belongs to current instructor
+    if section.group.user != request.user:
+        return HttpResponseForbidden("Access Denied: You don't have permission to modify this section")
+    
+    # Fetch all available students from the other app - ✅ Filter only Student role users
+    all_students_qs = Student.objects.filter(user__role='Student').order_by('student_number')
+    
+    # Convert QuerySet to JSON-serializable format
+    all_students = json.loads(serialize('json', all_students_qs))
+    
+    # Get existing student numbers in this section
+    existing_students = ExcelRowData.objects.filter(section=section)
+    existing_student_numbers = []
+    for row in existing_students:
+        if row.data and 'Student Number' in row.data:
+            existing_student_numbers.append(row.data['Student Number'])
+    
     if request.method == "POST":
-        count = int(request.POST.get("count", 1))
-        for i in range(1, count + 1):
-            # Build dynamic dict from headers
-            student_data = {}
-            missing_required = False
-
-            for header in headers:
-                value = request.POST.get(f"{header}_{i}")
-                if not value:
-                    missing_required = True
-                student_data[header] = value
-
-            if not missing_required:
-                ExcelRowData.objects.create(
-                    section=section,
-                    data=student_data
-                )
-
-        return redirect("Section_Detail", pk=pk)
-
-    return render(
-        request,
-        "Create/Create_students.html",
-        {
-            "section": section,
-            "count_range": range(1, 101),
-            "headers": headers,   # Pass headers to HTML
-        },
-    )
-
-
-@login_required
-def import_students_excel(request, pk):
-    section = get_object_or_404(Section, pk=pk)
-
-    if request.method == "POST" and request.FILES.get("excel_file"):
-        excel_file = request.FILES["excel_file"]
-        wb = openpyxl.load_workbook(excel_file)
-        ws = wb.active
-
-        headers = [cell.value for cell in ws[1]]  # first row headers
-
-        for row in ws.iter_rows(min_row=2, values_only=True):
-            row_dict = {headers[i]: row[i] for i in range(len(headers))}
-            ExcelRowData.objects.create(
-                section=section,
-                data=row_dict
-            )
-
+        selected_students_json = request.POST.get("selected_students")
+        
+        if selected_students_json:
+            student_ids = json.loads(selected_students_json)
+            added_count = 0
+            
+            for student_id in student_ids:
+                try:
+                    student = Student.objects.get(id=student_id, user__role='Student')  # ✅ Double-check role
+                    
+                    # Check if student already added to this section
+                    if student.student_number in existing_student_numbers:
+                        messages.warning(request, f"{student.student_number} is already in this section")
+                        continue
+                    
+                    # Create row data from student
+                    student_data = {
+                        "Student Number": student.student_number,
+                        "First Name": student.first_name,
+                        "Middle Initial": student.middle_initial or "",
+                        "Last Name": student.last_name,
+                        "Email": student.email,
+                        "Phone": student.phone or "",
+                    }
+                    
+                    ExcelRowData.objects.create(
+                        section=section,
+                        data=student_data
+                    )
+                    added_count += 1
+                    
+                except Student.DoesNotExist:
+                    messages.error(request, f"Student with ID {student_id} not found")
+            
+            if added_count > 0:
+                messages.success(request, f"Successfully added {added_count} student(s) to {section.name}")
+        
         return redirect("Section_Detail", pk=section.pk)
+    
+    return render(request, "Create/Create_students.html", {
+        "section": section,
+        "all_students": all_students,
+        "existing_student_numbers": existing_student_numbers,
+    })
 
-    return redirect("tutor/Section_Detail", pk=section.pk)
-
-
-@login_required
+@login_required(login_url='login')
 def section_detail(request, pk):
+    # ✅ Allow both Instructors and Students to view, but with different permissions
     section = get_object_or_404(Section, pk=pk)
+    
+    # ✅ Verify access permissions
+    if request.user.role == 'Instructor':
+        # Instructor can only view their own sections
+        if section.group.user != request.user:
+            return HttpResponseForbidden("Access Denied: You don't have permission to view this section")
+    elif request.user.role == 'Student':
+        # Student can only view sections they're enrolled in
+        student_numbers = ExcelRowData.objects.filter(section=section).values_list('data__Student Number', flat=True)
+        
+        # Check if current user's student record exists in this section
+        try:
+            student_profile = Student.objects.get(user=request.user)
+            if student_profile.student_number not in student_numbers:
+                return HttpResponseForbidden("Access Denied: You are not enrolled in this section")
+        except Student.DoesNotExist:
+            return HttpResponseForbidden("Access Denied: Student profile not found")
+    else:
+        # Admins might have full access, or restrict based on your requirements
+        if request.user.role != 'Admin':
+            return HttpResponseForbidden("Access Denied")
+    
     row_objects = ExcelRowData.objects.filter(section=section)
     
     # Search Excel rows
     query = request.GET.get("q", "").strip()
     if query:
-        # SQLite-safe search: filter manually
         row_objects = [row for row in row_objects if query.lower() in str(row.data).lower()]
     
     headers = []
@@ -379,27 +494,22 @@ def section_detail(request, pk):
         for obj in row_objects:
             rows.append({"id": obj.id, "values": list(obj.data.values())})
     
-    # Fetch Bookings with related data - properly handle route relationships
+    # Fetch Bookings with related data
     bookings = Booking.objects.filter(section=section).prefetch_related(
-        'passengers',  # From Passenger model: related_name="passengers"
-        'legs'         # From MultiCityLeg model: related_name="legs"
+        'passengers',
+        'legs'
     ).order_by('-created_at')
     
     # Process route information for each booking
     for booking in bookings:
         if booking.route:
             try:
-                # Check if route is a numeric ID (database ID) or actual route code
                 if booking.route.isdigit():
-                    # It's a route ID, fetch the actual route object
                     route_obj = Route.objects.select_related('origin_airport', 'destination_airport').get(id=int(booking.route))
-                    # Display as ORIGIN-DESTINATION format
                     booking.route_display = f"{route_obj.origin_airport.code}-{route_obj.destination_airport.code}"
                 else:
-                    # It's already a route code string, display as is
                     booking.route_display = booking.route
             except (Route.DoesNotExist, ValueError):
-                # If route ID doesn't exist or invalid, show the raw value
                 booking.route_display = booking.route
         else:
             booking.route_display = "Route not specified"
@@ -410,15 +520,24 @@ def section_detail(request, pk):
         "rows": rows,
         "query": query,
         "bookings": bookings,
-        "now": timezone.now(),  # Add current time for duration comparison
+        "now": timezone.now(),
     })
 
 
 
-@login_required
+@login_required(login_url='login')
 def delete_excel_row(request, pk):
+    # ✅ Ensure only instructors can delete
+    if request.user.role != 'Instructor':
+        return HttpResponseForbidden("Access Denied: Instructors only")
+    
     row = get_object_or_404(ExcelRowData, pk=pk)
     section_id = row.section.id
+    
+    # ✅ Verify section belongs to current instructor
+    if row.section.group.user != request.user:
+        return HttpResponseForbidden("Access Denied: You don't have permission to modify this section")
+    
     row.delete()
     messages.success(request, "Row deleted successfully!")
     # redirect to the Section_Detail view by name, not to the template file
@@ -426,10 +545,18 @@ def delete_excel_row(request, pk):
 
 
 
-@login_required
+@login_required(login_url='login')
 def edit_student(request, pk):
+    # ✅ Ensure only instructors can edit
+    if request.user.role != 'Instructor':
+        return HttpResponseForbidden("Access Denied: Instructors only")
+    
     student = get_object_or_404(ExcelRowData, pk=pk)
     section = student.section
+    
+    # ✅ Verify section belongs to current instructor
+    if section.group.user != request.user:
+        return HttpResponseForbidden("Access Denied: You don't have permission to modify this section")
 
     # Get headers from first Excel row for consistency
     row_objects = ExcelRowData.objects.filter(section=section)
@@ -455,8 +582,29 @@ def edit_student(request, pk):
 
 
 
+@login_required(login_url='login')
 def book_flight(request, section_id):
     section = get_object_or_404(Section, id=section_id)
+    
+    # ✅ Verify access permissions
+    if request.user.role == 'Instructor':
+        # Instructor can only book for their own sections
+        if section.group.user != request.user:
+            return HttpResponseForbidden("Access Denied: You don't have permission to book for this section")
+    elif request.user.role == 'Student':
+        # Student can only book for sections they're enrolled in
+        student_numbers = ExcelRowData.objects.filter(section=section).values_list('data__Student Number', flat=True)
+        
+        try:
+            student_profile = Student.objects.get(user=request.user)
+            if student_profile.student_number not in student_numbers:
+                return HttpResponseForbidden("Access Denied: You are not enrolled in this section")
+        except Student.DoesNotExist:
+            return HttpResponseForbidden("Access Denied: Student profile not found")
+    else:
+        # Restrict non-instructor/student roles if needed
+        if request.user.role != 'Admin':
+            return HttpResponseForbidden("Access Denied")
 
     # ✅ fetch all routes
     routes = Route.objects.select_related("origin_airport", "destination_airport").all()

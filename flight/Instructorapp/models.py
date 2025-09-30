@@ -6,10 +6,13 @@ from django.contrib.auth.models import User
 
 # Custom User model
 
-# Custom User model
 class User(AbstractUser):
-    # Optional field for role
-    role = models.CharField(max_length=50, default="Instructor")
+    ROLE_CHOICES = [
+        ('Student', 'Student'),
+        ('Instructor', 'Instructor'),
+        ('Admin', 'Admin'),
+    ]
+    role = models.CharField(max_length=50, choices=ROLE_CHOICES, default='Student')
 
 
 # Class model, linked to the logged-in user
@@ -55,24 +58,6 @@ class Section(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.schedule}"
-
-
-# Students linked to Section
-class Students(models.Model):
-    section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name="students")
-    student_id = models.CharField(max_length=50)
-    first_name = models.CharField(max_length=50)
-    middle_name = models.CharField(max_length=50, blank=True, null=True)
-    last_name = models.CharField(max_length=50)
-    institutional_email = models.EmailField()
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
-
-
-    class Meta:
-        unique_together = ('section', 'institutional_email')
-
-    def __str__(self):
-        return f"{self.first_name} {self.last_name} ({self.institutional_email})"
 
 
 class ExcelRowData(models.Model):

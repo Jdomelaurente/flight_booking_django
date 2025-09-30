@@ -1,0 +1,99 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CT 112 Flight Booking Simulator</title>
+  <link rel="stylesheet" href="{% static 'src/output.css' %}">
+</head>
+
+<body class="m-0 font-sans bg-gray-100 min-h-screen flex justify-center">
+
+  <div class="w-full max-w-[1500px] relative">
+
+    <!-- Navbar -->
+    <div class="flex justify-between items-center px-5 py-3 bg-white shadow-md">
+      <div class="flex items-center gap-2.5">
+        <div class="text-2xl cursor-pointer">☰</div>
+        <div class="flex items-center gap-2 font-bold text-gray-800 ">
+          <span class="bg-teal-600 text-white rounded-full px-2.5 py-1.5 text-sm">A</span>
+          <p class="text-2xl">Activities</p>
+          
+        </div>
+      </div>
+      <img src="https://randomuser.me/api/portraits/men/1.jpg" class="w-9 h-9 rounded-full object-cover cursor-pointer" alt="Profile">
+    </div>
+
+    <!-- Hero Section -->
+    <div class="flex  max-h-[260px] px-10 sm:px-10 pb-20 bg-cover bg-center text-white"
+        style="background-image: url('{% static 'Student/banner.png' %}');">
+      <div class="w-full   text-center sm:text-left mt-35 mb-15">
+        <h1 class="text-3xl sm:text-5xl font-bold">CT 112 FLIGHT BOOKING SIMULATOR</h1>
+        <p class="text-xl font-medium sm:text-lg ">CTHM 3B FBI</p>
+      </div>
+    </div>
+
+
+    <!-- Content Section -->
+    <div class="w-full pl-20 absolute top-65  ">
+      
+    <div class=" flex-col  rounded-tl-[50px] pt-15 shadow-sm h-full pb-10 bg-white w-full  mt-6  flex ">
+      <div class="w-full border border-gray-600 mb-5 shadow-lg"></div>
+      <div class="flex flex-col lg:flex-row gap-5 mr-30 ml-10">
+        
+        <!-- Welcome Card -->
+        <div class="bg-white p-5 rounded-lg shadow-sm/90 w-full lg:w-2/5">
+          <h3 class="mt-0 mb-2.5 text-lg font-semibold">Hi welcome to our classroom</h3>
+          <p class="text-xs text-gray-800 leading-relaxed">
+            cysabcuyabufuasbubabvuabvuabv ljfuvmdcsdvsmdsvmdmvdlmbrlbbdvdmo 
+            dsmvdosmvods mvodsmvodsivds,w,odsmv dmvmdvdsvds,vds,vds,vl
+            <br><br>
+            dflvds mvdsmdvsmdvsmdvmsdvmlsdsmv dsvldsjvudsvmdsvmdsvods mvlsengueh 
+            guvsd vmdsvdsmvkdsmdvlsmdvsmdvsm vd.
+          </p>
+          <textarea rows="2" placeholder="Comment" class="w-full border border-gray-300 rounded-md mt-2.5 p-2.5 resize-none font-sans"></textarea>
+        </div>
+
+        <!-- Assignments -->
+        <div class="flex-grow flex flex-col gap-4">
+          <a href="assignment1.html" class="no-underline text-inherit">
+            <div class="bg-white p-4 rounded-lg shadow-sm/90 flex items-start gap-4 hover:bg-gray-100">
+              <div class="text-xl bg-teal-50 text-purple-700 p-2 rounded-md">📄</div>
+              <div>
+                <h4 class="m-0  text-sm font-medium text-gray-800">Christian Jhon Teofilo posted new assignment: Activity 1</h4>
+                <p class="m-0 text-xs text-gray-600">October 3, 2025</p>
+              </div>
+            </div>
+          </a>
+
+          <a href="assignment2.html" class="no-underline text-inherit">
+            <div class="bg-white p-4 rounded-lg shadow-sm/90 flex items-start gap-4 hover:bg-gray-100">
+              <div class="text-xl bg-teal-50 text-purple-700 p-2 rounded-md">📄</div>
+              <div>
+                <h4 class="m-0 mb-1 text-sm font-medium text-gray-800">Christian Jhon Teofilo posted new assignment: Activity 2</h4>
+                <p class="m-0 text-xs text-gray-600">October 8, 2025</p>
+              </div>
+            </div>
+          </a>
+
+          <a href="assignment3.html" class="no-underline text-inherit">
+            <div class="bg-white p-4 rounded-lg shadow-sm/90 flex items-start gap-4 hover:bg-gray-100">
+              <div class="text-xl bg-teal-50 text-purple-700 p-2 rounded-md">📄</div>
+              <div>
+                <h4 class="m-0 text-sm font-medium text-gray-800">Christian Jhon Teofilo posted new assignment: Activity 3</h4>
+                <p class="m-0 text-xs text-gray-600">October 30</p>
+              </div>
+            </div>
+          </a>
+        </div>
+
+      </div>
+    </div>
+    </div>
+
+  </div> <!-- end max-width container -->
+
+</body>
+</html>
