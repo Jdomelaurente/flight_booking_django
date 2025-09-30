@@ -92,9 +92,14 @@ TIME_ZONE = "Asia/Manila"
 USE_I18N = True
 USE_TZ = True
 
+
 # Static files
 STATIC_URL = "static/"
 
 # Default primary key
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+STATICFILES_DIRS = [
+    BASE_DIR / "static",   # <--- this is your project-level static folder
+]
 
