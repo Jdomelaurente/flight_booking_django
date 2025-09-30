@@ -248,22 +248,15 @@ class Booking(models.Model):
 
 
     
-
 from django.db import models
 from django.utils import timezone
 from decimal import Decimal
 
 class Booking(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)  # the booker
+    student = models.ForeignKey("Student", on_delete=models.CASCADE)  # The booker
     trip_type = models.CharField(
         max_length=20,
         choices=[("one_way", "One Way"), ("round_trip", "Round Trip"), ("multi_city", "Multi City")]
-    )
-    outbound_schedule = models.ForeignKey(
-        Schedule, related_name="outbound_bookings", on_delete=models.CASCADE, null=True, blank=True
-    )
-    return_schedule = models.ForeignKey(
-        Schedule, related_name="return_bookings", on_delete=models.CASCADE, null=True, blank=True
     )
     status = models.CharField(max_length=20, default="Pending")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -277,7 +270,6 @@ class Booking(models.Model):
 
     @property
     def total_amount(self):
-        """Sum of all BookingDetail prices for this booking."""
         total = Decimal("0.00")
         for detail in self.details.all():
             total += detail.price
@@ -285,11 +277,7 @@ class Booking(models.Model):
 
 
 class PassengerInfo(models.Model):
-    TYPE_CHOICES = [
-        ("Adult", "Adult"),
-        ("Child", "Child"),
-        ("Infant", "Infant"),
-    ]
+    TYPE_CHOICES = [("Adult","Adult"),("Child","Child"),("Infant","Infant")]
     first_name = models.CharField(max_length=100)
     middle_name = models.CharField(max_length=100, blank=True, null=True)
     last_name = models.CharField(max_length=100)
@@ -307,18 +295,16 @@ class PassengerInfo(models.Model):
 class BookingDetail(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="details")
     passenger = models.ForeignKey(PassengerInfo, on_delete=models.CASCADE)
-    schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE)  # use Schedule instead
-    seat = models.ForeignKey(Seat, on_delete=models.SET_NULL, null=True, blank=True)
-    seat_class = models.ForeignKey(SeatClass, on_delete=models.SET_NULL, null=True, blank=True)
+    schedule = models.ForeignKey("Schedule", on_delete=models.CASCADE)
+    seat = models.ForeignKey("Seat", on_delete=models.SET_NULL, null=True, blank=True)
+    seat_class = models.ForeignKey("SeatClass", on_delete=models.SET_NULL, null=True, blank=True)
     booking_date = models.DateTimeField(default=timezone.now)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    
 
     def save(self, *args, **kwargs):
         if self.seat:
             base_price = self.schedule.flight.route.base_price
             multiplier = self.seat.seat_class.price_multiplier if self.seat.seat_class else Decimal("1.0")
-
             days_diff = (self.schedule.departure_time.date() - timezone.now().date()).days
             if days_diff >= 30:
                 factor = Decimal("0.8")
@@ -326,9 +312,7 @@ class BookingDetail(models.Model):
                 factor = Decimal("1.0")
             else:
                 factor = Decimal("1.5")
-
             self.price = base_price * multiplier * factor
-
         super().save(*args, **kwargs)
 
 

@@ -1551,6 +1551,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from .models import Booking, BookingDetail, Student, Schedule, Seat, PassengerInfo
 
+from decimal import Decimal
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
+from .models import Booking, BookingDetail, PassengerInfo, Student, Schedule, Seat
+
 def add_booking(request):
     students = Student.objects.all()
     schedules = Schedule.objects.filter(status="Open").order_by("departure_time")
@@ -1561,72 +1566,70 @@ def add_booking(request):
         status = request.POST.get("status", "Pending")
         student = get_object_or_404(Student, id=student_id)
 
-        # Count passengers by checking POST keys
-        passenger_keys = [key for key in request.POST.keys() if key.startswith("passenger_first_name_")]
-        passenger_count = len(passenger_keys)
-
-        # Create booking
         booking = Booking.objects.create(
             student=student,
             trip_type=trip_type,
             status=status
         )
 
-        # Loop through each passenger
+        # Determine number of passengers from submitted fields
+        passenger_keys = [key for key in request.POST if key.startswith("passenger_first_name_")]
+        passenger_count = len(passenger_keys)
+
+        passengers = []
         for i in range(1, passenger_count + 1):
-            first_name = request.POST.get(f"passenger_first_name_{i}")
-            middle_name = request.POST.get(f"passenger_middle_name_{i}", "")
-            last_name = request.POST.get(f"passenger_last_name_{i}")
-            gender = request.POST.get(f"passenger_gender_{i}", "N/A")
-            dob = request.POST.get(f"passenger_dob_{i}")
-
             passenger = PassengerInfo.objects.create(
-                first_name=first_name,
-                middle_name=middle_name,
-                last_name=last_name,
-                gender=gender,
-                date_of_birth=dob
+                first_name=request.POST.get(f"passenger_first_name_{i}"),
+                middle_name=request.POST.get(f"passenger_middle_name_{i}", ""),
+                last_name=request.POST.get(f"passenger_last_name_{i}"),
+                gender=request.POST.get(f"passenger_gender_{i}", "N/A"),
+                date_of_birth=request.POST.get(f"passenger_dob_{i}")
             )
+            passengers.append(passenger)
 
-            # Outbound schedule + seat
+        # ---------------- Outbound (one-way or round-trip) ----------------
+        if trip_type in ["one_way", "round_trip"]:
             outbound_schedule_id = request.POST.get("outbound_schedule")
-            outbound_seat_id = request.POST.get(f"outbound_seat_{i}")
             if outbound_schedule_id:
                 outbound_schedule = get_object_or_404(Schedule, id=outbound_schedule_id)
-                outbound_seat = Seat.objects.filter(id=outbound_seat_id).first() if outbound_seat_id else None
-                BookingDetail.objects.create(
-                    booking=booking,
-                    passenger=passenger,
-                    schedule=outbound_schedule,
-                    seat=outbound_seat,
-                    seat_class=outbound_seat.seat_class if outbound_seat else None
-                )
+                for idx, passenger in enumerate(passengers, start=1):
+                    seat_id = request.POST.get(f"outbound_seat_{idx}")
+                    seat = Seat.objects.filter(id=seat_id).first() if seat_id else None
+                    BookingDetail.objects.create(
+                        booking=booking,
+                        passenger=passenger,
+                        schedule=outbound_schedule,
+                        seat=seat,
+                        seat_class=seat.seat_class if seat else None
+                    )
 
-            # Return schedule + seat (for round-trip)
-            if trip_type == "round_trip":
-                return_schedule_id = request.POST.get("return_schedule")
-                return_seat_id = request.POST.get(f"return_seat_{i}")
-                if return_schedule_id:
-                    return_schedule = get_object_or_404(Schedule, id=return_schedule_id)
-                    return_seat = Seat.objects.filter(id=return_seat_id).first() if return_seat_id else None
+        # ---------------- Return (for round-trip) ----------------
+        if trip_type == "round_trip":
+            return_schedule_id = request.POST.get("return_schedule")
+            if return_schedule_id:
+                return_schedule = get_object_or_404(Schedule, id=return_schedule_id)
+                for idx, passenger in enumerate(passengers, start=1):
+                    seat_id = request.POST.get(f"return_seat_{idx}")
+                    seat = Seat.objects.filter(id=seat_id).first() if seat_id else None
                     BookingDetail.objects.create(
                         booking=booking,
                         passenger=passenger,
                         schedule=return_schedule,
-                        seat=return_seat,
-                        seat_class=return_seat.seat_class if return_seat else None
+                        seat=seat,
+                        seat_class=seat.seat_class if seat else None
                     )
 
-            # Multi-city segments for **each passenger**
-            if trip_type == "multi_city":
-                # Loop through POST keys for multi-city schedules
-                for key in request.POST:
-                    if key.startswith("multi_schedule_"):
-                        segment_id = key.split("_")[-1]
-                        schedule_id = request.POST.get(f"multi_schedule_{segment_id}")
-                        seat_id = request.POST.get(f"multi_seat_{segment_id}_{i}")  # Note: passenger index
-                        if schedule_id:
-                            schedule = get_object_or_404(Schedule, id=schedule_id)
+        # ---------------- Multi-City ----------------
+        if trip_type == "multi_city":
+            # Loop through all legs
+            for key in request.POST:
+                if key.startswith("multi_schedule_"):
+                    leg_id = key.split("_")[2]
+                    schedule_id = request.POST.get(f"multi_schedule_{leg_id}")
+                    if schedule_id:
+                        schedule = get_object_or_404(Schedule, id=schedule_id)
+                        for p_idx, passenger in enumerate(passengers, start=1):
+                            seat_id = request.POST.get(f"multi_seat_{leg_id}_{p_idx}")
                             seat = Seat.objects.filter(id=seat_id).first() if seat_id else None
                             BookingDetail.objects.create(
                                 booking=booking,
@@ -1643,9 +1646,6 @@ def add_booking(request):
         "schedules": schedules
     }
     return render(request, "booking_info/booking/add_booking.html", context)
-
-
-
 
 
 from django.http import JsonResponse

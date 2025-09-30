@@ -4,11 +4,12 @@
     <h2 class="text-2xl font-bold mb-6">Add Booking</h2>
     <form method="post" class="space-y-4">
         {% csrf_token %}
+        <input type="hidden" id="passenger_count" name="passenger_count" value="1">
 
         <!-- 🔹 Student -->
         <div>
             <label class="block font-semibold mb-1">Student:</label>
-            <select name="student" class="w-full border border-gray-300 rounded px-3 py-2">
+            <select name="student" class="w-full border border-gray-300 rounded px-3 py-2" required>
                 {% for student in students %}
                 <option value="{{ student.id }}">{{ student.first_name }} {{ student.last_name }}</option>
                 {% endfor %}
@@ -52,7 +53,7 @@
 
         <!-- 🔹 Outbound Schedule -->
         <div id="outbound_section">
-            <label class="block font-semibold mb-1">Outbound Schedule (Open Only):</label>
+            <label class="block font-semibold mb-1">Outbound Schedule:</label>
             <select id="outbound_schedule" name="outbound_schedule" class="w-full border border-gray-300 rounded px-3 py-2">
                 <option value="">-- Select Outbound Schedule --</option>
                 {% for schedule in schedules %}
@@ -63,28 +64,28 @@
             </select>
         </div>
 
-        <!-- 🔹 Passenger Seats -->
+        <!-- 🔹 Outbound Seats per passenger -->
         <div id="passenger_seats_container" class="space-y-2"></div>
 
         <!-- 🔹 Return Section -->
         <div id="return_section" class="hidden">
-            <label class="block font-semibold mb-1">Return Schedule (Open Only):</label>
+            <label class="block font-semibold mb-1">Return Schedule:</label>
             <select id="return_schedule" name="return_schedule" class="w-full border border-gray-300 rounded px-3 py-2">
                 <option value="">-- Select Return Schedule --</option>
             </select>
         </div>
 
+        <!-- 🔹 Return Seats per passenger -->
         <div id="return_seats_container" class="space-y-2 hidden"></div>
 
         <!-- 🔹 Multi-City Section -->
         <div id="multi_city_section" class="hidden">
-            <div id="segments_container"></div>
-            <button type="button" id="add_segment_btn" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded">
-                + Add Segment
+            <h3 class="font-semibold mb-2">Multi-City Legs</h3>
+            <div id="multi_city_legs"></div>
+            <button type="button" id="add_leg_btn" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded mb-2">
+                + Add Leg
             </button>
         </div>
-
-        <input type="hidden" name="status" value="Pending">
 
         <!-- 🔹 Buttons -->
         <div class="flex items-center justify-between mt-6">
@@ -96,6 +97,8 @@
 
 <script>
 let passengerCount = 1;
+let legCount = 0;
+
 const passengersContainer = document.getElementById("passengers_container");
 const addPassengerBtn = document.getElementById("add_passenger_btn");
 const tripType = document.getElementById("trip_type");
@@ -103,13 +106,16 @@ const outboundSchedule = document.getElementById("outbound_schedule");
 const returnSchedule = document.getElementById("return_schedule");
 const passengerSeatsContainer = document.getElementById("passenger_seats_container");
 const returnSeatsContainer = document.getElementById("return_seats_container");
+const passengerCountInput = document.getElementById("passenger_count");
 const multiCitySection = document.getElementById("multi_city_section");
-const segmentsContainer = document.getElementById("segments_container");
-const addSegmentBtn = document.getElementById("add_segment_btn");
+const multiCityLegs = document.getElementById("multi_city_legs");
+const addLegBtn = document.getElementById("add_leg_btn");
 
 // 🔹 Add Passenger
 addPassengerBtn.addEventListener("click", function() {
     passengerCount++;
+    passengerCountInput.value = passengerCount;
+
     const newPassenger = document.createElement("div");
     newPassenger.classList.add("passenger", "border", "p-3", "rounded", "bg-gray-50", "mb-2");
     newPassenger.innerHTML = `
@@ -135,6 +141,7 @@ addPassengerBtn.addEventListener("click", function() {
 
 // 🔹 Create seat dropdowns per passenger
 function createSeatDropdowns(pIndex) {
+    // Outbound
     const outboundDiv = document.createElement("div");
     outboundDiv.classList.add("border", "p-2", "mb-1", "rounded", "bg-gray-100");
     outboundDiv.id = `outbound_seat_div_${pIndex}`;
@@ -144,6 +151,7 @@ function createSeatDropdowns(pIndex) {
     `;
     passengerSeatsContainer.appendChild(outboundDiv);
 
+    // Return
     const returnDiv = document.createElement("div");
     returnDiv.classList.add("border", "p-2", "mb-1", "rounded", "bg-gray-100");
     returnDiv.id = `return_seat_div_${pIndex}`;
@@ -154,18 +162,18 @@ function createSeatDropdowns(pIndex) {
     returnSeatsContainer.appendChild(returnDiv);
 }
 
-// 🔹 Initially add seats for first passenger
+// 🔹 Initially create seats for first passenger
 createSeatDropdowns(1);
 
 // 🔹 Show/hide sections based on trip type
 tripType.addEventListener("change", function() {
-    if (this.value === "one_way") {
+    if(this.value === "one_way") {
         document.getElementById("outbound_section").classList.remove("hidden");
         passengerSeatsContainer.classList.remove("hidden");
         document.getElementById("return_section").classList.add("hidden");
         returnSeatsContainer.classList.add("hidden");
         multiCitySection.classList.add("hidden");
-    } else if (this.value === "round_trip") {
+    } else if(this.value === "round_trip") {
         document.getElementById("outbound_section").classList.remove("hidden");
         passengerSeatsContainer.classList.remove("hidden");
         document.getElementById("return_section").classList.remove("hidden");
@@ -180,10 +188,53 @@ tripType.addEventListener("change", function() {
     }
 });
 
+<!-- 🔹 Multi-City: Add Leg -->
+addLegBtn.addEventListener("click", function(){
+    legCount++;
+    const legDiv = document.createElement("div");
+    legDiv.classList.add("border", "p-3", "mb-2", "rounded", "bg-gray-50");
+    legDiv.id = `multi_leg_${legCount}`;
+    legDiv.innerHTML = `
+        <h4 class="font-semibold mb-2">Leg ${legCount}</h4>
+        <label>Schedule:</label>
+        <select name="multi_schedule_${legCount}" id="multi_schedule_${legCount}" class="w-full border rounded px-3 py-2">
+            <option value="">-- Select Schedule --</option>
+            {% for schedule in schedules %}
+            <option value="{{ schedule.id }}">
+                {{ schedule.flight.flight_number }} ({{ schedule.flight.route.origin_airport.code }} → {{ schedule.flight.route.destination_airport.code }}) - {{ schedule.departure_time|date:"Y-m-d H:i" }}
+            </option>
+            {% endfor %}
+        </select>
+        <div id="multi_seats_container_${legCount}" class="space-y-2 mt-2"></div>
+    `;
+    multiCityLegs.appendChild(legDiv);
+
+    // Create seat dropdowns per passenger for this leg
+    for(let i=1;i<=passengerCount;i++){
+        const seatDiv = document.createElement("div");
+        seatDiv.classList.add("border", "p-2", "mb-1", "rounded", "bg-gray-100");
+        seatDiv.innerHTML = `
+            <label>Passenger ${i} Seat:</label>
+            <select name="multi_seat_${legCount}_${i}" class="w-full border rounded px-3 py-2"><option value="">-- Select Seat --</option></select>
+        `;
+        document.getElementById(`multi_seats_container_${legCount}`).appendChild(seatDiv);
+    }
+
+    // 🔹 Fetch seats dynamically when schedule is selected
+    const scheduleDropdown = document.getElementById(`multi_schedule_${legCount}`);
+    scheduleDropdown.addEventListener("change", function(){
+        for(let i=1;i<=passengerCount;i++){
+            const seatDropdown = document.querySelector(`select[name="multi_seat_${legCount}_${i}"]`);
+            fetchSeats(this.value, seatDropdown);
+        }
+    });
+});
+
+
 // 🔹 Fetch seats dynamically
 function fetchSeats(scheduleId, seatDropdown) {
     seatDropdown.innerHTML = '<option value="">-- Select Seat --</option>';
-    if (!scheduleId) return;
+    if(!scheduleId) return;
 
     fetch(`/booking/seats/${scheduleId}/`)
         .then(res => res.json())
@@ -192,7 +243,7 @@ function fetchSeats(scheduleId, seatDropdown) {
                 const option = document.createElement("option");
                 option.value = seat.id;
                 option.textContent = seat.label;
-                if (!seat.is_available) {
+                if(!seat.is_available){
                     option.disabled = true;
                     option.classList.add("text-gray-400");
                 }
@@ -201,62 +252,35 @@ function fetchSeats(scheduleId, seatDropdown) {
         });
 }
 
-// 🔹 Update outbound and return dynamically
+// 🔹 Update outbound seats
 outboundSchedule.addEventListener("change", function() {
-    const outboundId = this.value;
-
-    // 🔹 Update outbound seats
-    for (let i = 1; i <= passengerCount; i++) {
+    for(let i=1;i<=passengerCount;i++){
         const sel = document.querySelector(`select[name="outbound_seat_${i}"]`);
-        fetchSeats(outboundId, sel);
+        fetchSeats(this.value, sel);
     }
 
-    // 🔹 Update return schedules filtered by reverse route
-    const returnDropdown = document.getElementById("return_schedule");
-    returnDropdown.innerHTML = '<option value="">-- Select Return Schedule --</option>';
-    if (!outboundId) return;
-
-    fetch(`/booking/return_schedules/${outboundId}/`)
-        .then(res => res.json())
-        .then(data => {
-            data.forEach(s => {
-                const option = document.createElement("option");
-                option.value = s.id;
-                option.textContent = `${s.flight_number} (${s.origin} → ${s.destination}) - ${s.departure_time}`;
-                returnDropdown.appendChild(option);
+    // Fetch return schedules dynamically
+    if(tripType.value === "round_trip"){
+        fetch(`/booking/return_schedules/${this.value}/`)
+            .then(res => res.json())
+            .then(data => {
+                returnSchedule.innerHTML = '<option value="">-- Select Return Schedule --</option>';
+                data.forEach(s => {
+                    const opt = document.createElement("option");
+                    opt.value = s.id;
+                    opt.textContent = `${s.flight_number} (${s.origin} → ${s.destination}) - ${s.departure_time}`;
+                    returnSchedule.appendChild(opt);
+                });
             });
-        });
-});
-
-returnSchedule.addEventListener("change", function() {
-    const returnId = this.value;
-    for (let i = 1; i <= passengerCount; i++) {
-        const sel = document.querySelector(`select[name="return_seat_${i}"]`);
-        fetchSeats(returnId, sel);
     }
 });
 
-// 🔹 Multi-City segments
-let segmentCount = 0;
-addSegmentBtn.addEventListener("click", function() {
-    segmentCount++;
-    const segDiv = document.createElement("div");
-    segDiv.classList.add("border", "p-2", "mb-2", "rounded", "bg-gray-50");
-    segDiv.id = `segment_${segmentCount}`;
-    segDiv.innerHTML = `
-        <h4 class="font-semibold mb-1">Segment ${segmentCount}</h4>
-        <label>Schedule:</label>
-        <select name="multi_schedule_${segmentCount}" class="w-full border rounded px-3 py-2">
-            <option value="">-- Select Schedule --</option>
-            {% for schedule in schedules %}
-            <option value="{{ schedule.id }}">
-                {{ schedule.flight.flight_number }} ({{ schedule.flight.route.origin_airport.code }} → {{ schedule.flight.route.destination_airport.code }}) - {{ schedule.departure_time|date:"Y-m-d H:i" }}
-            </option>
-            {% endfor %}
-        </select>
-        <button type="button" onclick="document.getElementById('segment_${segmentCount}').remove();" class="mt-1 bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded">Remove</button>
-    `;
-    segmentsContainer.appendChild(segDiv);
+// 🔹 Update return seats
+returnSchedule.addEventListener("change", function(){
+    for(let i=1;i<=passengerCount;i++){
+        const sel = document.querySelector(`select[name="return_seat_${i}"]`);
+        fetchSeats(this.value, sel);
+    }
 });
 </script>
 {% endblock %}
