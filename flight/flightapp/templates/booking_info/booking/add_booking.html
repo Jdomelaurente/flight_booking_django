@@ -15,6 +15,29 @@
             </select>
         </div>
 
+        <!-- 🔹 Passenger Info -->
+        <div class="border p-3 rounded bg-gray-50">
+            <h3 class="font-semibold mb-2">Passenger Information</h3>
+            <label class="block mb-1">First Name:</label>
+            <input type="text" name="passenger_first_name" class="w-full border rounded px-3 py-2" required>
+
+            <label class="block mb-1 mt-2">Middle Name:</label>
+            <input type="text" name="passenger_middle_name" class="w-full border rounded px-3 py-2">
+
+            <label class="block mb-1 mt-2">Last Name:</label>
+            <input type="text" name="passenger_last_name" class="w-full border rounded px-3 py-2" required>
+
+            <label class="block mb-1 mt-2">Gender:</label>
+            <select name="passenger_gender" class="w-full border rounded px-3 py-2">
+                <option value="N/A" selected>-- Select Gender --</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+            </select>
+
+            <label class="block mb-1 mt-2">Date of Birth:</label>
+            <input type="date" name="passenger_dob" class="w-full border rounded px-3 py-2" required>
+        </div>
+
         <!-- 🔹 Trip Type -->
         <div>
             <label class="block font-semibold mb-1">Trip Type:</label>
@@ -28,8 +51,7 @@
         <!-- 🔹 Outbound Schedule -->
         <div id="outbound_section">
             <label class="block font-semibold mb-1">Outbound Schedule (Open Only):</label>
-            <select id="outbound_schedule" name="outbound_schedule" 
-                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+            <select id="outbound_schedule" name="outbound_schedule" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
                 <option value="">-- Select Outbound Schedule --</option>
                 {% for schedule in schedules %}
                 <option value="{{ schedule.id }}">
@@ -43,24 +65,21 @@
         <!-- 🔹 Outbound Seat -->
         <div id="outbound_seat_section">
             <label class="block font-semibold mb-1">Outbound Seat (Optional):</label>
-            <select id="outbound_seat" name="outbound_seat" 
-                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+            <select id="outbound_seat" name="outbound_seat" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
                 <option value="">-- Select Seat --</option>
             </select>
         </div>
 
-        <!-- 🔹 Return Schedule & Seat (Round-Trip Only) -->
+        <!-- 🔹 Return Schedule & Seat -->
         <div id="return_section" class="hidden">
             <label class="block font-semibold mb-1">Return Schedule (Open Only):</label>
-            <select id="return_schedule" name="return_schedule" 
-                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+            <select id="return_schedule" name="return_schedule" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
                 <option value="">-- Select Return Schedule --</option>
             </select>
 
             <div class="mt-2">
                 <label class="block font-semibold mb-1">Return Seat (Optional):</label>
-                <select id="return_seat" name="return_seat" 
-                        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                <select id="return_seat" name="return_seat" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
                     <option value="">-- Select Seat --</option>
                 </select>
             </div>
@@ -69,26 +88,17 @@
         <!-- 🔹 Multi-City Section -->
         <div id="multi_city_section" class="hidden">
             <div id="segments_container"></div>
-            <button type="button" id="add_segment_btn" 
-                    class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded">
+            <button type="button" id="add_segment_btn" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded">
                 + Add Segment
             </button>
         </div>
 
-        <!-- 🔹 Status (Auto-handled) -->
         <input type="hidden" name="status" value="Pending">
-
 
         <!-- 🔹 Buttons -->
         <div class="flex items-center justify-between mt-6">
-            <button type="submit" 
-                    class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
-                Add Booking
-            </button>
-            <a href="{% url 'booking' %}" 
-               class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
-                Cancel
-            </a>
+            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">Add Booking</button>
+            <a href="{% url 'booking' %}" class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">Cancel</a>
         </div>
     </form>
 </div>
@@ -150,7 +160,6 @@ function fetchSeats(scheduleId, seatDropdownId) {
 document.getElementById("outbound_schedule").addEventListener("change", function() {
     fetchSeats(this.value, "outbound_seat");
 
-    // Return schedule fetcher
     const returnDropdown = document.getElementById("return_schedule");
     returnDropdown.innerHTML = '<option value="">-- Select Return Schedule --</option>';
 
@@ -181,9 +190,7 @@ addSegmentBtn.addEventListener("click", function() {
     segmentDiv.classList.add("border", "p-3", "mb-2", "rounded", "bg-gray-50");
     segmentDiv.innerHTML = `
         <label class="block font-semibold mb-1">Segment ${segmentCount} Schedule:</label>
-        <select name="multi_schedule_${segmentCount}" 
-                id="multi_schedule_${segmentCount}" 
-                class="w-full border rounded px-3 py-2 mb-2">
+        <select name="multi_schedule_${segmentCount}" id="multi_schedule_${segmentCount}" class="w-full border rounded px-3 py-2 mb-2">
             <option value="">-- Select Schedule --</option>
             {% for schedule in schedules %}
             <option value="{{ schedule.id }}">
@@ -194,9 +201,7 @@ addSegmentBtn.addEventListener("click", function() {
         </select>
 
         <label class="block font-semibold mb-1">Segment ${segmentCount} Seat:</label>
-        <select name="multi_seat_${segmentCount}" 
-                id="multi_seat_${segmentCount}" 
-                class="w-full border rounded px-3 py-2">
+        <select name="multi_seat_${segmentCount}" id="multi_seat_${segmentCount}" class="w-full border rounded px-3 py-2">
             <option value="">-- Select Seat --</option>
         </select>
     `;

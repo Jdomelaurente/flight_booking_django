@@ -1495,6 +1495,7 @@ def delete_seat(request, seat_id):
 # List 
 from django.utils import timezone
 from datetime import timedelta
+from .models import Booking, BookingDetail, Seat
 
 def booking_view(request):
     # Auto-delete pending bookings older than 15 minutes
@@ -1502,21 +1503,18 @@ def booking_view(request):
     expired_bookings = Booking.objects.filter(status="Pending", created_at__lt=cutoff_time)
 
     for booking in expired_bookings:
-        # Free outbound seat if exists
-        if booking.outbound_seat:
-            booking.outbound_seat.is_available = True
-            booking.outbound_seat.save()
-
-        # Free return seat if exists
-        if booking.return_seat:
-            booking.return_seat.is_available = True
-            booking.return_seat.save()
+        # Free all seats in booking details
+        for detail in booking.details.all():  # use related_name="details"
+            if detail.seat:
+                detail.seat.is_available = True
+                detail.seat.save()
 
         # Delete booking
         booking.delete()
 
     bookings = Booking.objects.all().order_by('-created_at')
     return render(request, "booking_info/booking/booking.html", {"bookings": bookings})
+
 
 
 
@@ -1543,93 +1541,106 @@ def calculate_booking_price(schedule, seat):
     return round(base_price * float(seat_multiplier) * booking_factor, 2)
 
 # add
+from decimal import Decimal
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.utils import timezone
+from .models import Booking, BookingDetail, Student, Schedule, Seat, PassengerInfo
+
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Booking, BookingDetail, PassengerInfo, Student, Schedule, Seat
+from django.utils import timezone
+
 def add_booking(request):
     students = Student.objects.all()
-    schedules = Schedule.objects.all()
-    seats = Seat.objects.filter(is_available=True)
+    schedules = Schedule.objects.filter(status="Open").order_by("departure_time")
 
     if request.method == "POST":
         student_id = request.POST.get("student")
+        passenger_first_name = request.POST.get("passenger_first_name")
+        passenger_middle_name = request.POST.get("passenger_middle_name", "")
+        passenger_last_name = request.POST.get("passenger_last_name")
+        passenger_gender = request.POST.get("passenger_gender", "N/A")
+        passenger_dob = request.POST.get("passenger_dob")
         trip_type = request.POST.get("trip_type")
         status = request.POST.get("status", "Pending")
 
         student = get_object_or_404(Student, id=student_id)
 
-        def calculate_price(schedule, seat):
-            if not schedule:
-                return Decimal("0.00")
+        # Always create a new PassengerInfo for this booking
+        passenger = PassengerInfo.objects.create(
+            first_name=passenger_first_name,
+            middle_name=passenger_middle_name,
+            last_name=passenger_last_name,
+            gender=passenger_gender,
+            date_of_birth=passenger_dob
+        )
 
-            base_price = schedule.flight.route.base_price
-            multiplier = seat.seat_class.price_multiplier if seat else Decimal("1.0")
+        # Create Booking
+        booking = Booking.objects.create(
+            student=student,
+            trip_type=trip_type,
+            status=status
+        )
 
-            days_diff = (schedule.departure_time.date() - timezone.now().date()).days
-            if days_diff >= 30:
-                factor = Decimal("0.8")
-            elif 7 <= days_diff <= 29:
-                factor = Decimal("1.0")
-            else:
-                factor = Decimal("1.5")
+        # Outbound Schedule + Seat
+        outbound_schedule_id = request.POST.get("outbound_schedule")
+        outbound_seat_id = request.POST.get("outbound_seat")
+        if outbound_schedule_id:
+            outbound_schedule = get_object_or_404(Schedule, id=outbound_schedule_id)
+            outbound_seat = Seat.objects.filter(id=outbound_seat_id).first() if outbound_seat_id else None
 
-            return base_price * multiplier * factor
-
-        # One-way booking
-        if trip_type == "one_way":
-            outbound_schedule = get_object_or_404(Schedule, id=request.POST.get("outbound_schedule"))
-            outbound_seat = Seat.objects.filter(id=request.POST.get("outbound_seat")).first()
-
-            price = calculate_price(outbound_schedule, outbound_seat)
-
-            booking = Booking.objects.create(
-                student=student,
-                trip_type="one_way",
-                outbound_schedule=outbound_schedule,
-                outbound_seat=outbound_seat,
-                status=status,
-                price=price
+            BookingDetail.objects.create(
+                booking=booking,
+                passenger=passenger,
+                schedule=outbound_schedule,
+                seat=outbound_seat,
+                seat_class=outbound_seat.seat_class if outbound_seat else None
             )
 
-            if outbound_seat:
-                outbound_seat.is_available = False
-                outbound_seat.save()
+        # Return Schedule + Seat (for round-trip)
+        if trip_type == "round_trip":
+            return_schedule_id = request.POST.get("return_schedule")
+            return_seat_id = request.POST.get("return_seat")
+            if return_schedule_id:
+                return_schedule = get_object_or_404(Schedule, id=return_schedule_id)
+                return_seat = Seat.objects.filter(id=return_seat_id).first() if return_seat_id else None
 
-        # Round trip booking
-        elif trip_type == "round_trip":
-            outbound_schedule = get_object_or_404(Schedule, id=request.POST.get("outbound_schedule"))
-            return_schedule = get_object_or_404(Schedule, id=request.POST.get("return_schedule"))
+                BookingDetail.objects.create(
+                    booking=booking,
+                    passenger=passenger,
+                    schedule=return_schedule,
+                    seat=return_seat,
+                    seat_class=return_seat.seat_class if return_seat else None
+                )
 
-            outbound_seat = Seat.objects.filter(id=request.POST.get("outbound_seat")).first()
-            return_seat = Seat.objects.filter(id=request.POST.get("return_seat")).first()
+        # Multi-City (loop through submitted segments)
+        if trip_type == "multi_city":
+            for key in request.POST:
+                if key.startswith("multi_schedule_"):
+                    segment_id = key.split("_")[-1]
+                    schedule_id = request.POST.get(f"multi_schedule_{segment_id}")
+                    seat_id = request.POST.get(f"multi_seat_{segment_id}")
+                    if schedule_id:
+                        schedule = get_object_or_404(Schedule, id=schedule_id)
+                        seat = Seat.objects.filter(id=seat_id).first() if seat_id else None
+                        BookingDetail.objects.create(
+                            booking=booking,
+                            passenger=passenger,
+                            schedule=schedule,
+                            seat=seat,
+                            seat_class=seat.seat_class if seat else None
+                        )
 
-            outbound_price = calculate_price(outbound_schedule, outbound_seat)
-            return_price = calculate_price(return_schedule, return_seat)
-            total_price = outbound_price + return_price
-
-            booking = Booking.objects.create(
-                student=student,
-                trip_type="round_trip",
-                outbound_schedule=outbound_schedule,
-                outbound_seat=outbound_seat,
-                return_schedule=return_schedule,
-                return_seat=return_seat,
-                status=status,
-                price=total_price
-            )
-
-            if outbound_seat:
-                outbound_seat.is_available = False
-                outbound_seat.save()
-            if return_seat:
-                return_seat.is_available = False
-                return_seat.save()
-
-        messages.success(request, "Booking successfully created.")
         return redirect("booking")
 
-    return render(request, "booking_info/booking/add_booking.html", {
+    context = {
         "students": students,
-        "schedules": schedules,
-        "seats": seats,
-    })
+        "schedules": schedules
+    }
+    return render(request, "booking_info/booking/add_booking.html", context)
+
+
 
 
 

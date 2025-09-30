@@ -307,22 +307,19 @@ class PassengerInfo(models.Model):
 class BookingDetail(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="details")
     passenger = models.ForeignKey(PassengerInfo, on_delete=models.CASCADE)
-    flight = models.ForeignKey(Flight, on_delete=models.CASCADE)
+    schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE)  # use Schedule instead
     seat = models.ForeignKey(Seat, on_delete=models.SET_NULL, null=True, blank=True)
     seat_class = models.ForeignKey(SeatClass, on_delete=models.SET_NULL, null=True, blank=True)
     booking_date = models.DateTimeField(default=timezone.now)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-
-    def __str__(self):
-        return f"{self.booking.id} - {self.flight.flight_number} - {self.passenger.first_name}"
+    
 
     def save(self, *args, **kwargs):
-        """Calculate price based on seat, schedule, and advance booking factor."""
-        if self.flight and self.seat:
-            base_price = self.flight.route.base_price
+        if self.seat:
+            base_price = self.schedule.flight.route.base_price
             multiplier = self.seat.seat_class.price_multiplier if self.seat.seat_class else Decimal("1.0")
 
-            days_diff = (self.flight.departure_time.date() - timezone.now().date()).days
+            days_diff = (self.schedule.departure_time.date() - timezone.now().date()).days
             if days_diff >= 30:
                 factor = Decimal("0.8")
             elif 7 <= days_diff <= 29:
@@ -331,6 +328,7 @@ class BookingDetail(models.Model):
                 factor = Decimal("1.5")
 
             self.price = base_price * multiplier * factor
+
         super().save(*args, **kwargs)
 
 
