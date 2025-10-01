@@ -1,24 +1,48 @@
 {% extends "master.html" %}
 {% block content %}
-<h2>Payment Successful!</h2>
+<h2>✅ Payment Successful!</h2>
 <p>Your booking has been confirmed.</p> <br>
 
 <h3>Booking Details</h3>
 <p><strong>Booking ID:</strong> {{ booking.id }}</p>
 <p><strong>Status:</strong> {{ booking.status }}</p>
-<p><strong>Amount Paid:</strong> ₱{{ payment.amount }}</p>  <br>
+<p><strong>Amount Paid:</strong> ₱{{ payment.amount }}</p> <br>
 
-<h3>Example Calculation</h3>
-<p><strong>Booking Date:</strong> {{ calc.booking_date }}</p>
-<p><strong>Flight Schedule:</strong> {{ calc.flight_schedule }} 
-    (difference = {{ calc.days_diff }} day{% if calc.days_diff != 1 %}s{% endif %} → 
-    {% if calc.booking_factor == 1.5 %}last-minute{% elif calc.booking_factor == 1.0 %}standard{% else %}early booking{% endif %})
-</p>
-<p><strong>Route Base Price:</strong> ₱{{ calc.route_base_price }}</p>
-<p><strong>Seat:</strong> {{ calc.seat_name }} (×{{ calc.seat_multiplier }})</p>
-<p><strong>Booking Factor:</strong> {{ calc.booking_factor }}</p>
-<p><strong>Final Price:</strong> ₱{{ calc.final_price }}</p>
+<h3>Price Breakdown (per leg)</h3>
+<table border="1" cellpadding="8" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Flight</th>
+            <th>Origin</th>
+            <th>Destination</th>
+            <th>Departure</th>
+            <th>Seat</th>
+            <th>Base Price</th>
+            <th>Multiplier</th>
+            <th>Factor</th>
+            <th>Final Price</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for calc in calc_breakdown %}
+        <tr>
+            <td>{{ calc.schedule.flight.flight_number }}</td>
+            <td>{{ calc.schedule.flight.route.origin_airport.code }}</td>
+            <td>{{ calc.schedule.flight.route.destination_airport.code }}</td>
+            <td>{{ calc.schedule.departure_time|date:"Y-m-d H:i" }}</td>
+            <td>{{ calc.seat_name }}</td>
+            <td>₱{{ calc.base_price }}</td>
+            <td>×{{ calc.seat_multiplier }}</td>
+            <td>
+                {{ calc.booking_factor }}
+                ({{ calc.days_diff }} day{% if calc.days_diff != 1 %}s{% endif %} before flight)
+            </td>
+            <td><strong>₱{{ calc.final_price }}</strong></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
-<a href="{% url 'booking' %}">Back to Bookings</a>
-
+<br>
+<a href="{% url 'booking' %}">⬅ Back to Bookings</a>
 {% endblock %}
