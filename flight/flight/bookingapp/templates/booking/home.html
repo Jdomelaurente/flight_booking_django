@@ -1,0 +1,417 @@
+{% extends 'booking/base.html' %}
+{% block title %} Home
+{% endblock %}
+
+{% block content %}
+{% load static %}
+<main class=" mx-auto  flex  justify-center relative">
+    <div class="absolute -top-4">
+        <img src="{% static 'bookingapp/images/bg-globe.svg' %}" alt="" class="w-[600px] h-auto" >
+    </div>
+    <div class="z-10">
+        <div class="flex flex-1 justify-center flex-col gap-20 ">
+        
+           <!-- right -->
+                <div class="flex flex-1 items-center justify-center   ">
+                        <img src="{% static 'bookingapp/images/plane2.svg' %}" alt="" class="w-[500px] h-auto">
+                </div>
+        </div>
+        
+        <div class="w-full  bg-[#F8F8F8]  flex flex-col  items-center">
+            <h1 class=" text-5xl  syncopate-bold text-[#2975F7]">Travel around the Globe</h1>
+            <p class="font-medium text-sm">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+        </div>
+
+        <div class=" flex flex-col z-20 gap-3 mt-10 px-10   w-full">
+        <form action="{% url 'bookingapp:search_schedule' %}" method="POST">
+            {% csrf_token %}
+        <!-- Trip Type Toggle -->
+            <div class="flex ml-5 gap-5 mb-5 text-xs ">
+                <label   class="trip-btn active flex bg-[#F4EB08] py-2 px-5 rounded-full  shadow-md cursor-pointer transition">
+                    <input type="radio" name="trip_type" value="one_way" checked hidden>
+                    <span class="trip-btn active">One-way</span>
+                </label>
+
+                <label   class="trip-btn  flex  py-2 px-5 rounded-full  shadow-md cursor-pointer transition">
+                    <input type="radio" name="trip_type" value="round_trip" hidden>
+                    <span class="trip-btn active">Round-Trip</span>
+                </label>
+
+                <label   class="trip-btn  flex py-2 px-5 rounded-full  shadow-md cursor-pointer transition">
+                    <input type="radio" name="trip_type" value="trip_type"  hidden>
+                    <span class="trip-btn active">Multi-City</span>
+                </label>
+
+            </div>
+
+            <!-- Search Bar -->
+            <div class="flex flex-wrap shadow-md/20 bg-white rounded-4xl h-auto items-center justify-between px-8 py-4 gap-2">
+
+
+                <!-- From -->
+                <div class="flex flex-col flex-1 min-w-[150px] relative ">
+                    <label class=" text-gray-500 mb-2  text-xs">From</label>
+                    <input text="text" name="origin" id="fromHidden"  hidden>
+                    <input type="text"  id="fromInput"   
+                        class="poppins-bold text-sm text-gray-800 bg-gray-100 rounded-xl px-5 py-2 focus:outline-none focus:ring-2 focus:ring-[#2975F7] shadow-inner/20" placeholder="Enter your origin">
+
+
+                <ul id="fromDropdown"
+                        class="absolute top-[72px] left-0 w-full bg-white rounded-xl shadow-md hidden h-auto overflow-y-auto z-50">
+                        {% for origin in origins %}
+                        <li class="px-5 py-2 hover:bg-gray-100 cursor-pointer"
+                            data-id="{{ origin.id }}"
+                            data-value="{{ origin.code }} - {{ origin.location }}">
+                            {{ origin.code }} - {{ origin.location }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- To -->
+                <div class="flex flex-col flex-1 relative min-w-[150px] ">
+                    <label class=" text-gray-500 mb-2  text-xs">To</label>
+                    <input text="text" name="destination" id="toHidden"  hidden>
+                    <input type="text"  id="toInput"
+                        class="poppins-bold text-sm text-gray-800 bg-gray-100 rounded-xl px-5 py-2 focus:outline-none focus:ring-2 focus:ring-[#2975F7] shadow-inner/20" placeholder="Enter your destination" >
+            
+                    
+                <ul id="toDropdown"
+                        class="absolute top-[72px] left-0 w-full bg-white  rounded-xl shadow-md hidden h-auto overflow-y-auto z-50">
+                        {% for destination in destinations %}
+                        <li class="px-5 py-2 hover:bg-gray-100 cursor-pointer"
+                            data-id="{{ destination.id }}"
+                            data-value="{{ destination.code }} - {{ destination.location }}">
+                            {{ destination.code }} - {{ destination.location }}
+                        </li>
+                        {% endfor %}
+                    </ul>     
+                </div>
+
+                <!-- Departure -->
+                <div class="flex flex-col flex-1">
+                    <label class=" text-gray-500 mb-2 text-xs min-w-[150px] ">Departure</label>
+                    <input type="date" name="departure_date"
+                        class="poppins-bold text-sm text-gray-800 bg-gray-100 rounded-xl px-5 py-2 focus:outline-none focus:ring-2 focus:ring-[#2975F7] shadow-inner/20">
+                </div>
+
+                <!-- Return -->
+                <div id="returnField" class="flex flex-col flex-1 hidden ">
+                    <label class=" text-gray-500 mb-2 text-xs">Return</label>
+                    <input type="date" name="return_date"
+                        class="poppins-bold text-sm text-gray-800 bg-gray-100 rounded-xl px-5 py-2 focus:outline-none focus:ring-2 focus:ring-[#2975F7] shadow-inner/20">
+                </div>
+
+                <!-- Passenger -->
+                <!-- Passenger -->
+                <div class="flex flex-col flex-1 relative">
+                    <label class="text-gray-500 mb-2 text-xs min-w-[150px]">Passengers</label>
+
+                    <!-- Trigger input -->
+                    <div id="passengerBox" 
+                        class="flex items-center bg-gray-100 rounded-xl justify-between px-4 py-2 cursor-pointer shadow-inner/20">
+                        <span id="passengerSummary" class="poppins-bold text-sm text-gray-800">1 Adult</span>
+                        <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+
+                    <!-- Dropdown -->
+                    <div id="passengerDropdown" 
+                        class="absolute top-[65px] left-0 w-64 bg-white rounded-xl shadow-md p-4 hidden z-50">
+
+                        <!-- Adult -->
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-sm">Adults</span>
+                            <div class="flex items-center gap-2">
+                                <button type="button" data-type="adult" class="decrement px-2 py-1 bg-gray-200 rounded">-</button>
+                                <input type="text" id="adultCount" name="adults" value="1" 
+                                    class="w-8 text-center border-none focus:outline-none" readonly>
+                                <button type="button" data-type="adult" class="increment px-2 py-1 bg-gray-200 rounded">+</button>
+                            </div>
+                        </div>
+
+                        <!-- Children -->
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-sm">Children</span>
+                            <div class="flex items-center gap-2">
+                                <button type="button" data-type="child" class="decrement px-2 py-1 bg-gray-200 rounded">-</button>
+                                <input type="text" id="childCount" name="children" value="0" 
+                                    class="w-8 text-center border-none focus:outline-none" readonly>
+                                <button type="button" data-type="child" class="increment px-2 py-1 bg-gray-200 rounded">+</button>
+                            </div>
+                        </div>
+
+                        <!-- Infants -->
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-sm">Infants</span>
+                            <div class="flex items-center gap-2">
+                                <button type="button" data-type="infant" class="decrement px-2 py-1 bg-gray-200 rounded">-</button>
+                                <input type="text" id="infantCount" name="infants" value="0" 
+                                    class="w-8 text-center border-none focus:outline-none" readonly>
+                                <button type="button" data-type="infant" class="increment px-2 py-1 bg-gray-200 rounded">+</button>
+                            </div>
+                        </div>
+
+                        <!-- Done -->
+                        <div class="flex justify-end mt-3">
+                            <button type="button" id="donePassenger" 
+                                    class="bg-[#2975F7] text-white px-4 py-1 rounded-full text-sm">Done</button>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Divider -->
+                <div class="w-px h-[60px] bg-gray-300 mx-5"></div>
+
+                <!-- Search Button -->
+                <div class="flex">
+                    <button type="submit"  id="searchBtn"
+                    class="bg-[#2975F7] hover:bg-[#1f5ed6] transition px-8 py-2 rounded-full text-white  shadow-md/20 hover:-translate-y-1 ease-in-out cursor-pointer">
+                        Search
+                    </button>
+                </div>
+            </div>
+        </form>    
+    </div>
+</div>
+
+
+
+    </div>
+</main>
+
+<!-- JS for toggle + return field -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const tripBtns = document.querySelectorAll('.trip-btn');
+    const returnField = document.getElementById('returnField');
+
+    // Trip toggle
+    tripBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tripBtns.forEach(b => b.classList.remove('active', 'bg-[#F4EB08]'));
+            btn.classList.add('active', 'bg-[#F4EB08]');
+            if (btn.textContent.trim() === 'One-way') {
+                returnField.style.display = 'none';
+            } else {
+                returnField.style.display = 'flex';
+            }
+        });
+    });
+
+    // Passenger increment/decrement
+   // ===== Passenger Selection Dropdown =====
+        const passengerBox = document.getElementById("passengerBox");
+        const passengerDropdown = document.getElementById("passengerDropdown");
+        const passengerSummary = document.getElementById("passengerSummary");
+        const donePassenger = document.getElementById("donePassenger");
+
+        const counts = {
+            adult: 1,
+            child: 0,
+            infant: 0
+        };
+
+        // Toggle dropdown
+        passengerBox.addEventListener("click", () => {
+            passengerDropdown.classList.toggle("hidden");
+        });
+
+        // Increment/Decrement
+        document.querySelectorAll("#passengerDropdown button").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const type = btn.dataset.type;
+                if (!type) return;
+
+                if (btn.classList.contains("increment")) {
+                    if (type === "infant" && counts.infant >= counts.adult) {
+                        alert("Number of infants cannot exceed number of adults.");
+                        return;
+                    }
+                    counts[type]++;
+                } else if (btn.classList.contains("decrement") && counts[type] > 0) {
+                    if (type === "adult" && counts[type] === 1) return; // min 1 adult
+                    if (type === "adult" && counts.infant > counts.adult - 1) {
+                        counts.infant = counts.adult - 1;
+                    }
+                    counts[type]--;
+                }
+
+                // Update form inputs
+                document.getElementById("adultCount").value = counts.adult;
+                document.getElementById("childCount").value = counts.child;
+                document.getElementById("infantCount").value = counts.infant;
+
+                updateSummary();
+            });
+        });
+
+        // Update summary text
+        function updateSummary() {
+            let parts = [];
+            if (counts.adult > 0) parts.push(`${counts.adult} Adult${counts.adult > 1 ? "s" : ""}`);
+            if (counts.child > 0) parts.push(`${counts.child} Child${counts.child > 1 ? "ren" : ""}`);
+            if (counts.infant > 0) parts.push(`${counts.infant} Infant${counts.infant > 1 ? "s" : ""}`);
+            passengerSummary.textContent = parts.join(", ");
+        }
+
+        // Done button
+        donePassenger.addEventListener("click", () => {
+            passengerDropdown.classList.add("hidden");
+        });
+
+        // Hide dropdown when clicking outside
+        document.addEventListener("click", (e) => {
+            if (!passengerBox.contains(e.target) && !passengerDropdown.contains(e.target)) {
+                passengerDropdown.classList.add("hidden");
+            }
+        });
+
+
+    // ===== Dropdown logic function (reusable) =====
+function setupDropdown(inputId, dropdownId, hiddenId, otherInputId, otherDropdownId) {
+    const input = document.getElementById(inputId);
+    const dropdown = document.getElementById(dropdownId);
+    const options = dropdown.querySelectorAll("li");
+    const otherInput = otherInputId ? document.getElementById(otherInputId) : null;
+    const otherDropdown = otherDropdownId ? document.getElementById(otherDropdownId) : null;
+    const hidden = document.getElementById(hiddenId);
+
+    // Show dropdown on focus
+    input.addEventListener("focus", () => {
+        positionDropdown();
+        dropdown.classList.remove("hidden");
+    });
+
+    // Position dropdown based on available space
+    function positionDropdown() {
+        const rect = input.getBoundingClientRect();
+        const dropdownHeight = dropdown.offsetHeight || 200; // fallback height
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+
+        if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+            // show above input
+            dropdown.style.top = "auto";
+            dropdown.style.bottom = `${input.offsetHeight + 4}px`;
+        } else {
+            // show below input
+            dropdown.style.top = `${input.offsetHeight + 4}px`;
+            dropdown.style.bottom = "auto";
+        }
+    }
+
+    // Filter options while typing
+    input.addEventListener("input", () => {
+        const filter = input.value.toLowerCase();
+        const otherValue = otherInput ? otherInput.value.trim().toLowerCase() : "";
+
+        options.forEach(option => {
+            const text = option.textContent.toLowerCase();
+            if (text.includes(filter) && option.dataset.value.toLowerCase() !== otherValue) {
+                option.style.display = "";
+            } else {
+                option.style.display = "none";
+            }
+        });
+
+        positionDropdown();
+        dropdown.classList.remove("hidden");
+    });
+
+    // Select option on click
+    options.forEach(option => {
+        option.addEventListener("click", () => {
+            input.value = option.dataset.value;
+            hidden.value = option.dataset.id;
+            dropdown.classList.add("hidden");
+
+            // Hide this option in the other dropdown
+            if (otherDropdown) {
+                otherDropdown.querySelectorAll("li").forEach(opt => {
+                    opt.style.display = (opt.dataset.value === input.value) ? "none" : "";
+                });
+            }
+        });
+    });
+
+    // Hide dropdown if clicked outside
+    document.addEventListener("click", (e) => {
+        if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add("hidden");
+        }
+    });
+
+    // Reposition dropdown on window resize/scroll
+    window.addEventListener("resize", positionDropdown);
+    window.addEventListener("scroll", positionDropdown, true);
+}
+
+
+    // Apply to From + To (cross check)
+    setupDropdown("fromInput", "fromDropdown", "fromHidden", "toInput", "toDropdown");
+    setupDropdown("toInput", "toDropdown", "toHidden","fromInput", "fromDropdown");
+
+    const searchBtn = document.getElementById('searchBtn');
+const fromInput = document.getElementById('fromInput');
+const toInput = document.getElementById('toInput');
+const departureInput = document.querySelector('input[name="departure_date"]');
+const returnInput = document.querySelector('input[name="return_date"]');
+const tripRadios = document.querySelectorAll('input[name="trip_type"]');
+
+function checkInputs() {
+    const tripType = document.querySelector('input[name="trip_type"]:checked').value;
+
+    // Required fields for One-way
+    let valid = fromInput.value.trim() !== '' &&
+                toInput.value.trim() !== '' &&
+                departureInput.value.trim() !== '';
+
+    // If round-trip, also require return date
+    if (tripType === 'round_trip') {
+        valid = valid && returnInput.value.trim() !== '';
+    }
+
+    searchBtn.disabled = !valid;
+
+    // Optional: visually indicate disabled
+    if (!valid) {
+        searchBtn.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+        searchBtn.classList.remove('hover:bg-[#1f5ed6]', 'hover:-translate-y-1');
+    } else {
+        searchBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+        searchBtn.classList.add('hover:bg-[#1f5ed6]', 'hover:-translate-y-1');
+    }
+}
+
+// Listen to changes
+[fromInput, toInput, departureInput, returnInput].forEach(input => {
+    input.addEventListener('input', checkInputs);
+});
+
+// Listen to trip type changes
+tripRadios.forEach(radio => {
+    radio.addEventListener('change', () => {
+        // Show/hide return field
+        if (radio.value === 'round_trip') {
+            returnField.style.display = 'flex';
+        } else {
+            returnField.style.display = 'none';
+            returnInput.value = ''; // reset return input
+        }
+        checkInputs();
+    });
+});
+
+// Initial check
+checkInputs();
+
+});
+</script>
+
+
+{% endblock %}
+
