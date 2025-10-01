@@ -14,10 +14,9 @@
         <tr class="bg-gray-200">
             <th class="border border-gray-400 p-2">ID</th>
             <th class="border border-gray-400 p-2">Student</th>
-            <th class="border border-gray-400 p-2">Outbound Flight</th>
-            <th class="border border-gray-400 p-2">Outbound Seat</th>
-            <th class="border border-gray-400 p-2">Return Flight</th>
-            <th class="border border-gray-400 p-2">Return Seat</th>
+            <th class="border border-gray-400 p-2">Passengers</th>
+            <th class="border border-gray-400 p-2">Outbound Flight / Seat</th>
+            <th class="border border-gray-400 p-2">Return Flight / Seat</th>
             <th class="border border-gray-400 p-2">Trip Type</th>
             <th class="border border-gray-400 p-2">Status</th>
             <th class="border border-gray-400 p-2">Created At</th>
@@ -29,28 +28,52 @@
         <tr class="poppins-small">
             <td class="border border-gray-400 p-2">{{ booking.id }}</td>
             <td class="border border-gray-400 p-2">{{ booking.student.first_name }} {{ booking.student.last_name }}</td>
-            
-            <!-- Outbound -->
-            <td class="border border-gray-400 p-2">{{ booking.outbound_schedule.flight.flight_number }}</td>
+
+            <!-- Passengers -->
             <td class="border border-gray-400 p-2">
-                {% if booking.outbound_seat %}
-                    {{ booking.outbound_seat.seat_number }}
+                {% if booking.details.exists %}
+                    {% for detail in booking.details.all %}
+                        {{ detail.passenger.first_name }} {{ detail.passenger.last_name }}<br>
+                    {% endfor %}
                 {% else %}
                     N/A
                 {% endif %}
             </td>
-            
-            <!-- Return (if round-trip) -->
+
+            <!-- Outbound Flight / Seat -->
             <td class="border border-gray-400 p-2">
-                {% if booking.return_schedule %}
-                    {{ booking.return_schedule.flight.flight_number }}
+                {% if booking.details.exists %}
+                    {% for detail in booking.details.all %}
+                        {% if forloop.first %}
+                            {{ detail.schedule.flight.flight_number }} /
+                            {% if detail.seat %}{{ detail.seat.seat_number }}{% else %}N/A{% endif %}
+                        {% endif %}
+                    {% endfor %}
                 {% else %}
                     N/A
                 {% endif %}
             </td>
+
+            <!-- Return Flight / Seat -->
             <td class="border border-gray-400 p-2">
-                {% if booking.return_seat %}
-                    {{ booking.return_seat.seat_number }}
+                {% if booking.trip_type == "round_trip" %}
+                    {% if booking.details.count > 1 %}
+                        {% for detail in booking.details.all %}
+                            {% if not forloop.first %}
+                                {{ detail.schedule.flight.flight_number }} /
+                                {% if detail.seat %}{{ detail.seat.seat_number }}{% else %}N/A{% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                {% elif booking.trip_type == "multi_city" %}
+                    {% for detail in booking.details.all %}
+                        {% if not forloop.first %}
+                            {{ detail.schedule.flight.flight_number }} /
+                            {% if detail.seat %}{{ detail.seat.seat_number }}{% else %}N/A{% endif %}<br>
+                        {% endif %}
+                    {% endfor %}
                 {% else %}
                     N/A
                 {% endif %}
@@ -71,32 +94,28 @@
 
             <td class="border border-gray-400 p-2">{{ booking.status }}</td>
             <td class="border border-gray-400 p-2">{{ booking.created_at|date:"Y-m-d H:i" }}</td>
-           <td class="border border-gray-400 p-2 text-center space-x-2">
-            <!-- Edit -->
-            <a href="{% url 'update_booking' booking.id %}" 
-            class="bg-blue-600 hover:bg-blue-700 text-white p-1 rounded inline-flex items-center">
-                <i class="ph ph-pen mr-1"></i>Edit
-            </a>
 
-            <!-- Delete -->
-            <a href="{% url 'delete_booking' booking.id %}" 
-            class="bg-red-600 hover:bg-red-700 text-white p-1 rounded inline-flex items-center"
-            onclick="return confirm('Are you sure you want to delete this booking?');">
-                <i class="ph ph-trash mr-1"></i>Delete
-            </a>
-
-            <!-- Pay -->
-            <a href="{% url 'create_checkout' booking.id %}" 
-            class="bg-green-600 hover:bg-green-700 text-white p-1 rounded inline-flex items-center"
-            onclick="return confirm('Confirm payment for this booking?');">
-                <i class="ph ph-credit-card mr-2"></i>Pay
-            </a>
-        </td>
-
+            <!-- Actions -->
+            <td class="border border-gray-400 p-2 text-center space-x-2">
+                <a href="{% url 'update_booking' booking.id %}" 
+                   class="bg-blue-600 hover:bg-blue-700 text-white p-1 rounded inline-flex items-center">
+                    <i class="ph ph-pen mr-1"></i>Edit
+                </a>
+                <a href="{% url 'delete_booking' booking.id %}" 
+                   class="bg-red-600 hover:bg-red-700 text-white p-1 rounded inline-flex items-center"
+                   onclick="return confirm('Are you sure you want to delete this booking?');">
+                    <i class="ph ph-trash mr-1"></i>Delete
+                </a>
+                <a href="{% url 'create_checkout' booking.id %}" 
+                   class="bg-green-600 hover:bg-green-700 text-white p-1 rounded inline-flex items-center"
+                   onclick="return confirm('Confirm payment for this booking?');">
+                    <i class="ph ph-credit-card mr-2"></i>Pay
+                </a>
+            </td>
         </tr>
         {% empty %}
         <tr>
-            <td colspan="10" class="text-center py-4">No bookings available</td>
+            <td colspan="9" class="text-center py-4">No bookings available</td>
         </tr>
         {% endfor %}
     </tbody>

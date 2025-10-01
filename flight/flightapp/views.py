@@ -163,12 +163,19 @@ from django.db.models import Sum, Count
 from django.http import JsonResponse
 from .models import Booking, Payment, Schedule
 
+from django.shortcuts import render
+from django.utils import timezone
+from django.db.models import Sum
+from django.http import JsonResponse
+from datetime import datetime, timedelta
+
+from .models import Schedule, Booking, Payment
 
 def admin_dashboard(request):
     date_filter = request.GET.get("date")
     date_range = request.GET.get("range")
     flight_range = request.GET.get("flight_range")
-    revenue_type = request.GET.get("type", "route")  # 👈 New filter (default route)
+    revenue_type = request.GET.get("type", "route")  # default: by airline
 
     schedules = Schedule.objects.all()
     current_time = timezone.now()
@@ -206,14 +213,18 @@ def admin_dashboard(request):
             status = "Arrived"
             total_arrived += 1
 
-        schedule_data.append({'schedule': s, 'status': status})
+        schedule_data.append({"schedule": s, "status": status})
 
     # -------------------
     # Latest Bookings
     # -------------------
-    recent_bookings = Booking.objects.select_related(
-        "student", "outbound_schedule__flight", "outbound_seat"
-    ).filter(status="Confirmed").order_by("-created_at")[:10]
+    recent_bookings = (
+        Booking.objects
+        .select_related("student")
+        .prefetch_related("details__schedule__flight", "details__seat")
+        .filter(status="Confirmed")
+        .order_by("-created_at")[:10]
+    )
 
     # -------------------
     # Extra Stats
@@ -288,30 +299,26 @@ def admin_dashboard(request):
     # Revenue Breakdown
     # -------------------
     if revenue_type == "class":
-        revenue_qs = Payment.objects.values("booking__outbound_seat__seat_class__name").annotate(
-            total=Sum("amount")
+        revenue_qs = (
+            Payment.objects
+            .values("booking__details__seat_class__name")
+            .annotate(total=Sum("amount"))
         )
-        revenue_labels = [
-            r["booking__outbound_seat__seat_class__name"] or "Unknown" 
-            for r in revenue_qs
-        ]
+        revenue_labels = [r["booking__details__seat_class__name"] or "Unknown" for r in revenue_qs]
         revenue_data = [float(r["total"]) for r in revenue_qs]
 
     else:  # revenue by airline
         revenue_qs = (
             Payment.objects
-            .values("booking__outbound_schedule__flight__airline__name")
+            .values("booking__details__schedule__flight__airline__name")
             .annotate(total=Sum("amount"))
             .order_by("-total")
         )
-
         revenue_labels = [
-            r["booking__outbound_schedule__flight__airline__name"] or "Unknown Airline"
+            r["booking__details__schedule__flight__airline__name"] or "Unknown Airline"
             for r in revenue_qs
         ]
         revenue_data = [float(r["total"]) for r in revenue_qs]
-
-
 
     # -------------------
     # AJAX Response
@@ -319,20 +326,11 @@ def admin_dashboard(request):
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         chart_type = request.GET.get("chart")
         if chart_type == "flight":
-            return JsonResponse({
-                "labels": flight_schedule_labels,
-                "data": flight_schedule_data,
-            })
+            return JsonResponse({"labels": flight_schedule_labels, "data": flight_schedule_data})
         elif chart_type == "revenue":
-            return JsonResponse({
-                "labels": revenue_labels,
-                "data": revenue_data,
-            })
+            return JsonResponse({"labels": revenue_labels, "data": revenue_data})
         else:
-            return JsonResponse({
-                "labels": ticket_sales_labels,
-                "data": ticket_sales_data,
-            })
+            return JsonResponse({"labels": ticket_sales_labels, "data": ticket_sales_data})
 
     # -------------------
     # Render full dashboard page
@@ -360,14 +358,12 @@ def admin_dashboard(request):
         "flight_schedule_labels": flight_schedule_labels,
         "flight_schedule_data": flight_schedule_data,
 
-        # Revenue Breakdown (default)
+        # Revenue Breakdown
         "revenue_labels": revenue_labels,
         "revenue_data": revenue_data,
 
         "recent_bookings": recent_bookings,
     })
-
-
 
 
 
@@ -1495,6 +1491,7 @@ def delete_seat(request, seat_id):
 # List 
 from django.utils import timezone
 from datetime import timedelta
+from .models import Booking, BookingDetail, Seat
 
 def booking_view(request):
     # Auto-delete pending bookings older than 15 minutes
@@ -1502,21 +1499,18 @@ def booking_view(request):
     expired_bookings = Booking.objects.filter(status="Pending", created_at__lt=cutoff_time)
 
     for booking in expired_bookings:
-        # Free outbound seat if exists
-        if booking.outbound_seat:
-            booking.outbound_seat.is_available = True
-            booking.outbound_seat.save()
-
-        # Free return seat if exists
-        if booking.return_seat:
-            booking.return_seat.is_available = True
-            booking.return_seat.save()
+        # Free all seats in booking details
+        for detail in booking.details.all():  # use related_name="details"
+            if detail.seat:
+                detail.seat.is_available = True
+                detail.seat.save()
 
         # Delete booking
         booking.delete()
 
     bookings = Booking.objects.all().order_by('-created_at')
     return render(request, "booking_info/booking/booking.html", {"bookings": bookings})
+
 
 
 
@@ -1543,137 +1537,164 @@ def calculate_booking_price(schedule, seat):
     return round(base_price * float(seat_multiplier) * booking_factor, 2)
 
 # add
+from decimal import Decimal
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.utils import timezone
+from .models import Booking, BookingDetail, Student, Schedule, Seat, PassengerInfo
+from decimal import Decimal
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
+from .models import Booking, BookingDetail, Student, Schedule, Seat, PassengerInfo
+
+from decimal import Decimal
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
+from .models import Booking, BookingDetail, PassengerInfo, Student, Schedule, Seat
+
 def add_booking(request):
     students = Student.objects.all()
-    schedules = Schedule.objects.all()
-    seats = Seat.objects.filter(is_available=True)
+    schedules = Schedule.objects.filter(status="Open").order_by("departure_time")
 
     if request.method == "POST":
         student_id = request.POST.get("student")
         trip_type = request.POST.get("trip_type")
         status = request.POST.get("status", "Pending")
-
         student = get_object_or_404(Student, id=student_id)
 
-        def calculate_price(schedule, seat):
-            if not schedule:
-                return Decimal("0.00")
+        booking = Booking.objects.create(
+            student=student,
+            trip_type=trip_type,
+            status=status
+        )
 
-            base_price = schedule.flight.route.base_price
-            multiplier = seat.seat_class.price_multiplier if seat else Decimal("1.0")
+        # Determine number of passengers from submitted fields
+        passenger_keys = [key for key in request.POST if key.startswith("passenger_first_name_")]
+        passenger_count = len(passenger_keys)
 
-            days_diff = (schedule.departure_time.date() - timezone.now().date()).days
-            if days_diff >= 30:
-                factor = Decimal("0.8")
-            elif 7 <= days_diff <= 29:
-                factor = Decimal("1.0")
-            else:
-                factor = Decimal("1.5")
-
-            return base_price * multiplier * factor
-
-        # One-way booking
-        if trip_type == "one_way":
-            outbound_schedule = get_object_or_404(Schedule, id=request.POST.get("outbound_schedule"))
-            outbound_seat = Seat.objects.filter(id=request.POST.get("outbound_seat")).first()
-
-            price = calculate_price(outbound_schedule, outbound_seat)
-
-            booking = Booking.objects.create(
-                student=student,
-                trip_type="one_way",
-                outbound_schedule=outbound_schedule,
-                outbound_seat=outbound_seat,
-                status=status,
-                price=price
+        passengers = []
+        for i in range(1, passenger_count + 1):
+            passenger = PassengerInfo.objects.create(
+                first_name=request.POST.get(f"passenger_first_name_{i}"),
+                middle_name=request.POST.get(f"passenger_middle_name_{i}", ""),
+                last_name=request.POST.get(f"passenger_last_name_{i}"),
+                gender=request.POST.get(f"passenger_gender_{i}", "N/A"),
+                date_of_birth=request.POST.get(f"passenger_dob_{i}")
             )
+            passengers.append(passenger)
 
-            if outbound_seat:
-                outbound_seat.is_available = False
-                outbound_seat.save()
+        # ---------------- Outbound (one-way or round-trip) ----------------
+        if trip_type in ["one_way", "round_trip"]:
+            outbound_schedule_id = request.POST.get("outbound_schedule")
+            if outbound_schedule_id:
+                outbound_schedule = get_object_or_404(Schedule, id=outbound_schedule_id)
+                for idx, passenger in enumerate(passengers, start=1):
+                    seat_id = request.POST.get(f"outbound_seat_{idx}")
+                    seat = Seat.objects.filter(id=seat_id).first() if seat_id else None
+                    BookingDetail.objects.create(
+                        booking=booking,
+                        passenger=passenger,
+                        schedule=outbound_schedule,
+                        seat=seat,
+                        seat_class=seat.seat_class if seat else None
+                    )
 
-        # Round trip booking
-        elif trip_type == "round_trip":
-            outbound_schedule = get_object_or_404(Schedule, id=request.POST.get("outbound_schedule"))
-            return_schedule = get_object_or_404(Schedule, id=request.POST.get("return_schedule"))
+        # ---------------- Return (for round-trip) ----------------
+        if trip_type == "round_trip":
+            return_schedule_id = request.POST.get("return_schedule")
+            if return_schedule_id:
+                return_schedule = get_object_or_404(Schedule, id=return_schedule_id)
+                for idx, passenger in enumerate(passengers, start=1):
+                    seat_id = request.POST.get(f"return_seat_{idx}")
+                    seat = Seat.objects.filter(id=seat_id).first() if seat_id else None
+                    BookingDetail.objects.create(
+                        booking=booking,
+                        passenger=passenger,
+                        schedule=return_schedule,
+                        seat=seat,
+                        seat_class=seat.seat_class if seat else None
+                    )
 
-            outbound_seat = Seat.objects.filter(id=request.POST.get("outbound_seat")).first()
-            return_seat = Seat.objects.filter(id=request.POST.get("return_seat")).first()
+        # ---------------- Multi-City ----------------
+        if trip_type == "multi_city":
+            # Loop through all legs
+            for key in request.POST:
+                if key.startswith("multi_schedule_"):
+                    leg_id = key.split("_")[2]
+                    schedule_id = request.POST.get(f"multi_schedule_{leg_id}")
+                    if schedule_id:
+                        schedule = get_object_or_404(Schedule, id=schedule_id)
+                        for p_idx, passenger in enumerate(passengers, start=1):
+                            seat_id = request.POST.get(f"multi_seat_{leg_id}_{p_idx}")
+                            seat = Seat.objects.filter(id=seat_id).first() if seat_id else None
+                            BookingDetail.objects.create(
+                                booking=booking,
+                                passenger=passenger,
+                                schedule=schedule,
+                                seat=seat,
+                                seat_class=seat.seat_class if seat else None
+                            )
 
-            outbound_price = calculate_price(outbound_schedule, outbound_seat)
-            return_price = calculate_price(return_schedule, return_seat)
-            total_price = outbound_price + return_price
-
-            booking = Booking.objects.create(
-                student=student,
-                trip_type="round_trip",
-                outbound_schedule=outbound_schedule,
-                outbound_seat=outbound_seat,
-                return_schedule=return_schedule,
-                return_seat=return_seat,
-                status=status,
-                price=total_price
-            )
-
-            if outbound_seat:
-                outbound_seat.is_available = False
-                outbound_seat.save()
-            if return_seat:
-                return_seat.is_available = False
-                return_seat.save()
-
-        messages.success(request, "Booking successfully created.")
         return redirect("booking")
 
-    return render(request, "booking_info/booking/add_booking.html", {
+    context = {
         "students": students,
-        "schedules": schedules,
-        "seats": seats,
-    })
+        "schedules": schedules
+    }
+    return render(request, "booking_info/booking/add_booking.html", context)
 
 
+from django.http import JsonResponse
+from .models import Seat, Schedule
 
-# 🔹 API endpoint to fetch seats for a schedule
+# 🔹 Fetch seats for a schedule (outbound or return)
 def get_seats_for_schedule(request, schedule_id):
-    seats = Seat.objects.filter(schedule_id=schedule_id).select_related("seat_class")
-    data = [
-        {
+    try:
+        schedule = Schedule.objects.get(id=schedule_id)
+    except Schedule.DoesNotExist:
+        return JsonResponse([], safe=False)
+
+    # Only seats that belong to this schedule
+    seats = Seat.objects.filter(schedule=schedule).select_related("seat_class")
+
+    data = []
+    for seat in seats:
+        data.append({
             "id": seat.id,
             "label": f"{seat.seat_number} - {seat.seat_class.name} - {'Available' if seat.is_available else 'Booked'}",
             "is_available": seat.is_available
-        }
-        for seat in seats
-    ]
-    return JsonResponse(data, safe=False)
+        })
 
-from django.http import JsonResponse
-from .models import Schedule
+    return JsonResponse(data, safe=False)
 
 def get_return_schedules(request, outbound_id):
     try:
         outbound = Schedule.objects.get(id=outbound_id)
-        outbound_route = outbound.flight.route  # or outbound.flight.routes.first() if multiple
+        origin = outbound.flight.route.origin_airport
+        destination = outbound.flight.route.destination_airport
     except Schedule.DoesNotExist:
         return JsonResponse([], safe=False)
 
-    # Find schedules with matching reverse route
     return_schedules = Schedule.objects.filter(
-        flight__route__origin_airport=outbound_route.destination_airport,
-        flight__route__destination_airport=outbound_route.origin_airport,
+        flight__route__origin_airport=destination,
+        flight__route__destination_airport=origin,
         status="Open"
-    )
+    ).order_by("departure_time")
 
-    data = [
-        {
-            "id": s.id,
-            "flight_number": s.flight.flight_number,
-            "origin": s.flight.route.origin_airport.code,
-            "destination": s.flight.route.destination_airport.code,
-            "departure_time": s.departure_time.strftime("%Y-%m-%d %H:%M")
-        }
-        for s in return_schedules
-    ]
+    data = []
+    for s in return_schedules:
+        if s.id != outbound.id:
+            data.append({
+                "id": s.id,
+                "flight_number": s.flight.flight_number,
+                "origin": s.flight.route.origin_airport.code,
+                "destination": s.flight.route.destination_airport.code,
+                "departure_time": s.departure_time.strftime("%Y-%m-%d %H:%M")
+            })
+
     return JsonResponse(data, safe=False)
+    
+
 
 # Update
 def update_booking(request, booking_id):
@@ -2297,6 +2318,14 @@ from django.utils import timezone
 from django.shortcuts import render, get_object_or_404
 from .models import Booking, BookingDetail, Payment
 
+from decimal import Decimal
+from django.core.mail import EmailMessage
+from django.conf import settings
+from django.template.loader import render_to_string
+from django.utils import timezone
+from django.shortcuts import render, get_object_or_404
+from .models import Booking, BookingDetail, Payment
+
 
 def create_checkout(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
@@ -2305,15 +2334,21 @@ def create_checkout(request, booking_id):
     booking.status = "Confirmed"
     booking.save()
 
-    # Calculate total amount and breakdown
-    if booking.outbound_schedule:
-        flight_schedule_date = booking.outbound_schedule.departure_time.date()
-        route_base_price = booking.outbound_schedule.flight.route.base_price
-        seat_name = booking.outbound_seat.seat_class.name if booking.outbound_seat else "Economy"
-        seat_multiplier = booking.outbound_seat.seat_class.price_multiplier if booking.outbound_seat else Decimal("1.0")
-        days_diff = (flight_schedule_date - booking.created_at.date()).days
+    # Fetch all booking details
+    details = booking.details.all()
 
-        # Determine booking factor
+    # Calculate total price (loop for one_way, round_trip, multi_city)
+    total_price = Decimal("0.00")
+    calc_breakdown = []
+
+    for detail in details:
+        schedule_date = detail.schedule.departure_time.date()
+        base_price = detail.schedule.flight.route.base_price
+        seat_name = detail.seat.seat_class.name if detail.seat else "Economy"
+        seat_multiplier = detail.seat.seat_class.price_multiplier if detail.seat else Decimal("1.0")
+        days_diff = (schedule_date - booking.created_at.date()).days
+
+        # booking factor
         if days_diff >= 30:
             booking_factor = Decimal("0.8")
         elif 7 <= days_diff <= 29:
@@ -2321,35 +2356,29 @@ def create_checkout(request, booking_id):
         else:
             booking_factor = Decimal("1.5")
 
-        final_price = route_base_price * seat_multiplier * booking_factor
-    else:
-        flight_schedule_date = None
-        route_base_price = 0
-        seat_name = "Economy"
-        seat_multiplier = 1.0
-        days_diff = 0
-        booking_factor = 1.0
-        final_price = 0
+        final_price = base_price * seat_multiplier * booking_factor
+        detail.price = final_price
+        detail.save()
 
-    # ✅ Ensure BookingDetail exists
-    BookingDetail.objects.get_or_create(
-        booking=booking,
-        flight=booking.outbound_schedule.flight if booking.outbound_schedule else None,
-        seat=booking.outbound_seat if booking.outbound_seat else None,
-        seat_class=booking.outbound_seat.seat_class if booking.outbound_seat else None,
-        defaults={"booking_date": timezone.now()},
-    )
+        total_price += final_price
+
+        calc_breakdown.append({
+            "schedule": detail.schedule,
+            "seat_name": seat_name,
+            "base_price": base_price,
+            "seat_multiplier": seat_multiplier,
+            "days_diff": days_diff,
+            "booking_factor": booking_factor,
+            "final_price": final_price,
+        })
 
     # Create payment record
     payment = Payment.objects.create(
         booking=booking,
-        amount=final_price,
+        amount=total_price,
         method="Manual",
         status="Completed"
     )
-
-    # Fetch details
-    details = BookingDetail.objects.filter(booking=booking)
 
     # Send confirmation email
     if booking.student.email:
@@ -2358,6 +2387,7 @@ def create_checkout(request, booking_id):
             "booking": booking,
             "payment": payment,
             "details": details,
+            "calc_breakdown": calc_breakdown,
         })
         email = EmailMessage(
             subject=subject,
@@ -2368,21 +2398,10 @@ def create_checkout(request, booking_id):
         email.content_subtype = "html"
         email.send(fail_silently=False)
 
-    # Pass calculation breakdown to template
-    calc = {
-        "booking_date": booking.created_at.date(),
-        "flight_schedule": flight_schedule_date,
-        "days_diff": days_diff,
-        "route_base_price": route_base_price,
-        "seat_name": seat_name,
-        "seat_multiplier": seat_multiplier,
-        "booking_factor": booking_factor,
-        "final_price": final_price,
-    }
-
     return render(request, "payment_success.html", {
         "booking": booking,
         "payment": payment,
-        "calc": calc,
+        "calc_breakdown": calc_breakdown,
         "details": details
     })
+
