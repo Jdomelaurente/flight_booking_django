@@ -18,22 +18,42 @@
 
         <!-- 🔹 Passengers -->
         <div id="passengers_container">
-            <div class="passenger border p-3 rounded bg-gray-50 mb-2">
+            <div class="passenger border p-3 rounded bg-gray-50 mb-2" id="passenger_1">
                 <h3 class="font-semibold mb-2">Passenger 1</h3>
+
                 <label>First Name:</label>
                 <input type="text" name="passenger_first_name_1" class="w-full border rounded px-3 py-2" required>
+
                 <label>Middle Name:</label>
                 <input type="text" name="passenger_middle_name_1" class="w-full border rounded px-3 py-2">
+
                 <label>Last Name:</label>
                 <input type="text" name="passenger_last_name_1" class="w-full border rounded px-3 py-2" required>
+
                 <label>Gender:</label>
                 <select name="passenger_gender_1" class="w-full border rounded px-3 py-2">
                     <option value="N/A" selected>-- Select Gender --</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                 </select>
+
                 <label>Date of Birth:</label>
                 <input type="date" name="passenger_dob_1" class="w-full border rounded px-3 py-2" required>
+
+                <label>Passenger Type:</label>
+                <select name="passenger_type_1" class="passenger_type w-full border rounded px-3 py-2" data-index="1">
+                    <option value="adult" selected>Adult</option>
+                    <option value="child">Child</option>
+                    <option value="infant">Infant (on lap)</option>
+                </select>
+
+                <!-- Infant Assign to Adult -->
+                <div class="infant_assign hidden mt-2" id="infant_assign_1">
+                    <label>Assign to Adult:</label>
+                    <select name="linked_adult_1" class="w-full border rounded px-3 py-2">
+                        <option value="">-- Select Adult --</option>
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -118,6 +138,7 @@ addPassengerBtn.addEventListener("click", function() {
 
     const newPassenger = document.createElement("div");
     newPassenger.classList.add("passenger", "border", "p-3", "rounded", "bg-gray-50", "mb-2");
+    newPassenger.id = `passenger_${passengerCount}`;
     newPassenger.innerHTML = `
         <h3 class="font-semibold mb-2">Passenger ${passengerCount}</h3>
         <label>First Name:</label>
@@ -134,6 +155,18 @@ addPassengerBtn.addEventListener("click", function() {
         </select>
         <label>Date of Birth:</label>
         <input type="date" name="passenger_dob_${passengerCount}" class="w-full border rounded px-3 py-2" required>
+        <label>Passenger Type:</label>
+        <select name="passenger_type_${passengerCount}" class="passenger_type w-full border rounded px-3 py-2" data-index="${passengerCount}">
+            <option value="adult" selected>Adult</option>
+            <option value="child">Child</option>
+            <option value="infant">Infant (on lap)</option>
+        </select>
+        <div class="infant_assign hidden mt-2" id="infant_assign_${passengerCount}">
+            <label>Assign to Adult:</label>
+            <select name="linked_adult_${passengerCount}" class="w-full border rounded px-3 py-2">
+                <option value="">-- Select Adult --</option>
+            </select>
+        </div>
     `;
     passengersContainer.appendChild(newPassenger);
     createSeatDropdowns(passengerCount);
@@ -165,6 +198,38 @@ function createSeatDropdowns(pIndex) {
 // 🔹 Initially create seats for first passenger
 createSeatDropdowns(1);
 
+// 🔹 Handle Passenger Type Change (Adult / Child / Infant)
+document.addEventListener("change", function(e) {
+    if(e.target.classList.contains("passenger_type")) {
+        const pIndex = e.target.dataset.index;
+        const type = e.target.value;
+
+        const seatDivOutbound = document.getElementById(`outbound_seat_div_${pIndex}`);
+        const seatDivReturn = document.getElementById(`return_seat_div_${pIndex}`);
+        const infantAssign = document.getElementById(`infant_assign_${pIndex}`);
+
+        if(type === "infant") {
+            seatDivOutbound.classList.add("hidden");
+            seatDivReturn.classList.add("hidden");
+            infantAssign.classList.remove("hidden");
+
+            // Populate assign-to-adult dropdown
+            const dropdown = infantAssign.querySelector("select");
+            dropdown.innerHTML = '<option value="">-- Select Adult --</option>';
+            for(let i=1;i<=passengerCount;i++){
+                const pt = document.querySelector(`select[name="passenger_type_${i}"]`);
+                if(pt && pt.value === "adult") {
+                    dropdown.innerHTML += `<option value="${i}">Passenger ${i}</option>`;
+                }
+            }
+        } else {
+            seatDivOutbound.classList.remove("hidden");
+            seatDivReturn.classList.remove("hidden");
+            infantAssign.classList.add("hidden");
+        }
+    }
+});
+
 // 🔹 Show/hide sections based on trip type
 tripType.addEventListener("change", function() {
     if(this.value === "one_way") {
@@ -188,7 +253,7 @@ tripType.addEventListener("change", function() {
     }
 });
 
-<!-- 🔹 Multi-City: Add Leg -->
+// 🔹 Multi-City: Add Leg
 addLegBtn.addEventListener("click", function(){
     legCount++;
     const legDiv = document.createElement("div");
@@ -229,7 +294,6 @@ addLegBtn.addEventListener("click", function(){
         }
     });
 });
-
 
 // 🔹 Fetch seats dynamically
 function fetchSeats(scheduleId, seatDropdown) {

@@ -176,11 +176,8 @@ class Seat(models.Model):
 # Passenger & Booking
 # ---------------------------
 class PassengerInfo(models.Model):
-    TYPE_CHOICES = [
-        ("Adult", "Adult"),
-        ("Child", "Child"),
-        ("Infant", "Infant"),
-    ]
+    TYPE_CHOICES = [("Adult", "Adult"), ("Child", "Child"), ("Infant", "Infant")]
+
     first_name = models.CharField(max_length=100)
     middle_name = models.CharField(max_length=100, blank=True, null=True)
     last_name = models.CharField(max_length=100)
@@ -189,10 +186,23 @@ class PassengerInfo(models.Model):
     phone = models.CharField(max_length=20, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     passport_number = models.CharField(max_length=50, blank=True, null=True)
-    passenger_type = models.CharField(max_length=10, choices=TYPE_CHOICES, default="Adult")
+
+    passenger_type = models.CharField(
+        max_length=10, choices=TYPE_CHOICES, default="Adult"
+    )
+
+    # NEW: link infants to an adult passenger
+    linked_adult = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="infants",
+        help_text="For infants on lap, assign to the adult passenger"
+    )
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+        return f"{self.first_name} {self.last_name} ({self.passenger_type})"
 
 
 
@@ -212,39 +222,6 @@ class Student(models.Model):
 
 
 
-from decimal import Decimal
-from datetime import date
-
-
-# class Booking(models.Model):
-#     student = models.ForeignKey(Student, on_delete=models.CASCADE)  # the booker
-#     trip_type = models.CharField(
-#         max_length=20,
-#         choices=[("one_way", "One Way"), ("round_trip", "Round Trip"), ("multi_city", "Multi City")]
-#     )
-#     outbound_schedule = models.ForeignKey(
-#         Schedule, related_name="outbound_bookings", on_delete=models.CASCADE, null=True, blank=True
-#     )
-#     return_schedule = models.ForeignKey(
-#         Schedule, related_name="return_bookings", on_delete=models.CASCADE, null=True, blank=True
-#     )
-#     status = models.CharField(max_length=20, default="Pending")
-#     created_at = models.DateTimeField(auto_now_add=True)
-
-#     def __str__(self):
-#         return f"Booking {self.id} - {self.student.first_name} {self.student.last_name}"
-
-#     @property
-#     def payment(self):
-#         return self.payment_set.last()
-
-#     @property
-#     def total_amount(self):
-#         """Sum of all BookingDetail prices for this booking."""
-#         total = Decimal("0.00")
-#         for detail in self.details.all():
-#             total += detail.price
-#         return total
 
 
     
@@ -274,23 +251,6 @@ class Booking(models.Model):
         for detail in self.details.all():
             total += detail.price
         return total
-
-
-class PassengerInfo(models.Model):
-    TYPE_CHOICES = [("Adult","Adult"),("Child","Child"),("Infant","Infant")]
-    first_name = models.CharField(max_length=100)
-    middle_name = models.CharField(max_length=100, blank=True, null=True)
-    last_name = models.CharField(max_length=100)
-    gender = models.CharField(max_length=10)
-    date_of_birth = models.DateField()
-    phone = models.CharField(max_length=20, blank=True, null=True)
-    email = models.EmailField(blank=True, null=True)
-    passport_number = models.CharField(max_length=50, blank=True, null=True)
-    passenger_type = models.CharField(max_length=10, choices=TYPE_CHOICES, default="Adult")
-
-    def __str__(self):
-        return f"{self.first_name} {self.last_name}"
-
 
 class BookingDetail(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="details")
