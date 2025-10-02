@@ -170,20 +170,21 @@
                         <div class="w-full border mx-15"></div>
                         <!-- passenger name -->
                         {% for passenger in passengers %}
-                        <div class="passenger-item flex-1 w-full max-h-[80px] px-5 flex justify-center items-center gap-10 
-
-                        {% if forloop.first %} border-l-[#2975F7] border-l-10 bg-[#F4EB08] shadow-sm/50 {% else %} 
-                            border-l-10 border-l-gray-500 bg-gray-300 text-gray-700 cursor-pointer {% endif %}"
-                            onclick="selectPassenger('{{ forloop.counter0 }}', 'depart')"
-                            data-passenger-id="{{ forloop.counter0 }}"
-                            data-trip="depart"
+                        {% if passenger.passenger_type != "Infant" %}
+                            <div class="passenger-item flex-1 w-full max-h-[80px] px-5 flex justify-center items-center gap-10
+                                {% if forloop.first %} border-l-[#2975F7] border-l-10 bg-[#F4EB08] shadow-sm/50 {% else %}
+                                border-l-10 border-l-gray-500 bg-gray-300 text-gray-700 cursor-pointer {% endif %}"
+                                onclick="selectPassenger('{{ forloop.counter0 }}', 'depart')"
+                                data-passenger-id="{{ forloop.counter0 }}"
+                                data-trip="depart"
+                                
                             >
 
-                            <h1 class="text-4xl ">{{ forloop.counter }}</h1>
-                            <div class="flex w-full flex-col" >
+                            <h1 class="text-4xl">{{ forloop.counter }}</h1>
+                            <div class="flex w-full flex-col">
                                 <p class="text-base">{{ passenger.first_name }} {{ passenger.mi }} {{ passenger.last_name }}</p>
                                 <p class="seat-status text-[11px] {% if forloop.first %}text-[#2975F7]{% endif %}" 
-                                    id="depart-status-{{ forloop.counter0 }}">
+                                    id="depart-status-{{ forloop.counter }}">
                                     Not selected
                                 </p>
                             </div>
@@ -194,6 +195,7 @@
                                 </svg>
                             </p>
                         </div>
+                        {% endif %}
                         {% endfor %}
 
                     </div>
@@ -247,7 +249,7 @@
                                             </div>
                                         {% endfor %}
                                     
-                                </div>
+                                    </div>
 
 
 
@@ -283,27 +285,33 @@
                         <div class="w-full border mx-15"></div>
                         <!-- passenger name -->
                         {% for passenger in passengers %}
-                        <div class="passenger-item flex-1 w-full max-h-[80px] px-5 flex justify-center items-center gap-10 
-                                    {% if forloop.first %} border-l-[#2975F7] border-l-10 bg-[#F4EB08] shadow-sm/50 {% else %} 
-                                    border-l-10 border-l-gray-500 bg-gray-300 text-gray-700 cursor-pointer {% endif %}"
-                                    data-passenger-id="{{ forloop.counter0 }}"
-                                    data-trip="return"
-                                    onclick="selectPassenger('{{ forloop.counter0 }}','return')">
+                        {% if passenger.passenger_type != "Infant" %}
+                            <div class="passenger-item flex-1 w-full max-h-[80px] px-5 flex justify-center items-center gap-10
+                                {% if forloop.first %} border-l-[#2975F7] border-l-10 bg-[#F4EB08] shadow-sm/50 {% else %}
+                                border-l-10 border-l-gray-500 bg-gray-300 text-gray-700 cursor-pointer {% endif %}"
+                                onclick="selectPassenger('{{ forloop.counter0 }}', 'return')"
+                                data-passenger-id="{{ forloop.counter0 }}"
+                                data-trip="return"
+                            >
 
-
-                            <h1 class="text-4xl ">{{ forloop.counter }}</h1>
-                            <div class="flex w-full flex-col" >
-                                <p class="text-sm">{{ passenger.first_name }} {{ passenger.mi }} {{ passenger.last_name }}</p>
-                                <p class="{% if forloop.first %}text-[#2975F7]{% endif %} text-xs">Select</p>
+                            <h1 class="text-4xl">{{ forloop.counter }}</h1>
+                            <div class="flex w-full flex-col">
+                                <p class="text-base">{{ passenger.first_name }} {{ passenger.mi }} {{ passenger.last_name }}</p>
+                                <p class="seat-status text-[11px] {% if forloop.first %}text-[#2975F7]{% endif %}" 
+                                    id="return-status-{{ forloop.counter0 }}">
+                                    Not selected
+                                </p>
                             </div>
                             <p>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"  
+                                <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38"  
                                     fill="{% if forloop.first %}#2975F7{% else %}gray{% endif %}" viewBox="0 0 24 24" >
                                     <path d="M6 13h8.09l-3.3 3.29 1.42 1.42 5.7-5.71-5.7-5.71-1.42 1.42 3.3 3.29H6z"></path>
                                 </svg>
                             </p>
                         </div>
+                        {% endif %}
                         {% endfor %}
+
 
                     </div>
 
@@ -405,6 +413,14 @@
 
 
 
+
+
+<div class="bg-yellow-100 p-4 rounded mb-4 hidden" id="debugInfo">
+    <h3 class="font-bold">Debug Info:</h3>
+    <p>Active Passenger: <span id="debugActivePassenger">None</span></p>
+    <p>Active Trip: <span id="debugActiveTrip">None</span></p>
+</div>
+
 <script>
 const csrfToken = "{{ csrf_token }}";  // Django CSRF token
 let activePassenger = null;
@@ -464,9 +480,14 @@ function selectReturnSeat(seatNumber, element) {
 }
 
 // --------------------------
-// Confirm Seat Selection (single function)
+// Confirm Seat Selection
 // --------------------------
 function confirmSeatSelection(seatNumber, element, trip) {
+
+    console.log(`Sending to server - passenger: ${activePassenger}, seat: ${seatNumber}, trip: ${trip}`);
+
+
+
     fetch("{% url 'bookingapp:confirm_seat' %}", {
         method: "POST",
         headers: {
@@ -481,58 +502,81 @@ function confirmSeatSelection(seatNumber, element, trip) {
     })
     .then(res => res.json())
     .then(data => {
+         console.log("Server response:", data);
         if (!data.success) {
             alert("❌ " + data.message);
             return;
         }
 
-        // Clear old seat
-        const attr = trip === "depart" ? "data-seat-selected" : "data-return-seat-selected";
-        document.querySelectorAll(`[${attr}='${activePassenger}']`).forEach(s => {
-            s.classList.remove("bg-[#F4EB08]");
-            s.classList.add("bg-white", "hover:bg-yellow-100");
-            s.removeAttribute(attr);
+        updateSeatUI(activePassenger, seatNumber, element, trip);
+
+        // Handle infants linked to this adult
+        const infantEls = document.querySelectorAll(`.passenger-item[data-adult-id='${activePassenger}']`);
+        infantEls.forEach(infantEl => {
+            const infantId = infantEl.getAttribute("data-passenger-id");
+            updateSeatUI(infantId, seatNumber, element, trip, true);
         });
 
-        // Highlight new seat
-        element.classList.remove("bg-white", "hover:bg-yellow-100");
-        element.classList.add("bg-[#F4EB08]");
-        element.setAttribute(attr, activePassenger);
-
-        // Update passenger status
-        const statusEl = document.getElementById(`${trip}-status-${activePassenger}`);
-        if (statusEl) {
-            statusEl.textContent = `✅ Seat ${seatNumber} selected`;
-            statusEl.classList.remove("text-gray-500", "text-yellow-600");
-            statusEl.classList.add("text-green-600");
-        }
-
-        // Mark passenger as completed
-        const currentEl = document.querySelector(`.passenger-item[data-passenger-id="${activePassenger}"][data-trip="${trip}"]`);
-        if (currentEl) {
-            currentEl.classList.add("bg-green-400", "text-white");
-        }
-
-        // Move to next passenger
-        const passengerEls = document.querySelectorAll(`.passenger-item[data-trip="${trip}"]`);
-        const currentIndex = Array.from(passengerEls).indexOf(currentEl);
-
-        if (currentIndex + 1 < passengerEls.length) {
-            setActivePassenger(currentIndex + 1, trip);
-        } else if (trip === "depart") {
-            // Switch to return trip if exists
-            const returnEls = document.querySelectorAll(`.passenger-item[data-trip="return"]`);
-            if (returnEls.length > 0) {
-                setActivePassenger(0, "return");
-                document.getElementById("return-section").classList.remove("hidden");
-                document.getElementById("return-section").scrollIntoView({ behavior: "smooth" });
-            } else {
-                document.getElementById("continueBtn").disabled = false;
-            }
-        } else if (trip === "return") {
-            checkAllSeatsSelected();
-        }
+        moveToNextPassenger(trip);
     });
+}
+
+// --------------------------
+// Update Seat UI
+// --------------------------
+function updateSeatUI(passengerId, seatNumber, element, trip, isInfant = false) {
+    const attr = trip === "depart" ? "data-seat-selected" : "data-return-seat-selected";
+
+    // Clear old seat
+    document.querySelectorAll(`[${attr}='${passengerId}']`).forEach(s => {
+        s.classList.remove("bg-[#F4EB08]");
+        s.classList.add("bg-white", "hover:bg-yellow-100");
+        s.removeAttribute(attr);
+    });
+
+    // Highlight new seat
+    element.classList.remove("bg-white", "hover:bg-yellow-100");
+    element.classList.add("bg-[#F4EB08]");
+    element.setAttribute(attr, passengerId);
+
+    // Update passenger status
+    const statusEl = document.getElementById(`${trip}-status-${passengerId}`);
+    if (statusEl) {
+        statusEl.textContent = isInfant ? "👶 Infant seat same as adult" : `✅ Seat ${seatNumber} selected`;
+        statusEl.classList.remove("text-gray-500", "text-yellow-600");
+        statusEl.classList.add("text-green-600");
+    }
+
+    // Mark passenger as completed
+    const currentEl = document.querySelector(`.passenger-item[data-passenger-id="${passengerId}"][data-trip="${trip}"]`);
+    if (currentEl) {
+        currentEl.classList.add("bg-green-400", "text-white");
+    }
+}
+
+// --------------------------
+// Move to next passenger
+// --------------------------
+function moveToNextPassenger(trip) {
+    const passengerEls = document.querySelectorAll(`.passenger-item[data-trip="${trip}"]`);
+    const currentEl = document.querySelector(`.passenger-item[data-passenger-id="${activePassenger}"][data-trip="${trip}"]`);
+    const currentIndex = Array.from(passengerEls).indexOf(currentEl);
+
+    if (currentIndex + 1 < passengerEls.length) {
+        setActivePassenger(currentIndex + 1, trip);
+    } else if (trip === "depart") {
+        // Switch to return trip if exists
+        const returnEls = document.querySelectorAll(`.passenger-item[data-trip="return"]`);
+        if (returnEls.length > 0) {
+            setActivePassenger(0, "return");
+            document.getElementById("return-section").classList.remove("hidden");
+            document.getElementById("return-section").scrollIntoView({ behavior: "smooth" });
+        } else {
+            document.getElementById("continueBtn").disabled = false;
+        }
+    } else if (trip === "return") {
+        checkAllSeatsSelected();
+    }
 }
 
 // --------------------------
@@ -542,6 +586,9 @@ function selectPassenger(passengerId, trip = "depart") {
     activePassenger = passengerId;
     activeTrip = trip;
     highlightPassenger(passengerId, trip);
+
+    // DEBUG: Log which passenger is selected
+    console.log(`Selected passenger: ${passengerId} for ${trip} trip`);
 }
 
 function highlightPassenger(passengerId, trip) {
@@ -611,6 +658,18 @@ function checkAllSeatsSelected() {
 // Initialize on page load
 // --------------------------
 document.addEventListener("DOMContentLoaded", function () {
+
+    // Show debug info
+    document.getElementById('debugInfo').classList.remove('hidden');
+    
+    // Update debug info when passenger is selected
+    const originalSelectPassenger = selectPassenger;
+    selectPassenger = function(passengerId, trip) {
+        document.getElementById('debugActivePassenger').textContent = passengerId;
+        document.getElementById('debugActiveTrip').textContent = trip;
+        originalSelectPassenger(passengerId, trip);
+    };
+
     // Auto-select first passenger
     const firstPassenger = document.querySelector(".passenger-item[data-trip='depart']");
     if (firstPassenger) {
@@ -621,18 +680,28 @@ document.addEventListener("DOMContentLoaded", function () {
     // Pre-fill seats from session
     const sessionSeats = {{ selected_seats|safe }};
     Object.keys(sessionSeats).forEach(passengerId => {
-        if (sessionSeats[passengerId].depart) {
-            const seatDiv = document.querySelector("[data-seat='" + sessionSeats[passengerId].depart + "']");
-            if (seatDiv) {
-                seatDiv.classList.add("bg-[#F4EB08]");
-                seatDiv.setAttribute("data-seat-selected", passengerId);
+        const seatInfo = sessionSeats[passengerId];
+        ["depart", "return"].forEach(trip => {
+            if (seatInfo[trip]) {
+                const seatDiv = document.querySelector(`[data-seat='${seatInfo[trip]}']`);
+                if (seatDiv) {
+                    seatDiv.classList.add("bg-[#F4EB08]");
+                    const attr = trip === "depart" ? "data-seat-selected" : "data-return-seat-selected";
+                    seatDiv.setAttribute(attr, passengerId);
+                }
             }
-        }
-        if (sessionSeats[passengerId].return) {
-            const seatDiv = document.querySelector("[data-seat='" + sessionSeats[passengerId].return + "']");
-            if (seatDiv) {
-                seatDiv.classList.add("bg-[#F4EB08]");
-                seatDiv.setAttribute("data-return-seat-selected", passengerId);
+        });
+
+        // Handle infants
+        const infantEl = document.querySelector(`.passenger-item[data-passenger-id='${passengerId}']`);
+        if (infantEl && infantEl.dataset.adultId) {
+            const adultSeat = sessionSeats[infantEl.dataset.adultId]?.depart;
+            if (adultSeat) {
+                const seatDiv = document.querySelector(`[data-seat='${adultSeat}']`);
+                if (seatDiv) {
+                    seatDiv.classList.add("bg-[#F4EB08]");
+                    seatDiv.setAttribute("data-seat-selected", passengerId);
+                }
             }
         }
     });
@@ -640,6 +709,7 @@ document.addEventListener("DOMContentLoaded", function () {
     checkAllSeatsSelected();
 });
 </script>
+
 
 
 

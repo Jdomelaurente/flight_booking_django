@@ -142,7 +142,9 @@
                             <div class="py-5 flex justify-center passenger-tab cursor-pointer {% if forloop.first %}bg-white border-l-8 border-[#2975F7] z-10{% endif %}" 
                                 data-passenger="{{ passenger.number }}">
                                 <p class="text-xs">Passenger {{ passenger.number }} ({{ passenger.type }})</p>
+                                <span class="passenger-warning text-red-500 text-xs hidden mt-1"></span>
                             </div>
+
                         {% endfor %}
 
                     </div>
@@ -151,11 +153,24 @@
                    <div class="w-full relative mx-20 py-15 min-h-[500px]">
                         {% for passenger in passenger_list %}
                         <div class="passenger-form absolute top-7 left-0 w-full transition-opacity duration-300 {% if not forloop.first %}invisible opacity-0{% else %}opacity-100{% endif %}" 
-                            id="passenger-form-{{ passenger.number }}">
+                        id="passenger-form-{{ passenger.number }}" data-type="{{ passenger.type }}">
+
                             <h1 class="text-lg font-bold">Passenger {{ passenger.number }} ({{ passenger.type }})</h1>
                             <p class="text-xs text-gray-500">
                                 Please make sure that you enter your name exactly as it is shown on your Valid ID
                             </p>
+
+                            {% if passenger.type == "Infant" %}
+                            <div class="flex flex-col mt-5 w-[200px]">
+                                <label class="text-sm flex">Accompanying Adult <p class="text-red-500">*</p></label>
+                                <select name="infant_adult_{{ passenger.number }}" class="border py-2 px-1">
+                                    <option hidden></option>
+                                    {% for adult_num in passenger.adult_options %}
+                                        <option value="{{ adult_num }}">Adult {{ adult_num }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% endif %}
 
                             <!-- Name fields -->
                             <div class="flex mt-5 justify-between space-x-5">
@@ -389,7 +404,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     let validationTriggered = false; // track if "Next" or submit clicked
 
-    function showPassenger(passenger) {
+    function showPassenger(passengerNumber) {
         // Hide all forms
         document.querySelectorAll(".passenger-form").forEach(form => {
             form.classList.add("invisible", "opacity-0");
@@ -397,7 +412,7 @@ document.addEventListener("DOMContentLoaded", function() {
         });
 
         // Show selected form
-        const form = document.getElementById(`passenger-form-${passenger}`);
+        const form = document.getElementById(`passenger-form-${passengerNumber}`);
         if (form) {
             form.classList.remove("invisible");
             form.classList.add("opacity-100");
@@ -408,27 +423,34 @@ document.addEventListener("DOMContentLoaded", function() {
             tab.classList.remove("bg-white", "border-l-8", "border-[#2975F7]", "z-10", "bg-red-100", "text-red-600");
         });
 
-        // Highlight active tab if complete (or if validation triggered)
-        const activeTab = document.querySelector(`.passenger-tab[data-passenger="${passenger}"]`);
+        // Highlight active tab
+        const activeTab = document.querySelector(`.passenger-tab[data-passenger="${passengerNumber}"]`);
         if (activeTab) {
-            if (validationTriggered && isPassengerIncomplete(passenger)) {
+            const passengerType = form.dataset.type;
+            if (validationTriggered && isPassengerIncomplete(passengerNumber, passengerType)) {
                 activeTab.classList.add("bg-red-100", "text-red-600");
             } else {
                 activeTab.classList.add("bg-white", "border-l-8", "border-[#2975F7]", "z-10");
             }
         }
 
-        // Highlight incomplete tabs if validation triggered
+        // Highlight all incomplete passengers
         if (validationTriggered) highlightIncompletePassengers();
     }
 
-    function validatePassenger(passengerNumber) {
-        const form = document.getElementById(`passenger-form-${passengerNumber}`);
-        const requiredFields = form.querySelectorAll(
-            "[name^='first_name_'], [name^='last_name_'], [name^='gender_'], [name^='dob_day_'], [name^='dob_month_'], [name^='dob_year_'], [name^='passport_'], [name^='nationality_']"
-        );
 
+    function validatePassenger(passengerNumber, passengerType) {
+        const form = document.getElementById(`passenger-form-${passengerNumber}`);
+        let selector = "[name^='first_name_'], [name^='last_name_'], [name^='gender_'], [name^='dob_day_'], [name^='dob_month_'], [name^='dob_year_'], [name^='passport_'], [name^='nationality_']";
+
+        // Add infant-adult dropdown if passenger is Infant
+        if (passengerType === "Infant") {
+            selector += `, [name='infant_adult_${passengerNumber}']`;
+        }
+
+        const requiredFields = form.querySelectorAll(selector);
         let valid = true;
+
         requiredFields.forEach(field => {
             if (!field.value || field.value.trim() === "") {
                 field.classList.add("border-red-500");
@@ -441,32 +463,73 @@ document.addEventListener("DOMContentLoaded", function() {
         return valid;
     }
 
-    function isPassengerIncomplete(passengerNumber) {
-        return !validatePassenger(passengerNumber);
+
+
+    function isPassengerIncomplete(passengerNumber, passengerType) {
+        const form = document.getElementById(`passenger-form-${passengerNumber}`);
+        
+        // Validate basic fields
+        let valid = validatePassenger(passengerNumber, passengerType);
+        
+        // For infants, ensure adult is selected
+        if (passengerType === "Infant") {
+            const adultSelect = form.querySelector(`[name='infant_adult_${passengerNumber}']`);
+            if (!adultSelect || !adultSelect.value) valid = false;
+        }
+
+        return !valid ? true : false;
     }
+
+
 
     function highlightIncompletePassengers() {
         document.querySelectorAll(".passenger-tab").forEach(tab => {
-            const passenger = parseInt(tab.dataset.passenger);
-            if (isPassengerIncomplete(passenger)) {
+            const passengerNumber = parseInt(tab.dataset.passenger);
+            const passengerForm = document.getElementById(`passenger-form-${passengerNumber}`);
+            const passengerType = passengerForm.dataset.type;
+            const warning = tab.querySelector(".passenger-warning");
+
+            if (isPassengerIncomplete(passengerNumber, passengerType)) {
                 tab.classList.add("bg-red-100", "text-red-600");
                 tab.classList.remove("bg-white", "border-l-8", "border-[#2975F7]");
+                
+                // Show tooltip for infant if adult not selected
+                if (passengerType === "Infant") {
+                    warning.textContent = "Select accompanying adult";
+                    warning.classList.remove("hidden");
+                } else {
+                    warning.textContent = "";
+                    warning.classList.add("hidden");
+                }
+            } else {
+                tab.classList.remove("bg-red-100", "text-red-600");
+                tab.classList.add("bg-white", "border-l-8", "border-[#2975F7]");
+                warning.textContent = "";
+                warning.classList.add("hidden");
             }
         });
     }
+
 
     // Next buttons
     document.querySelectorAll(".next-passenger").forEach(btn => {
         btn.addEventListener("click", () => {
             const current = parseInt(btn.dataset.current);
-            validationTriggered = true; // mark that validation started
-            if (validatePassenger(current)) {
+
+            // Get passenger type
+            const currentForm = document.getElementById(`passenger-form-${current}`);
+            const passengerType = currentForm.dataset.type; // we will set this in HTML
+
+            validationTriggered = true; // mark validation started
+
+            if (validatePassenger(current, passengerType)) {
                 showPassenger(current + 1);
             } else {
-                showPassenger(current); // stay on incomplete
+                showPassenger(current); // stay on incomplete form
             }
         });
     });
+
 
     // Sidebar clicks
     document.querySelectorAll(".passenger-tab").forEach(tab => {
@@ -497,16 +560,23 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Form submission
     const form = document.querySelector("form");
-    form.addEventListener("submit", function(e) {
-        validationTriggered = true; // mark that validation started
+        form.addEventListener("submit", function(e) {
+        validationTriggered = true;
         const totalPassengers = {{ passenger_list|length }};
         let allValid = true;
+
         for (let i = 1; i <= totalPassengers; i++) {
-            if (!validatePassenger(i)) allValid = false;
+            const passengerForm = document.getElementById(`passenger-form-${i}`);
+            const passengerType = passengerForm.dataset.type;
+
+            if (!validatePassenger(i, passengerType)) allValid = false;
         }
+
         highlightIncompletePassengers();
+
         if (!allValid) e.preventDefault();
     });
+
 });
 </script>
 
