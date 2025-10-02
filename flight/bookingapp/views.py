@@ -460,9 +460,6 @@ def confirm_seat(request):
 
 
 
-
-
-
 from decimal import Decimal
 
 @login_required

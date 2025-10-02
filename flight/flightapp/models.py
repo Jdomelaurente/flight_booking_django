@@ -216,35 +216,35 @@ from decimal import Decimal
 from datetime import date
 
 
-class Booking(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)  # the booker
-    trip_type = models.CharField(
-        max_length=20,
-        choices=[("one_way", "One Way"), ("round_trip", "Round Trip"), ("multi_city", "Multi City")]
-    )
-    outbound_schedule = models.ForeignKey(
-        Schedule, related_name="outbound_bookings", on_delete=models.CASCADE, null=True, blank=True
-    )
-    return_schedule = models.ForeignKey(
-        Schedule, related_name="return_bookings", on_delete=models.CASCADE, null=True, blank=True
-    )
-    status = models.CharField(max_length=20, default="Pending")
-    created_at = models.DateTimeField(auto_now_add=True)
+# class Booking(models.Model):
+#     student = models.ForeignKey(Student, on_delete=models.CASCADE)  # the booker
+#     trip_type = models.CharField(
+#         max_length=20,
+#         choices=[("one_way", "One Way"), ("round_trip", "Round Trip"), ("multi_city", "Multi City")]
+#     )
+#     outbound_schedule = models.ForeignKey(
+#         Schedule, related_name="outbound_bookings", on_delete=models.CASCADE, null=True, blank=True
+#     )
+#     return_schedule = models.ForeignKey(
+#         Schedule, related_name="return_bookings", on_delete=models.CASCADE, null=True, blank=True
+#     )
+#     status = models.CharField(max_length=20, default="Pending")
+#     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"Booking {self.id} - {self.student.first_name} {self.student.last_name}"
+#     def __str__(self):
+#         return f"Booking {self.id} - {self.student.first_name} {self.student.last_name}"
 
-    @property
-    def payment(self):
-        return self.payment_set.last()
+#     @property
+#     def payment(self):
+#         return self.payment_set.last()
 
-    @property
-    def total_amount(self):
-        """Sum of all BookingDetail prices for this booking."""
-        total = Decimal("0.00")
-        for detail in self.details.all():
-            total += detail.price
-        return total
+#     @property
+#     def total_amount(self):
+#         """Sum of all BookingDetail prices for this booking."""
+#         total = Decimal("0.00")
+#         for detail in self.details.all():
+#             total += detail.price
+#         return total
 
 
     
