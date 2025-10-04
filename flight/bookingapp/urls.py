@@ -4,6 +4,7 @@ from . import views
 app_name = "bookingapp"
 
 urlpatterns = [
+
     path('', views.home, name="main"),
     path('flight/search/', views.search_flight, name='search_schedule'),
 

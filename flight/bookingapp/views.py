@@ -13,6 +13,24 @@ from .utils import login_required, redirect_if_logged_in
 
 
 
+
+def student_home(request):
+   
+    templates= loader.get_template('booking/student/home.html')
+    context = {
+        
+    }
+    return HttpResponse(templates.render(context, request))
+def student_lab(request):
+   
+    templates= loader.get_template('booking/student/lab.html')
+    context = {
+        
+    }
+    return HttpResponse(templates.render(context, request))
+
+
+
 # Create your views here.
 @login_required
 def home(request):
@@ -995,3 +1013,5 @@ def logout_view(request):
     request.session.flush()
     messages.success(request, "You have been logged out.")
     return redirect('bookingapp:login')
+
+

@@ -21,7 +21,11 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('flightapp.urls')),
+
+
+    # crissaunt
     path('booking_app/', include('bookingapp.urls')),
+    path('student/', include('bookingapp.student_urls')),
 
 ]
 
