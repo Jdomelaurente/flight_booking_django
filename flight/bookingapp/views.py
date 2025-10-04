@@ -299,22 +299,22 @@ def save_passengers(request):
             "passenger_type": passenger_list[i]["type"] if passenger_list else "Adult"
         }
 
-        # For infants, link to the selected adult - FIX THE MAPPING
+        # For infants, link to the selected adult
         if passenger_data["passenger_type"].lower() == "infant":
             adult_selection = request.POST.get(f"infant_adult_{i+1}")
             # Convert the adult selection (1-based) to passenger ID (0-based)
-            # Adult selection "1" should map to passenger ID "0"
-            # Adult selection "2" should map to passenger ID "1"  
             if adult_selection:
                 adult_id = str(int(adult_selection) - 1)  # Convert 1-based to 0-based
                 passenger_data["adult_id"] = adult_id
                 print(f"Infant {i+1} linked to adult selection: {adult_selection} -> passenger ID: {adult_id}")
             else:
-                passenger_data["adult_id"] = "0"  # Default to first adult
-                print(f"Infant {i+1} defaulted to adult ID: 0")
+                # Default to first adult if no selection
+                adult_id = "0"
+                passenger_data["adult_id"] = adult_id
+                print(f"Infant {i+1} defaulted to adult ID: {adult_id}")
 
         passengers.append(passenger_data)
-        print(f"Passenger {i}: {passenger_data['first_name']} ({passenger_data['passenger_type']}) - ID: {passenger_data['id']}")
+        print(f"Passenger {i}: {passenger_data['first_name']} ({passenger_data['passenger_type']}) - ID: {passenger_data['id']} - Adult ID: {passenger_data.get('adult_id', 'N/A')}")
 
     # Contact info
     contact_info = {
@@ -449,17 +449,6 @@ def confirm_seat(request):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 from decimal import Decimal
 
 @login_required
@@ -549,97 +538,202 @@ from django.contrib import messages
 from datetime import date
 
 @login_required
+@transaction.atomic
 def confirm_booking(request):
+    if request.method != "POST":
+        messages.error(request, "Invalid request method.")
+        return redirect('bookingapp:booking_summary')
+    
     passengers = request.session.get('passengers', [])
     seats = request.session.get('selected_seats', {})
     depart_schedule_id = request.session.get('confirm_depart_schedule')
     return_schedule_id = request.session.get('confirm_return_schedule')
     student_id = request.session.get('student_id')
 
-    if not (depart_schedule_id and student_id):
-        messages.error(request, "Booking data is missing.")
-        return redirect('bookingapp:select_seat')
-
-    depart_schedule = Schedule.objects.get(id=depart_schedule_id)
-    return_schedule = Schedule.objects.filter(id=return_schedule_id).first() if return_schedule_id else None
-    student = Student.objects.get(id=student_id)
+    # Validate required data
+    if not (depart_schedule_id and student_id and passengers):
+        messages.error(request, "Booking data is missing. Please start over.")
+        return redirect('bookingapp:home')
 
     try:
-       with transaction.atomic():
-            # 1️⃣ Create Booking
-            booking = Booking.objects.create(
-                student=student,
-                trip_type=request.session.get('trip_type', 'one_way'),
-                status="Pending"
+        depart_schedule = Schedule.objects.get(id=depart_schedule_id)
+        return_schedule = Schedule.objects.filter(id=return_schedule_id).first() if return_schedule_id else None
+        student = Student.objects.get(id=student_id)
+
+        # 1️⃣ Create Booking
+        booking = Booking.objects.create(
+            student=student,
+            trip_type=request.session.get('trip_type', 'one_way'),
+            status="Pending"
+        )
+
+        print("=== CONFIRM_BOOKING DEBUG ===")
+        print("Passengers:", [(p.get('first_name', 'No Name'), p.get('id'), p.get('passenger_type')) for p in passengers])
+        print("Seats:", seats)
+        print("=============================")
+
+        # Store created PassengerInfo objects for infant linking
+        passenger_objects = {}
+        
+        # First pass: Create all PassengerInfo objects
+        for p in passengers:
+            pid = str(p.get("id"))
+            
+            print(f"Creating PassengerInfo for {p.get('first_name', 'No Name')} (ID: {pid}, Type: {p.get('passenger_type')})")
+
+            # Validate required passenger data
+            if not all([p.get('first_name'), p.get('last_name'), p.get('dob_year'), p.get('dob_month'), p.get('dob_day')]):
+                raise ValueError(f"Missing required data for passenger {pid}")
+
+            # Create date of birth
+            dob = date(
+                int(p['dob_year']), 
+                int(p['dob_month']), 
+                int(p['dob_day'])
             )
+            
+            # Create PassengerInfo
+            passenger_obj = PassengerInfo.objects.create(
+                first_name=p['first_name'],
+                middle_name=p.get('mi', ''),
+                last_name=p['last_name'],
+                gender=p.get('gender', ''),
+                date_of_birth=dob,
+                passport_number=p.get('passport', ''),
+                email=student.email,
+                phone=student.phone,
+                passenger_type=p.get('passenger_type', 'Adult')
+            )
+            
+            # Store for later reference
+            passenger_objects[pid] = passenger_obj
+            print(f"✅ Created PassengerInfo: {passenger_obj}")
 
-            # DEBUG: Print what we're working with
-            print("=== CONFIRM_BOOKING DEBUG ===")
-            print("Passengers:", [(p['first_name'], p['id']) for p in passengers])
-            print("Seats:", seats)
-            print("=============================")
+        # Track which seats we've already processed to avoid double-booking
+        processed_seats = {
+            'depart': set(),
+            'return': set()
+        }
 
-            # 2️⃣ Create PassengerInfo and BookingDetail
-            for p in passengers:  # ✅ CHANGE: Don't use enumerate
-                pid = str(p.get("id"))  # ✅ CHANGE: Get passenger ID
-                seat_info = seats.get(pid, {})  # ✅ CHANGE: Use passenger ID to get seats
-                depart_seat_number = seat_info.get("depart")
-                return_seat_number = seat_info.get("return")
+        # Second pass: Link infants to adults and create BookingDetails
+        for p in passengers:
+            pid = str(p.get("id"))
+            passenger_obj = passenger_objects[pid]
+            seat_info = seats.get(pid, {})
+            depart_seat_number = seat_info.get("depart")
+            return_seat_number = seat_info.get("return")
 
-                print(f"Processing {p['first_name']} (ID: {pid}): {seat_info}")
+            print(f"Processing bookings for {p.get('first_name', 'No Name')} (ID: {pid}, Type: {p.get('passenger_type')}): {seat_info}")
 
-                dob = date(int(p['dob_year']), int(p['dob_month']), int(p['dob_day']))
-                passenger_obj = PassengerInfo.objects.create(
-                    first_name=p['first_name'],
-                    middle_name=p.get('mi', ''),
-                    last_name=p['last_name'],
-                    gender=p['gender'],
-                    date_of_birth=dob,
-                    passport_number=p.get('passport', ''),
-                    email=student.email,
-                    phone=student.phone
-                )
+            # For infants, link to the adult passenger
+            if p.get('passenger_type', '').lower() == 'infant' and p.get('adult_id'):
+                adult_pid = p.get('adult_id')
+                if adult_pid in passenger_objects:
+                    adult_passenger = passenger_objects[adult_pid]
+                    passenger_obj.linked_adult = adult_passenger
+                    passenger_obj.save()
+                    print(f"✅ Linked infant {p['first_name']} to adult {adult_passenger.first_name}")
+                else:
+                    print(f"⚠️ Could not find adult passenger with ID: {adult_pid}")
 
-                if depart_seat_number:
-                    try:
-                        outbound_seat_obj = Seat.objects.get(schedule=depart_schedule, seat_number=depart_seat_number)
-                        BookingDetail.objects.create(
-                            booking=booking,
-                            passenger=passenger_obj,
-                            schedule=depart_schedule,
-                            seat=outbound_seat_obj,
-                            seat_class=outbound_seat_obj.seat_class
+            # Handle departure flight booking
+            if depart_seat_number:
+                try:
+                    # Check if this seat has already been processed for this schedule
+                    seat_key = f"{depart_schedule.id}_{depart_seat_number}"
+                    if seat_key in processed_seats['depart']:
+                        print(f"ℹ️ Seat {depart_seat_number} already processed for depart schedule, reusing...")
+                        # Seat already processed, find the existing seat object
+                        outbound_seat_obj = Seat.objects.get(
+                            schedule=depart_schedule, 
+                            seat_number=depart_seat_number
                         )
-                        print(f"✅ Created depart booking for {p['first_name']} - Seat: {depart_seat_number}")
-                    except Seat.DoesNotExist:
-                        print(f"❌ Seat {depart_seat_number} not found for depart schedule")
-                        raise ValueError(f"Seat {depart_seat_number} not found for depart flight")
-
-                if return_schedule and return_seat_number:
-                    try:
-                        return_seat_obj = Seat.objects.get(schedule=return_schedule, seat_number=return_seat_number)
-                        BookingDetail.objects.create(
-                            booking=booking,
-                            passenger=passenger_obj,
-                            schedule=return_schedule,
-                            seat=return_seat_obj,
-                            seat_class=return_seat_obj.seat_class
+                    else:
+                        # First time processing this seat, lock and mark as unavailable
+                        outbound_seat_obj = Seat.objects.select_for_update().get(
+                            schedule=depart_schedule, 
+                            seat_number=depart_seat_number,
+                            is_available=True
                         )
-                        print(f"✅ Created return booking for {p['first_name']} - Seat: {return_seat_number}")
-                    except Seat.DoesNotExist:
-                        print(f"❌ Seat {return_seat_number} not found for return schedule")
-                        raise ValueError(f"Seat {return_seat_number} not found for return flight")
+                        # Mark seat as unavailable immediately
+                        outbound_seat_obj.is_available = False
+                        outbound_seat_obj.save()
+                        processed_seats['depart'].add(seat_key)
+                        print(f"✅ Marked seat {depart_seat_number} as unavailable for depart")
+                    
+                    # Create booking detail for departure
+                    BookingDetail.objects.create(
+                        booking=booking,
+                        passenger=passenger_obj,
+                        schedule=depart_schedule,
+                        seat=outbound_seat_obj,
+                        seat_class=outbound_seat_obj.seat_class,
+                        price=0.00 if p.get('passenger_type', '').lower() == 'infant' else depart_schedule.price
+                    )
+                    print(f"✅ Created depart booking for {p['first_name']} ({p.get('passenger_type')}) - Seat: {depart_seat_number}")        
 
-            print("✅ Booking created successfully!")
-            request.session['current_booking_id'] = booking.id
+                except Seat.DoesNotExist:
+                    print(f"❌ Seat {depart_seat_number} not found or unavailable for depart schedule")
+                    raise ValueError(f"Seat {depart_seat_number} is not available for departure flight")
 
-    except Exception as e:
-        print(f"❌ Error in confirm_booking: {str(e)}")
-        messages.error(request, f"Error creating booking: {str(e)}")
+            # Handle return flight booking
+            if return_schedule and return_seat_number:
+                try:
+                    # Check if this seat has already been processed for this schedule
+                    seat_key = f"{return_schedule.id}_{return_seat_number}"
+                    if seat_key in processed_seats['return']:
+                        print(f"ℹ️ Seat {return_seat_number} already processed for return schedule, reusing...")
+                        # Seat already processed, find the existing seat object
+                        return_seat_obj = Seat.objects.get(
+                            schedule=return_schedule, 
+                            seat_number=return_seat_number
+                        )
+                    else:
+                        # First time processing this seat, lock and mark as unavailable
+                        return_seat_obj = Seat.objects.select_for_update().get(
+                            schedule=return_schedule, 
+                            seat_number=return_seat_number,
+                            is_available=True
+                        )
+                        # Mark seat as unavailable immediately
+                        return_seat_obj.is_available = False
+                        return_seat_obj.save()
+                        processed_seats['return'].add(seat_key)
+                        print(f"✅ Marked seat {return_seat_number} as unavailable for return")
+                    
+                    BookingDetail.objects.create(
+                        booking=booking,
+                        passenger=passenger_obj,
+                        schedule=return_schedule,
+                        seat=return_seat_obj,
+                        seat_class=return_seat_obj.seat_class,
+                        price=0.00 if p.get('passenger_type', '').lower() == 'infant' else return_schedule.price
+                    )
+                    print(f"✅ Created return booking for {p['first_name']} ({p.get('passenger_type')}) - Seat: {return_seat_number}")
+                    
+                except Seat.DoesNotExist:
+                    print(f"❌ Seat {return_seat_number} not found or unavailable for return schedule")
+                    raise ValueError(f"Seat {return_seat_number} is not available for return flight")
+
+        print("✅ Booking created successfully! ID:", booking.id)
+        request.session['current_booking_id'] = booking.id
+        request.session.modified = True
+
+    except Student.DoesNotExist:
+        messages.error(request, "Student not found. Please log in again.")
+        return redirect('bookingapp:home')
+    except Schedule.DoesNotExist:
+        messages.error(request, "Flight schedule not found. Please select flights again.")
+        return redirect('bookingapp:flight_schedules')
+    except ValueError as e:
+        messages.error(request, f"Error: {str(e)}")
         return redirect('bookingapp:select_seat')
+    except Exception as e:
+        print(f"❌ Unexpected error in confirm_booking: {str(e)}")
+        messages.error(request, "An unexpected error occurred. Please try again.")
+        return redirect('bookingapp:booking_summary')
 
     return redirect('bookingapp:payment_method')
-
 
 from decimal import Decimal
 from django.contrib import messages
@@ -653,74 +747,87 @@ def payment_method(request):
         messages.error(request, "No booking found. Please start again.")
         return redirect("bookingapp:home")
 
-    booking = get_object_or_404(Booking, id=booking_id)
+    try:
+        booking = Booking.objects.get(id=booking_id)
+        
+        # Check if booking details exist
+        if not booking.details.exists():
+            messages.error(request, "No booking details found. Please create a new booking.")
+            return redirect("bookingapp:home")
 
+        # Calculate total amount properly - only charge adults and children
+        non_infant_details = booking.details.filter(passenger__passenger_type__in=['Adult', 'Child'])
+        subtotal = sum(detail.price for detail in non_infant_details)
+        taxes = Decimal(20) * non_infant_details.count()
+        insurance = Decimal(500) * non_infant_details.count()
+        total_amount = subtotal + taxes + insurance
 
-    # ✅ Calculate total amount from BookingDetails
-    total_amount = sum(detail.price for detail in booking.details.all())
-    total_amount += Decimal(20) + Decimal(500)  # taxes + insurance
+        if request.method == "POST":
+            method = request.POST.get("payment_method")
+            if method:
+                try:
+                    with transaction.atomic():
+                        # Create Payment
+                        payment = Payment.objects.create(
+                            booking=booking,
+                            amount=total_amount,
+                            method=method,
+                            status="Completed",
+                            transaction_id=f"MOCK{booking.id:05d}"
+                        )
 
-    if request.method == "POST":
-        method = request.POST.get("payment_method")
-        if method:
-            try:
-                with transaction.atomic():
-                    # Create Payment
-                    Payment.objects.create(
-                        booking=booking,
-                        amount=total_amount,
-                        method=method,
-                        status="Completed",  # mock payment
-                        transaction_id=f"MOCK{booking.id:05d}"
-                    )
+                        # Mark booking as Paid
+                        booking.status = "Paid"
+                        booking.save()
 
-                    # Mark booking as Paid
-                    booking.status = "Paid"
-                    booking.save()
+                        # FIX: Get unique seat IDs and verify they're properly reserved
+                        seat_ids = list(booking.details
+                                       .filter(seat__isnull=False)
+                                       .values_list('seat_id', flat=True)
+                                       .distinct())
+                        
+                        if seat_ids:
+                            # Just verify seats are properly marked as unavailable
+                            # No need to lock them again since they were already locked in confirm_booking
+                            unavailable_seats = Seat.objects.filter(
+                                id__in=seat_ids, 
+                                is_available=True
+                            )
+                            if unavailable_seats.exists():
+                                # This should not happen, but if it does, mark them as unavailable
+                                unavailable_seats.update(is_available=False)
+                                print(f"⚠️ Fixed {unavailable_seats.count()} seats that were not properly reserved")
 
-                    # Lock and mark seats as unavailable
-                    for detail in booking.details.select_for_update():
-                        seat = detail.seat
-                        if seat:
-                            if seat.is_available:
-                                seat.is_available = False
-                                seat.save()
-                            else:
-                                raise ValueError(f"Seat {seat.seat_number} is already taken.")
+                        # Clear session data
+                        keys_to_clear = [
+                            "passengers", "selected_seats", "confirm_depart_schedule",
+                            "confirm_return_schedule", "current_booking_id", "trip_type",
+                            "origin", "destination", "departure_date", "return_date",
+                            "passenger_count", "contact_info", "adults", "children", "infants"
+                        ]
+                        
+                        student_id = request.session.get('student_id')
+                        for key in keys_to_clear:
+                            request.session.pop(key, None)
+                        request.session['student_id'] = student_id
+                        request.session.modified = True
 
-                    # Clear session except login/student_id
-                    keys_to_clear = [
-                        "passengers",
-                        "selected_seats",
-                        "confirm_depart_schedule",
-                        "confirm_return_schedule",
-                        "current_booking_id",
-                        "trip_type",
-                        "origin",
-                        "destination",
-                        "departure_date",
-                        "return_date",
-                        "passenger_count",
-                        "contact_info"
-                    ]
-                    student_id = request.session.get('student_id')
-                    for key in keys_to_clear:
-                        request.session.pop(key, None)
-                    request.session['student_id'] = student_id
-                    request.session.modified = True
+                        messages.success(request, "Payment completed successfully!")
+                        return redirect("bookingapp:payment_success")
 
-                    return redirect("bookingapp:payment_success")
+                except Exception as e:
+                    messages.error(request, f"Payment failed: {str(e)}")
+                    return redirect("bookingapp:payment_method")
 
-            except ValueError as e:
-                messages.error(request, str(e))
-                return redirect("bookingapp:select_seat")
+        return render(request, "booking/payment.html", {
+            "booking": booking,
+            "payment_methods": Payment.PAYMENT_METHODS,
+            "total_amount": total_amount
+        })
 
-    return render(request, "booking/payment.html", {
-        "booking": booking,
-        "payment_methods": Payment.PAYMENT_METHODS,
-        "total_amount": total_amount
-    })
-
+    except Booking.DoesNotExist:
+        messages.error(request, "Booking not found.")
+        return redirect("bookingapp:main")
 
 
 

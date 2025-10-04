@@ -6,23 +6,53 @@
 {% block content %}
 <main class="mx-auto flex flex-col items-center py-10">
 
+    <!-- Display any messages -->
+    {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+            <div class="p-3 rounded {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
     <h1 class="text-3xl font-bold mb-8">Choose Payment Method (Temporary)</h1>
 
-    <form method="POST" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-5xl">
+    <div class="mb-4">
+        <p class="text-lg font-semibold">Total Amount: <span class="text-[#2975F7]">₱{{ total_amount|floatformat:2 }}</span></p>
+        <p class="text-sm text-gray-600">Booking Reference: #{{ booking.id }}</p>
+    </div>
+
+    <!-- Payment Method Form -->
+    <form action="{% url 'bookingapp:payment_method' %}" method="POST">
         {% csrf_token %}
         
-       {% for method, label in payment_methods %}
-        <label class="payment-option border rounded-lg p-6 flex flex-col items-center cursor-pointer hover:shadow-lg transition-all duration-200">
-            <img src="{% static 'bookingapp/images/' %}{{ method }}.png" alt="{{ label }}" class="w-20 h-20 mb-4">
-            <span class="font-semibold text-lg">{{ label }}</span>
-            <input type="radio" name="payment_method" value="{{ method }}" class="mt-2" required>
-        </label>
-        {% endfor %}
+        <div class="space-y-4 mb-6">
+            <h3 class="font-semibold text-gray-700">Select Payment Method:</h3>
+            
+            {% for method_value, method_name in payment_methods %}
+            <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                <input type="radio" id="method_{{ method_value }}" name="payment_method" value="{{ method_value }}" 
+                        class="h-4 w-4 text-[#2975F7] focus:ring-[#2975F7]" 
+                        {% if forloop.first %}checked{% endif %} required>
+                <label for="method_{{ method_value }}" class="ml-3 block text-sm font-medium text-gray-700 cursor-pointer">
+                    {{ method_name }}
+                </label>
+            </div>
+            {% endfor %}
+        </div>
 
-
-        <button type="submit" class="col-span-full mt-6 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all">
-            Confirm Payment
-        </button>
+        <div class="flex space-x-4">
+            <a href="{% url 'bookingapp:booking_summary' %}" 
+                class="flex-1 text-center bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold transition">
+                Back
+            </a>
+            <button type="submit" 
+                    class="flex-1 bg-[#2975F7] hover:bg-[#2975F7]/90 text-white px-6 py-3 rounded-lg font-semibold transition">
+                Confirm Payment
+            </button>
+        </div>
     </form>
 
 </main>
