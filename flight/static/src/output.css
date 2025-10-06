@@ -90,7 +90,6 @@
     --font-weight-medium: 500;
     --font-weight-semibold: 600;
     --font-weight-bold: 700;
-    --radius-xs: 0.125rem;
     --radius-sm: 0.25rem;
     --radius-md: 0.375rem;
     --radius-lg: 0.5rem;
@@ -538,9 +537,6 @@
   .h-\[35px\] {
     height: 35px;
   }
-  .h-\[45px\] {
-    height: 45px;
-  }
   .h-\[60px\] {
     height: 60px;
   }
@@ -564,9 +560,6 @@
   }
   .h-\[235px\] {
     height: 235px;
-  }
-  .h-\[430px\] {
-    height: 430px;
   }
   .h-\[454px\] {
     height: 454px;
@@ -601,11 +594,20 @@
   .max-h-\[171px\] {
     max-height: 171px;
   }
+  .max-h-\[600px\] {
+    max-height: 600px;
+  }
+  .max-h-\[650px\] {
+    max-height: 650px;
+  }
   .min-h-\[138px\] {
     min-height: 138px;
   }
   .min-h-\[500px\] {
     min-height: 500px;
+  }
+  .min-h-\[650px\] {
+    min-height: 650px;
   }
   .min-h-\[1000px\] {
     min-height: 1000px;
@@ -1984,15 +1986,6 @@
       @media (hover: hover) {
         --tw-shadow-alpha: 10%;
         --tw-shadow: 0 4px 6px -1px var(--tw-shadow-color, oklab(from rgb(0 0 0 / 0.1) l a b / 10%)), 0 2px 4px -2px var(--tw-shadow-color, oklab(from rgb(0 0 0 / 0.1) l a b / 10%));
-        box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
-      }
-    }
-  }
-  .hover\:shadow-sm\/20 {
-    &:hover {
-      @media (hover: hover) {
-        --tw-shadow-alpha: 20%;
-        --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, oklab(from rgb(0 0 0 / 0.1) l a b / 20%)), 0 1px 2px -1px var(--tw-shadow-color, oklab(from rgb(0 0 0 / 0.1) l a b / 20%));
         box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
       }
     }

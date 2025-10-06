@@ -164,9 +164,9 @@
                     </div>
 
                     <!-- passenger forms -->
-                   <div class="w-full relative mx-20 py-15 min-h-[500px]">
+                    <div class="w-full mx-20 py-15">
                         {% for passenger in passenger_list %}
-                        <div class="passenger-form absolute top-7 left-0 w-full transition-opacity duration-300 {% if not forloop.first %}invisible opacity-0{% else %}opacity-100{% endif %}" 
+                        <div class="passenger-form transition-opacity duration-300 {% if not forloop.first %}hidden{% else %}block{% endif %}" 
                         id="passenger-form-{{ passenger.number }}" data-type="{{ passenger.type }}">
 
                             <h1 class="text-lg font-bold">Passenger {{ passenger.number }} ({{ passenger.type }})</h1>
@@ -449,6 +449,9 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
         if (validationTriggered) highlightIncompletePassengers();
+        
+        // Hide next passenger button for last passenger
+        updateNextButtonVisibility();
     }
 
     function isValidDate(day, month, year) {
@@ -839,13 +842,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 tab.classList.add("bg-red-100", "text-red-600");
                 tab.classList.remove("bg-white", "border-l-8", "border-[#2975F7]");
                 
-                {% comment %} if (passengerType === "Infant") {
-                    warning.textContent = "Check age + adult";
-                    warning.classList.remove("hidden");
-                } else {
-                    warning.textContent = "Incomplete info";
-                    warning.classList.remove("hidden");
-                } {% endcomment %}
+                
             } else {
                 tab.classList.remove("bg-red-100", "text-red-600");
                 tab.classList.add("bg-white", "border-l-8", "border-[#2975F7]");
@@ -853,6 +850,69 @@ document.addEventListener("DOMContentLoaded", function() {
                 warning.classList.add("hidden");
             }
         });
+    }
+
+    // NEW: Check if all previous passengers are complete
+    function arePreviousPassengersComplete(currentPassenger) {
+        for (let i = 1; i < currentPassenger; i++) {
+            const passengerForm = document.getElementById(`passenger-form-${i}`);
+            const passengerType = passengerForm.dataset.type;
+            if (isPassengerIncomplete(i, passengerType)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // NEW: Update sidebar clickability
+    function updateSidebarClickability() {
+        document.querySelectorAll(".passenger-tab").forEach(tab => {
+            const passengerNumber = parseInt(tab.dataset.passenger);
+            
+            if (validationTriggered && passengerNumber > 1) {
+                // Disable sidebar tabs if previous passengers are incomplete
+                if (!arePreviousPassengersComplete(passengerNumber)) {
+                    tab.style.pointerEvents = "none";
+                    tab.style.opacity = "0.5";
+                    tab.style.cursor = "not-allowed";
+                } else {
+                    tab.style.pointerEvents = "auto";
+                    tab.style.opacity = "1";
+                    tab.style.cursor = "pointer";
+                }
+            } else {
+                // Always enable first passenger and when validation hasn't started
+                tab.style.pointerEvents = "auto";
+                tab.style.opacity = "1";
+                tab.style.cursor = "pointer";
+            }
+        });
+    }
+
+    // NEW: Update next button visibility
+    function updateNextButtonVisibility() {
+        const totalPassengers = {{ passenger_list|length }};
+        const currentPassenger = getCurrentPassengerNumber();
+        
+        // Hide next button for last passenger
+        if (currentPassenger === totalPassengers) {
+            document.querySelectorAll('.next-passenger').forEach(btn => {
+                btn.style.display = 'none';
+            });
+        } else {
+            document.querySelectorAll('.next-passenger').forEach(btn => {
+                btn.style.display = 'flex';
+            });
+        }
+    }
+
+    // NEW: Get current passenger number
+    function getCurrentPassengerNumber() {
+        const visibleForm = document.querySelector('.passenger-form:not(.invisible)');
+        if (visibleForm) {
+            return parseInt(visibleForm.id.split('-')[2]);
+        }
+        return 1;
     }
 
     // Real-time validation for all fields
@@ -868,6 +928,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     
                     validatePassenger(passengerNumber, passengerType);
                     highlightIncompletePassengers();
+                    updateSidebarClickability();
                 }
             });
         });
@@ -883,6 +944,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     
                     validatePassenger(passengerNumber, passengerType);
                     highlightIncompletePassengers();
+                    updateSidebarClickability();
                 }
             });
         });
@@ -898,6 +960,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     
                     validatePassenger(passengerNumber, passengerType);
                     highlightIncompletePassengers();
+                    updateSidebarClickability();
                 }
             });
         });
@@ -913,6 +976,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     
                     validatePassenger(passengerNumber, passengerType);
                     highlightIncompletePassengers();
+                    updateSidebarClickability();
                 }
             });
         });
@@ -926,12 +990,13 @@ document.addEventListener("DOMContentLoaded", function() {
                     
                     validatePassenger(passengerNumber, "Infant");
                     highlightIncompletePassengers();
+                    updateSidebarClickability();
                 }
             });
         });
     }
 
-    // Next buttons
+    // Next buttons - Only validate current passenger
     document.querySelectorAll(".next-passenger").forEach(btn => {
         btn.addEventListener("click", () => {
             const current = parseInt(btn.dataset.current);
@@ -940,8 +1005,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
             validationTriggered = true;
 
+            // Only validate current passenger for next button
             if (validatePassenger(current, passengerType)) {
                 showPassenger(current + 1);
+                updateSidebarClickability();
             } else {
                 showPassenger(current);
                 // Scroll to first error
@@ -953,18 +1020,29 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
-    // Sidebar clicks
+    // Sidebar clicks - Check if previous passengers are complete
     document.querySelectorAll(".passenger-tab").forEach(tab => {
         tab.addEventListener("click", () => {
             const passenger = parseInt(tab.dataset.passenger);
 
-            if (validationTriggered) {
+            // Only allow clicking if validation hasn't started OR all previous passengers are complete
+            if (!validationTriggered || arePreviousPassengersComplete(passenger)) {
+                showPassenger(passenger);
+            } else {
+                // Find and show the first incomplete passenger
                 for (let i = 1; i < passenger; i++) {
-                    validatePassenger(i, document.getElementById(`passenger-form-${i}`).dataset.type);
+                    const passengerForm = document.getElementById(`passenger-form-${i}`);
+                    const passengerType = passengerForm.dataset.type;
+                    if (isPassengerIncomplete(i, passengerType)) {
+                        showPassenger(i);
+                        const firstError = passengerForm.querySelector(".border-red-500");
+                        if (firstError) {
+                            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        break;
+                    }
                 }
             }
-
-            showPassenger(passenger);
         });
     });
 
@@ -982,7 +1060,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Setup real-time validation
     setupRealTimeValidation();
 
-    // Form submission
+    // Form submission - Validate ALL passengers
     const form = document.querySelector("form");
     form.addEventListener("submit", function(e) {
         validationTriggered = true;
@@ -1008,15 +1086,17 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
         highlightIncompletePassengers();
+        updateSidebarClickability();
 
         if (!allValid) {
             e.preventDefault();
-            // Don't show alert - visual indicators are enough
         }
     });
 
     // Initialize first passenger
     showPassenger(1);
+    updateSidebarClickability();
+    updateNextButtonVisibility();
 });
 </script>
 
