@@ -4,6 +4,20 @@
 
 {% block content %}
 {% load static %}
+<style>
+.field-error, .date-error {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.border-red-500 {
+    border-color: #ef4444;
+}
+</style>
 
     <main class=" mx-auto  flex justify-center relative mt-7 space-y-5 flex-col ">
         <!-- edit search  -->
@@ -402,7 +416,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", function() {
 
-    let validationTriggered = false; // track if "Next" or submit clicked
+    let validationTriggered = false;
 
     function showPassenger(passengerNumber) {
         // Hide all forms
@@ -434,53 +448,385 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         }
 
-        // Highlight all incomplete passengers
         if (validationTriggered) highlightIncompletePassengers();
     }
 
+    function isValidDate(day, month, year) {
+        // Check if all fields are filled
+        if (!day || !month || !year) return false;
+        
+        // Convert to numbers
+        day = parseInt(day);
+        month = parseInt(month);
+        year = parseInt(year);
+        
+        // Basic range validation
+        if (year < 1900 || year > new Date().getFullYear()) return false;
+        if (month < 1 || month > 12) return false;
+        if (day < 1 || day > 31) return false;
+        
+        // Check valid days in month
+        const daysInMonth = new Date(year, month, 0).getDate();
+        return day <= daysInMonth;
+    }
+
+    function calculateAge(day, month, year) {
+        const birthDate = new Date(year, month - 1, day);
+        const today = new Date();
+        
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        
+        return age;
+    }
+
+    function calculateExactAge(day, month, year) {
+        const birthDate = new Date(year, month - 1, day);
+        const today = new Date();
+        
+        let years = today.getFullYear() - birthDate.getFullYear();
+        let months = today.getMonth() - birthDate.getMonth();
+        let days = today.getDate() - birthDate.getDate();
+        
+        if (days < 0) {
+            months--;
+            // Get days in previous month
+            const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+            days += prevMonth.getDate();
+        }
+        
+        if (months < 0) {
+            years--;
+            months += 12;
+        }
+        
+        return {
+            years: years,
+            months: months,
+            days: days,
+            totalMonths: (years * 12) + months
+        };
+    }
+
+    function validatePassengerAge(passengerNumber, passengerType) {
+        const day = document.querySelector(`[name="dob_day_${passengerNumber}"]`).value;
+        const month = document.querySelector(`[name="dob_month_${passengerNumber}"]`).value;
+        const year = document.querySelector(`[name="dob_year_${passengerNumber}"]`).value;
+        
+        if (!isValidDate(day, month, year)) {
+            return { valid: false, error: "Please enter a valid date of birth" };
+        }
+        
+        const exactAge = calculateExactAge(parseInt(day), parseInt(month), parseInt(year));
+        const simpleAge = calculateAge(parseInt(day), parseInt(month), parseInt(year));
+        
+        // STRICT AGE VALIDATION
+        switch(passengerType) {
+            case "Adult":
+                if (simpleAge < 18) {
+                    if (simpleAge === 17 && exactAge.months >= 0) {
+                        return { 
+                            valid: false, 
+                            error: `Adult must be 18 years or older. Passenger is ${simpleAge} years, ${exactAge.months} months old` 
+                        };
+                    }
+                    return { 
+                        valid: false, 
+                        error: `Adult must be 18 years or older. Passenger is ${simpleAge} years old` 
+                    };
+                }
+                break;
+                
+            case "Child":
+                if (simpleAge < 2) {
+                    if (simpleAge === 1 && exactAge.months >= 0) {
+                        return { 
+                            valid: false, 
+                            error: `Child must be 2-11 years old. Passenger is ${simpleAge} year, ${exactAge.months} months old` 
+                        };
+                    }
+                    return { 
+                        valid: false, 
+                        error: `Child must be 2-11 years old. Passenger is ${simpleAge} year${simpleAge !== 1 ? 's' : ''} old` 
+                    };
+                }
+                if (simpleAge >= 12) {
+                    return { 
+                        valid: false, 
+                        error: `Child must be 2-11 years old. Passenger is ${simpleAge} years old` 
+                    };
+                }
+                break;
+                
+            case "Infant":
+                if (exactAge.totalMonths >= 24) { // 24 months = 2 years
+                    return { 
+                        valid: false, 
+                        error: `Infant must be under 2 years old. Passenger is ${exactAge.years} year${exactAge.years !== 1 ? 's' : ''}, ${exactAge.months} month${exactAge.months !== 1 ? 's' : ''} old` 
+                    };
+                }
+                if (simpleAge >= 2) {
+                    return { 
+                        valid: false, 
+                        error: `Infant must be under 2 years old. Passenger is ${simpleAge} years old` 
+                    };
+                }
+                break;
+        }
+        
+        return { valid: true, age: simpleAge, exactAge: exactAge };
+    }
+
+    function validateInfantAdultSelection(passengerNumber) {
+        const adultSelect = document.querySelector(`[name="infant_adult_${passengerNumber}"]`);
+        if (!adultSelect || !adultSelect.value) {
+            return { valid: false, error: "Please select accompanying adult for infant" };
+        }
+        
+        // Validate that the selected adult exists and is actually an adult
+        const selectedAdult = parseInt(adultSelect.value);
+        const adultForm = document.getElementById(`passenger-form-${selectedAdult}`);
+        
+        if (!adultForm) {
+            return { valid: false, error: "Selected adult passenger not found" };
+        }
+        
+        if (adultForm.dataset.type !== "Adult") {
+            return { valid: false, error: "Infant must be accompanied by an Adult passenger" };
+        }
+        
+        return { valid: true };
+    }
+
+    function validateNameFields(passengerNumber) {
+        const firstName = document.querySelector(`[name="first_name_${passengerNumber}"]`);
+        const lastName = document.querySelector(`[name="last_name_${passengerNumber}"]`);
+        let valid = true;
+        
+        // Clear previous errors
+        clearFieldError(firstName);
+        clearFieldError(lastName);
+        
+        // Validate first name
+        if (!firstName.value || firstName.value.trim() === "") {
+            firstName.classList.add("border-red-500");
+            showFieldError(firstName, "First name is required");
+            valid = false;
+        } else if (firstName.value.trim().length < 2) {
+            firstName.classList.add("border-red-500");
+            showFieldError(firstName, "First name must be at least 2 characters");
+            valid = false;
+        } else {
+            firstName.classList.remove("border-red-500");
+        }
+        
+        // Validate last name
+        if (!lastName.value || lastName.value.trim() === "") {
+            lastName.classList.add("border-red-500");
+            showFieldError(lastName, "Last name is required");
+            valid = false;
+        } else if (lastName.value.trim().length < 2) {
+            lastName.classList.add("border-red-500");
+            showFieldError(lastName, "Last name must be at least 2 characters");
+            valid = false;
+        } else {
+            lastName.classList.remove("border-red-500");
+        }
+        
+        return valid;
+    }
+
+    function validateGender(passengerNumber) {
+        const genderSelect = document.querySelector(`[name="gender_${passengerNumber}"]`);
+        let valid = true;
+        
+        clearFieldError(genderSelect);
+        
+        if (!genderSelect.value) {
+            genderSelect.classList.add("border-red-500");
+            showFieldError(genderSelect, "Please select gender");
+            valid = false;
+        } else {
+            genderSelect.classList.remove("border-red-500");
+        }
+        
+        return valid;
+    }
+
+    function validatePassport(passengerNumber) {
+        const passportField = document.querySelector(`[name="passport_${passengerNumber}"]`);
+        let valid = true;
+        
+        clearFieldError(passportField);
+        
+        if (!passportField.value || passportField.value.trim() === "") {
+            passportField.classList.add("border-red-500");
+            showFieldError(passportField, "Passport number is required");
+            valid = false;
+        } else if (passportField.value.trim().length < 5) {
+            passportField.classList.add("border-red-500");
+            showFieldError(passportField, "Passport number must be at least 5 characters");
+            valid = false;
+        } else {
+            passportField.classList.remove("border-red-500");
+        }
+        
+        return valid;
+    }
+
+    function validateNationality(passengerNumber) {
+        const nationalityField = document.querySelector(`[name="nationality_${passengerNumber}"]`);
+        let valid = true;
+        
+        clearFieldError(nationalityField);
+        
+        if (!nationalityField.value || nationalityField.value.trim() === "") {
+            nationalityField.classList.add("border-red-500");
+            showFieldError(nationalityField, "Nationality is required");
+            valid = false;
+        } else if (nationalityField.value.trim().length < 3) {
+            nationalityField.classList.add("border-red-500");
+            showFieldError(nationalityField, "Please enter a valid nationality");
+            valid = false;
+        } else {
+            nationalityField.classList.remove("border-red-500");
+        }
+        
+        return valid;
+    }
+
+    function validateDateFields(passengerNumber, passengerType) {
+        const dayField = document.querySelector(`[name="dob_day_${passengerNumber}"]`);
+        const monthField = document.querySelector(`[name="dob_month_${passengerNumber}"]`);
+        const yearField = document.querySelector(`[name="dob_year_${passengerNumber}"]`);
+        let valid = true;
+        
+        // Clear previous errors
+        clearFieldError(dayField);
+        clearFieldError(monthField);
+        clearFieldError(yearField);
+        clearDateError(passengerNumber);
+        
+        // Check if any date field is empty
+        if (!dayField.value || !monthField.value || !yearField.value) {
+            [dayField, monthField, yearField].forEach(field => {
+                if (!field.value) {
+                    field.classList.add("border-red-500");
+                    showFieldError(field, "This field is required");
+                }
+            });
+            return false;
+        }
+        
+        // Validate date format and logic
+        const ageValidation = validatePassengerAge(passengerNumber, passengerType);
+        if (!ageValidation.valid) {
+            [dayField, monthField, yearField].forEach(field => {
+                field.classList.add("border-red-500");
+            });
+            showDateError(passengerNumber, ageValidation.error);
+            valid = false;
+        } else {
+            [dayField, monthField, yearField].forEach(field => {
+                field.classList.remove("border-red-500");
+            });
+        }
+        
+        return valid;
+    }
 
     function validatePassenger(passengerNumber, passengerType) {
         const form = document.getElementById(`passenger-form-${passengerNumber}`);
-        let selector = "[name^='first_name_'], [name^='last_name_'], [name^='gender_'], [name^='dob_day_'], [name^='dob_month_'], [name^='dob_year_'], [name^='passport_'], [name^='nationality_']";
-
-        // Add infant-adult dropdown if passenger is Infant
-        if (passengerType === "Infant") {
-            selector += `, [name='infant_adult_${passengerNumber}']`;
-        }
-
-        const requiredFields = form.querySelectorAll(selector);
         let valid = true;
+        
+        // Clear previous error messages
+        clearPassengerErrors(passengerNumber);
 
-        requiredFields.forEach(field => {
-            if (!field.value || field.value.trim() === "") {
-                field.classList.add("border-red-500");
+        // Validate all required fields
+        if (!validateNameFields(passengerNumber)) valid = false;
+        if (!validateGender(passengerNumber)) valid = false;
+        if (!validateDateFields(passengerNumber, passengerType)) valid = false;
+        if (!validatePassport(passengerNumber)) valid = false;
+        if (!validateNationality(passengerNumber)) valid = false;
+
+        // Special validation for infants
+        if (passengerType === "Infant") {
+            const infantValidation = validateInfantAdultSelection(passengerNumber);
+            if (!infantValidation.valid) {
+                const adultSelect = form.querySelector(`[name="infant_adult_${passengerNumber}"]`);
+                adultSelect.classList.add("border-red-500");
+                showFieldError(adultSelect, infantValidation.error);
                 valid = false;
-            } else {
-                field.classList.remove("border-red-500");
             }
-        });
+        }
 
         return valid;
     }
 
-
-
-    function isPassengerIncomplete(passengerNumber, passengerType) {
-        const form = document.getElementById(`passenger-form-${passengerNumber}`);
+    function showFieldError(field, message) {
+        // Remove existing error
+        const existingError = field.parentNode.querySelector(".field-error");
+        if (existingError) existingError.remove();
         
-        // Validate basic fields
-        let valid = validatePassenger(passengerNumber, passengerType);
+        // Create error element
+        const errorElement = document.createElement("div");
+        errorElement.className = "field-error text-red-500 text-xs mt-1";
+        errorElement.textContent = message;
         
-        // For infants, ensure adult is selected
-        if (passengerType === "Infant") {
-            const adultSelect = form.querySelector(`[name='infant_adult_${passengerNumber}']`);
-            if (!adultSelect || !adultSelect.value) valid = false;
-        }
-
-        return !valid ? true : false;
+        field.parentNode.appendChild(errorElement);
     }
 
+    function clearFieldError(field) {
+        if (field && field.parentNode) {
+            const existingError = field.parentNode.querySelector(".field-error");
+            if (existingError) existingError.remove();
+        }
+    }
 
+    function showDateError(passengerNumber, message) {
+        // Remove existing date error
+        const form = document.getElementById(`passenger-form-${passengerNumber}`);
+        const existingError = form.querySelector(".date-error");
+        if (existingError) existingError.remove();
+        
+        // Find date section
+        const dateSection = form.querySelector(".flex-col.mt-5");
+        if (dateSection) {
+            const errorElement = document.createElement("div");
+            errorElement.className = "date-error text-red-500 text-xs mt-2 font-medium";
+            errorElement.textContent = message;
+            dateSection.appendChild(errorElement);
+        }
+    }
+
+    function clearDateError(passengerNumber) {
+        const form = document.getElementById(`passenger-form-${passengerNumber}`);
+        const existingError = form.querySelector(".date-error");
+        if (existingError) existingError.remove();
+    }
+
+    function clearPassengerErrors(passengerNumber) {
+        const form = document.getElementById(`passenger-form-${passengerNumber}`);
+        
+        // Clear field errors
+        form.querySelectorAll(".field-error").forEach(error => error.remove());
+        
+        // Clear date errors
+        form.querySelectorAll(".date-error").forEach(error => error.remove());
+        
+        // Remove red borders
+        form.querySelectorAll(".border-red-500").forEach(field => {
+            field.classList.remove("border-red-500");
+        });
+    }
+
+    function isPassengerIncomplete(passengerNumber, passengerType) {
+        return !validatePassenger(passengerNumber, passengerType);
+    }
 
     function highlightIncompletePassengers() {
         document.querySelectorAll(".passenger-tab").forEach(tab => {
@@ -493,14 +839,13 @@ document.addEventListener("DOMContentLoaded", function() {
                 tab.classList.add("bg-red-100", "text-red-600");
                 tab.classList.remove("bg-white", "border-l-8", "border-[#2975F7]");
                 
-                // Show tooltip for infant if adult not selected
-                if (passengerType === "Infant") {
-                    warning.textContent = "Select accompanying adult";
+                {% comment %} if (passengerType === "Infant") {
+                    warning.textContent = "Check age + adult";
                     warning.classList.remove("hidden");
                 } else {
-                    warning.textContent = "";
-                    warning.classList.add("hidden");
-                }
+                    warning.textContent = "Incomplete info";
+                    warning.classList.remove("hidden");
+                } {% endcomment %}
             } else {
                 tab.classList.remove("bg-red-100", "text-red-600");
                 tab.classList.add("bg-white", "border-l-8", "border-[#2975F7]");
@@ -510,36 +855,112 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
+    // Real-time validation for all fields
+    function setupRealTimeValidation() {
+        // Name fields
+        document.querySelectorAll("input[name^='first_name_'], input[name^='last_name_']").forEach(input => {
+            input.addEventListener("blur", function() {
+                if (validationTriggered) {
+                    const name = this.getAttribute("name");
+                    const passengerNumber = name.split("_")[2];
+                    const passengerForm = document.getElementById(`passenger-form-${passengerNumber}`);
+                    const passengerType = passengerForm.dataset.type;
+                    
+                    validatePassenger(passengerNumber, passengerType);
+                    highlightIncompletePassengers();
+                }
+            });
+        });
+
+        // Gender fields
+        document.querySelectorAll("select[name^='gender_']").forEach(select => {
+            select.addEventListener("change", function() {
+                if (validationTriggered) {
+                    const name = this.getAttribute("name");
+                    const passengerNumber = name.split("_")[1];
+                    const passengerForm = document.getElementById(`passenger-form-${passengerNumber}`);
+                    const passengerType = passengerForm.dataset.type;
+                    
+                    validatePassenger(passengerNumber, passengerType);
+                    highlightIncompletePassengers();
+                }
+            });
+        });
+
+        // Date fields
+        document.querySelectorAll("select[name^='dob_']").forEach(select => {
+            select.addEventListener("change", function() {
+                if (validationTriggered) {
+                    const name = this.getAttribute("name");
+                    const passengerNumber = name.split("_")[2];
+                    const passengerForm = document.getElementById(`passenger-form-${passengerNumber}`);
+                    const passengerType = passengerForm.dataset.type;
+                    
+                    validatePassenger(passengerNumber, passengerType);
+                    highlightIncompletePassengers();
+                }
+            });
+        });
+
+        // Passport and nationality
+        document.querySelectorAll("input[name^='passport_'], input[name^='nationality_']").forEach(input => {
+            input.addEventListener("blur", function() {
+                if (validationTriggered) {
+                    const name = this.getAttribute("name");
+                    const passengerNumber = name.split("_")[1];
+                    const passengerForm = document.getElementById(`passenger-form-${passengerNumber}`);
+                    const passengerType = passengerForm.dataset.type;
+                    
+                    validatePassenger(passengerNumber, passengerType);
+                    highlightIncompletePassengers();
+                }
+            });
+        });
+
+        // Infant adult selection
+        document.querySelectorAll("select[name^='infant_adult_']").forEach(select => {
+            select.addEventListener("change", function() {
+                if (validationTriggered) {
+                    const name = this.getAttribute("name");
+                    const passengerNumber = name.split("_")[2];
+                    
+                    validatePassenger(passengerNumber, "Infant");
+                    highlightIncompletePassengers();
+                }
+            });
+        });
+    }
 
     // Next buttons
     document.querySelectorAll(".next-passenger").forEach(btn => {
         btn.addEventListener("click", () => {
             const current = parseInt(btn.dataset.current);
-
-            // Get passenger type
             const currentForm = document.getElementById(`passenger-form-${current}`);
-            const passengerType = currentForm.dataset.type; // we will set this in HTML
+            const passengerType = currentForm.dataset.type;
 
-            validationTriggered = true; // mark validation started
+            validationTriggered = true;
 
             if (validatePassenger(current, passengerType)) {
                 showPassenger(current + 1);
             } else {
-                showPassenger(current); // stay on incomplete form
+                showPassenger(current);
+                // Scroll to first error
+                const firstError = currentForm.querySelector(".border-red-500");
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
             }
         });
     });
-
 
     // Sidebar clicks
     document.querySelectorAll(".passenger-tab").forEach(tab => {
         tab.addEventListener("click", () => {
             const passenger = parseInt(tab.dataset.passenger);
 
-            // Validate all previous passengers only if validation started
             if (validationTriggered) {
                 for (let i = 1; i < passenger; i++) {
-                    validatePassenger(i);
+                    validatePassenger(i, document.getElementById(`passenger-form-${i}`).dataset.type);
                 }
             }
 
@@ -558,9 +979,12 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
+    // Setup real-time validation
+    setupRealTimeValidation();
+
     // Form submission
     const form = document.querySelector("form");
-        form.addEventListener("submit", function(e) {
+    form.addEventListener("submit", function(e) {
         validationTriggered = true;
         const totalPassengers = {{ passenger_list|length }};
         let allValid = true;
@@ -569,14 +993,30 @@ document.addEventListener("DOMContentLoaded", function() {
             const passengerForm = document.getElementById(`passenger-form-${i}`);
             const passengerType = passengerForm.dataset.type;
 
-            if (!validatePassenger(i, passengerType)) allValid = false;
+            if (!validatePassenger(i, passengerType)) {
+                allValid = false;
+                // Show the first invalid passenger
+                if (allValid === false) {
+                    showPassenger(i);
+                    const firstError = passengerForm.querySelector(".border-red-500");
+                    if (firstError) {
+                        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    break;
+                }
+            }
         }
 
         highlightIncompletePassengers();
 
-        if (!allValid) e.preventDefault();
+        if (!allValid) {
+            e.preventDefault();
+            // Don't show alert - visual indicators are enough
+        }
     });
 
+    // Initialize first passenger
+    showPassenger(1);
 });
 </script>
 

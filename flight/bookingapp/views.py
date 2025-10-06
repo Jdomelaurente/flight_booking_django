@@ -515,7 +515,8 @@ def booking_summary(request):
             "gender": passenger['gender'],
             "dob": f"{passenger['dob_month']}/{passenger['dob_day']}/{passenger['dob_year']}",
             "passport": passenger.get('passport', ''),
-            "nationality": passenger.get('nationality', '')
+            "nationality": passenger.get('nationality', ''),
+            'passenger_type' : passenger.get('passenger_type', '')
         })
 
         
@@ -961,15 +962,27 @@ def register_view(request):
             messages.error(request, "Email already exists. Please use a different email.")
             return redirect('bookingapp:register')
 
-        # Create student
-        student = Student.objects.create(
-            first_name=first_name,
-            last_name=last_name,
-            email=email,
-            phone=phone,
-            password=make_password(password),
-            student_number=f"STU{Student.objects.count() + 1:04d}"
-        )
+        try:
+            # Generate student number
+            student_count = Student.objects.count()
+            student_number = f"STU{student_count + 1:04d}"
+
+            # Create student with hashed password
+            student = Student.objects.create(
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                phone=phone if phone else None,  # Handle optional phone
+                password=make_password(password),  # Hash the password
+                student_number=student_number
+            )
+
+            messages.success(request, "Registration successful! Please login.")
+            return redirect('bookingapp:login')
+
+        except Exception as e:
+            messages.error(request, "An error occurred during registration. Please try again.")
+            print(f"Registration error: {e}")
 
         messages.success(request, "Registration successful! Please login.")
         return redirect('bookingapp:login')
@@ -990,6 +1003,11 @@ def login_view(request):
         email = request.POST.get('email').strip()
         password = request.POST.get('password')
 
+        # Basic validation
+        if not email or not password:
+            messages.error(request, "Email and password are required.")
+            return redirect('bookingapp:login')
+
         try:
             student = Student.objects.get(email=email)
             if check_password(password, student.password):
@@ -1000,6 +1018,9 @@ def login_view(request):
                 messages.error(request, "Incorrect password.")
         except Student.DoesNotExist:
             messages.error(request, "Email not registered.")
+        except Exception as e:
+            messages.error(request, "An error occurred during login. Please try again.")
+            print(f"Login error: {e}")    
 
 
     template = loader.get_template("booking/auth/login.html")
