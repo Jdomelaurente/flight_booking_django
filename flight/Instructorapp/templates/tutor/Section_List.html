@@ -321,7 +321,7 @@
                     <span class="dropdown-arrow">▼</span>
                 </a>
                 <div class="dropdown-content">
-                    <a href="#" class="dropdown-item">⭐ View Grades</a>
+                    <a href="{% url 'Section_Task' %}" class="dropdown-item">⭐ View Grades</a>
                 </div>
             </div>
 
@@ -355,7 +355,6 @@
 
 </aside>
 
-
 <main class="main-content">
     <h1 class="text-3xl mb-4">Sections</h1>
 
@@ -364,41 +363,39 @@
     </div>
 
     <div class="card-container">
-        {% for group in groups %}
-        <div class="class-card">
-            <!-- Header -->
-            <div class="card-header"
-                 style="background: {{ group.card_color }}; flex-direction: column; align-items: flex-start;">
-                <div style="font-size: 1.1rem; font-weight: 600;">
-                    {{ group.subject_code }} - {{ group.subject_title }}
+        {% for section in sections %}
+        <div class="class-card" style="position: relative;">
+            <!-- Clickable Card Area  -->
+            <a href="{% url 'Section_Detail' section.id %}" style="text-decoration: none; color: inherit; display: block;">
+                <!-- Header - Subject Code and Title -->
+                <div class="card-header"
+                     style="background: {{ section.card_color }}; flex-direction: column; align-items: flex-start;">
+                    <div style="font-size: 1.0rem; font-weight: 600;">
+                        {{ section.group.subject_code }} - {{ section.group.subject_title }}
+                    </div>
+                    <div style="margin-bottom: 6px; color: #ffffff; font-weight: 500; font-size: 1.1rem;">
+                        {{ section.name }}
+                    </div>
+                    <div style="font-size: 0.9rem; font-weight: 400; opacity: 0.9;">
+                        Instructor : {{ section.instructor }}
+                    </div>
+                    <div style="font-size: 0.9rem; color: #f3eeee;">
+                        {{ section.schedule }}
+                    </div>
                 </div>
-                <div style="font-size: 0.9rem; font-weight: 400; opacity: 0.9;">
-                    {{ group.instructor }}
-                </div>
-            </div>
 
-            <!-- Body -->
-            <div class="card-body">
-                <div class="sections-list">
-                    {% for section in group.sections.all %}
-                        <div style="margin-bottom: 6px; color: #127552; font-weight: 500;">
-                            <a href="{% url 'Section_Detail' section.id %}" 
-                               style="color: inherit; text-decoration: none;">
-                                {{ section.name }}
-                            </a>
-                        </div>
-                    {% empty %}
-                        <span>No sections yet.</span>
-                    {% endfor %}
+                <!-- Body - Section Name and Schedule -->
+                <div class="card-body">
                 </div>
-            </div>
+            </a>
 
-            <!-- Footer -->
+            <!-- Footer - Action Buttons (Not Clickable for Section Detail) -->
             <div class="card-footer" 
-                 style="background: {{ group.card_color }}; color: #fff; display: flex; justify-content: space-between; align-items: center;">
-                <span>Sections: {{ group.sections.count }}</span>
+                 style="background: {{ section.card_color }}; color: #fff; display: flex; justify-content: space-between; align-items: center;">
+                <span></span>
                 <div style="display: flex; gap: 8px;">
-                    <a href="{% url 'Update_section' group.id %}" title="Edit">
+                    <!-- ✅ FIXED: Now uses section.id instead of section.group.id -->
+                    <a href="{% url 'Update_section' section.id %}" title="Edit" onclick="event.stopPropagation();">
                         <i class="fa fa-pen" style="background: green; padding: 8px; border-radius: 6px; color: white; cursor: pointer;"></i>
                     </a>
                     <!-- Trigger Modal -->
@@ -406,27 +403,28 @@
                        style="background: red; padding: 8px; border-radius: 6px; color: white; cursor: pointer;" 
                        title="Delete"
                        data-bs-toggle="modal" 
-                       data-bs-target="#deleteModal{{ group.id }}">
+                       data-bs-target="#deleteModal{{ section.id }}"
+                       onclick="event.stopPropagation();">
                     </i>
                 </div>
             </div>
         </div>
 
-        <!-- ✅ Delete Modal -->
-        <div class="modal fade" id="deleteModal{{ group.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ group.id }}" aria-hidden="true">
+        <!-- ✅ Delete Modal - FIXED: Now uses section.id instead of section.group.id -->
+        <div class="modal fade" id="deleteModal{{ section.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ section.id }}" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content" style="border-radius: 8px;">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="deleteModalLabel{{ group.id }}">Confirm Delete</h5>
+                        <h5 class="modal-title" id="deleteModalLabel{{ section.id }}">Confirm Delete</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        Are you sure you want to delete <strong>{{ group.subject_code }} - {{ group.subject_title }}</strong>?
+                        Are you sure you want to delete section <strong>{{ section.name }}</strong>?
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
-                        <!-- Form so it deletes and returns -->
-                        <form method="post" action="{% url 'Delete_Section' group.id %}">
+                        <!-- ✅ FIXED: Form now uses section.id instead of section.group.id -->
+                        <form method="post" action="{% url 'Delete_Section' section.id %}">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-danger">Yes, Delete</button>
                         </form>
@@ -435,7 +433,7 @@
             </div>
         </div>
         {% empty %}
-        <p>No classes created yet.</p>
+        <p>No sections created yet.</p>
         {% endfor %}
     </div>
 </main>
@@ -443,11 +441,6 @@
 <!-- ✅ Make sure this is in base.html (before </body>) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-
-
-
-
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const navLinks = document.querySelectorAll('.nav-link');
@@ -469,46 +462,21 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     const logoutBtn = document.querySelector('.logout-btn');
-    logoutBtn.addEventListener('click', function() {
-        if(confirm('Are you sure you want to logout?')) console.log('Logging out...');
-    });
-});
-</script>
-
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            const dropdown = this.nextElementSibling;
-            if(dropdown && dropdown.classList.contains('dropdown-content')) {
-                const isOpen = dropdown.style.display === 'flex';
-                document.querySelectorAll('.dropdown-content').forEach(d => d.style.display = 'none');
-                document.querySelectorAll('.dropdown-arrow').forEach(a => a.style.transform = 'rotate(0deg)');
-                dropdown.style.display = isOpen ? 'none' : 'flex';
-                this.querySelector('.dropdown-arrow').style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
-                e.preventDefault();
-            } else {
-                navLinks.forEach(l => l.classList.remove('active'));
-                this.classList.add('active');
-            }
+    if(logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+            if(confirm('Are you sure you want to logout?')) console.log('Logging out...');
         });
-    });
-
-    const logoutBtn = document.querySelector('.logout-btn');
-    logoutBtn.addEventListener('click', function() {
-        if(confirm('Are you sure you want to logout?')) console.log('Logging out...');
-    });
+    }
 
     // Toggle sidebar on mobile
     const toggle = document.querySelector('.menu-toggle');
     const sidebar = document.querySelector('.sidebar');
-    toggle.addEventListener('click', function() {
-        sidebar.classList.toggle('active');
-    });
+    if(toggle && sidebar) {
+        toggle.addEventListener('click', function() {
+            sidebar.classList.toggle('active');
+        });
+    }
 });
 </script>
-
 </body>
 </html>

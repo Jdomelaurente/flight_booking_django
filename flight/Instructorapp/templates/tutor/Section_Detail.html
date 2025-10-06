@@ -615,7 +615,7 @@
                     <span class="dropdown-arrow">▼</span>
                 </a>
                 <div class="dropdown-content">
-                    <a href="#" class="dropdown-item">⭐ View Grades</a>
+                    <a href="{% url 'Section_Task' %}" class="dropdown-item">⭐ View Grades</a>
                 </div>
             </div>
 
@@ -743,9 +743,10 @@
         </div>
     </main>
 
+    
     <!-- MAIN Task Modal -->
     <div class="modal fade task-modal" id="taskModal" tabindex="-1" aria-labelledby="taskModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content" style="border-radius:15px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.3);">
                 <div class="modal-header" style="background: linear-gradient(135deg, #127552, #1abc9c); color:#fff; border:none; padding: 1.5rem;">
                     <h5 class="modal-title" id="taskModalLabel" style="font-weight: 700; font-size: 1.3rem;">
@@ -759,26 +760,76 @@
                             {% for booking in bookings %}
                                 <div style="{% if booking.duration and booking.duration < now %}background: #e8e8e8; border: 2px solid #999;{% else %}background: #fff; border: 2px solid #127552;{% endif %} border-radius: 12px; padding: 1.5rem; box-shadow: 0 6px 15px rgba(0,0,0,0.1);">
                                     <!-- Header with Status -->
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                                        <h4 style="color: #2f3b52; margin: 0; font-weight: 600;">Task " {{ forloop.counter }} "</h4>
-                                        <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                            {% if booking.duration %}
-                                                {% if booking.duration > now %}
-                                                    <span style="background: #28a745; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
-                                                        ✅ Active
-                                                    </span>
-                                                {% else %}
-                                                    <span style="background: #dc3545; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
-                                                        ⏰ Passed Deadline
-                                                    </span>
-                                                {% endif %}
-                                            {% endif %}
-                                            {% if booking.passengers.exists %}
-                                                <span style="background: #17a2b8; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
-                                                    👥 {{ booking.passengers.count }} Passenger{{ booking.passengers.count|pluralize }}
-                                                </span>
-                                            {% endif %}
+                                    <!-- Header with Status and Task Code -->
+                        <!-- Header with Status and Task Code -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <div style="display: flex; flex-direction: column; gap: 0.3rem;">
+                                <h4 style="color: #2f3b52; margin: 0; font-weight: 600;">Task {{ forloop.counter }}</h4>
+                                {% if booking.task_code %}
+                                <div style="font-family: monospace; font-size: 1.1rem; color: #127552; font-weight: 700; background: #e8f5e9; padding: 0.4rem 0.8rem; border-radius: 8px; display: inline-block; letter-spacing: 3px;">
+                                    CODE: {{ booking.task_code }}
+                                </div>
+                                {% else %}
+                                <div style="font-size: 0.85rem; color: #999; font-style: italic;">
+                                    No code generated yet
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                {% if booking.is_active %}
+                                    <span style="background: #28a745; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
+                                        ✅ Active
+                                    </span>
+                                {% else %}
+                                    <span style="background: #6c757d; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
+                                        🔒 Inactive
+                                    </span>
+                                {% endif %}
+                                {% if booking.duration %}
+                                    {% if booking.duration > now %}
+                                        <span style="background: #17a2b8; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
+                                            ⏰ {{ booking.get_time_remaining }} hrs left
+                                        </span>
+                                    {% else %}
+                                        <span style="background: #dc3545; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
+                                            ⏰ Deadline Passed
+                                        </span>
+                                    {% endif %}
+                                {% endif %}
+                                {% if booking.passengers.exists %}
+                                    <span style="background: #17a2b8; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
+                                        👥 {{ booking.passengers.count }} Passenger{{ booking.passengers.count|pluralize }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                                    <!-- Score Section - ADDED -->
+                                    <div style="margin-bottom: 1rem; padding: 1rem; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 10px; border-left: 4px solid #0284c7;">
+                                        <h6 style="color: #0c4a6e; font-weight: 600; margin-bottom: 0.8rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                                            <span style="display: flex; align-items: center; gap: 0.5rem;">
+                                                📊 Score Information
+                                            </span>
+                                            <span class="total-score-badge">
+                                                {{ booking.total_score|floatformat:2 }} / {{ booking.total_max_score|floatformat:2 }} pts
+                                            </span>
+                                        </h6>
+                                        
+                                        {% if booking.scores.exists %}
+                                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.6rem;">
+                                            {% for score in booking.scores.all %}
+                                            <div class="score-item">
+                                                <div class="score-field-name">{{ score.display_name }}</div>
+                                                <div class="score-values">
+                                                    <span class="current-score">{{ score.score|floatformat:2 }}</span>
+                                                    <span class="score-separator">/</span>
+                                                    <span class="max-score">{{ score.max_score|floatformat:2 }}</span>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
                                         </div>
+                                        {% else %}
+                                        <p style="color: #64748b; font-size: 0.9rem; margin: 0;">No scoring criteria set for this task.</p>
+                                        {% endif %}
                                     </div>
 
                                     <!-- Trip Type and Duration -->
@@ -884,13 +935,15 @@
                                     {% endif %}
 
                                     <!-- Action Buttons -->
-                                    <div style="display: flex; gap: 0.5rem; justify-content: space-between;">
+                                    <div style="display: flex; gap: 0.5rem; justify-content: space-between; align-items: center; flex-wrap: wrap;">
                                         <div style="font-size: 0.8rem; color: #666;">
                                             Created: {{ booking.created_at|date:"M d, Y H:i" }}
                                         </div>
                                         <div style="display: flex; gap: 0.5rem;">
-                                            <button style="background: #127552; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem; cursor: pointer;">✏️ Edit</button>
-                                            <button style="background: #c0392b; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem; cursor: pointer;">🗑️ Delete</button>
+                                            <a href="{% url 'Edit_instruction' booking.pk %}" style="text-decoration: none;">
+                                                <button style="background: #127552; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem; cursor: pointer; transition: 0.3s;">✏️ Edit</button>
+                                            </a>
+                                            <button style="background: #c0392b; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem; cursor: pointer; transition: 0.3s;">🗑️ Delete</button>
                                         </div>
                                     </div>
                                 </div>
@@ -899,7 +952,7 @@
                     {% else %}
                         <div style="text-align: center; padding: 3rem; color: #888;">
                             <div style="font-size: 4rem; margin-bottom: 1rem;">📋</div>
-                            <h6 style="color: #555; margin-bottom: 0.5rem;">No Flight Bookings Instructions Yet</h6>
+                            <h6 style="color: #555; margin-bottom: 0.5rem;">No Flight Booking Instructions Yet</h6>
                         </div>
                     {% endif %}
                 </div>

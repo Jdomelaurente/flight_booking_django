@@ -102,3 +102,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 STATICFILES_DIRS = [
     BASE_DIR / "static",   # <--- this is your project-level static folder
 ]
+
+# ==================== LOGIN CONFIGURATION ====================
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'login'
+
+# Optional: Session settings
+SESSION_COOKIE_AGE = 86400  # 1 day
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False

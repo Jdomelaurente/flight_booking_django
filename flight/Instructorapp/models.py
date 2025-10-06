@@ -1,8 +1,14 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
-from django.db import models
 from django.contrib.auth.models import User
+import uuid
+from django.utils import timezone
+from datetime import timedelta
+import random
+from decimal import Decimal
+
+# ... rest of your models
 
 # Custom User model
 
@@ -14,6 +20,17 @@ class User(AbstractUser):
     ]
     role = models.CharField(max_length=50, choices=ROLE_CHOICES, default='Student')
 
+
+class RegisteredUser(models.Model):
+    """Logs every registered user separately"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="registration_log")
+    username = models.CharField(max_length=150)
+    email = models.EmailField()
+    role = models.CharField(max_length=50)
+    date_registered = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.username} ({self.role})"
 
 # Class model, linked to the logged-in user
 class Class(models.Model):
@@ -70,7 +87,6 @@ class ExcelRowData(models.Model):
     
 
 
-# models.py
 class Booking(models.Model):
     section = models.ForeignKey("Section", on_delete=models.CASCADE, related_name="bookings")
 
@@ -98,10 +114,48 @@ class Booking(models.Model):
     travel_class = models.CharField(max_length=20, choices=CLASS_CHOICES)
     seat_preference = models.CharField(max_length=20, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    # NEW FIELDS
+    is_active = models.BooleanField(default=False)
+    task_code = models.CharField(max_length=6, unique=True, blank=True, null=True)
+    total_score = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
+
+    def save(self, *args, **kwargs):
+        # Don't auto-generate code on save, only when explicitly activated
+        super().save(*args, **kwargs)
+
+    def generate_unique_code(self):
+        """Generate a unique 6-digit numeric code"""
+        while True:
+            code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+            if not Booking.objects.filter(task_code=code).exists():
+                return code
+
+    def get_time_remaining(self):
+        """Calculate hours remaining until duration deadline"""
+        if not self.duration:
+            return None
+        now = timezone.now()
+        if self.duration > now:
+            delta = self.duration - now
+            hours = delta.total_seconds() / 3600
+            return round(hours, 1)
+        return 0
 
     def __str__(self):
         route_str = str(self.route) if self.route else "No Route"
         return f"{route_str} ({self.trip_type})"
+
+
+class TaskScore(models.Model):
+    """Store individual scores for each task component"""
+    booking = models.ForeignKey('Booking', on_delete=models.CASCADE, related_name="scores")
+    field_name = models.CharField(max_length=100)
+    score = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    max_score = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    
+    def __str__(self):
+        return f"{self.field_name}: {self.score}/{self.max_score}"
 
 
 class Passenger(models.Model):

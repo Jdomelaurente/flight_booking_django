@@ -7,6 +7,8 @@ from django.utils import timezone
 from django.http import JsonResponse
 from django.shortcuts import render
 
+from flightapp.models import Route, Schedule, Student
+
 import hashlib
 from .models import User
 from django.contrib import messages
@@ -105,7 +107,7 @@ def register_view(request):
             role=role
         )
         messages.success(request, "Account created. Please login.")
-        return redirect("login")
+        return redirect("login1")
 
     return render(request, "register.html")
 
@@ -129,10 +131,10 @@ def login_view(request):
             elif user.role == "student":
                 return redirect("student_dashboard")
             else:
-                return redirect("login")  # fallback
+                return redirect("login1")  # fallback
         except User.DoesNotExist:
             messages.error(request, "Invalid username or password.")
-            return redirect("login")
+            return redirect("login1")
 
     return render(request, "login.html")
 

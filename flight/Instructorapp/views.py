@@ -9,44 +9,100 @@ from django import forms
 from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.views import redirect_to_login
+from functools import wraps
+
 # Models
-from .models import Class, SectionGroup, Section, User, ExcelRowData, Booking, Passenger
+from .models import Class, SectionGroup, Section, User, ExcelRowData, Booking, Passenger, MultiCityLeg
 
 # Forms
 import pandas as pd
 import openpyxl
-from django.utils.dateparse import parse_date
+from django.utils.dateparse import parse_date, parse_datetime
 from django.views.decorators.csrf import csrf_protect
 from .forms import CustomUserCreationForm
-from flightapp.models import Route, Schedule , Student
-from flightapp.models import Route   # ✅ import Route from flightapp
-from .models import MultiCityLeg
-from django.utils.dateparse import parse_date, parse_datetime
+from flightapp.models import Route, Schedule, Student
 from datetime import date
 from django.utils.timezone import make_aware
-User = get_user_model()
 from django.utils import timezone
 
 from django.core.serializers import serialize
 import json
+from decimal import Decimal
+from django.utils.dateparse import parse_date, parse_datetime
+from django.utils.timezone import make_aware
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect, render
+from .models import Booking, TaskScore, Section
+from .decorators import role_required
+User = get_user_model()
+
+import random
+from django.db import models
+
+# ==================== CUSTOM DECORATOR ====================
+
+def role_required(allowed_roles):
+    """
+    Decorator to check if user has required role.
+    If not authenticated, redirects to login.
+    If authenticated but wrong role, shows 403.
+    
+    Usage: @role_required(['Instructor'])
+    """
+    def decorator(view_func):
+        @wraps(view_func)
+        @login_required(login_url='login')
+        def wrapper(request, *args, **kwargs):
+            # At this point user is guaranteed to be authenticated
+            # Now check if they have the right role
+            if request.user.role not in allowed_roles:
+                role_text = ', '.join(allowed_roles)
+                return HttpResponseForbidden(f"Access Denied: This page is only accessible to {role_text}")
+            
+            return view_func(request, *args, **kwargs)
+        return wrapper
+    return decorator
+
+
+# ==================== AUTHENTICATION VIEWS ====================
+from .models import User, RegisteredUser
 
 @csrf_protect
 def registerPage(request):
-    # ✅ Redirect if already logged in
+    """User registration view - INSTRUCTOR ONLY"""
     if request.user.is_authenticated:
         if request.user.role == 'Instructor':
             return redirect('dashboard')
-        elif request.user.role == 'Student':
-            return redirect('student_dashboard')
-        elif request.user.role == 'Admin':
-            return redirect('admin_dashboard')
-    
+        else:
+            logout(request)
+
     success = False
     if request.method == "POST":
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save()  # User with role is saved to database
+            user = form.save(commit=False)
+
+            if user.role != 'Instructor':
+                form.add_error('role', 'Only Instructors are allowed to register in this system')
+                return render(request, "tutor/register.html", {
+                    "form": form,
+                    "errors": form.errors,
+                    "success": False,
+                })
+
+            user.save()
+
+            # ✅ Save registration log
+            RegisteredUser.objects.create(
+                user=user,
+                username=user.username,
+                email=user.email,
+                role=user.role,
+            )
+
             success = True
+            messages.success(request, "Registration successful! Please login.")
             return redirect("login")
     else:
         form = CustomUserCreationForm()
@@ -62,97 +118,90 @@ def registerPage(request):
     )
 
 def loginPage(request):
+    """User login view - INSTRUCTOR ONLY"""
+
     # ✅ Redirect if already logged in
     if request.user.is_authenticated:
         if request.user.role == 'Instructor':
             return redirect('dashboard')
-        elif request.user.role == 'Student':
-            return redirect('student_dashboard')
-        elif request.user.role == 'Admin':
-            return redirect('admin_dashboard')
-        return redirect('dashboard')
-    
+        else:
+            logout(request)
+
     if request.method == "POST":
         username = request.POST.get('username')
         password = request.POST.get('password')
 
-        if not User.objects.filter(username=username).exists():
+        # ✅ Check if username exists in database
+        try:
+            user_obj = User.objects.get(username=username)
+        except User.DoesNotExist:
             return render(request, "tutor/login.html", {
-                "error": "Username does not exist",
+                "error": "❌ Username does not exist",
                 "form": AuthenticationForm()
             })
 
+        # ✅ Authenticate credentials
         user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            
-            # ✅ Check for 'next' parameter to redirect to intended page
-            next_url = request.GET.get('next') or request.POST.get('next')
-            if next_url:
-                return redirect(next_url)
-            
-            # Role-based redirect
-            if user.role == 'Instructor':
-                return redirect("dashboard")  # dashboard.html for Instructor
-            elif user.role == 'Student':
-                return redirect("student_dashboard")  # Student_dashboard.html
-            elif user.role == 'Admin':
-                return redirect("admin_dashboard")  # admin dashboard if you have one
-            else:
-                return redirect("dashboard")  # default fallback
-        else:
+        if user is None:
             return render(request, "tutor/login.html", {
-                "error": "Invalid password",
+                "error": "❌ Invalid password",
                 "form": AuthenticationForm()
             })
+
+        # ✅ Restrict login only to Instructors
+        if user.role != 'Instructor':
+            return render(request, "tutor/login.html", {
+                "error": "⚠️ Only Instructors are allowed to login",
+                "form": AuthenticationForm()
+            })
+
+        # ✅ Login success
+        login(request, user)
+
+        # Check if user was redirected by @login_required
+        next_url = request.GET.get('next') or request.POST.get('next')
+        return redirect(next_url or "dashboard")
+
     else:
         form = AuthenticationForm()
+
     return render(request, "tutor/login.html", {"form": form})
 
-# NEW: Student dashboard view
-@login_required(login_url='login')
-def student_dashboard(request):
-    # ✅ Ensure only students can access this
-    if request.user.role != 'Student':
-        return HttpResponseForbidden("Access Denied: Students only")
-    
-    return render(request, 'tutor/Student_dashboard.html')
 
-@login_required(login_url='login')
-def admin_dashboard(request):
-    # ✅ Ensure only admins can access this
-    if request.user.role != 'Admin':
-        return HttpResponseForbidden("Access Denied: Admins only")
-    
-    return render(request, 'tutor/admin_dashboard.html')
-
-# Logout view
 @login_required(login_url='login')
 def logoutPage(request):
+    """Logout view"""
     logout(request)
+    messages.success(request, "You have been logged out successfully.")
     return redirect("login")
 
-# Create your views here.
-@login_required(login_url='login')
+
+# ==================== STUDENT VIEWS (REMOVED - Students cannot login) ====================
+# ==================== ADMIN VIEWS (REMOVED - Only Instructors allowed) ====================
+
+# Student and Admin dashboards have been removed - ONLY INSTRUCTORS can login to this system
+
+
+# ==================== INSTRUCTOR VIEWS ====================
+
+@role_required(['Instructor'])
 def dashboard(request):
-    # ✅ Ensure only instructors can access this
-    if request.user.role != 'Instructor':
-        return HttpResponseForbidden("Access Denied: Instructors only")
-    
+    """Instructor dashboard - only accessible to instructors"""
     return render(request, 'tutor/Dashboard.html')
 
-# Class List
 
-@login_required(login_url='login')
+# ==================== CLASS MANAGEMENT ====================
+
+@role_required(['Instructor'])
 def Cclass(request):
-    # ✅ Ensure only instructors can access this
-    if request.user.role != 'Instructor':
-        return HttpResponseForbidden("Access Denied: Instructors only")
-    
+    """List all classes for the logged-in instructor with search and pagination"""
     query = request.GET.get('q', '')
-    classes_list = Class.objects.filter(user=request.user).order_by('id')  # ✅ only user's classes
+    
+    # 🔒 SECURITY: Only fetch classes belonging to the logged-in instructor
+    classes_list = Class.objects.filter(user=request.user).order_by('id')
 
     if query:
+        # 🔒 SECURITY: Search is already scoped to user's classes only
         classes_list = classes_list.filter(
             Q(subject_code__icontains=query) |
             Q(subject_title__icontains=query) |
@@ -172,14 +221,9 @@ def Cclass(request):
     })
 
 
-
-# Create Class
-@login_required(login_url='login')
+@role_required(['Instructor'])
 def CreateClass(request):
-    # ✅ Ensure only instructors can access this
-    if request.user.role != 'Instructor':
-        return HttpResponseForbidden("Access Denied: Instructors only")
-    
+    """Create a new class"""
     if request.method == "POST":
         subject_code = request.POST.get("subject_code")
         subject_title = request.POST.get("subject_title")
@@ -187,32 +231,27 @@ def CreateClass(request):
         semester = request.POST.get("semester")
         academic_year = request.POST.get("academic_year")
 
+        # 🔒 SECURITY: Always assign the class to the logged-in instructor
         Class.objects.create(
-            user=request.user,  # ✅ link to logged in user
+            user=request.user,
             subject_code=subject_code,
             subject_title=subject_title,
-            instructor=request.user.username,  # ✅ auto use logged in instructor
+            instructor=request.user.username,
             schedule=schedule,
             semester=semester,
             academic_year=academic_year
         )
 
-        messages.success(request, "Successfully Created!")
-        return redirect("CreateClass")
+        return redirect("Cclass")
 
     return render(request, "Create/CreateClass.html")
 
-#Edit Class
 
-
-@login_required(login_url='login')
+@role_required(['Instructor'])
 def EditClass(request, id):
-    # ✅ Ensure only instructors can access this
-    if request.user.role != 'Instructor':
-        return HttpResponseForbidden("Access Denied: Instructors only")
-    
+    """Edit an existing class"""
+    # 🔒 SECURITY: Only fetch class if it belongs to the logged-in instructor
     cls = get_object_or_404(Class, id=id, user=request.user)
-
 
     if request.method == "POST":
         cls.subject_code = request.POST.get("subject_code")
@@ -221,73 +260,70 @@ def EditClass(request, id):
         cls.schedule = request.POST.get("schedule")
         cls.semester = request.POST.get("semester")
         cls.academic_year = request.POST.get("academic_year")
+        
+        # 🔒 SECURITY: Ensure user ownership doesn't change
+        cls.user = request.user
         cls.save()
+        
+        messages.success(request, "Class updated successfully!")
         return redirect("Cclass")
 
     return render(request, "Cedit/editclass.html", {"cls": cls})
 
-#Delete Class
 
-
-@login_required(login_url='login')
+@role_required(['Instructor'])
 def DeleteClass(request, id):
-    # ✅ Ensure only instructors can access this
-    if request.user.role != 'Instructor':
-        return HttpResponseForbidden("Access Denied: Instructors only")
-    
+    """Delete a class"""
+    # 🔒 SECURITY: Only delete class if it belongs to the logged-in instructor
     cls = get_object_or_404(Class, id=id, user=request.user)
-
     cls.delete()
+    
+    messages.success(request, "Class deleted successfully!")
     return redirect('Cclass')
 
 
+# ==================== SECTION MANAGEMENT ====================
 
 
-@login_required(login_url='login')
+@role_required(['Instructor'])
 def Section_List(request):
-    # ✅ Ensure only instructors can access this
-    if request.user.role != 'Instructor':
-        return HttpResponseForbidden("Access Denied: Instructors only")
-    
-    groups = SectionGroup.objects.filter(user=request.user).prefetch_related("sections")
+    """List all individual sections for the logged-in instructor"""
+    # 🔒 SECURITY: Get all sections belonging ONLY to the instructor's section groups
+    sections = Section.objects.filter(
+        group__user=request.user
+    ).select_related('group')
 
     colors = ["#1976d2", "#f57c00", "#388e3c", "#c2185b", "#6a1b9a", "#00838f", "#d81b60"]
 
-    # Fetch subject codes + titles (unique)
-    class_map = {
-        c["subject_code"]: c["subject_title"]
-        for c in Class.objects.filter(user=request.user)
-        .values("subject_code", "subject_title")
-        .distinct()
-    }
+    # Assign colors and ensure instructor is set
+    sections_list = []
+    for idx, section in enumerate(sections):
+        section.card_color = colors[idx % len(colors)]
+        section.instructor = section.group.instructor or request.user.username
+        sections_list.append(section)
 
-    for idx, group in enumerate(groups):
-        group.card_color = colors[idx % len(colors)]
-        group.subject_title = class_map.get(group.subject_code, "No Title")
+    return render(request, "tutor/Section_List.html", {"sections": sections_list})
 
-        # Always ensure instructor is set
-        if not getattr(group, "instructor", None):
-            group.instructor = request.user.username
 
-    return render(request, "tutor/Section_List.html", {"groups": groups})
-
-@login_required(login_url='login')
+@role_required(['Instructor'])
 def Create_Section(request):
-    # ✅ Ensure only instructors can access this
-    if request.user.role != 'Instructor':
-        return HttpResponseForbidden("Access Denied: Instructors only")
-    
+    """Create new section group with multiple sections"""
     if request.method == "POST":
         subject_code = request.POST.get("subject_code")
         num_sections = int(request.POST.get("num_sections"))
 
-        subject_title = Class.objects.filter(user=request.user, subject_code=subject_code).values_list("subject_title", flat=True).first()
+        # 🔒 SECURITY: Only fetch subject_title from instructor's own classes
+        subject_title = Class.objects.filter(
+            user=request.user, 
+            subject_code=subject_code
+        ).values_list("subject_title", flat=True).first()
 
+        # 🔒 SECURITY: Always assign section group to the logged-in instructor
         section_group = SectionGroup.objects.create(
-            user=request.user,  # ✅
+            user=request.user,
             subject_code=subject_code,
             subject_title=subject_title,
-            instructor=request.user.username,  # ✅ auto
+            instructor=request.user.username,
             num_sections=num_sections
         )
 
@@ -295,10 +331,16 @@ def Create_Section(request):
             section_name = request.POST.get(f"section_{i}")
             section_schedule = request.POST.get(f"schedule_{i}")
             if section_name and section_schedule:
-                Section.objects.create(group=section_group, name=section_name, schedule=section_schedule)
+                Section.objects.create(
+                    group=section_group, 
+                    name=section_name, 
+                    schedule=section_schedule
+                )
 
+        messages.success(request, "Section group created successfully!")
         return redirect("Section_List")
 
+    # 🔒 SECURITY: Only show subject codes from instructor's own classes
     subject_codes = Class.objects.filter(user=request.user).values_list("subject_code", flat=True).distinct()
     classes = Class.objects.filter(user=request.user)
 
@@ -310,22 +352,14 @@ def Create_Section(request):
     return render(request, "Create/Create_Section.html", context)
 
 
-
-
-
-# Update Section View
-
-
-@login_required(login_url='login')
+@role_required(['Instructor'])
 def Update_section(request, pk):
-    # ✅ Ensure only instructors can access this
-    if request.user.role != 'Instructor':
-        return HttpResponseForbidden("Access Denied: Instructors only")
-    
-    group = get_object_or_404(SectionGroup, pk=pk, user=request.user)  # ✅ Added user filter
-    sections = group.sections.all()
+    """Update an individual section (not the entire group)"""
+    # 🔒 SECURITY: Get the specific section only if it belongs to the instructor
+    section = get_object_or_404(Section, pk=pk, group__user=request.user)
+    group = section.group
 
-    # Fetch both subject_code and subject_title
+    # 🔒 SECURITY: Fetch both subject_code and subject_title only from instructor's classes
     classes = list(
         Class.objects.filter(user=request.user)
         .values("subject_code", "subject_title")
@@ -334,73 +368,96 @@ def Update_section(request, pk):
     subject_codes = [c["subject_code"] for c in classes]
 
     if request.method == "POST":
+        # Update only this specific section
+        section.name = request.POST.get("section_name")
+        section.schedule = request.POST.get("section_schedule")
+        
+        # Update subject code in the group if changed
         subject_code = request.POST.get("subject_code")
-        group.subject_code = subject_code
+        if subject_code and subject_code != group.subject_code:
+            group.subject_code = subject_code
+            # Auto fetch subject title from instructor's own classes
+            subject_title = next(
+                (c["subject_title"] for c in classes if c["subject_code"] == subject_code), 
+                ""
+            )
+            group.subject_title = subject_title
+            
+            # 🔒 SECURITY: Ensure group ownership doesn't change
+            group.user = request.user
+            group.save()
+        
+        section.save()
 
-        # auto fetch subject title
-        subject_title = next((c["subject_title"] for c in classes if c["subject_code"] == subject_code), "")
-        group.subject_title = subject_title
-
-        group.instructor = request.user.username
-        group.save()
-
-        for section in sections:
-            name_key = f"section_name_{section.pk}"
-            schedule_key = f"section_schedule_{section.pk}"
-            if name_key in request.POST and schedule_key in request.POST:
-                section.name = request.POST.get(name_key)
-                section.schedule = request.POST.get(schedule_key)
-                section.save()
-
-        messages.success(request, "Section group updated successfully.")
+        messages.success(request, f"Section '{section.name}' updated successfully.")
         return redirect("Section_List")
 
-    subject_title = next((c["subject_title"] for c in classes if c["subject_code"] == group.subject_code), "")
+    subject_title = next(
+        (c["subject_title"] for c in classes if c["subject_code"] == group.subject_code), 
+        ""
+    )
 
     return render(request, "Cedit/editsection.html", {
+        "section": section,
         "group": group,
-        "sections": sections,
         "subject_codes": subject_codes,
         "subject_title": subject_title,
         "username": request.user.username,
-        "classes": classes,   # ✅ now contains both code + title
+        "classes": classes,
     })
 
-# ✅ Delete SectionGroup
 
-@login_required(login_url='login')
+@role_required(['Instructor'])
 def Delete_section(request, id):
-    # ✅ Ensure only instructors can access this
-    if request.user.role != 'Instructor':
-        return HttpResponseForbidden("Access Denied: Instructors only")
+    """Delete an individual section (not the entire group)"""
+    # 🔒 SECURITY: Get the specific section only if it belongs to the instructor
+    section = get_object_or_404(Section, id=id, group__user=request.user)
+    section_name = section.name
+    group = section.group
     
-    group = get_object_or_404(SectionGroup, id=id, user=request.user)
-
-    group.delete()
+    # Delete the section
+    section.delete()
+    
+    # Optional: If this was the last section in the group, delete the group too
+    if not group.sections.exists():
+        group.delete()
+        messages.success(request, f"Section '{section_name}' deleted successfully! The section group was also removed as it had no remaining sections.")
+    else:
+        # Update the num_sections count in the group
+        group.num_sections = group.sections.count()
+        group.save()
+        messages.success(request, f"Section '{section_name}' deleted successfully!")
+    
     return redirect('Section_List')
 
 
+# ==================== STUDENT MANAGEMENT IN SECTIONS ==================== #
 
-
-@login_required(login_url='login')
+@role_required(['Instructor'])
 def create_students(request, pk):
-    # ✅ Ensure only instructors can access this
-    if request.user.role != 'Instructor':
-        return HttpResponseForbidden("Access Denied: Instructors only")
+    """Add students to a section from existing student database (flightapp)"""
+    # 🔒 SECURITY: Only get section if it belongs to the logged-in instructor
+    section = get_object_or_404(Section, pk=pk, group__user=request.user)
     
-    section = get_object_or_404(Section, pk=pk)
+    # Fetch all available students from flightapp.models.Student
+    all_students_qs = Student.objects.all().order_by('student_number')
     
-    # ✅ Verify section belongs to current instructor
-    if section.group.user != request.user:
-        return HttpResponseForbidden("Access Denied: You don't have permission to modify this section")
+    # Convert to format expected by JavaScript (matching Django's serialize format)
+    all_students = []
+    for student in all_students_qs:
+        all_students.append({
+            'pk': student.id,
+            'fields': {
+                'student_number': student.student_number,
+                'first_name': student.first_name,
+                'middle_initial': student.middle_initial or '',
+                'last_name': student.last_name,
+                'email': student.email,
+                'phone': student.phone or '',
+            }
+        })
     
-    # Fetch all available students from the other app - ✅ Filter only Student role users
-    all_students_qs = Student.objects.filter(user__role='Student').order_by('student_number')
-    
-    # Convert QuerySet to JSON-serializable format
-    all_students = json.loads(serialize('json', all_students_qs))
-    
-    # Get existing student numbers in this section
+    # 🔒 SECURITY: Get existing student numbers only from this instructor's section
     existing_students = ExcelRowData.objects.filter(section=section)
     existing_student_numbers = []
     for row in existing_students:
@@ -416,7 +473,7 @@ def create_students(request, pk):
             
             for student_id in student_ids:
                 try:
-                    student = Student.objects.get(id=student_id, user__role='Student')  # ✅ Double-check role
+                    student = Student.objects.get(id=student_id)
                     
                     # Check if student already added to this section
                     if student.student_number in existing_student_numbers:
@@ -433,6 +490,7 @@ def create_students(request, pk):
                         "Phone": student.phone or "",
                     }
                     
+                    # 🔒 SECURITY: Student is added to instructor's section
                     ExcelRowData.objects.create(
                         section=section,
                         data=student_data
@@ -449,36 +507,15 @@ def create_students(request, pk):
     
     return render(request, "Create/Create_students.html", {
         "section": section,
-        "all_students": all_students,
-        "existing_student_numbers": existing_student_numbers,
+        "all_students": json.dumps(all_students),
+        "existing_student_numbers": json.dumps(existing_student_numbers),
     })
 
-@login_required(login_url='login')
+
+@role_required(['Instructor'])
 def section_detail(request, pk):
-    # ✅ Allow both Instructors and Students to view, but with different permissions
-    section = get_object_or_404(Section, pk=pk)
-    
-    # ✅ Verify access permissions
-    if request.user.role == 'Instructor':
-        # Instructor can only view their own sections
-        if section.group.user != request.user:
-            return HttpResponseForbidden("Access Denied: You don't have permission to view this section")
-    elif request.user.role == 'Student':
-        # Student can only view sections they're enrolled in
-        student_numbers = ExcelRowData.objects.filter(section=section).values_list('data__Student Number', flat=True)
-        
-        # Check if current user's student record exists in this section
-        try:
-            student_profile = Student.objects.get(user=request.user)
-            if student_profile.student_number not in student_numbers:
-                return HttpResponseForbidden("Access Denied: You are not enrolled in this section")
-        except Student.DoesNotExist:
-            return HttpResponseForbidden("Access Denied: Student profile not found")
-    else:
-        # Admins might have full access, or restrict based on your requirements
-        if request.user.role != 'Admin':
-            return HttpResponseForbidden("Access Denied")
-    
+    """View section details with students and bookings"""
+    section = get_object_or_404(Section, pk=pk, group__user=request.user)
     row_objects = ExcelRowData.objects.filter(section=section)
     
     # Search Excel rows
@@ -486,6 +523,7 @@ def section_detail(request, pk):
     if query:
         row_objects = [row for row in row_objects if query.lower() in str(row.data).lower()]
     
+    # Build headers and rows for display
     headers = []
     rows = []
     if row_objects:
@@ -494,14 +532,16 @@ def section_detail(request, pk):
         for obj in row_objects:
             rows.append({"id": obj.id, "values": list(obj.data.values())})
     
-    # Fetch Bookings with related data
+    # Fetch Bookings with scores
     bookings = Booking.objects.filter(section=section).prefetch_related(
         'passengers',
-        'legs'
+        'legs',
+        'scores'
     ).order_by('-created_at')
     
-    # Process route information for each booking
+    # Process route information and calculate scores
     for booking in bookings:
+        # Route display
         if booking.route:
             try:
                 if booking.route.isdigit():
@@ -513,6 +553,15 @@ def section_detail(request, pk):
                 booking.route_display = booking.route
         else:
             booking.route_display = "Route not specified"
+        
+        # Calculate total current score and total max score
+        scores = booking.scores.all()
+        booking.total_score = sum(Decimal(str(score.score)) for score in scores)
+        booking.total_max_score = sum(Decimal(str(score.max_score)) for score in scores)
+        
+        # Format field names for display
+        for score in scores:
+            score.display_name = score.field_name.replace('_', ' ').title()
     
     return render(request, "tutor/Section_Detail.html", {
         "section": section,
@@ -523,42 +572,26 @@ def section_detail(request, pk):
         "now": timezone.now(),
     })
 
-
-
-@login_required(login_url='login')
+@role_required(['Instructor'])
 def delete_excel_row(request, pk):
-    # ✅ Ensure only instructors can delete
-    if request.user.role != 'Instructor':
-        return HttpResponseForbidden("Access Denied: Instructors only")
-    
-    row = get_object_or_404(ExcelRowData, pk=pk)
+    """Delete a student from a section"""
+    # 🔒 SECURITY: Get the row and verify it belongs to instructor's section
+    row = get_object_or_404(ExcelRowData, pk=pk, section__group__user=request.user)
     section_id = row.section.id
     
-    # ✅ Verify section belongs to current instructor
-    if row.section.group.user != request.user:
-        return HttpResponseForbidden("Access Denied: You don't have permission to modify this section")
-    
     row.delete()
-    messages.success(request, "Row deleted successfully!")
-    # redirect to the Section_Detail view by name, not to the template file
+    messages.success(request, "Student removed from section successfully!")
     return redirect("Section_Detail", pk=section_id)
 
 
-
-@login_required(login_url='login')
+@role_required(['Instructor'])
 def edit_student(request, pk):
-    # ✅ Ensure only instructors can edit
-    if request.user.role != 'Instructor':
-        return HttpResponseForbidden("Access Denied: Instructors only")
-    
-    student = get_object_or_404(ExcelRowData, pk=pk)
+    """Edit student information in a section"""
+    # 🔒 SECURITY: Get the student and verify it belongs to instructor's section
+    student = get_object_or_404(ExcelRowData, pk=pk, section__group__user=request.user)
     section = student.section
-    
-    # ✅ Verify section belongs to current instructor
-    if section.group.user != request.user:
-        return HttpResponseForbidden("Access Denied: You don't have permission to modify this section")
 
-    # Get headers from first Excel row for consistency
+    # 🔒 SECURITY: Get headers from first Excel row in instructor's section
     row_objects = ExcelRowData.objects.filter(section=section)
     headers = []
     if row_objects.exists():
@@ -571,7 +604,8 @@ def edit_student(request, pk):
 
         student.data = updated_data
         student.save()
-        messages.success(request, "Student updated successfully!")
+        
+        messages.success(request, "Student information updated successfully!")
         return redirect("Section_Detail", pk=section.pk)
 
     return render(request, "Cedit/Edit_student.html", {
@@ -581,36 +615,25 @@ def edit_student(request, pk):
     })
 
 
+# ==================== FLIGHT BOOKING ====================
 
-@login_required(login_url='login')
+@role_required(['Instructor'])
 def book_flight(request, section_id):
-    section = get_object_or_404(Section, id=section_id)
-    
-    # ✅ Verify access permissions
-    if request.user.role == 'Instructor':
-        # Instructor can only book for their own sections
-        if section.group.user != request.user:
-            return HttpResponseForbidden("Access Denied: You don't have permission to book for this section")
-    elif request.user.role == 'Student':
-        # Student can only book for sections they're enrolled in
-        student_numbers = ExcelRowData.objects.filter(section=section).values_list('data__Student Number', flat=True)
-        
-        try:
-            student_profile = Student.objects.get(user=request.user)
-            if student_profile.student_number not in student_numbers:
-                return HttpResponseForbidden("Access Denied: You are not enrolled in this section")
-        except Student.DoesNotExist:
-            return HttpResponseForbidden("Access Denied: Student profile not found")
-    else:
-        # Restrict non-instructor/student roles if needed
-        if request.user.role != 'Admin':
-            return HttpResponseForbidden("Access Denied")
+    """
+    Book a flight for a section.
+    Accessible by: INSTRUCTORS ONLY (their own sections)
+    """
+    # 🔒 SECURITY: Only get section if it belongs to the logged-in instructor
+    section = get_object_or_404(Section, id=section_id, group__user=request.user)
 
-    # ✅ fetch all routes
+    # Fetch all routes
     routes = Route.objects.select_related("origin_airport", "destination_airport").all()
 
-    # ✅ fetch all schedules with related flight + routes
-    schedules = Schedule.objects.select_related("flight__route__origin_airport", "flight__route__destination_airport").all()
+    # Fetch all schedules with related flight + routes
+    schedules = Schedule.objects.select_related(
+        "flight__route__origin_airport", 
+        "flight__route__destination_airport"
+    ).all()
 
     if request.method == "POST":
         trip_type = request.POST.get("trip_type", "one_way")
@@ -625,14 +648,14 @@ def book_flight(request, section_id):
         seat_preference = request.POST.get("seat_preference", "")
 
         if not departure_date:
+            messages.error(request, "Departure date is required.")
             return render(request, "Create/Create_Instruction.html", {
                 "section": section,
                 "routes": routes,
                 "schedules": schedules,
-                "error": "Departure date is required."
             })
 
-        # ✅ Handle multi-city booking
+        # Handle multi-city booking
         multi_city_data = []
         if trip_type == "multi_city":
             i = 1
@@ -641,34 +664,32 @@ def book_flight(request, section_id):
                 dest = request.POST.get(f"to_{i}")
                 date = request.POST.get(f"date_{i}")
                 leg_duration = request.POST.get(f"duration_{i}") or None
+                
                 if origin and dest and date:
                     multi_city_data.append({
                         "origin": origin,
                         "destination": dest,
                         "date": parse_date(date),
-                        "duration": make_aware(parse_datetime(leg_duration)) if leg_duration else None,  # Fix timezone
+                        "duration": make_aware(parse_datetime(leg_duration)) if leg_duration else None,
                     })
                 i += 1
 
-        # ✅ Store the original route format for display
+        # Store the original route format for display
         original_route = route_id
         
-        # ✅ Handle round trip route parsing - but keep original format for storage
+        # Handle round trip route parsing - keep original format for storage
         if trip_type == "round_trip" and route_id and "|" in route_id:
             # Keep the full route for display (e.g., "BXU-CEB|CEB-BXU")
-            # You can split for processing if needed, but store the complete route
             outbound_route_id, return_route_id = route_id.split("|")
-            # For round trip, you might want to store the complete route or just outbound
-            # Keeping original format for better display
         
-        # ✅ Create the main booking
+        # 🔒 SECURITY: Create the booking for instructor's section
         booking = Booking.objects.create(
             section=section,
             trip_type=trip_type,
-            route=original_route,  # Store the original route format (like BXU-CEB or BXU-CEB|CEB-BXU)
+            route=original_route,
             departure_date=parse_date(departure_date),
             return_date=parse_date(return_date) if return_date else None,
-            duration=make_aware(parse_datetime(duration)) if duration else None,  # Fix timezone warning
+            duration=make_aware(parse_datetime(duration)) if duration else None,
             adults=adults,
             children=children,
             infants_on_lap=infants_on_lap,
@@ -676,7 +697,7 @@ def book_flight(request, section_id):
             seat_preference=seat_preference,
         )
 
-        # ✅ Handle multi-city legs
+        # Handle multi-city legs
         if multi_city_data:
             for leg in multi_city_data:
                 MultiCityLeg.objects.create(
@@ -687,7 +708,7 @@ def book_flight(request, section_id):
                     duration=leg["duration"],
                 )
 
-        # ✅ Handle passengers
+        # Handle passengers
         passenger_count = int(request.POST.get("passenger_count", 1))
         for p in range(1, passenger_count + 1):
             first_name = request.POST.get(f"first_name_{p}", "").strip()
@@ -697,6 +718,7 @@ def book_flight(request, section_id):
             if not first_name or not last_name:
                 continue
 
+            # Parse date of birth
             dob_year = request.POST.get(f'year_{p}')
             dob_month = request.POST.get(f'month_{p}')
             dob_day = request.POST.get(f'day_{p}')
@@ -724,6 +746,7 @@ def book_flight(request, section_id):
                     is_pwd=bool(request.POST.get(f"pwd_{p}")),
                 )
 
+        messages.success(request, "Flight booking created successfully!")
         return redirect("Section_Detail", pk=section.id)
 
     return render(request, "Create/Create_Instruction.html", {
@@ -731,3 +754,411 @@ def book_flight(request, section_id):
         "routes": routes,
         "schedules": schedules,
     })
+
+#Student Grade student_grade
+@role_required(['Instructor'])
+def Section_Task(request):
+    """
+    Display sections and bookings (tasks) for grade viewing.
+    Shows only sections belonging to the logged-in user.
+    """
+    # 🔒 SECURITY: Fetch only sections belonging to the logged-in instructor
+    user_sections = Section.objects.filter(group__user=request.user).order_by('name')
+    
+    # Get selected section from GET parameter
+    selected_section_id = request.GET.get('section', '')
+    selected_section = None
+    tasks_data = []
+    
+    if selected_section_id and user_sections.exists():
+        try:
+            # 🔒 SECURITY: Ensure the selected section belongs to the logged-in instructor
+            selected_section = Section.objects.get(pk=selected_section_id, group__user=request.user)
+            
+            # 🔒 SECURITY: Fetch all bookings (tasks) only from this instructor's section
+            bookings = Booking.objects.filter(section=selected_section).prefetch_related(
+                'passengers',
+                'legs'
+            ).order_by('-created_at')
+            
+            # Extract booking data for display as tasks
+            task_counter = 1
+            for booking in bookings:
+                # Process route for display
+                route_display = "Route not specified"
+                if booking.route:
+                    try:
+                        if booking.route.isdigit():
+                            route_obj = Route.objects.select_related(
+                                'origin_airport', 
+                                'destination_airport'
+                            ).get(id=int(booking.route))
+                            route_display = f"{route_obj.origin_airport.code} → {route_obj.destination_airport.code}"
+                        else:
+                            # Handle multi-city or round trip routes
+                            route_display = booking.route.replace('|', ' ↔ ').replace('-', ' → ')
+                    except (Route.DoesNotExist, ValueError):
+                        route_display = booking.route
+                
+                # Build task description
+                description = f"Flight booking for {booking.adults} adult(s)"
+                if booking.children > 0:
+                    description += f", {booking.children} child(ren)"
+                if booking.infants_on_lap > 0:
+                    description += f", {booking.infants_on_lap} infant(s)"
+                description += f" • {booking.travel_class.title()} class • {booking.trip_type.replace('_', ' ').title()}"
+                
+                # Determine status
+                status = "Upcoming"
+                if booking.departure_date:
+                    if booking.departure_date < timezone.now().date():
+                        status = "Completed"
+                    elif booking.departure_date == timezone.now().date():
+                        status = "Today"
+                
+                tasks_data.append({
+                    'id': booking.id,
+                    'task_number': task_counter,
+                    'title': f"Flight Booking - {route_display}",
+                    'description': description,
+                    'due_date': booking.departure_date,
+                    'created_at': booking.created_at,
+                    'status': status,
+                })
+                task_counter += 1
+            
+        except Section.DoesNotExist:
+            pass
+    
+    return render(request, "Student/Section_task.html", {
+        'user_sections': user_sections,
+        'selected_section': selected_section,
+        'tasks_data': tasks_data,
+        'selected_section_id': selected_section_id,
+    })
+
+
+
+@role_required(['Instructor'])
+def Edit_instruction(request, pk):
+    """Edit instruction/booking with scoring system"""
+    booking = get_object_or_404(Booking, pk=pk, section__group__user=request.user)
+    section = booking.section
+    
+    # Get existing scores
+    existing_scores = {score.field_name: score for score in booking.scores.all()}
+    
+    if request.method == "POST":
+        # Update basic booking fields
+        booking.trip_type = request.POST.get("trip_type", booking.trip_type)
+        booking.route = request.POST.get("route", booking.route)
+        booking.departure_date = parse_date(request.POST.get("departure_date")) or booking.departure_date
+        booking.return_date = parse_date(request.POST.get("return_date")) if request.POST.get("return_date") else None
+        booking.duration = make_aware(parse_datetime(request.POST.get("duration"))) if request.POST.get("duration") else None
+        booking.adults = int(request.POST.get("adults", booking.adults))
+        booking.children = int(request.POST.get("children", booking.children))
+        booking.infants_on_lap = int(request.POST.get("infants_on_lap", booking.infants_on_lap))
+        booking.travel_class = request.POST.get("travel_class", booking.travel_class)
+        booking.seat_preference = request.POST.get("seat_preference", booking.seat_preference)
+        
+        # Process scores - only max_score, actual score starts at 0
+        score_fields = [
+            'trip_type', 'route', 'departure_date', 'return_date', 'duration',
+            'adults', 'children', 'infants_on_lap', 'travel_class', 'seat_preference',
+            'passenger_info'  # Single field for all passenger information
+        ]
+        
+        # Delete scores that are no longer needed (max_score not provided or 0)
+        for field in score_fields:
+            max_score_value = request.POST.get(f"max_score_{field}")
+            if not max_score_value or Decimal(max_score_value) == 0:
+                if field in existing_scores:
+                    existing_scores[field].delete()
+        
+        # Update or create scores with provided max_score values
+        for field in score_fields:
+            max_score_value = request.POST.get(f"max_score_{field}")
+            
+            if max_score_value and Decimal(max_score_value) > 0:
+                max_score_decimal = Decimal(max_score_value)
+                
+                # Update or create score with 0 initial score
+                if field in existing_scores:
+                    score_obj = existing_scores[field]
+                    score_obj.max_score = max_score_decimal
+                    score_obj.score = Decimal('0.00')
+                    score_obj.save()
+                else:
+                    TaskScore.objects.create(
+                        booking=booking,
+                        field_name=field,
+                        score=Decimal('0.00'),
+                        max_score=max_score_decimal
+                    )
+        
+        # Calculate total max score from all saved scores
+        all_scores = TaskScore.objects.filter(booking=booking)
+        total_max = sum(score.max_score for score in all_scores)
+        
+        # Keep total_score at 0 until students complete the task
+        booking.total_score = Decimal('0.00')
+        
+        # Check if task should be activated
+        activate_task = request.POST.get("activate_task") == "true"
+        
+        if activate_task:
+            # Generate task code if not exists
+            if not booking.task_code:
+                booking.task_code = booking.generate_unique_code()
+            booking.is_active = True
+            messages.success(request, f"Task activated successfully! Task Code: {booking.task_code} | Max Score: {total_max}")
+        else:
+            booking.is_active = False
+            messages.success(request, f"Task updated successfully (not activated yet). Max Score: {total_max}")
+        
+        booking.save()
+        
+        return redirect("Section_Detail", pk=section.pk)
+    
+    return render(request, "Cedit/Edit_instruction.html", {
+        "booking": booking,
+        "section": section,
+        "existing_scores": existing_scores,
+    })
+
+# Individual Grade view
+@role_required(['Instructor'])
+def Student_Grade(request):
+    """
+    Display students for a specific task (booking) in a section.
+    Accessible by: INSTRUCTORS ONLY (their own sections)
+    """
+    # Get task_id, section_id, and task_number from GET parameters
+    task_id = request.GET.get('task', '')
+    section_id = request.GET.get('section', '')
+    task_number = request.GET.get('task_number', '1')
+    
+    if not task_id or not section_id:
+        messages.error(request, "Invalid request: Missing task or section parameter")
+        return redirect('Section_Task')
+    
+    try:
+        # 🔒 SECURITY: Get the section and verify it belongs to the logged-in instructor
+        section = Section.objects.get(pk=section_id, group__user=request.user)
+        
+        # 🔒 SECURITY: Get the booking (task) with passengers and verify it belongs to this instructor's section
+        booking = Booking.objects.prefetch_related('passengers', 'legs', 'scores').get(
+            pk=task_id, 
+            section=section
+        )
+        
+        # Calculate total max score for this task
+        task_scores = TaskScore.objects.filter(booking=booking)
+        total_max_score = sum(score.max_score for score in task_scores)
+        
+        # Build task name using the task number
+        task_name = f"Task {task_number}"
+        
+        # Process route for display - convert ID to airport codes
+        route_display = "Route not specified"
+        route_code = booking.route
+        
+        if booking.route:
+            try:
+                # Check if route is a numeric ID
+                if booking.route.isdigit():
+                    route_obj = Route.objects.select_related(
+                        'origin_airport', 
+                        'destination_airport'
+                    ).get(id=int(booking.route))
+                    route_code = f"{route_obj.origin_airport.code}-{route_obj.destination_airport.code}"
+                    route_display = f"{route_obj.origin_airport.code} → {route_obj.destination_airport.code}"
+                else:
+                    # Route already in text format (e.g., "BXU-CEB" or "BXU-CEB|CEB-BXU")
+                    route_code = booking.route
+                    route_display = booking.route.replace('|', ' ↔ ').replace('-', ' → ')
+            except (Route.DoesNotExist, ValueError):
+                route_code = booking.route
+                route_display = booking.route
+        
+        # Update booking object with processed route for template
+        booking.route_code = route_code
+        booking.route_display_text = route_display
+        
+        # Build task description
+        task_description = f"{route_display} • {booking.trip_type.replace('_', ' ').title()}"
+        task_details = f"Flight booking for {booking.adults} adult(s)"
+        if booking.children > 0:
+            task_details += f", {booking.children} child(ren)"
+        if booking.infants_on_lap > 0:
+            task_details += f", {booking.infants_on_lap} infant(s)"
+        task_details += f" • {booking.travel_class.title()} class"
+        
+        # 🔒 SECURITY: Get all students only from this instructor's section
+        row_objects = ExcelRowData.objects.filter(section=section)
+        
+        # Get all student bookings for this task (students who submitted this task)
+        student_bookings = Booking.objects.filter(
+            section=section,
+            task_code=booking.task_code
+        ).exclude(id=booking.id).prefetch_related('passengers', 'scores')
+        
+        # Create a dictionary mapping student numbers to their bookings
+        student_booking_dict = {}
+        for student_booking in student_bookings:
+            passengers = student_booking.passengers.all()
+            if passengers.exists():
+                first_passenger = passengers.first()
+                # Extract student number - adjust based on your model
+                student_num = getattr(first_passenger, 'student_number', None)
+                if student_num:
+                    student_booking_dict[student_num] = student_booking
+        
+        # Build students data with their scores for this specific task
+        students_data = []
+        for obj in row_objects:
+            if obj.data:
+                student_number = obj.data.get('Student Number', 'N/A')
+                
+                # Check if this student has submitted the task
+                if student_number in student_booking_dict:
+                    student_booking = student_booking_dict[student_number]
+                    
+                    # Get the student's total score for this task
+                    student_score = student_booking.total_score if student_booking.total_score else Decimal('0.00')
+                    
+                    # Calculate percentage
+                    if total_max_score > 0:
+                        percentage = round((float(student_score) / float(total_max_score)) * 100, 2)
+                    else:
+                        percentage = 0
+                else:
+                    # Student hasn't submitted this task yet
+                    student_score = None
+                    percentage = 0
+                
+                students_data.append({
+                    'id': obj.id,
+                    'student_number': student_number,
+                    'first_name': obj.data.get('First Name', ''),
+                    'middle_initial': obj.data.get('Middle Initial', ''),
+                    'last_name': obj.data.get('Last Name', ''),
+                    'email': obj.data.get('Email', ''),
+                    'score': student_score,
+                    'percentage': percentage,
+                })
+        
+        return render(request, "Grades/Student_Grade.html", {
+            'section': section,
+            'booking': booking,  # This includes passengers and processed route
+            'task_name': task_name,
+            'task_description': task_description,
+            'task_details': task_details,
+            'task_due_date': booking.departure_date,
+            'students_data': students_data,
+            'total_max_score': total_max_score,
+        })
+        
+    except Section.DoesNotExist:
+        messages.error(request, "Access Denied: Section not found or you don't have permission")
+        return redirect('Section_Task')
+    except Booking.DoesNotExist:
+        messages.error(request, "Task not found or you don't have permission to access it")
+        return redirect('Section_Task')
+
+
+@role_required(['Instructor'])
+def Score_details(request, pk):
+    """
+    Display detailed score comparison between student submission and task requirements.
+    pk = student's ExcelRowData id
+    """
+    # Get parameters from URL
+    task_id = request.GET.get('task', '')
+    section_id = request.GET.get('section', '')
+    task_number = request.GET.get('task_number', '1')
+    
+    if not task_id or not section_id:
+        messages.error(request, "Invalid request: Missing task or section parameter")
+        return redirect('Section_Task')
+    
+    try:
+        # 🔒 SECURITY: Get the section and verify it belongs to the logged-in instructor
+        section = Section.objects.get(pk=section_id, group__user=request.user)
+        
+        # 🔒 SECURITY: Get the task booking (instructor's template) with all related data
+        task_booking = Booking.objects.prefetch_related('passengers', 'scores').get(
+            pk=task_id,
+            section=section
+        )
+        
+        # Get student data from ExcelRowData
+        student_row = ExcelRowData.objects.get(pk=pk, section=section)
+        student_data = student_row.data
+        student_number = student_data.get('Student Number', 'N/A')
+        student_name = f"{student_data.get('First Name', '')} {student_data.get('Last Name', '')}"
+        
+        # 🔒 SECURITY: Get student's submission for this specific task
+        # First get all student bookings for this task
+        student_bookings = Booking.objects.prefetch_related('passengers', 'scores').filter(
+            section=section,
+            task_code=task_booking.task_code
+        ).exclude(id=task_booking.id)  # Exclude the instructor's template
+        
+        # Then find the one matching this student
+        student_booking = None
+        for booking in student_bookings:
+            passengers = booking.passengers.all()
+            if passengers.exists():
+                first_passenger = passengers.first()
+                passenger_student_num = getattr(first_passenger, 'student_number', None)
+                if passenger_student_num == student_number:
+                    student_booking = booking
+                    break
+        
+        # Calculate scores
+        task_scores = TaskScore.objects.filter(booking=task_booking)
+        total_max_score = sum(score.max_score for score in task_scores)
+        student_total_score = student_booking.total_score if student_booking else Decimal('0.00')
+        
+        # Build task name and description
+        task_name = f"Task {task_number}"
+        
+        # Process route display
+        route_display = "Route not specified"
+        if task_booking.route:
+            try:
+                if task_booking.route.isdigit():
+                    route_obj = Route.objects.select_related(
+                        'origin_airport', 
+                        'destination_airport'
+                    ).get(id=int(task_booking.route))
+                    route_display = f"{route_obj.origin_airport.code} → {route_obj.destination_airport.code}"
+                else:
+                    route_display = task_booking.route.replace('|', ' ↔ ').replace('-', ' → ')
+            except (Route.DoesNotExist, ValueError):
+                route_display = task_booking.route
+        
+        return render(request, "Grades/Score_details.html", {
+            'section': section,
+            'task_booking': task_booking,
+            'student_booking': student_booking,
+            'student_name': student_name,
+            'student_number': student_number,
+            'student_data': student_data,
+            'total_max_score': total_max_score,
+            'student_total_score': student_total_score,
+            'task_name': task_name,
+            'task_number': task_number,
+            'route_display': route_display,
+        })
+        
+    except Section.DoesNotExist:
+        messages.error(request, "Access Denied: Section not found or you don't have permission")
+        return redirect('Section_Task')
+    except ExcelRowData.DoesNotExist:
+        messages.error(request, "Student not found")
+        return redirect('Section_Task')
+    except Booking.DoesNotExist:
+        messages.error(request, "Task not found")
+        return redirect('Section_Task')

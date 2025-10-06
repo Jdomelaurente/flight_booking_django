@@ -14,8 +14,8 @@ urlpatterns = [
 
     # ✅ Dashboards - Login required (role checking done in views)
     path("dashboard/", login_required(views.dashboard), name="dashboard"),
-    path('student-dashboard/', login_required(views.student_dashboard), name='student_dashboard'),
-    path('admin-dashboard/', login_required(views.admin_dashboard), name='admin_dashboard'),
+    # path('student-dashboard/', login_required(views.student_dashboard), name='student_dashboard'),
+    # path('admin-dashboard/', login_required(views.admin_dashboard), name='admin_dashboard'),
 
     # ✅ Table Class - Login required
     path('Create/', login_required(views.Cclass), name='Cclass'),
@@ -47,4 +47,17 @@ urlpatterns = [
 
     # ✅ Students - Login required
     path("sections/<int:pk>/add-students/", login_required(views.create_students), name="create_students"),
+
+    # Section Grade Task
+     path("Grade/", login_required(views.Section_Task), name="Section_Task"),
+
+    # Student Grade Task
+    path("Individual_Grade/", login_required(views.Student_Grade), name="student_grade"),
+
+    #Edit Instruction
+    path('edit-instruction/<int:pk>/', views.Edit_instruction, name='Edit_instruction'),
+
+    # Score Details
+    path('Score_details/<int:pk>/', views.Score_details, name='Score_details'),
+
 ]

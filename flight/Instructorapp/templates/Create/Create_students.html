@@ -307,7 +307,7 @@
                     <span class="dropdown-arrow">▼</span>
                 </a>
                 <div class="dropdown-content">
-                    <a href="#" class="dropdown-item">⭐ View Grades</a>
+                    <a href="{% url 'Section_Task' %}" class="dropdown-item">⭐ View Grades</a>
                 </div>
             </div>
 
@@ -391,8 +391,13 @@
 </main>
 
 <!-- Pass student data to JavaScript -->
-{{ all_students|json_script:"students-data" }}
-{{ existing_student_numbers|json_script:"existing-students" }}
+<script id="students-data" type="application/json">
+    {{ all_students|safe }}
+</script>
+
+<script id="existing-students" type="application/json">
+    {{ existing_student_numbers|safe }}
+</script>
 
 <style>
 #student-search:focus {
@@ -597,11 +602,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     const logoutBtn = document.querySelector('.logout-btn');
-    logoutBtn.addEventListener('click', function() {
-        if(confirm('Are you sure you want to logout?')) console.log('Logging out...');
-    });
+    if(logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+            if(confirm('Are you sure you want to logout?')) console.log('Logging out...');
+        });
+    }
 });
 </script>
+
+
 
 </body>
 </html>

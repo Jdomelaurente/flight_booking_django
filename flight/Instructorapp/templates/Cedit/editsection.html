@@ -251,7 +251,7 @@
                     <span class="dropdown-arrow">▼</span>
                 </a>
                 <div class="dropdown-content">
-                    <a href="#" class="dropdown-item">⭐ View Grades</a>
+                    <a href="{% url 'Section_Task' %}" class="dropdown-item">⭐ View Grades</a>
                 </div>
             </div>
 
@@ -283,10 +283,9 @@
         </a>
     </div>
 </aside>
-
 <main class="main-content">
   <div class="form-container">
-    <h2><i class="fas fa-edit"></i> Edit Section Group</h2>
+    <h2><i class="fas fa-edit"></i> Edit Section</h2>
     <form method="post">
       {% csrf_token %}
 
@@ -314,21 +313,17 @@
 
       <hr>
       <br>
-      <h3>Sections</h3>
+      <h3>Section Details</h3>
 
-      {% for section in sections %}
-        <div class="section-edit">
-          <label>Section Code <span style="color: red;">*</span></label>
+      <!-- ✅ FIXED: Edit only this specific section -->
+      <div class="section-edit">
+        <label>Section Code <span style="color: red;">*</span></label>
+        <input type="text" name="section_name" value="{{ section.name }}" required>
 
-          <input type="text" name="section_name_{{ section.id }}" value="{{ section.name }}" required>
-
-          <label>Schedule</label>
-          <input type="text" name="section_schedule_{{ section.id }}" value="{{ section.schedule }}" required>
-        </div>
-        <br>
-      {% empty %}
-        <p>No sections yet.</p>
-      {% endfor %}
+        <label>Schedule <span style="color: red;">*</span></label>
+        <input type="text" name="section_schedule" value="{{ section.schedule }}" required>
+      </div>
+      <br>
 
       <button type="submit" class="btn btn-save"><i class="fas fa-save"></i> Save</button>
       <a href="{% url 'Section_List' %}" class="btn btn-cancel"><i class="fas fa-times"></i> Cancel</a>
@@ -360,7 +355,6 @@ document.addEventListener("DOMContentLoaded", function() {
     subjectCodeSelect.addEventListener("change", updateSubjectTitle);
 });
 </script>
-
 
 </body>
 </html>
