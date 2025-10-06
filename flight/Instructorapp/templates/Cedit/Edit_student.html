@@ -1,0 +1,367 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<title>Edit Student - Flight Booking Simulator</title>
+
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f5f7fa;
+        display: flex;
+        min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+        width: 260px;
+        background: linear-gradient(180deg, #2f3b52, #1f2a3d);
+        color: #fff;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 1.5rem 1rem;
+        position: fixed;
+        box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+    }
+
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 2rem;
+        letter-spacing: 0.5px;
+    }
+    .logo-icon {
+        width: 40px;
+        height: 40px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+    }
+
+    /* User Info */
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 2rem;
+        padding: 0.75rem;
+        background: rgba(255,255,255,0.08);
+        border-radius: 10px;
+    }
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+    .user-details { display: flex; flex-direction: column; font-size: 0.9rem; }
+    .welcome-text { font-weight: 600; }
+    .user-role { opacity: 0.7; font-size: 0.8rem; }
+
+    /* Sidebar Menu */
+    .nav-menu { display: flex; flex-direction: column; gap: 0.3rem; }
+    .nav-item { position: relative; }
+    .nav-link {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.7rem 1rem;
+        color: #fff;
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.95rem;
+        border-radius: 8px;
+        transition: background 0.3s, transform 0.2s;
+        cursor: pointer;
+    }
+    .nav-link:hover, .nav-link.active { 
+        background-color: #3b4a6b; 
+        transform: translateX(5px);
+    }
+
+    .nav-left { display: flex; align-items: center; gap: 0.6rem; }
+    .nav-icon { font-size: 1.2rem; }
+    .dropdown-arrow { font-size: 0.8rem; transition: transform 0.3s ease; }
+
+    .dropdown-content {
+        display: none;
+        flex-direction: column;
+        background-color: #3b4a6b;
+        margin-top: 0.3rem;
+        border-radius: 8px;
+        overflow: hidden;
+        animation: fadeIn 0.3s ease;
+        margin-left: 10px;
+    }
+    .dropdown-item {
+        padding: 0.55rem 1.8rem;
+        color: #fff;
+        text-decoration: none;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: background 0.2s;
+    }
+    .dropdown-item:hover, .dropdown-item.active { 
+        background-color: #7685a6; 
+        font-weight: 600;
+    }
+
+    /* Sidebar Footer */
+    .sidebar-footer { margin-top: auto; padding-top: 1rem; }
+    .logout-btn {
+        width: 100%;
+        background-color: #3b4a6b;
+        border: none;
+        color: #fff;
+        padding: 0.7rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.3s, transform 0.2s;
+    }
+    .logout-btn:hover { background-color: #4a5a7b; transform: scale(1.02); }
+
+    /* Main Content */
+    .main-content {
+        margin-left: 260px;
+        padding: 2rem;
+        flex-grow: 1;
+        min-height: 100vh;
+    }
+
+    /* Page Header */
+    .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+    }
+    .page-header h1 {
+        font-size: 1.6rem;
+        color: #2f3b52;
+    }
+    .back-btn {
+        text-decoration: none;
+        background: #2f3b52;
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        transition: background 0.2s;
+    }
+    .back-btn:hover { background: #1f2a3d; }
+
+    /* Form Card */
+    .form-card {
+        background: #fff;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0px 3px 10px rgba(0,0,0,0.12);
+        max-width: 700px;
+        margin: auto;
+        animation: fadeIn 0.5s ease;
+    }
+    .form-card h2 {
+        margin-bottom: 20px;
+        color: #333;
+        font-size: 1.3rem;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 8px;
+    }
+    label {
+        display: block;
+        margin-top: 15px;
+        font-weight: 500;
+        color: #444;
+    }
+    input[type="text"], input[type="email"], select {
+        width: 100%;
+        padding: 10px;
+        margin-top: 6px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 15px;
+        transition: border-color 0.2s;
+    }
+    input:focus { border-color: #127552; outline: none; }
+
+    .button-container {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 25px;
+    }
+    .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 15px;
+        cursor: pointer;
+        border: none;
+        transition: background 0.2s, transform 0.1s;
+    }
+    .btn-save {
+        background: #127552;
+        color: #fff;
+    }
+    .btn-save:hover { background: #0e5b40; transform: scale(1.02); }
+    .btn-cancel {
+        background: #d9534f;
+        color: #fff;
+    }
+    .btn-cancel:hover { background: #c9302c; transform: scale(1.02); }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+    <div>
+        <div class="logo"><div class="logo-icon">✈️</div>Flight Booking</div>
+        <div class="user-info">
+            <div class="user-avatar">👨‍💼</div>
+            <div class="user-details">
+                <div class="welcome-text">Welcome, {{ request.user.username }}</div>
+                <div class="user-role">{{ request.user.role }}</div>
+            </div>
+        </div>
+
+        <nav class="nav-menu">
+            <div class="nav-item">
+                <a href="#" class="nav-link"><div class="nav-left"><span class="nav-icon">🏠</span>Dashboard</div></a>
+            </div>
+
+            <div class="nav-item">
+                <a class="nav-link active">
+                    <div class="nav-left"><span class="nav-icon">📚</span>Manage Class</div>
+                    <span class="dropdown-arrow" style="transform: rotate(180deg);">▼</span>
+                </a>
+                <div class="dropdown-content" style="display: flex;">
+                    <a href="{% url 'Cclass' %}" class="dropdown-item">➕ Create Subject</a>
+                    <a href="{% url 'Section_List' %}" class="dropdown-item active">👥 Sections</a>
+                </div>
+            </div>
+
+            <div class="nav-item">
+                <a class="nav-link">
+                    <div class="nav-left"><span class="nav-icon">📋</span>Manage Instructions</div>
+                    <span class="dropdown-arrow">▼</span>
+                </a>
+                <div class="dropdown-content">
+                    <a href="{% url 'student_grade' %}" class="dropdown-item">📄 Instructions</a>
+                </div>
+            </div>
+
+            <div class="nav-item">
+                <a class="nav-link">
+                    <div class="nav-left"><span class="nav-icon">📊</span>Grades</div>
+                    <span class="dropdown-arrow">▼</span>
+                </a>
+                <div class="dropdown-content">
+                    <a href="#" class="dropdown-item">⭐ View Grades</a>
+                </div>
+            </div>
+
+            <div class="nav-item">
+                <a class="nav-link">
+                    <div class="nav-left"><span class="nav-icon">👨‍🎓</span>Student Info</div>
+                    <span class="dropdown-arrow">▼</span>
+                </a>
+                <div class="dropdown-content">
+                    <a href="#" class="dropdown-item">👥 Students</a>
+                    <a href="#" class="dropdown-item">📈 Student Tracking</a>
+                </div>
+            </div>
+
+            <div class="nav-item">
+                <a class="nav-link">
+                    <div class="nav-left"><span class="nav-icon">⚙️</span>Account Info</div>
+                    <span class="dropdown-arrow">▼</span>
+                </a>
+                <div class="dropdown-content">
+                    <a href="#" class="dropdown-item">👤 Accounts</a>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <div class="sidebar-footer">
+        <a href="/logout">
+            <button class="logout-btn">Logout</button>
+        </a>
+    </div>
+</aside>
+
+<!-- Main Content -->
+<main class="main-content">
+    <div class="page-header">
+        <h1>Edit Student in {{ section.name }}</h1>
+        <a href="{% url 'Section_Detail' section.pk %}" class="back-btn">⬅ Back to {{ section.name }}</a>
+    </div>
+
+    <div class="form-card">
+        <h2>Update Student Details</h2>
+        <form method="POST" id="student-form">
+            {% csrf_token %}
+            <div id="student-fields"></div>
+            <div class="button-container">
+                <a href="{% url 'Section_Detail' section.pk %}" class="btn btn-cancel">Cancel</a>
+                <button type="submit" class="btn btn-save">💾 Update Student</button>
+            </div>
+        </form>
+    </div>
+</main>
+
+<!-- Pass headers + student data safely -->
+{{ headers|json_script:"headers-data" }}
+{{ student.data|json_script:"student-data" }}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const container = document.getElementById("student-fields");
+    const headers = JSON.parse(document.getElementById("headers-data").textContent);
+    const studentData = JSON.parse(document.getElementById("student-data").textContent);
+
+    function generateFields() {
+        container.innerHTML = ""; 
+        headers.forEach(header => {
+            let inputType = "text";
+            if (header.toLowerCase().includes("email")) inputType = "email";
+
+            const value = studentData[header] || "";
+
+            const fieldHTML = `
+                <label>${header}:</label>
+                <input type="${inputType}" name="${header}" value="${value}" required>
+            `;
+            container.insertAdjacentHTML("beforeend", fieldHTML);
+        });
+    }
+    generateFields();
+});
+</script>
+
+</body>
+</html>

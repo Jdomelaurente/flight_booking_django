@@ -1,0 +1,360 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+<title>Flight Booking Simulator</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f5f7fa;
+        display: flex;
+        min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+        width: 260px;
+        background: linear-gradient(180deg, #2f3b52, #1f2a3d);
+        color: #fff;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 1.5rem 1rem;
+        position: fixed;
+        box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+    }
+
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 2rem;
+        letter-spacing: 0.5px;
+    }
+    .logo-icon {
+        width: 40px;
+        height: 40px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+    }
+
+    /* User Info */
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 2rem;
+        padding: 0.75rem;
+        background: rgba(255,255,255,0.08);
+        border-radius: 10px;
+    }
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+    .user-details {
+        display: flex;
+        flex-direction: column;
+        font-size: 0.9rem;
+    }
+    .welcome-text { font-weight: 600; }
+    .user-role { opacity: 0.7; font-size: 0.8rem; }
+
+    /* Sidebar Menu */
+    .nav-menu { display: flex; flex-direction: column; gap: 0.3rem; }
+    .nav-item { position: relative; }
+    .nav-link {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.7rem 1rem;
+        color: #fff;
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.95rem;
+        border-radius: 8px;
+        transition: background 0.3s, transform 0.2s;
+        cursor: pointer;
+    }
+    .nav-link:hover, .nav-link.active { 
+        background-color: #3b4a6b; 
+        transform: translateX(5px);
+    }
+
+    .nav-left { display: flex; align-items: center; gap: 0.6rem; }
+    .nav-icon { font-size: 1.2rem; }
+    .dropdown-arrow { font-size: 0.8rem; transition: transform 0.3s ease; }
+
+    .dropdown-content {
+        display: none;
+        flex-direction: column;
+        background-color: #3b4a6b;
+        margin-top: 0.3rem;
+        border-radius: 8px;
+        overflow: hidden;
+        animation: fadeIn 0.3s ease;
+        margin-left: 10px;
+    }
+    .dropdown-item {
+        padding: 0.55rem 1.8rem;
+        color: #fff;
+        text-decoration: none;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: background 0.2s;
+    }
+    .dropdown-item:hover, .dropdown-item.active { 
+        background-color: #7685a6; 
+        font-weight: 600;
+    }
+
+    /* Sidebar Footer */
+    .sidebar-footer { margin-top: auto; padding-top: 1rem; }
+    .logout-btn {
+        width: 100%;
+        background-color: #3b4a6b;
+        border: none;
+        color: #fff;
+        padding: 0.7rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.3s, transform 0.2s;
+    }
+    .logout-btn:hover { background-color: #4a5a7b; transform: scale(1.02); }
+
+    /* Main Content */
+    .main-content {
+        margin-left: 260px;
+        padding: 2rem;
+        flex-grow: 1;
+        min-height: 100vh;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+        .sidebar { width: 210px; padding: 1rem; }
+        .main-content { margin-left: 210px; padding: 1rem; }
+    }
+
+    /* Form Styles */
+    .form-container {
+        max-width: 600px;
+        margin: auto;
+        background: #fff;
+        padding: 25px;
+        border-radius: 8px;
+        box-shadow: 0px 2px 6px rgba(0,0,0,0.15);
+    }
+    .form-container h2 {
+        margin-bottom: 20px;
+        color: #333;
+    }
+    label {
+        display: block;
+        margin-top: 12px;
+        font-weight: 500;
+    }
+    input[type="text"], select {
+        width: 100%;
+        padding: 10px;
+        margin-top: 6px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 15px;
+    }
+    .btn {
+        display: inline-block;
+        margin-top: 20px;
+        padding: 10px 20px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 15px;
+        cursor: pointer;
+    }
+    .btn-save {
+        background: #127552;
+        color: #fff;
+        border: none;
+    }
+    .btn-save:hover {
+        background: #0e5b40;
+    }
+    .btn-cancel {
+        background: #d9534f;
+        color: #fff;
+        margin-left: 10px;
+        border: none;
+    }
+    .btn-cancel:hover {
+        background: #c9302c;
+    }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div>
+        <div class="logo"><div class="logo-icon">✈️</div>Flight Booking</div>
+        <div class="user-info">
+            <div class="user-avatar">👨‍💼</div>
+            <div class="user-details">
+                <div class="welcome-text">Welcome, {{ request.user.username }}</div>
+                <div class="user-role">{{ request.user.role }}</div>
+            </div>
+        </div>
+
+
+        <nav class="nav-menu">
+            <div class="nav-item">
+                <a href="#" class="nav-link"><div class="nav-left"><span class="nav-icon">🏠</span>Dashboard</div></a>
+            </div>
+
+            <div class="nav-item">
+                <a class="nav-link active">
+                    <div class="nav-left"><span class="nav-icon">📚</span>Manage Class</div>
+                    <span class="dropdown-arrow" style="transform: rotate(180deg);">▼</span>
+                </a>
+                <div class="dropdown-content" style="display: flex;">
+                    <a href="{% url 'Cclass' %}" class="dropdown-item">➕ Create Subject</a>
+                    <a href="{% url 'Section_List' %}" class="dropdown-item active">👥 Sections</a>
+                </div>
+            </div>
+
+            <div class="nav-item">
+                <a class="nav-link">
+                    <div class="nav-left"><span class="nav-icon">📊</span>Grades</div>
+                    <span class="dropdown-arrow">▼</span>
+                </a>
+                <div class="dropdown-content">
+                    <a href="{% url 'Section_Task' %}" class="dropdown-item">⭐ View Grades</a>
+                </div>
+            </div>
+
+            <div class="nav-item">
+                <a class="nav-link">
+                    <div class="nav-left"><span class="nav-icon">👨‍🎓</span>Student Info</div>
+                    <span class="dropdown-arrow">▼</span>
+                </a>
+                <div class="dropdown-content">
+                    <a href="#" class="dropdown-item">👥 Students</a>
+                    <a href="#" class="dropdown-item">📈 Student Tracking</a>
+                </div>
+            </div>
+
+            <div class="nav-item">
+                <a class="nav-link">
+                    <div class="nav-left"><span class="nav-icon">⚙️</span>Account Info</div>
+                    <span class="dropdown-arrow">▼</span>
+                </a>
+                <div class="dropdown-content">
+                    <a href="#" class="dropdown-item">👤 Accounts</a>
+                </div>
+            </div>
+        </nav>
+    </div>
+    <div class="sidebar-footer">
+        <a href="/logout">
+            <button class="logout-btn">Logout</button>
+        </a>
+    </div>
+</aside>
+<main class="main-content">
+  <div class="form-container">
+    <h2><i class="fas fa-edit"></i> Edit Section</h2>
+    <form method="post">
+      {% csrf_token %}
+
+      <!-- Subject Code -->
+      <label for="subject_code">Subject Code <span style="color: red;">*</span></label>
+
+      <select id="subject_code" name="subject_code" required>
+        {% for code in subject_codes %}
+          <option value="{{ code }}" {% if code == group.subject_code %}selected{% endif %}>
+            {{ code }}
+          </option>
+        {% endfor %}
+      </select>
+
+      <!-- Subject Title Auto-fill -->
+      <label for="subject_title">Subject Title</label>
+      <input type="text" id="subject_title" name="subject_title" 
+             value="{{ subject_title }}" readonly>
+
+      <!-- Instructor (always logged-in user, display only) -->
+      <label for="instructor">Instructor</label>
+      <input type="text" id="instructor" value="{{ username }}" readonly>
+      <!-- Hidden input so it still goes to backend -->
+      <input type="hidden" name="instructor" value="{{ username }}">
+
+      <hr>
+      <br>
+      <h3>Section Details</h3>
+
+      <!-- ✅ FIXED: Edit only this specific section -->
+      <div class="section-edit">
+        <label>Section Code <span style="color: red;">*</span></label>
+        <input type="text" name="section_name" value="{{ section.name }}" required>
+
+        <label>Schedule <span style="color: red;">*</span></label>
+        <input type="text" name="section_schedule" value="{{ section.schedule }}" required>
+      </div>
+      <br>
+
+      <button type="submit" class="btn btn-save"><i class="fas fa-save"></i> Save</button>
+      <a href="{% url 'Section_List' %}" class="btn btn-cancel"><i class="fas fa-times"></i> Cancel</a>
+    </form>
+  </div>
+</main>
+
+<!-- Pass classes data safely into JS -->
+{{ classes|json_script:"classes_data" }}
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const classOptions = JSON.parse(document.getElementById("classes_data").textContent);
+
+    const subjectCodeSelect = document.getElementById("subject_code");
+    const subjectTitleInput = document.getElementById("subject_title");
+
+    // Function to update subject title
+    function updateSubjectTitle() {
+        const selectedCode = subjectCodeSelect.value;
+        const selectedClass = classOptions.find(c => c.subject_code === selectedCode);
+        subjectTitleInput.value = selectedClass ? selectedClass.subject_title : "";
+    }
+
+    // Run once on load
+    updateSubjectTitle();
+
+    // Run on change
+    subjectCodeSelect.addEventListener("change", updateSubjectTitle);
+});
+</script>
+
+</body>
+</html>
