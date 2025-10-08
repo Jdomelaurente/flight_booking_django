@@ -1,4 +1,3 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,393 +8,291 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background-color: #f5f7fa;
-        display: flex;
-        min-height: 100vh;
+        background-color: #e5e7eb;
+        padding: 40px 20px;
     }
 
-    /* Sidebar Styles */
-    .sidebar {
-        width: 260px;
-        background: linear-gradient(180deg, #2f3b52, #1f2a3d);
-        color: #fff;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        padding: 1.5rem 1rem;
-        position: fixed;
-        box-shadow: 4px 0 15px rgba(0,0,0,0.2);
-        transition: transform 0.3s ease-in-out;
-    }
-
-    .logo {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        font-size: 1.4rem;
-        font-weight: 700;
-        margin-bottom: 2rem;
-        letter-spacing: 0.5px;
-    }
-    .logo-icon {
-        width: 40px;
-        height: 40px;
-        background: rgba(255,255,255,0.15);
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.3rem;
-    }
-
-    .user-info {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 2rem;
-        padding: 0.75rem;
-        background: rgba(255,255,255,0.08);
-        border-radius: 10px;
-    }
-    .user-avatar {
-        width: 40px;
-        height: 40px;
-        background: rgba(255,255,255,0.2);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1rem;
-    }
-    .user-details {
-        display: flex;
-        flex-direction: column;
-        font-size: 0.9rem;
-    }
-    .welcome-text { font-weight: 600; }
-    .user-role { opacity: 0.7; font-size: 0.8rem; }
-
-    .nav-menu { display: flex; flex-direction: column; gap: 0.3rem; }
-    .nav-item { position: relative; }
-    .nav-link {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.7rem 1rem;
-        color: #fff;
+    .back-link {
+        display: inline-block;
+        color: #2563eb;
         text-decoration: none;
-        font-weight: 500;
-        font-size: 0.95rem;
-        border-radius: 8px;
-        transition: background 0.3s, transform 0.2s;
-        cursor: pointer;
-    }
-    .nav-link:hover, .nav-link.active { 
-        background-color: #3b4a6b; 
-        transform: translateX(5px);
-    }
-
-    .nav-left {
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
-    }
-
-    .nav-icon { font-size: 1.2rem; }
-    .dropdown-arrow { font-size: 0.8rem; transition: transform 0.3s ease; }
-
-    .dropdown-content {
-        display: none;
-        flex-direction: column;
-        background-color: #3b4a6b;
-        margin-top: 0.3rem;
-        border-radius: 8px;
-        overflow: hidden;
-        animation: fadeIn 0.3s ease;
-    }
-    .dropdown-item {
-        padding: 0.55rem 1.8rem;
-        color: #fff;
-        text-decoration: none;
-        font-size: 0.85rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        transition: background 0.2s;
-    }
-    .dropdown-item:hover { background-color: #4a5a7b; }
-
-    .sidebar-footer {
-        margin-top: auto;
-        padding-top: 1rem;
-    }
-    .logout-btn {
-        width: 100%;
-        background-color: #3b4a6b;
-        border: none;
-        color: #fff;
-        padding: 0.7rem 1rem;
-        border-radius: 8px;
         font-weight: 600;
-        cursor: pointer;
-        transition: background 0.3s, transform 0.2s;
-    }
-    .logout-btn:hover { 
-        background-color: #4a5a7b; 
-        transform: scale(1.02);
+        margin-bottom: 20px;
+        font-size: 15px;
     }
 
-    /* Main Content */
-    .main-content {
-        margin-left: 260px;
-        padding: 2rem;
-        flex-grow: 1;
-        min-height: 100vh;
-        background: #f3f4f6;
-        transition: margin-left 0.3s ease-in-out;
+    .back-link:hover {
+        text-decoration: underline;
     }
 
-    .back-button {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.625rem 1.25rem;
-        background: #fff;
-        border: 2px solid #e5e7eb;
-        border-radius: 0.5rem;
-        color: #374151;
-        font-weight: 600;
-        text-decoration: none;
-        transition: all 0.2s ease;
-        margin-bottom: 1.5rem;
-    }
-    
-    .back-button:hover {
-        background: #f9fafb;
-        border-color: #0f766e;
-    }
-
-    /* Comparison Container */
-    .comparison-container {
-        background: #e5e7eb;
-        border-radius: 12px;
-        max-width: 100%;
-        overflow: hidden;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    .container {
+        max-width: 1400px;
+        margin: 0 auto;
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 0;
-        border: 3px solid #d1d5db;
+        gap: 30px;
     }
 
     /* Left Panel - Student Response */
     .student-panel {
-        background: #f9fafb;
+        background: #ffffff;
+        border: 3px solid #000;
+        border-radius: 0;
         padding: 0;
-        display: flex;
-        flex-direction: column;
-        border-right: 2px solid #e5e7eb;
+        box-shadow: 8px 8px 0 rgba(0,0,0,0.1);
     }
 
     .student-header {
-        background: white;
-        padding: 20px 24px;
-        border-bottom: 1px solid #e5e7eb;
+        padding: 24px;
+        border-bottom: 2px solid #e5e7eb;
     }
 
     .student-profile {
         display: flex;
         align-items: center;
-        gap: 12px;
-        margin-bottom: 16px;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .profile-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
     }
 
     .student-avatar {
-        width: 48px;
-        height: 48px;
+        width: 60px;
+        height: 60px;
         border-radius: 50%;
-        background: #e5e7eb;
+        background-color: #d1d5db;
+        overflow: hidden;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 20px;
+    }
+
+    .student-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .student-info {
+        flex: 1;
     }
 
     .student-name {
-        font-size: 16px;
-        font-weight: 600;
-        color: #1f2937;
-    }
-
-    .score-display {
-        font-size: 14px;
-        color: #6b7280;
-        margin-left: auto;
-    }
-
-    .activity-header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .activity-icon {
-        width: 32px;
-        height: 32px;
-        background: #0f766e;
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 16px;
-    }
-
-    .activity-info h3 {
-        font-size: 16px;
-        font-weight: 600;
-        color: #1f2937;
+        font-size: 18px;
+        font-weight: 700;
+        color: #000;
         margin-bottom: 2px;
     }
 
-    .activity-info p {
-        font-size: 12px;
-        color: #9ca3af;
+    .student-id {
+        font-size: 13px;
+        color: #6b7280;
+    }
+
+    .score-badge {
+        background: #fff;
+        border: 2px solid #000;
+        padding: 6px 14px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #000;
+        white-space: nowrap;
+    }
+
+    .activity-section {
+        background: #0f766e;
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .activity-icon-box {
+        width: 48px;
+        height: 48px;
+        background: #fff;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .activity-info {
+        color: #fff;
+    }
+
+    .activity-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 2px;
+    }
+
+    .activity-date {
+        font-size: 13px;
+        opacity: 0.9;
     }
 
     .student-content {
         padding: 24px;
-        overflow-y: auto;
-        max-height: calc(100vh - 250px);
     }
 
-    .field-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        padding: 16px;
+    .no-submission {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6b7280;
+    }
+
+    .no-submission-icon {
+        font-size: 60px;
         margin-bottom: 16px;
     }
 
-    .response-field {
-        margin-bottom: 12px;
+    .no-submission-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
     }
-    
-    .response-field:last-child {
-        margin-bottom: 0;
+
+    .no-submission-text {
+        font-size: 14px;
+    }
+
+    .field-group {
+        margin-bottom: 20px;
     }
 
     .field-row {
         display: flex;
-        gap: 16px;
-        margin-bottom: 16px;
+        gap: 40px;
+        margin-bottom: 20px;
     }
 
-    .field-row .response-field {
+    .field-item {
         flex: 1;
-        margin-bottom: 0;
     }
 
-    .response-label {
+    .field-label {
         font-size: 13px;
         font-weight: 600;
-        color: #1f2937;
+        color: #000;
         margin-bottom: 6px;
         display: flex;
         align-items: center;
         gap: 6px;
     }
 
-    .response-value {
+    .field-value {
+        font-size: 15px;
+        color: #000;
         display: flex;
         align-items: center;
         gap: 8px;
-        padding: 0;
-        font-size: 14px;
-        color: #1f2937;
     }
 
-    .response-value.correct {
-        color: #10b981;
-    }
-
-    .response-value.incorrect {
-        color: #ef4444;
-    }
-
-    .check-mark {
-        font-size: 14px;
+    .check-icon {
+        font-size: 16px;
         font-weight: bold;
     }
 
+    .check-icon.correct { color: #10b981; }
+    .check-icon.incorrect { color: #ef4444; }
+
     .route-box {
         background: #fef3c7;
-        border: 2px solid #fbbf24;
         border-left: 4px solid #fbbf24;
-        padding: 12px;
-        border-radius: 4px;
-        margin-top: 6px;
+        padding: 14px;
+        margin-top: 8px;
     }
 
     .route-box.correct {
         background: #d1fae5;
-        border-color: #10b981;
+        border-left-color: #10b981;
     }
 
     .route-box.incorrect {
         background: #fee2e2;
-        border-color: #ef4444;
+        border-left-color: #ef4444;
     }
 
     .route-code {
+        font-size: 15px;
         font-weight: 700;
-        color: #0f766e;
-        font-size: 14px;
+        color: #000;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .route-code.incorrect {
+        color: #ef4444;
     }
 
     .route-date {
         font-size: 13px;
         color: #6b7280;
-        margin-top: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
     .route-date.incorrect {
         color: #ef4444;
     }
 
-    .passenger-button {
+    .passenger-btn {
+        width: 100%;
         background: #065f46;
-        color: white;
+        color: #fff;
         border: none;
-        padding: 8px 16px;
-        border-radius: 4px;
-        font-size: 13px;
+        padding: 10px;
+        font-size: 14px;
         font-weight: 600;
         cursor: pointer;
-        width: 100%;
-        margin-bottom: 12px;
+        margin-bottom: 16px;
+        border-radius: 0;
     }
 
-    .passenger-box {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 4px;
-        padding: 12px;
-        margin-bottom: 12px;
+    .passenger-btn:hover {
+        background: #064e3b;
     }
 
-    .passenger-name-row {
+    .passenger-card {
+        background: #fff;
+        border: 2px solid #e5e7eb;
+        padding: 14px;
+        margin-bottom: 12px;
+        border-radius: 0;
+    }
+
+    .passenger-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 10px;
+        flex-wrap: wrap;
+        gap: 8px;
     }
 
-    .passenger-name-text {
-        font-weight: 600;
-        color: #1f2937;
+    .passenger-name {
         font-size: 14px;
+        font-weight: 700;
+        color: #000;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .passenger-badges {
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
     .badge {
@@ -403,9 +300,6 @@
         border-radius: 12px;
         font-size: 11px;
         font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
     }
 
     .badge.pwd {
@@ -418,24 +312,24 @@
         color: #065f46;
     }
 
-    .passenger-detail {
+    .passenger-details {
         font-size: 13px;
         color: #4b5563;
-        margin-bottom: 4px;
+        line-height: 1.8;
     }
 
     /* Right Panel - Task/Expected Answer */
     .task-panel {
-        background: #f9fafb;
+        background: #ffffff;
+        border: 3px solid #000;
+        border-radius: 0;
         padding: 0;
-        display: flex;
-        flex-direction: column;
+        box-shadow: 8px 8px 0 rgba(0,0,0,0.1);
     }
 
     .task-header {
-        background: white;
-        padding: 20px 24px;
-        border-bottom: 1px solid #e5e7eb;
+        padding: 24px;
+        border-bottom: 2px solid #e5e7eb;
     }
 
     .task-title-row {
@@ -446,518 +340,415 @@
     }
 
     .task-title {
-        font-size: 20px;
+        font-size: 24px;
         font-weight: 700;
-        color: #1f2937;
+        color: #000;
     }
 
     .points-badge {
-        font-size: 14px;
-        font-weight: 600;
-        color: #1f2937;
+        font-size: 16px;
+        font-weight: 700;
+        color: #000;
     }
 
     .task-date {
-        font-size: 12px;
-        color: #9ca3af;
-        margin-bottom: 16px;
-    }
-
-    .task-meta {
-        display: flex;
-        gap: 24px;
         font-size: 13px;
         color: #6b7280;
+    }
+
+    .task-info-section {
+        background: #0d9488;
+        padding: 16px 24px;
+        color: #fff;
+    }
+
+    .task-info-title {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .task-info-row {
+        display: flex;
+        gap: 40px;
+        font-size: 14px;
     }
 
     .task-content {
         padding: 24px;
-        overflow-y: auto;
-        max-height: calc(100vh - 250px);
     }
 
-    .task-field-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        padding: 16px;
-        margin-bottom: 16px;
+    .task-route-box {
+        background: #f0fdfa;
+        border-left: 4px solid #0f766e;
+        padding: 14px;
+        margin-top: 8px;
     }
 
-    .expected-field {
-        margin-bottom: 12px;
-    }
-    
-    .expected-field:last-child {
-        margin-bottom: 0;
-    }
-
-    .expected-label {
-        font-size: 13px;
-        font-weight: 600;
-        color: #1f2937;
+    .task-route-code {
+        font-size: 15px;
+        font-weight: 700;
+        color: #0f766e;
         margin-bottom: 6px;
     }
 
-    .expected-value {
-        font-size: 14px;
-        color: #6b7280;
-    }
-
-    .route-info-box {
-        background: #f0fdfa;
-        border: 2px solid #0f766e;
-        border-left: 4px solid #0f766e;
-        padding: 12px;
-        border-radius: 4px;
-        margin-top: 6px;
-    }
-
-    .route-info-code {
-        font-weight: 700;
-        color: #0f766e;
-        font-size: 14px;
-    }
-
-    .route-info-date {
+    .task-route-date {
         font-size: 13px;
         color: #115e59;
-        margin-top: 4px;
     }
 
-    .passenger-info-button {
+    .passenger-info-btn {
+        width: 100%;
         background: #0d9488;
-        color: white;
+        color: #fff;
         border: none;
-        padding: 8px 16px;
-        border-radius: 4px;
-        font-size: 13px;
+        padding: 10px;
+        font-size: 14px;
         font-weight: 600;
         cursor: pointer;
-        width: 100%;
-        margin-top: 8px;
+        margin-top: 12px;
+        margin-bottom: 16px;
+        border-radius: 0;
     }
 
-    .passenger-expected-box {
+    .passenger-info-btn:hover {
+        background: #0f766e;
+    }
+
+    .expected-passenger-card {
         background: #f9fafb;
-        border: 1px solid #e5e7eb;
-        border-radius: 4px;
-        padding: 12px;
-        margin-top: 8px;
+        border: 2px solid #e5e7eb;
+        padding: 14px;
+        margin-bottom: 12px;
+        border-radius: 0;
     }
 
-    .passenger-expected-name {
-        font-weight: 600;
-        color: #1f2937;
+    .expected-passenger-name {
         font-size: 14px;
+        font-weight: 700;
+        color: #000;
         margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
     }
 
-    .passenger-expected-detail {
-        font-size: 13px;
-        color: #4b5563;
-        margin-bottom: 4px;
-    }
-
-    .badge-green {
-        background: #d1fae5;
-        color: #065f46;
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 11px;
-        font-weight: 600;
-        display: inline-block;
-        margin-left: 8px;
-    }
-
-    .no-submission {
-        text-align: center;
-        padding: 3rem 2rem;
-        color: #6b7280;
-    }
-
-    .no-submission-icon {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-
-    @media (max-width: 1200px) {
-        .comparison-container {
+    @media (max-width: 1024px) {
+        .container {
             grid-template-columns: 1fr;
-        }
-        
-        .student-panel {
-            border-right: none;
-            border-bottom: 2px solid #e5e7eb;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .sidebar {
-            position: fixed;
-            transform: translateX(-100%);
-            z-index: 1000;
-        }
-        .sidebar.active { transform: translateX(0); }
-        .main-content { margin-left: 0; padding: 1rem; }
-        .menu-toggle {
-            display: block;
-            position: fixed;
-            top: 1rem;
-            left: 1rem;
-            background: #2f3b52;
-            color: #fff;
-            padding: 0.5rem 0.8rem;
-            border-radius: 6px;
-            cursor: pointer;
-            z-index: 1100;
-            font-size: 1.2rem;
         }
     }
 </style>
 </head>
 <body>
 
-<div class="menu-toggle">☰</div>
+<!-- Back Link -->
+<a href="{% url 'student_grade' %}?task={{ task_booking.id }}&section={{ section.pk }}&task_number={{ task_number }}" class="back-link">
+    ← Back to Student List
+</a>
 
-<aside class="sidebar">
-    <div>
-        <div class="logo"><div class="logo-icon">✈️</div>Flight Booking</div>
-        <div class="user-info">
-            <div class="user-avatar">👨‍💼</div>
-            <div class="user-details">
-                <div class="welcome-text">Welcome, {{ request.user.username }}</div>
-                <div class="user-role">{{ request.user.role }}</div>
+<div class="container">
+    <!-- LEFT PANEL: STUDENT SUBMISSION -->
+    <div class="student-panel">
+        <!-- Student Header -->
+        <div class="student-header">
+            <div class="student-profile">
+                <div class="profile-left">
+                    <div class="student-avatar">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23d1d5db'/%3E%3Ccircle cx='50' cy='40' r='18' fill='%239ca3af'/%3E%3Cellipse cx='50' cy='85' rx='30' ry='25' fill='%239ca3af'/%3E%3C/svg%3E" alt="Student">
+                    </div>
+                    <div class="student-info">
+                        <div class="student-name">{{ student_name|default:"Veryljeb Bada" }}</div>
+                        <div class="student-id">{{ student_number|default:"2021-0314" }}</div>
+                    </div>
+                </div>
+                <div class="score-badge">Score: {{ student_total_score|floatformat:0|default:"0" }}/{{ total_max_score|floatformat:0|default:"100" }} points</div>
             </div>
         </div>
 
-        <nav class="nav-menu">
-            <div class="nav-item">
-                <a href="#" class="nav-link">
-                    <div class="nav-left"><span class="nav-icon">🏠</span>Dashboard</div>
-                </a>
-            </div>
-
-            <div class="nav-item">
-                <a class="nav-link">
-                    <div class="nav-left"><span class="nav-icon">📚</span>Manage Class</div>
-                    <span class="dropdown-arrow">▼</span>
-                </a>
-                <div class="dropdown-content">
-                    <a href="{% url 'Cclass' %}" class="dropdown-item">➕ Create Subject</a>
-                    <a href="{% url 'Section_List' %}" class="dropdown-item">👥 Sections</a>
+        <!-- Activity Section -->
+        <div class="activity-section">
+            <div class="activity-icon-box">📋</div>
+            <div class="activity-info">
+                <div class="activity-title">{{ task_name|default:"Task 5" }}</div>
+                <div class="activity-date">
+                    {% if student_booking %}
+                        {{ student_booking.created_at|date:"g:ia - M d, Y"|default:"Not submitted" }}
+                    {% else %}
+                        Not submitted
+                    {% endif %}
                 </div>
             </div>
+        </div>
 
-            <div class="nav-item">
-                <a class="nav-link">
-                    <div class="nav-left"><span class="nav-icon">📊</span>Grades</div>
-                    <span class="dropdown-arrow">▼</span>
-                </a>
-                <div class="dropdown-content">
-                    <a href="{% url 'Section_Task' %}" class="dropdown-item">⭐ View Grades</a>
-                </div>
-            </div>
-
-            <div class="nav-item">
-                <a class="nav-link">
-                    <div class="nav-left"><span class="nav-icon">👨‍🎓</span>Student Info</div>
-                    <span class="dropdown-arrow">▼</span>
-                </a>
-                <div class="dropdown-content">
-                    <a href="#" class="dropdown-item">👥 Students</a>
-                    <a href="#" class="dropdown-item">📈 Student Tracking</a>
-                </div>
-            </div>
-
-            <div class="nav-item">
-                <a class="nav-link">
-                    <div class="nav-left"><span class="nav-icon">⚙️</span>Account Info</div>
-                    <span class="dropdown-arrow">▼</span>
-                </a>
-                <div class="dropdown-content">
-                    <a href="#" class="dropdown-item">👤 Accounts</a>
-                </div>
-            </div>
-        </nav>
-    </div>
-
-    <div class="sidebar-footer">
-        <a href="/logout">
-            <button class="logout-btn">Logout</button>
-        </a>
-    </div>
-</aside>
-
-<main class="main-content">
-    <a href="{% url 'student_grade' %}?task={{ task_booking.id }}&section={{ section.pk }}&task_number={{ task_number }}" class="back-button">
-        ← Back to Student List
-    </a>
-
-    <div class="comparison-container">
-        <!-- Left Panel: Student Response -->
-        <div class="student-panel">
-            <div class="student-header">
-                <div class="student-profile">
-                    <div class="student-avatar">👨‍🎓</div>
-                    <div>
-                        <div class="student-name">{{ student_name }}</div>
-                    </div>
-                    <div class="score-display">Score: {{ student_total_score }}/{{ total_max_score }} points</div>
-                </div>
-                
-                <div class="activity-header">
-                    <div class="activity-icon">📋</div>
-                    <div class="activity-info">
-                        <h3>Student Submission</h3>
-                        <p>{{ student_number }}</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="student-content">
-                {% if student_booking %}
-                    <!-- Trip Type & Class Card -->
-                    <div class="field-card">
-                        <div class="field-row">
-                            <div class="response-field">
-                                <div class="response-label">Trip type:</div>
-                                <div class="response-value incorrect">
-                                    One way <span class="check-mark">✗</span>
-                                </div>
-                            </div>
-                            <div class="response-field">
-                                <div class="response-label">Class:</div>
-                                <div class="response-value correct">
-                                    Economy <span class="check-mark">✓</span>
-                                </div>
-                            </div>
+        <!-- Student Content -->
+        <div class="student-content">
+            {% if student_booking %}
+                <!-- Trip Type and Class -->
+                <div class="field-row">
+                    <div class="field-item">
+                        <div class="field-label">Trip type:</div>
+                        <div class="field-value">
+                            {{ student_booking.trip_type|default:"One way" }}
+                            {% if field_comparisons.trip_type.match %}
+                                <span class="check-icon correct">✓</span>
+                            {% else %}
+                                <span class="check-icon incorrect">✗</span>
+                            {% endif %}
                         </div>
                     </div>
-                    
-                    <!-- Route Details Card -->
-                    <div class="field-card">
-                        <div class="response-field">
-                            <div class="response-label">Route Details</div>
-                            <div class="route-box incorrect">
-                                <div class="route-code">
-                                    CEB-DVO <span class="check-mark" style="color: #ef4444;">✗</span>
-                                </div>
-                            </div>
-                            <div class="route-box" style="margin-top: 8px;">
-                                <div class="route-date correct">
-                                    Departure: 15 Oct 2025 <span class="check-mark">✓</span>
-                                </div>
-                            </div>
+                    <div class="field-item">
+                        <div class="field-label">Class:</div>
+                        <div class="field-value">
+                            {{ student_booking.travel_class|default:"Economy" }}
+                            {% if field_comparisons.travel_class.match %}
+                                <span class="check-icon correct">✓</span>
+                            {% else %}
+                                <span class="check-icon incorrect">✗</span>
+                            {% endif %}
                         </div>
                     </div>
-                    
-                    <!-- Passengers Count Card -->
-                    <div class="field-card">
-                        <div class="field-row">
-                            <div class="response-field">
-                                <div class="response-label">Adults:</div>
-                                <div class="response-value correct">
-                                    <span class="check-mark">✓</span> 2
-                                </div>
-                            </div>
-                            <div class="response-field">
-                                <div class="response-label">Children:</div>
-                                <div class="response-value correct">
-                                    <span class="check-mark">✓</span> 1
-                                </div>
-                            </div>
+                </div>
+
+                <!-- Route Details -->
+                <div class="field-group">
+                    <div class="field-label">
+                        Route Details
+                        {% if field_comparisons.route.match %}
+                            <span class="check-icon correct">✓</span>
+                        {% else %}
+                            <span class="check-icon incorrect">✗</span>
+                        {% endif %}
+                    </div>
+                    <div class="route-box {% if field_comparisons.route.match %}correct{% else %}incorrect{% endif %}">
+                        <div class="route-code {% if not field_comparisons.route.match %}incorrect{% endif %}">
+                            {{ route_display_student|default:"MNL - CEB" }}
+                            {% if not field_comparisons.route.match %}
+                                <span class="check-icon incorrect">✗</span>
+                            {% endif %}
                         </div>
-                        <div class="response-field">
-                            <div class="response-label">Infants on Lap:</div>
-                            <div class="response-value correct">
-                                <span class="check-mark">✓</span> 0
-                            </div>
+                        {% if student_booking.departure_date %}
+                        <div class="route-date {% if not field_comparisons.departure_date.match %}incorrect{% endif %}">
+                            Departure: {{ student_booking.departure_date|date:"j M Y"|default:"5 Oct 2025" }}
+                            {% if not field_comparisons.departure_date.match %}
+                                <span class="check-icon incorrect">✗</span>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <div class="route-date incorrect">
+                            Departure: 5 Oct 2025
+                            <span class="check-icon incorrect">✗</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Passengers Count -->
+                <div class="field-row" style="margin-top: 20px;">
+                    <div class="field-item">
+                        <div class="field-label">Adults:</div>
+                        <div class="field-value">
+                            {{ student_booking.adults|default:"1" }}
+                            {% if field_comparisons.adults.match %}
+                                <span class="check-icon correct">✓</span>
+                            {% else %}
+                                <span class="check-icon incorrect">✗</span>
+                            {% endif %}
                         </div>
                     </div>
-                    
-                    <!-- Seat Preference Card -->
-                    <div class="field-card">
-                        <div class="response-field">
-                            <div class="response-label">Seat Preference:</div>
-                            <div class="response-value correct">
-                                Window <span class="check-mark">✓</span>
-                            </div>
+                    <div class="field-item">
+                        <div class="field-label">Children:</div>
+                        <div class="field-value">
+                            {{ student_booking.children|default:"0" }}
+                            {% if field_comparisons.children.match %}
+                                <span class="check-icon correct">✓</span>
+                            {% else %}
+                                <span class="check-icon incorrect">✗</span>
+                            {% endif %}
                         </div>
                     </div>
-                    
-                    <!-- Passenger Details Card -->
-                    <div class="field-card">
-                        <div class="response-field">
-                            <div class="response-label">Passenger Details</div>
-                            <button class="passenger-button">Passenger Details</button>
-                            
-                            <div class="passenger-box">
-                                <div class="passenger-name-row">
-                                    <span class="passenger-name-text">Mr. Juan Dela Cruz</span>
+                </div>
+
+                <!-- Seat Preference -->
+                <div class="field-group">
+                    <div class="field-label">Seat Preference:</div>
+                    <div class="field-value">
+                        {{ student_booking.seat_preference|default:"aisle" }}
+                        {% if field_comparisons.seat_preference.match %}
+                            <span class="check-icon correct">✓</span>
+                        {% else %}
+                            <span class="check-icon incorrect">✗</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Passenger Details Button -->
+                <button class="passenger-btn">Passenger Details</button>
+
+                <!-- Passenger Cards -->
+                {% if passenger_comparisons %}
+                    {% for comparison in passenger_comparisons %}
+                    {% if comparison.student %}
+                    <div class="passenger-card">
+                        <div class="passenger-header">
+                            <div class="passenger-name">
+                                {{ comparison.student.title|default:"Mr." }} {{ comparison.student.first_name|default:"Christian John" }} {% if comparison.student.middle_initial %}{{ comparison.student.middle_initial }}.{% endif %} {{ comparison.student.last_name|default:"G. Teofilo" }}
+                                {% if comparison.name_match %}
+                                    <span class="check-icon correct">✓</span>
+                                {% else %}
+                                    <span class="check-icon incorrect">✗</span>
+                                {% endif %}
+                            </div>
+                            <div class="passenger-badges">
+                                {% if comparison.student.is_pwd %}
+                                    <span class="badge pwd">🧑‍🦽 PWD</span>
+                                {% endif %}
+                                {% if comparison.student.has_declaration %}
                                     <span class="badge declaration">✓ Declaration</span>
-                                </div>
-                                <div class="passenger-detail">DOB: Jan 15, 1990 | Nationality: Filipino</div>
-                                <div class="passenger-detail">Passport: P1234567</div>
-                            </div>
-                            
-                            <div class="passenger-box">
-                                <span class="passenger-name-text">Mrs. Maria Santos</span>
-                                    <span class="badge declaration">✓ Declaration</span>
-                                </div>
-                                <div class="passenger-detail">DOB: Mar 20, 1992 | Nationality: Filipino</div>
-                                <div class="passenger-detail">Passport: P7654321</div>
+                                {% endif %}
+                                {% if not comparison.badges_match %}
+                                    <span class="check-icon incorrect">✗</span>
+                                {% endif %}
                             </div>
                         </div>
+                        <div class="passenger-details">
+                            DOB: {{ comparison.student.dob|date:"M d, Y"|default:"Dec 25, 2002" }} | Nationality: {{ comparison.student.nationality|default:"Filipino" }}
+                            {% if comparison.dob_match and comparison.nationality_match %}
+                                <span class="check-icon correct">✓</span>
+                            {% else %}
+                                <span class="check-icon incorrect">✗</span>
+                            {% endif %}
+                            <br>
+                            Passport: {{ comparison.student.passport|default:"987654" }}
+                            {% if comparison.passport_match %}
+                                <span class="check-icon correct">✓</span>
+                            {% else %}
+                                <span class="check-icon incorrect">✗</span>
+                            {% endif %}
+                        </div>
                     </div>
+                    {% endif %}
+                    {% endfor %}
                 {% else %}
-                    <div class="no-submission">
-                        <div class="no-submission-icon">📭</div>
-                        <p style="font-size: 1rem; font-weight: 500; color: #374151;">No Submission Yet</p>
-                        <p style="font-size: 0.875rem; margin-top: 0.5rem;">This student hasn't submitted this task.</p>
+                    <!-- Dummy Data Example -->
+                    <div class="passenger-card">
+                        <div class="passenger-header">
+                            <div class="passenger-name">
+                                Mr. Christian John Teofilo
+                                <span class="check-icon incorrect">✗</span>
+                            </div>
+                            <div class="passenger-badges">
+                                <span class="badge pwd">🧑‍🦽 PWD</span>
+                                <span class="check-icon incorrect">✗</span>
+                            </div>
+                        </div>
+                        <div class="passenger-details">
+                            DOB: Dec 25, 2002 | Nationality: Filipino <span class="check-icon correct">✓</span><br>
+                            Passport: 987654 <span class="check-icon incorrect">✗</span>
+                        </div>
                     </div>
                 {% endif %}
-            </div>
-        </div>
-        
-        <!-- Right Panel: Task/Expected Answer -->
-        <div class="task-panel">
-            <div class="task-header">
-                <div class="task-title-row">
-                    <h2 class="task-title">{{ task_name }}</h2>
-                    <span class="points-badge">{{ total_max_score }} points</span>
+
+            {% else %}
+                <!-- No Submission -->
+                <div class="no-submission">
+                    <div class="no-submission-icon">📭</div>
+                    <div class="no-submission-title">No Submission Yet</div>
+                    <div class="no-submission-text">This student hasn't submitted this task.</div>
                 </div>
-                <div class="task-date">Due: {{ task_booking.departure_date|date:"M d, Y" }}</div>
-                
-                <div class="task-meta">
-                    <span><strong>Trip type:</strong> Round trip</span>
-                    <span><strong>Class:</strong> Economy</span>
-                </div>
-            </div>
-            
-            <div class="task-content">
-                <!-- Trip Type & Class Card -->
-                <div class="task-field-card">
-                    <div class="field-row">
-                        <div class="expected-field">
-                            <div class="expected-label">Trip type:</div>
-                            <div class="expected-value">Round trip</div>
-                        </div>
-                        <div class="expected-field">
-                            <div class="expected-label">Class:</div>
-                            <div class="expected-value">Economy</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Route Details Card -->
-                <div class="task-field-card">
-                    <div class="expected-field">
-                        <div class="expected-label">Route Details</div>
-                        <div class="route-info-box">
-                            <div class="route-info-code">MNL-CEB</div>
-                            <div class="route-info-date">Departure: 15 Oct 2025</div>
-                            <div class="route-info-date">Return: 20 Oct 2025</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Passengers Count Card -->
-                <div class="task-field-card">
-                    <div class="field-row">
-                        <div class="expected-field">
-                            <div class="expected-label">Adults:</div>
-                            <div class="expected-value">2</div>
-                        </div>
-                        <div class="expected-field">
-                            <div class="expected-label">Children:</div>
-                            <div class="expected-value">1</div>
-                        </div>
-                    </div>
-                    <div class="expected-field">
-                        <div class="expected-label">Infants on Lap:</div>
-                        <div class="expected-value">0</div>
-                    </div>
-                </div>
-                
-                <!-- Seat Preference Card -->
-                <div class="task-field-card">
-                    <div class="expected-field">
-                        <div class="expected-label">Seat Preference:</div>
-                        <div class="expected-value">Window</div>
-                    </div>
-                </div>
-                
-                <!-- Passenger Details Card -->
-                <div class="task-field-card">
-                    <div class="expected-field">
-                        <div class="expected-label">Passenger Details</div>
-                        <button class="passenger-info-button">Expected Passenger Information</button>
-                        
-                        <div class="passenger-expected-box" style="margin-top: 12px;">
-                            <div class="passenger-expected-name">
-                                Mr. Juan Dela Cruz
-                                <span class="badge-green">✓ Required</span>
-                            </div>
-                            <div class="passenger-expected-detail">
-                                DOB: Jan 15, 1990 | Nationality: Filipino
-                            </div>
-                            <div class="passenger-expected-detail">Passport: P1234567</div>
-                        </div>
-                        
-                        <div class="passenger-expected-box" style="margin-top: 12px;">
-                            <div class="passenger-expected-name">
-                                Mrs. Maria Santos
-                                <span class="badge-green">✓ Required</span>
-                            </div>
-                            <div class="passenger-expected-detail">
-                                DOB: Mar 20, 1992 | Nationality: Filipino
-                            </div>
-                            <div class="passenger-expected-detail">Passport: P7654321</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            {% endif %}
         </div>
     </div>
-</main>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Sidebar navigation
-    const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            const dropdown = this.nextElementSibling;
-            if(dropdown && dropdown.classList.contains('dropdown-content')) {
-                const isOpen = dropdown.style.display === 'flex';
-                document.querySelectorAll('.dropdown-content').forEach(d => d.style.display = 'none');
-                document.querySelectorAll('.dropdown-arrow').forEach(a => a.style.transform = 'rotate(0deg)');
-                dropdown.style.display = isOpen ? 'none' : 'flex';
-                this.querySelector('.dropdown-arrow').style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
-                e.preventDefault();
-            } else {
-                navLinks.forEach(l => l.classList.remove('active'));
-                this.classList.add('active');
-            }
-        });
-    });
 
-    // Toggle sidebar on mobile
-    const toggle = document.querySelector('.menu-toggle');
-    const sidebar = document.querySelector('.sidebar');
-    if(toggle && sidebar) {
-        toggle.addEventListener('click', function() {
-            sidebar.classList.toggle('active');
-        });
-    }
-});
-</script>
+
+
+
+
+
+
+
+
+
+
+
+    
+    <!-- RIGHT PANEL: EXPECTED ANSWER -->
+    <div class="task-panel">
+        <!-- Task Header -->
+        <div class="task-header">
+            <div class="task-title-row">
+                <div class="task-title">{{ task_name|default:"Task 5" }}</div>
+                <div class="points-badge">{{ total_max_score|floatformat:0|default:"100" }} points</div>
+            </div>
+            <div class="task-date">12:49pm - Jan 13, 2025</div>
+        </div>
+
+        <!-- Task Info Section -->
+        <div class="task-info-section">
+            <div class="task-info-title">Trip Information</div>
+            <div class="task-info-row">
+                <div><strong>Trip type:</strong> {{ task_booking.trip_type }}</div>
+                <div><strong>Class:</strong> {{ task_booking.travel_class }}</div>
+            </div>
+        </div>
+
+        <!-- Task Content -->
+        <div class="task-content">
+            <!-- Route Details -->
+            <div class="field-group">
+                <div class="field-label">Route Details</div>
+                <div class="task-route-box">
+                    <div class="task-route-code">{{ route_display_task }}</div>
+                    {% if task_booking.departure_date %}
+                    <div class="task-route-date">Departure: {{ task_booking.departure_date|date:"j M Y" }}</div>
+                    {% endif %}
+                    {% if task_booking.return_date %}
+                    <div class="task-route-date">Return: {{ task_booking.return_date|date:"j M Y" }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Passengers Count -->
+            <div class="field-group" style="margin-top: 20px;">
+                <div class="field-label">Adults: <span style="font-weight: normal;">{{ task_booking.adults }}</span></div>
+                <div class="field-label">Children: <span style="font-weight: normal;">{{ task_booking.children }}</span></div>
+            </div>
+
+            <!-- Seat Preference -->
+            <div class="field-group">
+                <div class="field-label">Seat Preference: <span style="font-weight: normal;">{{ task_booking.seat_preference }}</span></div>
+            </div>
+
+            <!-- Passenger Details Button -->
+            <button class="passenger-info-btn">Passenger Details</button>
+
+            <!-- Expected Passenger Cards -->
+            {% if task_booking.passengers.exists %}
+                {% for passenger in task_booking.passengers.all %}
+                <div class="expected-passenger-card">
+                    <div class="expected-passenger-name">
+                        {{ passenger.title }} {{ passenger.first_name }} {% if passenger.middle_initial %}{{ passenger.middle_initial }}.{% endif %} {{ passenger.last_name }}
+                        {% if passenger.has_declaration %}
+                            <span class="badge declaration">✓ Declaration</span>
+                        {% endif %}
+                        {% if passenger.is_pwd %}
+                            <span class="badge pwd">🧑‍🦽 PWD</span>
+                        {% endif %}
+                    </div>
+                    <div class="passenger-details">
+                        DOB: {{ passenger.dob|date:"M d, Y" }} | Nationality: {{ passenger.nationality }}<br>
+                        Passport: {{ passenger.passport }}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p style="font-size: 14px; color: #6b7280;">No expected passenger details found.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
 
 </body>
 </html>

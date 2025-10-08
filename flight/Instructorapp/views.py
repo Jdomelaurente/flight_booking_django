@@ -511,7 +511,6 @@ def create_students(request, pk):
         "existing_student_numbers": json.dumps(existing_student_numbers),
     })
 
-
 @role_required(['Instructor'])
 def section_detail(request, pk):
     """View section details with students and bookings"""
@@ -541,18 +540,34 @@ def section_detail(request, pk):
     
     # Process route information and calculate scores
     for booking in bookings:
-        # Route display
-        if booking.route:
-            try:
-                if booking.route.isdigit():
-                    route_obj = Route.objects.select_related('origin_airport', 'destination_airport').get(id=int(booking.route))
-                    booking.route_display = f"{route_obj.origin_airport.code}-{route_obj.destination_airport.code}"
+        # Route display for round trip and single routes
+        if booking.route and "|" in booking.route:
+            # Handle round trip routes
+            route_parts = booking.route.split("|")
+            if len(route_parts) == 2:
+                if route_parts[0].isdigit() and route_parts[1].isdigit():
+                    try:
+                        route_out = Route.objects.select_related('origin_airport', 'destination_airport').get(id=int(route_parts[0]))
+                        route_in = Route.objects.select_related('origin_airport', 'destination_airport').get(id=int(route_parts[1]))
+                        booking.route_display_formatted = f"{route_out.origin_airport.code}-{route_out.destination_airport.code} / {route_in.origin_airport.code}-{route_in.destination_airport.code}"
+                    except Route.DoesNotExist:
+                        booking.route_display_formatted = booking.route.replace('|', ' / ')
                 else:
-                    booking.route_display = booking.route
-            except (Route.DoesNotExist, ValueError):
+                    booking.route_display_formatted = booking.route.replace('|', ' / ')
+            else:
+                booking.route_display_formatted = booking.route
+        elif booking.route and booking.route.isdigit():
+            # Single route
+            try:
+                route_obj = Route.objects.select_related('origin_airport', 'destination_airport').get(id=int(booking.route))
+                booking.route_display = f"{route_obj.origin_airport.code}-{route_obj.destination_airport.code}"
+                booking.route_display_formatted = f"{route_obj.origin_airport.code} → {route_obj.destination_airport.code}"
+            except Route.DoesNotExist:
                 booking.route_display = booking.route
+                booking.route_display_formatted = booking.route
         else:
-            booking.route_display = "Route not specified"
+            booking.route_display = booking.route if booking.route else "Route not specified"
+            booking.route_display_formatted = booking.route if booking.route else "Route not specified"
         
         # Calculate total current score and total max score
         scores = booking.scores.all()
@@ -754,8 +769,6 @@ def book_flight(request, section_id):
         "routes": routes,
         "schedules": schedules,
     })
-
-#Student Grade student_grade
 @role_required(['Instructor'])
 def Section_Task(request):
     """
@@ -788,15 +801,28 @@ def Section_Task(request):
                 route_display = "Route not specified"
                 if booking.route:
                     try:
-                        if booking.route.isdigit():
+                        if "|" in booking.route:
+                            # Handle round trip routes (e.g., "1|2")
+                            route_parts = booking.route.split("|")
+                            if len(route_parts) == 2 and route_parts[0].isdigit() and route_parts[1].isdigit():
+                                try:
+                                    route_out = Route.objects.select_related('origin_airport', 'destination_airport').get(id=int(route_parts[0]))
+                                    route_in = Route.objects.select_related('origin_airport', 'destination_airport').get(id=int(route_parts[1]))
+                                    route_display = f"{route_out.origin_airport.code}-{route_out.destination_airport.code} / {route_in.origin_airport.code}-{route_in.destination_airport.code}"
+                                except Route.DoesNotExist:
+                                    route_display = booking.route.replace('|', ' / ')
+                            else:
+                                route_display = booking.route.replace('|', ' / ')
+                        elif booking.route.isdigit():
+                            # Handle single route
                             route_obj = Route.objects.select_related(
                                 'origin_airport', 
                                 'destination_airport'
                             ).get(id=int(booking.route))
                             route_display = f"{route_obj.origin_airport.code} → {route_obj.destination_airport.code}"
                         else:
-                            # Handle multi-city or round trip routes
-                            route_display = booking.route.replace('|', ' ↔ ').replace('-', ' → ')
+                            # Handle multi-city or text routes
+                            route_display = booking.route.replace('-', ' → ')
                     except (Route.DoesNotExist, ValueError):
                         route_display = booking.route
                 
@@ -824,6 +850,7 @@ def Section_Task(request):
                     'due_date': booking.departure_date,
                     'created_at': booking.created_at,
                     'status': status,
+                    'is_active': booking.is_active,  # Added for active/inactive status
                 })
                 task_counter += 1
             
@@ -925,7 +952,6 @@ def Edit_instruction(request, pk):
         "section": section,
         "existing_scores": existing_scores,
     })
-
 # Individual Grade view
 @role_required(['Instructor'])
 def Student_Grade(request):
@@ -959,14 +985,33 @@ def Student_Grade(request):
         # Build task name using the task number
         task_name = f"Task {task_number}"
         
-        # Process route for display - convert ID to airport codes
+        # Process route for display - handle round trip and single routes
         route_display = "Route not specified"
         route_code = booking.route
         
         if booking.route:
             try:
-                # Check if route is a numeric ID
-                if booking.route.isdigit():
+                if "|" in booking.route:
+                    # Handle round trip routes
+                    route_parts = booking.route.split("|")
+                    if len(route_parts) == 2:
+                        if route_parts[0].isdigit() and route_parts[1].isdigit():
+                            try:
+                                route_out = Route.objects.select_related('origin_airport', 'destination_airport').get(id=int(route_parts[0]))
+                                route_in = Route.objects.select_related('origin_airport', 'destination_airport').get(id=int(route_parts[1]))
+                                route_code = f"{route_out.origin_airport.code}-{route_out.destination_airport.code}|{route_in.origin_airport.code}-{route_in.destination_airport.code}"
+                                route_display = f"{route_out.origin_airport.code}-{route_out.destination_airport.code} / {route_in.origin_airport.code}-{route_in.destination_airport.code}"
+                            except Route.DoesNotExist:
+                                route_code = booking.route
+                                route_display = booking.route.replace('|', ' / ')
+                        else:
+                            route_code = booking.route
+                            route_display = booking.route.replace('|', ' / ')
+                    else:
+                        route_code = booking.route
+                        route_display = booking.route
+                elif booking.route.isdigit():
+                    # Single route
                     route_obj = Route.objects.select_related(
                         'origin_airport', 
                         'destination_airport'
@@ -974,9 +1019,9 @@ def Student_Grade(request):
                     route_code = f"{route_obj.origin_airport.code}-{route_obj.destination_airport.code}"
                     route_display = f"{route_obj.origin_airport.code} → {route_obj.destination_airport.code}"
                 else:
-                    # Route already in text format (e.g., "BXU-CEB" or "BXU-CEB|CEB-BXU")
+                    # Route already in text format (e.g., "BXU-CEB")
                     route_code = booking.route
-                    route_display = booking.route.replace('|', ' ↔ ').replace('-', ' → ')
+                    route_display = booking.route.replace('-', ' → ')
             except (Route.DoesNotExist, ValueError):
                 route_code = booking.route
                 route_display = booking.route
@@ -1066,46 +1111,30 @@ def Student_Grade(request):
         messages.error(request, "Task not found or you don't have permission to access it")
         return redirect('Section_Task')
 
-
 @role_required(['Instructor'])
 def Score_details(request, pk):
-    """
-    Display detailed score comparison between student submission and task requirements.
-    pk = student's ExcelRowData id
-    """
-    # Get parameters from URL
     task_id = request.GET.get('task', '')
     section_id = request.GET.get('section', '')
     task_number = request.GET.get('task_number', '1')
-    
+
     if not task_id or not section_id:
         messages.error(request, "Invalid request: Missing task or section parameter")
         return redirect('Section_Task')
-    
+
     try:
-        # 🔒 SECURITY: Get the section and verify it belongs to the logged-in instructor
         section = Section.objects.get(pk=section_id, group__user=request.user)
-        
-        # 🔒 SECURITY: Get the task booking (instructor's template) with all related data
-        task_booking = Booking.objects.prefetch_related('passengers', 'scores').get(
-            pk=task_id,
-            section=section
-        )
-        
-        # Get student data from ExcelRowData
+        task_booking = Booking.objects.prefetch_related('passengers', 'scores').get(pk=task_id, section=section)
         student_row = ExcelRowData.objects.get(pk=pk, section=section)
         student_data = student_row.data
         student_number = student_data.get('Student Number', 'N/A')
         student_name = f"{student_data.get('First Name', '')} {student_data.get('Last Name', '')}"
-        
-        # 🔒 SECURITY: Get student's submission for this specific task
-        # First get all student bookings for this task
+
+        # Get student booking submission
         student_bookings = Booking.objects.prefetch_related('passengers', 'scores').filter(
             section=section,
             task_code=task_booking.task_code
-        ).exclude(id=task_booking.id)  # Exclude the instructor's template
-        
-        # Then find the one matching this student
+        ).exclude(id=task_booking.id)
+
         student_booking = None
         for booking in student_bookings:
             passengers = booking.passengers.all()
@@ -1115,50 +1144,174 @@ def Score_details(request, pk):
                 if passenger_student_num == student_number:
                     student_booking = booking
                     break
+
+        # Get task scores configuration
+        task_scores = {score.field_name: score for score in task_booking.scores.all()}
+        total_max_score = sum(score.max_score for score in task_scores.values())
         
-        # Calculate scores
-        task_scores = TaskScore.objects.filter(booking=task_booking)
-        total_max_score = sum(score.max_score for score in task_scores)
+        # Get student scores if submission exists
+        student_scores = {}
+        if student_booking:
+            student_scores = {score.field_name: score for score in student_booking.scores.all()}
+        
         student_total_score = student_booking.total_score if student_booking else Decimal('0.00')
-        
-        # Build task name and description
-        task_name = f"Task {task_number}"
-        
-        # Process route display
-        route_display = "Route not specified"
-        if task_booking.route:
+
+        # Route display logic - handles round trip properly
+        def format_route(route_field):
+            if not route_field:
+                return "Not specified"
             try:
-                if task_booking.route.isdigit():
-                    route_obj = Route.objects.select_related(
-                        'origin_airport', 
-                        'destination_airport'
-                    ).get(id=int(task_booking.route))
-                    route_display = f"{route_obj.origin_airport.code} → {route_obj.destination_airport.code}"
+                if "|" in route_field:
+                    # Handle round trip routes
+                    route_parts = route_field.split("|")
+                    if len(route_parts) == 2:
+                        if route_parts[0].isdigit() and route_parts[1].isdigit():
+                            try:
+                                route_out = Route.objects.select_related('origin_airport', 'destination_airport').get(id=int(route_parts[0]))
+                                route_in = Route.objects.select_related('origin_airport', 'destination_airport').get(id=int(route_parts[1]))
+                                return f"{route_out.origin_airport.code}-{route_out.destination_airport.code} / {route_in.origin_airport.code}-{route_in.destination_airport.code}"
+                            except Route.DoesNotExist:
+                                return route_field.replace('|', ' / ')
+                        else:
+                            return route_field.replace('|', ' / ')
+                    else:
+                        return route_field
+                elif route_field.isdigit():
+                    # Single route
+                    route_obj = Route.objects.select_related('origin_airport', 'destination_airport').get(id=int(route_field))
+                    return f"{route_obj.origin_airport.code} → {route_obj.destination_airport.code}"
                 else:
-                    route_display = task_booking.route.replace('|', ' ↔ ').replace('-', ' → ')
+                    # Text-based route
+                    return route_field.replace('-', ' → ')
             except (Route.DoesNotExist, ValueError):
-                route_display = task_booking.route
-        
+                return route_field
+
+        route_display_task = format_route(task_booking.route)
+        route_display_student = format_route(student_booking.route) if student_booking else "No route submitted"
+
+        # Field comparison with scores
+        field_comparisons = {}
+        if student_booking:
+            field_comparisons = {
+                'trip_type': {
+                    'match': student_booking.trip_type == task_booking.trip_type,
+                    'max_score': task_scores.get('trip_type').max_score if 'trip_type' in task_scores else Decimal('0'),
+                    'earned_score': student_scores.get('trip_type').score if 'trip_type' in student_scores else Decimal('0'),
+                },
+                'travel_class': {
+                    'match': student_booking.travel_class == task_booking.travel_class,
+                    'max_score': task_scores.get('travel_class').max_score if 'travel_class' in task_scores else Decimal('0'),
+                    'earned_score': student_scores.get('travel_class').score if 'travel_class' in student_scores else Decimal('0'),
+                },
+                'route': {
+                    'match': student_booking.route == task_booking.route,
+                    'max_score': task_scores.get('route').max_score if 'route' in task_scores else Decimal('0'),
+                    'earned_score': student_scores.get('route').score if 'route' in student_scores else Decimal('0'),
+                },
+                'departure_date': {
+                    'match': student_booking.departure_date == task_booking.departure_date,
+                    'max_score': task_scores.get('departure_date').max_score if 'departure_date' in task_scores else Decimal('0'),
+                    'earned_score': student_scores.get('departure_date').score if 'departure_date' in student_scores else Decimal('0'),
+                },
+                'return_date': {
+                    'match': student_booking.return_date == task_booking.return_date,
+                    'max_score': task_scores.get('return_date').max_score if 'return_date' in task_scores else Decimal('0'),
+                    'earned_score': student_scores.get('return_date').score if 'return_date' in student_scores else Decimal('0'),
+                },
+                'adults': {
+                    'match': student_booking.adults == task_booking.adults,
+                    'max_score': task_scores.get('adults').max_score if 'adults' in task_scores else Decimal('0'),
+                    'earned_score': student_scores.get('adults').score if 'adults' in student_scores else Decimal('0'),
+                },
+                'children': {
+                    'match': student_booking.children == task_booking.children,
+                    'max_score': task_scores.get('children').max_score if 'children' in task_scores else Decimal('0'),
+                    'earned_score': student_scores.get('children').score if 'children' in student_scores else Decimal('0'),
+                },
+                'infants_on_lap': {
+                    'match': student_booking.infants_on_lap == task_booking.infants_on_lap,
+                    'max_score': task_scores.get('infants_on_lap').max_score if 'infants_on_lap' in task_scores else Decimal('0'),
+                    'earned_score': student_scores.get('infants_on_lap').score if 'infants_on_lap' in student_scores else Decimal('0'),
+                },
+                'seat_preference': {
+                    'match': student_booking.seat_preference == task_booking.seat_preference,
+                    'max_score': task_scores.get('seat_preference').max_score if 'seat_preference' in task_scores else Decimal('0'),
+                    'earned_score': student_scores.get('seat_preference').score if 'seat_preference' in student_scores else Decimal('0'),
+                },
+            }
+
+        # Passenger comparison logic
+        passenger_comparisons = []
+        if student_booking:
+            task_passengers = list(task_booking.passengers.all())
+            student_passengers = list(student_booking.passengers.all())
+            
+            max_passengers = max(len(task_passengers), len(student_passengers))
+            
+            for i in range(max_passengers):
+                task_pass = task_passengers[i] if i < len(task_passengers) else None
+                student_pass = student_passengers[i] if i < len(student_passengers) else None
+                
+                comparison = {
+                    'student': student_pass,
+                    'expected': task_pass,
+                }
+                
+                if student_pass and task_pass:
+                    # Build full names for comparison
+                    student_full_name = f"{student_pass.title} {student_pass.first_name} {student_pass.middle_initial or ''} {student_pass.last_name}".replace('  ', ' ').strip()
+                    task_full_name = f"{task_pass.title} {task_pass.first_name} {task_pass.middle_initial or ''} {task_pass.last_name}".replace('  ', ' ').strip()
+                    
+                    comparison['name_match'] = student_full_name.lower() == task_full_name.lower()
+                    comparison['dob_match'] = student_pass.dob == task_pass.dob
+                    comparison['nationality_match'] = student_pass.nationality.lower() == task_pass.nationality.lower()
+                    comparison['passport_match'] = student_pass.passport.lower() == task_pass.passport.lower()
+                    comparison['pwd_match'] = student_pass.is_pwd == task_pass.is_pwd
+                    comparison['declaration_match'] = student_pass.has_declaration == task_pass.has_declaration
+                    comparison['badges_match'] = comparison['pwd_match'] and comparison['declaration_match']
+                else:
+                    comparison['name_match'] = False
+                    comparison['dob_match'] = False
+                    comparison['nationality_match'] = False
+                    comparison['passport_match'] = False
+                    comparison['pwd_match'] = False
+                    comparison['declaration_match'] = False
+                    comparison['badges_match'] = False
+                
+                passenger_comparisons.append(comparison)
+
+        # Passenger info score
+        passenger_info_score = {
+            'max_score': task_scores.get('passenger_info').max_score if 'passenger_info' in task_scores else Decimal('0'),
+            'earned_score': student_scores.get('passenger_info').score if 'passenger_info' in student_scores else Decimal('0'),
+        }
+
+        task_name = f"Task {task_number}"
+
         return render(request, "Grades/Score_details.html", {
-            'section': section,
-            'task_booking': task_booking,
-            'student_booking': student_booking,
-            'student_name': student_name,
-            'student_number': student_number,
-            'student_data': student_data,
-            'total_max_score': total_max_score,
-            'student_total_score': student_total_score,
-            'task_name': task_name,
-            'task_number': task_number,
-            'route_display': route_display,
+            "section": section,
+            "task_booking": task_booking,
+            "student_booking": student_booking,
+            "student_name": student_name,
+            "student_number": student_number,
+            "student_data": student_data,
+            "total_max_score": total_max_score,
+            "student_total_score": student_total_score,
+            "task_name": task_name,
+            "task_number": task_number,
+            "route_display_task": route_display_task,
+            "route_display_student": route_display_student,
+            "passenger_comparisons": passenger_comparisons,
+            "field_comparisons": field_comparisons,
+            "task_scores": task_scores,
+            "passenger_info_score": passenger_info_score,
         })
-        
+
     except Section.DoesNotExist:
         messages.error(request, "Access Denied: Section not found or you don't have permission")
-        return redirect('Section_Task')
     except ExcelRowData.DoesNotExist:
         messages.error(request, "Student not found")
-        return redirect('Section_Task')
     except Booking.DoesNotExist:
         messages.error(request, "Task not found")
-        return redirect('Section_Task')
+    
+    return redirect('Section_Task')

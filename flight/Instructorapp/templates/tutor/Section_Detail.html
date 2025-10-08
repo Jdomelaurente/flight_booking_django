@@ -775,16 +775,13 @@
                                 </div>
                                 {% endif %}
                             </div>
+
+
                             <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                                {% if booking.is_active %}
-                                    <span style="background: #28a745; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
-                                        ✅ Active
-                                    </span>
-                                {% else %}
-                                    <span style="background: #6c757d; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
-                                        🔒 Inactive
-                                    </span>
-                                {% endif %}
+                            {% if booking.is_active %}
+                                <span style="background: #28a745; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
+                                    ✅ Active
+                                </span>
                                 {% if booking.duration %}
                                     {% if booking.duration > now %}
                                         <span style="background: #17a2b8; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
@@ -796,12 +793,17 @@
                                         </span>
                                     {% endif %}
                                 {% endif %}
-                                {% if booking.passengers.exists %}
-                                    <span style="background: #17a2b8; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
-                                        👥 {{ booking.passengers.count }} Passenger{{ booking.passengers.count|pluralize }}
-                                    </span>
-                                {% endif %}
-                            </div>
+                            {% else %}
+                                <span style="background: #6c757d; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
+                                    🔒 Inactive
+                                </span>
+                            {% endif %}
+                            {% if booking.passengers.exists %}
+                                <span style="background: #17a2b8; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
+                                    👥 {{ booking.passengers.count }} Passenger{{ booking.passengers.count|pluralize }}
+                                </span>
+                            {% endif %}
+                        </div>
                         </div>
                                     <!-- Score Section - ADDED -->
                                     <div style="margin-bottom: 1rem; padding: 1rem; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 10px; border-left: 4px solid #0284c7;">
@@ -837,11 +839,21 @@
                                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; font-size: 0.9rem;">
                                             <div><strong>Trip Type:</strong> {{ booking.get_trip_type_display }}</div>
                                             <div><strong>Class:</strong> {{ booking.get_travel_class_display }}</div>
-                                            {% if booking.duration %}
-                                            <div style="grid-column: 1 / -1;"><strong>Duration/Deadline:</strong> 
+                                            {% if booking.is_active and booking.duration %}
+                                            <div style="grid-column: 1 / -1;">
+                                                <strong>Duration/Deadline:</strong> 
                                                 <span style="{% if booking.duration > now %}color: #28a745;{% else %}color: #dc3545;{% endif %} font-weight: 600;">
                                                     {{ booking.duration|date:"M d, Y H:i" }}
                                                 </span>
+                                                {% if booking.duration > now %}
+                                                <span style="background: #17a2b8; color: white; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem;">
+                                                    ⏰ {{ booking.get_time_remaining }} hrs left
+                                                </span>
+                                                {% else %}
+                                                <span style="background: #dc3545; color: white; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem;">
+                                                    ⏰ Deadline Passed
+                                                </span>
+                                                {% endif %}
                                             </div>
                                             {% endif %}
                                         </div>
@@ -872,7 +884,7 @@
                                         {% else %}
                                             <h6 style="color: #17a2b8; font-weight: 600; margin-bottom: 0.5rem;">Route Details</h6>
                                             <div style="font-weight: 600; color: #2f3b52; margin-bottom: 0.3rem;">
-                                                {{ booking.route_display }}
+                                                {{ booking.route_display_formatted }}
                                             </div>
                                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.85rem; color: #666;">
                                                 <div>Departure: {{ booking.departure_date|date:"M d, Y" }}</div>
@@ -933,6 +945,9 @@
                                         </div>
                                     </div>
                                     {% endif %}
+
+
+
 
                                     <!-- Action Buttons -->
                                     <div style="display: flex; gap: 0.5rem; justify-content: space-between; align-items: center; flex-wrap: wrap;">
