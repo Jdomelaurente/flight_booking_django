@@ -1,0 +1,56 @@
+{% extends 'instructorapp/base.html' %}
+{% block title %}{{ activity.title }} - Submissions{% endblock %}
+
+{% block content %}
+<div class="flex flex-1 flex-col">
+    <div class="flex mb-2">
+        <a href="{% url 'section_detail' activity.section.id %}" class="ml-5 flex text-xl items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="#NaNNaNNaN" viewBox="0 0 24 24">
+                <path d="M14.29 6.29 8.59 12l5.7 5.71 1.42-1.42-4.3-4.29 4.3-4.29z"></path>
+            </svg> 
+            Back to {{ activity.section.section_name }}
+        </a>
+    </div>
+    <div class="w-full border border-b border-gray-300"></div>
+
+    <div class="flex flex-col mt-10 px-30 space-y-10">
+        <div class="flex justify-between items-center">
+            <div class="flex gap-6 items-center">
+                <div class="w-10 h-10 rounded-full bg-[#045946] flex items-center justify-center">
+                    <span class="text-white text-xs font-semibold">
+                        {{ activity.activity_type|slice:":1"|upper }}
+                    </span>
+                </div>
+                <div class="flex flex-col">
+                    <h1 class="text-xl font-semibold">{{ activity.title }} - Submissions</h1>
+                    <p class="text-xs text-gray-400">{{ activity.section.instructor.username }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full border border-gray-400"></div>
+
+        {% if submissions %}
+        <div class="space-y-4">
+            {% for submission in submissions %}
+            <div class="border border-gray-300 rounded-lg p-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-semibold">{{ submission.student.user.username }}</h3>
+                    <span class="text-sm text-gray-500">{{ submission.submitted_at|date:"M j, Y H:i" }}</span>
+                </div>
+                <div class="mt-2">
+                    <p class="text-sm"><strong>Score:</strong> {{ submission.score }}/{{ activity.total_points }}</p>
+                    <p class="text-sm"><strong>Status:</strong> {{ submission.status|title }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <h3 class="text-lg font-medium text-gray-600">No submissions yet</h3>
+            <p class="text-sm text-gray-500">Students haven't submitted any work for this activity yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

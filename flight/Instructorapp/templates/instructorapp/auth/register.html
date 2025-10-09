@@ -1,0 +1,59 @@
+{% extends 'instructorapp/base.html' %}
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="flex  flex-1 items-center h-[80vh] justify-center px-10  ">
+    <div class="border border-gray-400 py-8 px-10 space-y-10 rounded-md shadow-sm/30">
+        <div class="flex justify-center gap-2">
+            <p class="w-13 h-13 bg-gray-300 rounded-full"></p>
+            <p class="w-13 h-13 bg-gray-300 rounded-full"></p>
+        </div>
+        <p class="text-xs mx-10 text-center ">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+
+        <!-- Display Messages -->
+        {% if messages %}
+        <div class="space-y-2">
+            {% for message in messages %}
+            <div class="p-3 text-sm rounded-md {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="{% url 'instructor_register' %}">
+            {% csrf_token %}
+            <div class="flex flex-col space-y-5">
+                <div class="flex w-full gap-5">
+                    <div class="flex flex-col w-full space-y-2">
+                        <label for="email" class="text-sm">Email:</label>
+                        <input type="email" name="email" class="h-[50px] border rounded-sm border-gray-400 px-3" required>
+                    </div>
+                    <div class="flex flex-col w-full space-y-2">
+                        <label for="username" class="text-sm">Username:</label>
+                        <input type="text" name="username" class="h-[50px] border rounded-sm border-gray-400 px-3" required>
+                    </div>
+                </div>
+                <div class="flex w-full gap-5">
+                    <div class="flex flex-col w-full space-y-2">
+                        <label for="password" class="text-sm">Password:</label>
+                        <input type="password" name="password" class="h-[50px] border rounded-sm border-gray-400 px-3" required>
+                    </div>
+                    <div class="flex flex-col w-full space-y-2">
+                        <label for="confirm_password" class="text-sm">Confirm Password:</label>
+                        <input type="password" name="confirm_password" class="h-[50px] border rounded-sm border-gray-400 px-3" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col mt-5">
+                <button type="submit" class="h-[50px] w-full rounded-sm bg-[#FFC83D] hover:bg-[#e6b435] transition-colors">Register</button>
+            </div>
+        </form>
+
+        <div class="text-center">
+            <p class="text-sm">Already have an account? <a href="{% url 'instructor_login' %}" class="text-blue-500 hover:underline">Login here</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

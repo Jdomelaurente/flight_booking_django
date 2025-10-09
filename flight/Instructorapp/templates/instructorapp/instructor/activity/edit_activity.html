@@ -1,0 +1,250 @@
+{% extends 'instructorapp/base.html' %}
+{% block title %}Edit Activity - {{ activity.title }}{% endblock %}
+
+{% block content %}
+<div class="flex flex-1 min-h-screen py-8">
+    <div class="flex-1 flex flex-col mx-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Edit Activity</h1>
+                <p class="text-gray-600">{{ activity.section.section_code }} - {{ activity.section.section_name }}</p>
+            </div>
+            <a href="{% url 'section_detail' activity.section.id %}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm">
+                Back to Section
+            </a>
+        </div>
+
+        <!-- Display Messages -->
+        {% if messages %}
+        <div class="mb-6 space-y-2">
+            {% for message in messages %}
+            <div class="p-3 text-sm rounded-md {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Edit Activity Form -->
+        <div class="bg-white rounded-lg shadow-lg border border-gray-200">
+            <div class="bg-[#045946] rounded-t-lg px-6 py-4">
+                <h2 class="text-xl font-semibold text-[#FFC83D]">Edit Activity: {{ activity.title }}</h2>
+            </div>
+            
+            <div class="p-6">
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="space-y-6">
+                        <!-- Basic Activity Information -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Activity Title *</label>
+                                <input type="text" name="title" value="{{ activity.title }}" required 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#045946]">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Activity Type *</label>
+                                <input type="text" name="activity_type" value="{{ activity.activity_type }}" required 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#045946]"
+                                    placeholder="e.g., Flight Booking, Seat Selection, Payment Processing">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Instructions *</label>
+                                <textarea name="instructions" required rows="4" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#045946]">{{ activity.instructions }}</textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Due Date *</label>
+                                <input type="datetime-local" name="due_date" value="{{ activity.due_date|date:'Y-m-d\TH:i' }}" required 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#045946]">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Total Points</label>
+                                <input type="number" name="total_points" value="{{ activity.total_points }}" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#045946]">
+                            </div>
+                        </div>
+
+                        <!-- Flight Requirements Section -->
+                        <div class="border-t border-gray-200 pt-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Flight Requirements</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Trip Type *</label>
+                                    <select name="required_trip_type" required 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#045946]">
+                                        <option value="one_way" {% if activity.required_trip_type == 'one_way' %}selected{% endif %}>One Way</option>
+                                        <option value="round_trip" {% if activity.required_trip_type == 'round_trip' %}selected{% endif %}>Round Trip</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Travel Class *</label>
+                                    <select name="required_travel_class" required 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#045946]">
+                                        <option value="economy" {% if activity.required_travel_class == 'economy' %}selected{% endif %}>Economy</option>
+                                        <option value="premium_economy" {% if activity.required_travel_class == 'premium_economy' %}selected{% endif %}>Premium Economy</option>
+                                        <option value="business" {% if activity.required_travel_class == 'business' %}selected{% endif %}>Business</option>
+                                        <option value="first" {% if activity.required_travel_class == 'first' %}selected{% endif %}>First Class</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Origin Airport *</label>
+                                    <select name="required_origin" required 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#045946]">
+                                        <option value="">Select Origin Airport</option>
+                                        {% for airport in airports %}
+                                        <option value="{{ airport.code }}" {% if activity.required_origin == airport.code %}selected{% endif %}>
+                                            {{ airport.code }} - {{ airport.name }} ({{ airport.location }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Destination Airport *</label>
+                                    <select name="required_destination" required 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#045946]">
+                                        <option value="">Select Destination Airport</option>
+                                        {% for airport in airports %}
+                                        <option value="{{ airport.code }}" {% if activity.required_destination == airport.code %}selected{% endif %}>
+                                            {{ airport.code }} - {{ airport.name }} ({{ airport.location }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Departure Date</label>
+                                    <input type="date" name="required_departure_date" 
+                                        value="{{ activity.required_departure_date|date:'Y-m-d' }}"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#045946]">
+                                </div>
+                                <div id="return-date-field" {% if activity.required_trip_type != 'round_trip' %}class="hidden"{% endif %}>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Return Date</label>
+                                    <input type="date" name="required_return_date" 
+                                        value="{{ activity.required_return_date|date:'Y-m-d' }}"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#045946]">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Max Price ($)</label>
+                                    <input type="number" name="required_max_price" step="0.01" 
+                                        value="{{ activity.required_max_price }}"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#045946]">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Time Limit (minutes)</label>
+                                    <input type="number" name="time_limit_minutes" 
+                                        value="{{ activity.time_limit_minutes }}"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#045946]" 
+                                        placeholder="Optional time limit">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Passenger Requirements Section -->
+                        <div class="border-t border-gray-200 pt-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Passenger Requirements</h3>
+                            
+                            <!-- Passenger Counts -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Adults (12+ years) *</label>
+                                    <input type="number" name="required_passengers" value="{{ activity.required_passengers }}" min="1" max="9" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#045946]">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Children (2-11 years)</label>
+                                    <input type="number" name="required_children" value="{{ activity.required_children }}" min="0" max="8" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#045946]">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Infants (Under 2 years)</label>
+                                    <input type="number" name="required_infants" value="{{ activity.required_infants }}" min="0" max="4" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#045946]">
+                                    <p class="text-xs text-gray-500 mt-1">Note: Infants must be accompanied by adults</p>
+                                </div>
+                            </div>
+
+                            <!-- Passenger Details Requirements -->
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <div class="flex items-center mb-3">
+                                    <input type="checkbox" name="require_passenger_details" 
+                                        {% if activity.require_passenger_details %}checked{% endif %}
+                                        class="mr-2 rounded border-gray-300 text-[#045946] focus:ring-[#045946]">
+                                    <label class="text-md font-semibold text-gray-700">Require Passenger Details</label>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-4">Students must provide the following details for each passenger:</p>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-700">
+                                    <div class="flex items-center">
+                                        <div class="w-2 h-2 bg-[#045946] rounded-full mr-2"></div>
+                                        <span>First Name</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-2 h-2 bg-[#045946] rounded-full mr-2"></div>
+                                        <span>Middle Name</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-2 h-2 bg-[#045946] rounded-full mr-2"></div>
+                                        <span>Last Name</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-2 h-2 bg-[#045946] rounded-full mr-2"></div>
+                                        <span>Gender</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-2 h-2 bg-[#045946] rounded-full mr-2"></div>
+                                        <span>Date of Birth</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-2 h-2 bg-[#045946] rounded-full mr-2"></div>
+                                        <span>Nationality</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Details -->
+                        <div class="border-t border-gray-200 pt-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Activity Description (Optional)</label>
+                                <textarea name="description" rows="3" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#045946]" 
+                                    placeholder="Additional details about the activity...">{{ activity.description }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-200">
+                        <a href="{% url 'section_detail' activity.section.id %}" 
+                            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </a>
+                        <button type="submit" 
+                            class="bg-[#045946] hover:bg-[#045946]/80 text-white px-6 py-2 rounded-md transition-colors">
+                            Update Activity
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Show/hide return date based on trip type
+    document.addEventListener('DOMContentLoaded', function() {
+        const tripTypeSelect = document.querySelector('select[name="required_trip_type"]');
+        const returnDateField = document.getElementById('return-date-field');
+        
+        if (tripTypeSelect && returnDateField) {
+            tripTypeSelect.addEventListener('change', function() {
+                if (this.value === 'round_trip') {
+                    returnDateField.classList.remove('hidden');
+                } else {
+                    returnDateField.classList.add('hidden');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

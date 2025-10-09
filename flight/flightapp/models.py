@@ -44,6 +44,7 @@ class User(models.Model):
     password = models.CharField(max_length=255)  # hashed in real use
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    last_login = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
