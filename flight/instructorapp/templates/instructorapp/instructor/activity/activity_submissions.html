@@ -13,7 +13,25 @@
     </div>
     <div class="w-full border border-b border-gray-300"></div>
 
+
+    <h3 class="font-semibold">
+        {% if submission.student.user %}
+            {{ submission.student.user.username }}
+        {% else %}
+            {{ submission.student.first_name }} {{ submission.student.last_name }}
+        {% endif %}
+    </h3>
+
     <div class="flex flex-col mt-10 px-30 space-y-10">
+
+        <!-- Debug Info -->
+        <div class="bg-yellow-100 border border-yellow-400 p-4 rounded">
+            <h3 class="font-bold">Debug Information</h3>
+            <p>Activity: {{ activity.title }} (ID: {{ activity.id }})</p>
+            <p>Total Submissions: {{ submissions.count }}</p>
+            <p>Current User: {{ current_user.username }} (ID: {{ current_user.id }})</p>
+        </div>
+
         <div class="flex justify-between items-center">
             <div class="flex gap-6 items-center">
                 <div class="w-10 h-10 rounded-full bg-[#045946] flex items-center justify-center">
@@ -30,18 +48,39 @@
 
         <div class="w-full border border-gray-400"></div>
 
-        {% if submissions %}
+{% if submissions %}
         <div class="space-y-4">
+            <h3 class="text-lg font-semibold">Submissions ({{ submissions.count }}):</h3>
             {% for submission in submissions %}
             <div class="border border-gray-300 rounded-lg p-4">
                 <div class="flex justify-between items-center">
-                    <h3 class="font-semibold">{{ submission.student.user.username }}</h3>
+                    <div>
+                        <h3 class="font-semibold">{{ submission.student.first_name }} {{ submission.student.last_name }}</h3>
+                        <p class="text-sm text-gray-500">Student #: {{ submission.student.student_number }}</p>
+                        <p class="text-sm text-gray-500">Email: {{ submission.student.email }}</p>
+                    </div>
                     <span class="text-sm text-gray-500">{{ submission.submitted_at|date:"M j, Y H:i" }}</span>
                 </div>
                 <div class="mt-2">
+                    <p class="text-sm"><strong>Status:</strong> 
+                        <span class="{% if submission.status == 'submitted' %}text-blue-600{% elif submission.status == 'graded' %}text-green-600{% else %}text-yellow-600{% endif %}">
+                            {{ submission.status|title }}
+                        </span>
+                    </p>
+                    {% if submission.score %}
                     <p class="text-sm"><strong>Score:</strong> {{ submission.score }}/{{ activity.total_points }}</p>
-                    <p class="text-sm"><strong>Status:</strong> {{ submission.status|title }}</p>
+                    {% else %}
+                    <p class="text-sm"><strong>Score:</strong> Not graded yet</p>
+                    {% endif %}
+                    {% if submission.booking %}
+                    <p class="text-sm"><strong>Booking Reference:</strong> #{{ submission.booking.id }}</p>
+                    {% endif %}
                 </div>
+                {% if submission.feedback %}
+                <div class="mt-2 p-2 bg-gray-100 rounded">
+                    <p class="text-sm"><strong>Feedback:</strong> {{ submission.feedback }}</p>
+                </div>
+                {% endif %}
             </div>
             {% endfor %}
         </div>
@@ -49,8 +88,12 @@
         <div class="text-center py-12">
             <h3 class="text-lg font-medium text-gray-600">No submissions yet</h3>
             <p class="text-sm text-gray-500">Students haven't submitted any work for this activity yet.</p>
+            <p class="text-sm text-red-500 mt-2">Debug: There are submissions in database but they're not showing here.</p>
         </div>
         {% endif %}
     </div>
+    
 </div>
+
+
 {% endblock %}

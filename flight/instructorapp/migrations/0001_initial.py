@@ -56,7 +56,7 @@ class Migration(migrations.Migration):
                 ('status', models.CharField(choices=[('draft', 'Draft'), ('published', 'Published'), ('closed', 'Closed')], default='draft', max_length=20)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
-                ('section', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='activities', to='Instructorapp.section')),
+                ('section', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='activities', to='instructorapp.section')),
             ],
             options={
                 'verbose_name_plural': 'Activities',
@@ -75,7 +75,7 @@ class Migration(migrations.Migration):
                 ('feedback', models.TextField(blank=True)),
                 ('status', models.CharField(choices=[('started', 'Started'), ('submitted', 'Submitted'), ('graded', 'Graded')], default='started', max_length=20)),
                 ('grading_details', models.JSONField(blank=True, default=dict)),
-                ('activity', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='submissions', to='Instructorapp.activity')),
+                ('activity', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='submissions', to='instructorapp.activity')),
                 ('student', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='submissions', to='flightapp.student')),
             ],
             options={
@@ -89,7 +89,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('enrolled_at', models.DateTimeField(auto_now_add=True)),
                 ('is_active', models.BooleanField(default=True)),
-                ('section', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='enrollments', to='Instructorapp.section')),
+                ('section', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='enrollments', to='instructorapp.section')),
                 ('student', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='enrollments', to='flightapp.student')),
             ],
             options={

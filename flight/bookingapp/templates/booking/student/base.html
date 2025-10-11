@@ -198,18 +198,25 @@
     </style>
 </head>
 <body class="bg-[#FBFBFB] poppins-regular ease-in-out flex flex-col items-center">
-    <header class="bg-[#045946] h-[70px] w-full flex items-center justify-end px-6">
-        <div class="max-w-screen flex justify-end  w-full">
+    <header class="bg-[#045946] h-15 w-full flex items-center justify-end px-6">
+        <div class="max-w-screen-2xl  flex justify-end  w-full">
           
           <div class="w-12 h-12 rounded-full border-4 border-[#FEB938] bg-gray-200"></div>
+          <!-- Add this navigation to your base.html -->
+          <!-- In the navigation section of booking/student/home.html -->
+          <div class="flex items-center">
+              <div class="text-xs mx-10 space-x-10 font-medium">
+                  <a href="{% url 'bookingapp:student_home' %}" class="text-[#045946] border-b-2 border-[#045946] pb-1">Active Activities</a>
+                  <a href="{% url 'bookingapp:student_activities' %}" class="text-gray-600 hover:text-[#045946]">All Activities</a>
+                  <a href="{% url 'bookingapp:main' %}" class="text-gray-600 hover:text-[#045946]">Regular Booking</a>
+              </div>
+          </div>
         </div>
     </header>
     
-    <main class="flex-1 flex flex-col w-full justify-center  ">
-      <div class="max-w-screen-2xl mx-auto w-full px-4 ">
-        {% block content %}
-        {% endblock %}
-      </div>
+    <main class="flex-1 mt-20 flex flex-col max-w-screen-2xl  mx-auto">
+    {% block content %}
+    {% endblock %}
     </main>
 
 

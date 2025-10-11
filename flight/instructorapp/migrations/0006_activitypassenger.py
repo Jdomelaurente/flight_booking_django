@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('Instructorapp', '0005_rename_require_date_of_birth_activity_require_passenger_details_and_more'),
+        ('instructorapp', '0005_rename_require_date_of_birth_activity_require_passenger_details_and_more'),
     ]
 
     operations = [

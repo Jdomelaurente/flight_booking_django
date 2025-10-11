@@ -22,4 +22,9 @@ urlpatterns = [
     path('activity/<int:activity_id>/delete/', views.delete_activity, name='delete_activity'),
     path('activity/<int:activity_id>/activate/', views.activate_activity, name='activate_activity'),
     path('activity/<int:activity_id>/submissions/', views.activity_submissions, name='activity_submissions'),
+
+
+    path('debug/submissions/', views.debug_submissions, name='debug_submissions'),
+    # in instructorapp/urls.py
+    path('debug-session/', views.debug_session, name='debug_session'),
 ]

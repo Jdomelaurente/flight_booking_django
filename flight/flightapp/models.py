@@ -236,6 +236,7 @@ class Booking(models.Model):
         max_length=20,
         choices=[("one_way", "One Way"), ("round_trip", "Round Trip"), ("multi_city", "Multi City")]
     )
+    
     status = models.CharField(max_length=20, default="Pending")
     created_at = models.DateTimeField(auto_now_add=True)
 

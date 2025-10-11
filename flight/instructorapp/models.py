@@ -4,6 +4,14 @@ from django.utils import timezone
 import random
 import string
 from flightapp.models import Student, User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+
 
 class Section(models.Model):
     section_name = models.CharField(max_length=200)
@@ -178,8 +186,61 @@ class ActivitySubmission(models.Model):
         default='submitted'
     )
 
+    required_origin_airport = models.ForeignKey(
+        'flightapp.Airport', 
+        on_delete=models.CASCADE, 
+        related_name='activity_origins',
+        null=True, 
+        blank=True
+    )
+    required_destination_airport = models.ForeignKey(
+        'flightapp.Airport', 
+        on_delete=models.CASCADE, 
+        related_name='activity_destinations',
+        null=True, 
+        blank=True
+    )
+    
+    # Make sure these fields exist:
+    required_trip_type = models.CharField(
+        max_length=20,
+        choices=[
+            ("one_way", "One Way"),
+            ("round_trip", "Round Trip"), 
+        ],
+        default='one_way'
+    )
+    required_travel_class = models.CharField(
+        max_length=20,
+        choices=[
+            ('economy', 'Economy'),
+            ('premium_economy', 'Premium Economy'),
+            ('business', 'Business'),
+            ('first', 'First Class'),
+        ],
+        default='economy'
+    )
+    required_passengers = models.PositiveIntegerField(default=1)
+    required_children = models.PositiveIntegerField(default=0)
+    required_infants = models.PositiveIntegerField(default=0)
+    require_passenger_details = models.BooleanField(default=True)
+    required_max_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
+
     class Meta:
         unique_together = ['activity', 'student']
 
     def __str__(self):
         return f"{self.student.student_number} - {self.activity.title}"
+    
+
+
+@receiver(post_save, sender=ActivitySubmission)
+def log_activity_submission(sender, instance, created, **kwargs):
+    if created:
+        logger.info(f"NEW ACTIVITY SUBMISSION CREATED: "
+                   f"ID: {instance.id}, "
+                   f"Activity: {instance.activity.title}, "
+                   f"Student: {instance.student.first_name} {instance.student.last_name}, "
+                   f"Booking: {instance.booking.id if instance.booking else 'None'}")
+        print(f"✅ AUTOMATIC LOG: ActivitySubmission {instance.id} created!")    

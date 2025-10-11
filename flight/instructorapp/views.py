@@ -582,8 +582,36 @@ def activity_submissions(request, activity_id):
         messages.error(request, 'Access denied. Instructor role required.')
         return redirect('instructor_login')
     
-    activity = get_object_or_404(Activity, id=activity_id, section__instructor=user)
+    print(f"=== ACTIVITY_SUBMISSIONS DEBUG ===")
+    print(f"Requested activity_id: {activity_id}")
+    print(f"Current user: {user.username} (ID: {user.id})")
+    print(f"User role: {user.role}")
+    
+    # First, try to get the activity without instructor filter to see if it exists
+    try:
+        activity = Activity.objects.get(id=activity_id)
+        print(f"Activity exists: {activity.title} (ID: {activity.id})")
+        print(f"Activity section instructor: {activity.section.instructor.username} (ID: {activity.section.instructor.id})")
+        
+        # Check if current user owns this activity
+        if activity.section.instructor.id != user.id:
+            print(f"❌ ACCESS DENIED: Activity belongs to instructor {activity.section.instructor.id}, but current user is {user.id}")
+            messages.error(request, "You don't have permission to view submissions for this activity.")
+            return redirect('instructor_home')
+            
+        print(f"✅ ACCESS GRANTED: User {user.id} owns this activity")
+        
+    except Activity.DoesNotExist:
+        print(f"❌ Activity {activity_id} not found")
+        messages.error(request, "Activity not found.")
+        return redirect('instructor_home')
+    
+    # Now get submissions for this activity
     submissions = ActivitySubmission.objects.filter(activity=activity)
+    print(f"Submissions found: {submissions.count()}")
+    
+    for sub in submissions:
+        print(f"  - Submission {sub.id}: Student {sub.student.first_name}, Booking {sub.booking.id if sub.booking else 'None'}")
     
     template = loader.get_template('instructorapp/instructor/activity/activity_submissions.html')
     context = {
@@ -592,3 +620,51 @@ def activity_submissions(request, activity_id):
         'current_user': user,
     }
     return HttpResponse(template.render(context, request))
+
+
+def debug_submissions(request):
+    """Debug view to check all ActivitySubmission data"""
+    user = get_current_user(request)
+    if not user or not is_instructor(user):
+        messages.error(request, 'Access denied.')
+        return redirect('instructor_login')
+    
+    # Get all submissions with related data
+    submissions = ActivitySubmission.objects.select_related(
+        'activity', 'student', 'booking'
+    ).all()
+    
+    # Get activities with submission counts
+    activities = Activity.objects.annotate(
+        submission_count=models.Count('submissions')
+    )
+    
+    template = loader.get_template('instructorapp/debug_submissions.html')
+    context = {
+        'submissions': submissions,
+        'activities': activities,
+        'total_submissions': submissions.count(),
+        'current_user': user,
+    }
+    return HttpResponse(template.render(context, request))
+
+
+def debug_session(request):
+    """Temporary debug view to check session and user info"""
+    user = get_current_user(request)
+    
+    print("=== SESSION DEBUG ===")
+    for key, value in request.session.items():
+        print(f"{key}: {value}")
+    
+    print(f"Current user from session: {user}")
+    if user:
+        print(f"User ID: {user.id}, Username: {user.username}, Role: {user.role}")
+    
+    # Check all instructors
+    instructors = User.objects.filter(role='instructor')
+    print("=== ALL INSTRUCTORS ===")
+    for instructor in instructors:
+        print(f"ID: {instructor.id}, Username: {instructor.username}")
+    
+    return HttpResponse("Check console for debug output")

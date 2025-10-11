@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('Instructorapp', '0002_alter_activity_activity_type'),
+        ('instructorapp', '0002_alter_activity_activity_type'),
         ('flightapp', '0002_user_last_login'),
     ]
 

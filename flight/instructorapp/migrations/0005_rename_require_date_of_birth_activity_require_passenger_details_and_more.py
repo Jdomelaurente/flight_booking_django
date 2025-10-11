@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('Instructorapp', '0004_activity_require_contact_and_more'),
+        ('instructorapp', '0004_activity_require_contact_and_more'),
     ]
 
     operations = [
