@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
                 ('is_primary', models.BooleanField(default=False)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
-                ('activity', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='passengers', to='Instructorapp.activity')),
+                ('activity', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='passengers', to='instructorapp.activity')),
             ],
             options={
                 'ordering': ['-is_primary', 'first_name'],

@@ -14,11 +14,13 @@ from instructorapp.models import Activity, ActivitySubmission, SectionEnrollment
 from django.contrib import messages
 from django.shortcuts import get_object_or_404
 
+from decimal import Decimal
+
 def calculate_activity_score(booking, activity):
     """
     Calculate score based on how well the booking matches activity requirements
     """
-    total_points = activity.total_points
+    total_points = float(activity.total_points)  # Convert Decimal to float for calculations
     points_earned = 0
     deduction_reasons = []
     
@@ -82,7 +84,7 @@ def calculate_activity_score(booking, activity):
             print(f"Price compliance: Within budget -> {price_points} points")
         else:
             # Deduct points proportionally for going over budget
-            overage_percentage = min((total_amount - activity.required_max_price) / activity.required_max_price, 1.0)
+            overage_percentage = min((float(total_amount) - float(activity.required_max_price)) / float(activity.required_max_price), 1.0)
             price_deduction = price_points * overage_percentage
             points_earned += price_points - price_deduction
             deduction_reasons.append(f"Exceeded budget by {overage_percentage * 100:.1f}%")
@@ -99,7 +101,7 @@ def calculate_activity_score(booking, activity):
     
     # Check if any booking detail matches the required travel class
     has_correct_class = any(
-        detail.seat_class.lower() == activity.required_travel_class.lower() 
+        str(detail.seat_class).lower() == activity.required_travel_class.lower() 
         for detail in booking_details
     )
     if has_correct_class:
@@ -110,10 +112,10 @@ def calculate_activity_score(booking, activity):
     points_earned += compliance_points * compliance_match
     print(f"Compliance match: {compliance_match * 100}% -> {compliance_points * compliance_match} points")
     
-    # Ensure score doesn't exceed total points
-    final_score = min(points_earned, total_points)
+    # Ensure score doesn't exceed total points and convert back to Decimal
+    final_score = Decimal(str(min(points_earned, total_points)))
     
-    print(f"Final score: {final_score}/{total_points}")
+    print(f"Final score: {final_score}/{activity.total_points}")
     if deduction_reasons:
         print(f"Deduction reasons: {', '.join(deduction_reasons)}")
     print("=====================")
