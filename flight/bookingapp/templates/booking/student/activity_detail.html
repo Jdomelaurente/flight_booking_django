@@ -210,22 +210,30 @@
 
         <!-- Submission Status -->
 
+            <!-- Submission Status -->
             {% if not existing_submission %}
-            <div class="text-center bg-blue-50 border border-blue-200 rounded-lg p-6">
-                <h3 class="text-lg font-semibold text-blue-800 mb-3">Ready to Start?</h3>
-                <p class="text-blue-600 mb-4">Begin your flight booking activity</p>
-                
-                <!-- Single button that opens the code modal -->
-                <button 
-                    onclick="openActivityModal()" 
-                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition duration-200 text-lg">
-                    🎯 Start Activity Booking
-                </button>
-                
-                <p class="text-sm text-blue-500 mt-3">
-                    You'll need to enter the activity code provided by your instructor
-                </p>
-            </div>
+                {% if activity.is_code_active and not code_expired %}
+                <div class="text-center">
+                    <p class="text-gray-600 mb-4">Click the button below to start your activity booking:</p>
+                    <a href="{% url 'bookingapp:main' %}?activity_id={{ activity.id }}" 
+                    class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200">
+                    Start Activity Booking
+                    </a>
+                    <p class="text-sm text-gray-500 mt-2">This will pre-fill the booking form with activity requirements.</p>
+                    <p class="text-xs text-green-600 mt-1">✓ Activity code is active</p>
+                    {% if activity.code_expires_at %}
+                    <p class="text-xs text-orange-600">Code expires: {{ activity.code_expires_at|date:"M j, Y g:i A" }}</p>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+                    <p class="font-semibold">⏳ Activity Not Available</p>
+                    <p class="mt-1">This activity cannot be started yet. The instructor needs to activate the activity code.</p>
+                    {% if code_expired %}
+                    <p class="mt-1"><strong>Note:</strong> The activity code has expired.</p>
+                    {% endif %}
+                </div>
+                {% endif %}
             {% else %}
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
                 <p class="font-semibold">✅ Activity Submitted</p>

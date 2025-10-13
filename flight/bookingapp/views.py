@@ -13,6 +13,7 @@ from .utils import login_required, redirect_if_logged_in
 from instructorapp.models import Activity, ActivitySubmission, SectionEnrollment
 from django.contrib import messages
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
 from decimal import Decimal
 
@@ -174,7 +175,7 @@ def student_activity_detail(request, activity_id):
         return redirect('bookingapp:login')
     
     try:
-        activity = get_object_or_404(Activity, id=activity_id, is_code_active=True, status='published')
+        activity = get_object_or_404(Activity, id=activity_id, status='published')
         student = Student.objects.get(id=student_id)
         
         # Check if student is enrolled in this section
@@ -200,7 +201,9 @@ def student_activity_detail(request, activity_id):
             'activity': activity,
             'student': student,
             'existing_submission': existing_submission,
-            'passengers': passengers,  # Add this line
+            'passengers': passengers,
+            'code_active': activity.is_code_active,  # Add this
+            'code_expired': activity.code_expires_at and activity.code_expires_at < timezone.now(),  # Add this
         }
         return HttpResponse(template.render(context, request))
         
@@ -332,12 +335,12 @@ def home(request):
         request.session.pop('activity_requirements', None)
         print("🧹 Cleared previous activity data")
     
-    # If we have activity_id from GET parameters, set it in session
+    # If we have activity_id from GET parameters, verify it has an active code
     if activity_id:
         try:
             activity = Activity.objects.get(
                 id=activity_id, 
-                is_code_active=True, 
+                is_code_active=True,  # REQUIRE active code
                 status='published'
             )
             # SET ACTIVITY SESSION DATA
@@ -350,43 +353,57 @@ def home(request):
             print(f"🎯 ACTIVITY SESSION SET: {activity.title} (ID: {activity.id})")
             messages.success(request, f"Activity '{activity.title}' loaded successfully!")
         except Activity.DoesNotExist:
-            print(f"❌ Activity not found: {activity_id}")
-            messages.error(request, "Activity not found or no longer available.")
+            print(f"❌ Activity not found or code not active: {activity_id}")
+            messages.error(request, "Activity not found, not available, or code not activated by instructor.")
     
-    # If we only have activity_code (from home page modal)
+    # If we have activity_code (from home page modal) - THIS IS THE MAIN ENTRY POINT
     elif activity_code:
         try:
             activity = Activity.objects.get(
                 activity_code=activity_code.upper().strip(),
-                is_code_active=True, 
+                is_code_active=True,  # MUST be active
                 status='published'
             )
-            # SET ACTIVITY SESSION DATA
-            request.session['activity_id'] = activity.id
-            request.session['activity_requirements'] = {
-                'max_price': float(activity.required_max_price) if activity.required_max_price else None,
-                'travel_class': activity.required_travel_class,
-                'require_passenger_details': activity.require_passenger_details,
-            }
-            print(f"🎯 ACTIVITY SESSION SET via code: {activity.title} (ID: {activity.id})")
-            messages.success(request, f"Activity '{activity.title}' loaded successfully!")
+            # Check if code is expired
+            if activity.code_expires_at and activity.code_expires_at < timezone.now():
+                messages.error(request, "This activity code has expired. Please contact your instructor for a new code.")
+                activity = None
+            else:
+                # SET ACTIVITY SESSION DATA
+                request.session['activity_id'] = activity.id
+                request.session['activity_requirements'] = {
+                    'max_price': float(activity.required_max_price) if activity.required_max_price else None,
+                    'travel_class': activity.required_travel_class,
+                    'require_passenger_details': activity.require_passenger_details,
+                }
+                print(f"🎯 ACTIVITY SESSION SET via code: {activity.title} (ID: {activity.id})")
+                messages.success(request, f"Activity '{activity.title}' loaded successfully!")
+                
         except Activity.DoesNotExist:
-            print(f"❌ Activity code not found: {activity_code}")
-            messages.error(request, "Invalid activity code. Please check with your instructor.")
+            print(f"❌ Activity code not found or inactive: {activity_code}")
+            messages.error(request, "Invalid or inactive activity code. Please check with your instructor.")
     
-    # Check if we have activity from session
+    # Check if we have activity from session - verify it's still active
     elif request.session.get('activity_id'):
         try:
             activity = Activity.objects.get(
                 id=request.session.get('activity_id'), 
-                is_code_active=True, 
+                is_code_active=True,  # REQUIRE active code
                 status='published'
             )
-            print(f"🎯 ACTIVITY FROM SESSION: {activity.title} (ID: {activity.id})")
+            # Check if code is expired
+            if activity.code_expires_at and activity.code_expires_at < timezone.now():
+                messages.error(request, "This activity code has expired. Please contact your instructor for a new code.")
+                request.session.pop('activity_id', None)
+                request.session.pop('activity_requirements', None)
+                activity = None
+            else:
+                print(f"🎯 ACTIVITY FROM SESSION: {activity.title} (ID: {activity.id})")
         except Activity.DoesNotExist:
-            print(f"❌ Session activity not found: {request.session.get('activity_id')}")
+            print(f"❌ Session activity not found or inactive: {request.session.get('activity_id')}")
             request.session.pop('activity_id', None)
             request.session.pop('activity_requirements', None)
+            messages.error(request, "Activity session expired or code deactivated.")
     
     # If we have a valid activity, set up flight requirements
     if activity:
@@ -441,6 +458,26 @@ def home(request):
 def search_flight(request):
     # Preserve activity_id if it exists
     activity_id = request.session.get('activity_id')
+    
+    # Validate activity is still active if this is an activity booking
+    if activity_id:
+        try:
+            activity = Activity.objects.get(
+                id=activity_id, 
+                is_code_active=True,
+                status='published'
+            )
+            # Check if code expired
+            if activity.code_expires_at and activity.code_expires_at < timezone.now():
+                messages.error(request, "Activity code has expired. Please contact your instructor.")
+                request.session.pop('activity_id', None)
+                request.session.pop('activity_requirements', None)
+                return redirect('bookingapp:main')
+        except Activity.DoesNotExist:
+            messages.error(request, "Activity is no longer available.")
+            request.session.pop('activity_id', None)
+            request.session.pop('activity_requirements', None)
+            return redirect('bookingapp:main')
     
     if request.method == 'POST':
         trip_type = request.POST.get('trip_type')

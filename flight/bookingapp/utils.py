@@ -16,3 +16,5 @@ def redirect_if_logged_in(view_func):
             return redirect('bookingapp:main')  # send them to home
         return view_func(request, *args, **kwargs)
     return wrapper
+
+
