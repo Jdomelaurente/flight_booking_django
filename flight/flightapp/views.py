@@ -362,6 +362,113 @@ def admin_dashboard(request):
 
 # ------------------------------------ ASSETS ----------------------------------------------------------
 
+
+# ---------------------------
+# add-ons
+# ---------------------------
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from .models import AddOn
+
+def addon_view(request):
+    addons = AddOn.objects.all()
+    return render(request, 'asset/addon/addons.html', {'addons': addons})
+
+def add_addon(request):
+    if request.method == 'POST':
+        name = request.POST['name']
+        description = request.POST.get('description', '')
+        price = request.POST['price']
+        AddOn.objects.create(name=name, description=description, price=price)
+        messages.success(request, 'Add-On added successfully!')
+        return redirect('addon')
+    return render(request, 'asset/addon/add_addon.html')
+
+def update_addon(request, id):
+    addon = get_object_or_404(AddOn, id=id)
+    if request.method == 'POST':
+        addon.name = request.POST['name']
+        addon.description = request.POST.get('description', '')
+        addon.price = request.POST['price']
+        addon.save()
+        messages.success(request, 'Add-On updated successfully!')
+        return redirect('addon')
+    return render(request, 'asset/addon/edit_addon.html', {'addon': addon})
+
+def delete_addon(request, id):
+    addon = get_object_or_404(AddOn, id=id)
+    addon.delete()
+    messages.success(request, 'Add-On deleted successfully!')
+    return redirect('addon')
+
+from django.shortcuts import redirect
+from django.contrib import messages
+from .models import AddOn
+import openpyxl
+
+# 📥 Import Add-Ons from Excel
+def import_addons(request):
+    if request.method == "POST" and request.FILES.get("file"):
+        file = request.FILES["file"]
+
+        try:
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
+
+            duplicates_in_file = set()
+            new_addons = []
+            already_in_db = set(AddOn.objects.values_list("name", flat=True))
+
+            seen_names_in_pass2 = set()
+
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                name, description, price = row
+                if not name:
+                    continue
+                clean_name = str(name).strip()
+
+                # Detect duplicates inside the Excel file
+                if clean_name in seen_names_in_pass2:
+                    duplicates_in_file.add(clean_name)
+                    continue
+                seen_names_in_pass2.add(clean_name)
+
+                # Skip if already exists in DB
+                if clean_name in already_in_db:
+                    continue
+
+                # Create new Add-On
+                AddOn.objects.create(
+                    name=clean_name,
+                    description=description or "",
+                    price=price or 0.00
+                )
+                new_addons.append(clean_name)
+
+            # ✅ Display user-friendly messages
+            if duplicates_in_file:
+                messages.warning(
+                    request,
+                    f"Duplicate add-on names found in the file (skipped): {', '.join(duplicates_in_file)}"
+                )
+
+            if new_addons:
+                messages.success(
+                    request,
+                    f"Successfully added: {', '.join(new_addons)}"
+                )
+            elif not duplicates_in_file:
+                messages.info(request, "No new add-ons to add.")
+
+        except Exception as e:
+            messages.error(request, f"Error importing add-ons: {e}")
+
+    else:
+        messages.error(request, "No file uploaded.")
+
+    return redirect("addon")
+
 # ---------------------------
 # Seat Class
 # ---------------------------
@@ -2415,7 +2522,7 @@ def create_checkout(request, booking_id):
             to=[booking.student.email]
         )
         email.content_subtype = "html"
-        email.send(fail_silently=False)
+        email.send(fail_silently=True)
 
     return render(request, "payment_success.html", {
         "booking": booking,

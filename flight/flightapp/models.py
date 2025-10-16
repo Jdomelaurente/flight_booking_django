@@ -254,6 +254,14 @@ class Booking(models.Model):
             total += detail.price
         return total
 
+class AddOn(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    def __str__(self):
+        return f"{self.name} - ₱{self.price}"
+    
 class BookingDetail(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="details")
     passenger = models.ForeignKey(PassengerInfo, on_delete=models.CASCADE)
@@ -276,8 +284,6 @@ class BookingDetail(models.Model):
                 factor = Decimal("1.5")
             self.price = base_price * multiplier * factor
         super().save(*args, **kwargs)
-
-
 
 
 class Payment(models.Model):

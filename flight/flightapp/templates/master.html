@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,10 +6,14 @@
   <title>Admin Dashboard</title>
 
   <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="{% static '/src/output.css' %}" rel="stylesheet">
 
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400&family=Poppins:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=BBH+Sans+Hegarty&family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
 
   <!-- Phosphor Icons -->
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -17,11 +22,13 @@
 
 
   <style>
+    .second-color {color: #FFC83D;}
+    .first-color { color: #045946;}
     .sidebar { background-color: #053322; }
     .rotate-180 { transform: rotate(180deg); }
     .unbounded { font-family: 'Unbounded', sans-serif; font-size: 14px; }
-    .poppins { font-family: 'Poppins', sans-serif; font-size: 10px; }
-    .poppins-small { font-family: 'Poppins', sans-serif; font-size: 8px; }
+    .poppins { font-family: 'Poppins', sans-serif; font-size: 12px; }
+    .poppins-small { font-family: 'Poppins', sans-serif; font-size: 9px; }
     .submenu a { display: block; }
   </style>
 </head>
@@ -69,9 +76,10 @@
     </button>
     <div id="assets" class="submenu hidden pl-8 text-sm">
       <a href="{% url 'airport' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Airports</a>
+      <a href="{% url 'addon' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Add-Ons</a>
+      <a href="{% url 'seat_class' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Seat Classes</a>
       <a href="{% url 'airline' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Airlines</a>
       <a href="{% url 'aircraft' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Aircraft</a>
-      <a href="{% url 'seat_class' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Seat Classes</a>
     </div>
 
     <!-- Booking -->

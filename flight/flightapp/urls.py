@@ -81,6 +81,12 @@ urlpatterns = [
     path("seat-classes/delete/<int:seat_class_id>/", views.delete_seat_class, name="delete_seat_class"),
     path("seat-classes/import/", views.import_seat_classes, name="import_seat_classes"),
 
+    path('addons/', views.addon_view, name='addon'),
+    path('addons/add/', views.add_addon, name='add_addon'),
+    path('addons/edit/<int:id>/', views.update_addon, name='update_addon'),
+    path('addons/delete/<int:id>/', views.delete_addon, name='delete_addon'),
+    path('addons/import/', views.import_addons, name='import_addons'),
+
 
     # booking
     path('booking/', views.booking_view, name='booking'),
