@@ -39,14 +39,20 @@
 
     <!-- Toggle Button -->
     <button onclick="toggleSidebar()"
-      class="absolute -right-3 top-6 bg-white text-black rounded-full p-1 shadow z-50">
+      class="absolute -right-3 top-3 bg-white text-black rounded-full p-1 shadow z-50">
       <i id="toggleIcon" class="ph ph-caret-right text-lg"></i>
     </button>
 
+    <!-- Logo or Image -->
+    <div class="mt-6 mb-4 flex flex-col items-center">
+      <img src="{% static 'flightapp/images/logo-1.png' %}" alt="Admin Logo" 
+          class="w-12 h-12 rounded-full object-cover shadow-lg">
+    </div>
+
     <!-- Dashboard -->
-    <a href="{% url 'dashboard' %}" class="flex mt-12 items-center w-full py-2 px-4 hover:bg-green-900 rounded transition poppins">
-      <i class="ph ph-house mr-3 text-xl"></i>
-      <span class="sidebar-text hidden">Dashboard</span>
+    <a href="{% url 'dashboard' %}" class="flex mt-1 items-center w-full py-2 px-4 hover:bg-green-900 rounded transition poppins">
+      <i class="ph ph-house mr-3 text-xl text-[#FFC83D]"></i>
+      <span class="sidebar-text hidden text-[#FFC83D]">Dashboard</span>
     </a>
 
     <!-- Manage Flight -->
@@ -124,6 +130,20 @@
       <a href="{% url 'student' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Student</a>
       <a href="{% url 'tracklog' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Track Log</a>
     </div>
+
+    <!-- Instructor Info -->
+    <button class="w-full flex justify-between items-center py-2 px-4 hover:bg-green-900 rounded transition poppins"
+            onclick="toggleSubmenu('instructor')">
+      <span class="flex items-center">
+        <i class="ph ph-chalkboard-teacher mr-3 text-xl"></i>
+        <span class="sidebar-text hidden">Instructor Info</span>
+      </span>
+      <i class="ph ph-caret-down transition-transform" id="caret-instructor"></i>
+    </button>
+    <div id="instructor" class="submenu hidden pl-8 text-sm">
+      <a href="{% url 'instructor' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Instructor</a>
+    </div>
+
 
   </nav>
 
