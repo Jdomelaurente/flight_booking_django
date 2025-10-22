@@ -1,0 +1,318 @@
+<!-- booking/student/submission_detail.html -->
+{% extends 'booking/student/base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <!-- Debug Section - REMOVE THIS AFTER FIXING -->
+        <div class="bg-yellow-100 border border-yellow-400 text-yellow-800 p-4 rounded mb-6">
+            <h3 class="font-bold mb-2">🔧 DEBUG INFORMATION</h3>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                    <strong>Template Variables:</strong>
+                    <ul class="mt-1">
+                        <li>submission: {{ submission.id }} - {{ submission.score }}</li>
+                        <li>activity: {{ activity.title }}</li>
+                        <li>booking: {{ booking.id }}</li>
+                        <li>comparison: {% if comparison %}YES ({{ comparison|length }} keys){% else %}NO{% endif %}</li>
+                        <li>booking_details: {% if booking_details %}YES ({{ booking_details|length }} keys){% else %}NO{% endif %}</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong>Comparison Data:</strong>
+                    <ul class="mt-1">
+                        {% if comparison %}
+                            <li>passenger_comparison: {{ comparison.passenger_comparison|length }}</li>
+                            <li>price_comparison: {{ comparison.price_comparison|length }}</li>
+                            <li>flight_comparison: {{ comparison.flight_comparison|length }}</li>
+                            <li>deductions: {{ comparison.deductions|length }}</li>
+                            <li>recommendations: {{ comparison.recommendations|length }}</li>
+                        {% else %}
+                            <li>No comparison data</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="mb-6 border-b pb-4">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800 mb-2">{{ activity.title }}</h1>
+                    <p class="text-gray-600">{{ activity.section.section_code }} - {{ activity.section.section_name }}</p>
+                    <div class="flex gap-2 mt-2">
+                        <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                            Submission #{{ submission.id }}
+                        </span>
+                        <span class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">
+                            Score: {{ submission.score }}/{{ activity.total_points }}
+                        </span>
+                        <span class="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded-full">
+                            Submitted: {{ submission.submitted_at|date:"M j, Y g:i A" }}
+                        </span>
+                    </div>
+                </div>
+                <a href="{% url 'bookingapp:student_activities' %}" 
+                   class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm">
+                    Back to Activities
+                </a>
+            </div>
+        </div>
+
+        <!-- Score Summary -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-green-700">{{ submission.score }}</div>
+                <div class="text-sm text-green-600">Points Earned</div>
+            </div>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-blue-700">{{ activity.total_points }}</div>
+                <div class="text-sm text-blue-600">Total Points</div>
+            </div>
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-yellow-700">{{ submission.score|floatformat:1 }}</div>
+                <div class="text-sm text-yellow-600">Percentage</div>
+            </div>
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-red-700">{{ comparison.deductions|length }}</div>
+                <div class="text-sm text-red-600">Issues Found</div>
+            </div>
+        </div>
+
+        <!-- Detailed Comparison -->
+        <div class="space-y-6">
+            <!-- Passenger Requirements Comparison -->
+            <div class="border border-gray-200 rounded-lg">
+                <div class="bg-gray-50 px-4 py-3 border-b">
+                    <h3 class="font-semibold text-gray-800">Passenger Requirements</h3>
+                </div>
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="text-center">
+                            <div class="text-sm text-gray-600 mb-1">Adults (12+)</div>
+                            <div class="flex justify-center items-center space-x-2">
+                                <span class="font-semibold">{{ comparison.passenger_comparison.required_adults }}</span>
+                                <span class="text-gray-400">→</span>
+                                <span class="font-semibold {% if comparison.passenger_comparison.adults_match %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {{ comparison.passenger_comparison.submitted_adults }}
+                                </span>
+                            </div>
+                            {% if not comparison.passenger_comparison.adults_match %}
+                            <div class="text-xs text-red-600 mt-1">❌ Mismatch</div>
+                            {% else %}
+                            <div class="text-xs text-green-600 mt-1">✓ Correct</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="text-center">
+                            <div class="text-sm text-gray-600 mb-1">Children (2-11)</div>
+                            <div class="flex justify-center items-center space-x-2">
+                                <span class="font-semibold">{{ comparison.passenger_comparison.required_children }}</span>
+                                <span class="text-gray-400">→</span>
+                                <span class="font-semibold {% if comparison.passenger_comparison.children_match %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {{ comparison.passenger_comparison.submitted_children }}
+                                </span>
+                            </div>
+                            {% if not comparison.passenger_comparison.children_match %}
+                            <div class="text-xs text-red-600 mt-1">❌ Mismatch</div>
+                            {% else %}
+                            <div class="text-xs text-green-600 mt-1">✓ Correct</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="text-center">
+                            <div class="text-sm text-gray-600 mb-1">Infants (under 2)</div>
+                            <div class="flex justify-center items-center space-x-2">
+                                <span class="font-semibold">{{ comparison.passenger_comparison.required_infants }}</span>
+                                <span class="text-gray-400">→</span>
+                                <span class="font-semibold {% if comparison.passenger_comparison.infants_match %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {{ comparison.passenger_comparison.submitted_infants }}
+                                </span>
+                            </div>
+                            {% if not comparison.passenger_comparison.infants_match %}
+                            <div class="text-xs text-red-600 mt-1">❌ Mismatch</div>
+                            {% else %}
+                            <div class="text-xs text-green-600 mt-1">✓ Correct</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Budget Comparison -->
+            {% if activity.required_max_price %}
+            <div class="border border-gray-200 rounded-lg">
+                <div class="bg-gray-50 px-4 py-3 border-b">
+                    <h3 class="font-semibold text-gray-800">Budget Compliance</h3>
+                </div>
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="text-center">
+                            <div class="text-sm text-gray-600 mb-1">Maximum Allowed</div>
+                            <div class="font-semibold text-lg">${{ comparison.price_comparison.required_max_price }}</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-sm text-gray-600 mb-1">Your Total</div>
+                            <div class="font-semibold text-lg {% if comparison.price_comparison.within_budget %}text-green-600{% else %}text-red-600{% endif %}">
+                                ${{ comparison.price_comparison.submitted_total|floatformat:2 }}
+                            </div>
+                            {% if not comparison.price_comparison.within_budget %}
+                            <div class="text-xs text-red-600 mt-1">
+                                ❌ Over budget by ${{ comparison.price_comparison.overage|floatformat:2 }}
+                            </div>
+                            {% else %}
+                            <div class="text-xs text-green-600 mt-1">✓ Within budget</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Flight Details Comparison -->
+            <div class="border border-gray-200 rounded-lg">
+                <div class="bg-gray-50 px-4 py-3 border-b">
+                    <h3 class="font-semibold text-gray-800">Flight Details</h3>
+                </div>
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="text-center">
+                            <div class="text-sm text-gray-600 mb-1">Trip Type</div>
+                            <div class="flex justify-center items-center space-x-2">
+                                <span class="font-semibold">{{ comparison.flight_comparison.required_trip_type|title }}</span>
+                                <span class="text-gray-400">→</span>
+                                <span class="font-semibold {% if comparison.flight_comparison.trip_type_match %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {{ comparison.flight_comparison.submitted_trip_type|title }}
+                                </span>
+                            </div>
+                            {% if not comparison.flight_comparison.trip_type_match %}
+                            <div class="text-xs text-red-600 mt-1">❌ Incorrect trip type</div>
+                            {% else %}
+                            <div class="text-xs text-green-600 mt-1">✓ Correct</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="text-center">
+                            <div class="text-sm text-gray-600 mb-1">Travel Class</div>
+                            <div class="flex justify-center items-center space-x-2">
+                                <span class="font-semibold">{{ comparison.flight_comparison.required_travel_class|title }}</span>
+                                <span class="text-gray-400">→</span>
+                                <span class="font-semibold {% if comparison.flight_comparison.has_correct_class %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {% if comparison.flight_comparison.has_correct_class %}Selected{% else %}Not Selected{% endif %}
+                                </span>
+                            </div>
+                            {% if not comparison.flight_comparison.has_correct_class %}
+                            <div class="text-xs text-red-600 mt-1">❌ Required class not booked</div>
+                            {% else %}
+                            <div class="text-xs text-green-600 mt-1">✓ Correct class selected</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Issues & Deductions -->
+            {% if comparison.deductions %}
+            <div class="border border-red-200 rounded-lg">
+                <div class="bg-red-50 px-4 py-3 border-b border-red-200">
+                    <h3 class="font-semibold text-red-800">Areas for Improvement</h3>
+                </div>
+                <div class="p-4">
+                    <div class="space-y-3">
+                        {% for deduction in comparison.deductions %}
+                        <div class="flex items-start space-x-3 p-3 bg-red-50 rounded border border-red-100">
+                            <div class="text-red-600 mt-1">❌</div>
+                            <div class="flex-1">
+                                <div class="font-medium text-red-800">{{ deduction.category }}</div>
+                                <div class="text-sm text-red-700">{{ deduction.issue }}</div>
+                                <div class="text-xs text-red-600 mt-1">Potential points lost: {{ deduction.points_lost }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="border border-green-200 rounded-lg">
+                <div class="bg-green-50 px-4 py-3 border-b border-green-200">
+                    <h3 class="font-semibold text-green-800">Excellent Work! 🎉</h3>
+                </div>
+                <div class="p-4 text-center">
+                    <p class="text-green-700">You met all the activity requirements perfectly!</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Score Breakdown -->
+            <div class="border border-blue-200 rounded-lg">
+                <div class="bg-blue-50 px-4 py-3 border-b border-blue-200">
+                    <h3 class="font-semibold text-blue-800">Score Breakdownasdasd</h3>
+                </div>
+                <div class="p-4">
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Base Completion Points</span>
+                            <span class="font-semibold">{{ comparison.score_breakdown.base_points|floatformat:1 }} pts</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Passenger Requirements</span>
+                            <span class="font-semibold">{{ comparison.score_breakdown.passenger_points|floatformat:1 }} pts</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Budget Compliance</span>
+                            <span class="font-semibold">{{ comparison.score_breakdown.price_points|floatformat:1 }} pts</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Flight Details Compliance</span>
+                            <span class="font-semibold">{{ comparison.score_breakdown.compliance_points|floatformat:1 }} pts</span>
+                        </div>
+                        <div class="border-t pt-2 mt-2">
+                            <div class="flex justify-between items-center font-semibold">
+                                <span>Total Score</span>
+                                <span>{{ submission.score|floatformat:1 }} pts</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Booking Details -->
+            <div class="border border-gray-200 rounded-lg">
+                <div class="bg-gray-50 px-4 py-3 border-b">
+                    <h3 class="font-semibold text-gray-800">Your Booking Details</h3>
+                </div>
+                <div class="p-4">
+                    <div class="space-y-4">
+                        {% for detail in booking.details.all %}
+                        <div class="border border-gray-100 rounded p-3">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="font-medium text-gray-800">
+                                        {{ detail.passenger.first_name }} {{ detail.passenger.last_name }}
+                                    </h4>
+                                    <div class="text-sm text-gray-600 mt-1">
+                                        <span class="inline-block mr-3">
+                                            <strong>Type:</strong> {{ detail.passenger.passenger_type }}
+                                        </span>
+                                        <span class="inline-block mr-3">
+                                            <strong>Class:</strong> {{ detail.seat_class }}
+                                        </span>
+                                        <span class="inline-block">
+                                            <strong>Price:</strong> ${{ detail.price }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                    {{ detail.schedule.flight.route.origin_airport.code }} → {{ detail.schedule.flight.route.destination_airport.code }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

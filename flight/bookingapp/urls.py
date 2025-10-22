@@ -29,6 +29,11 @@ urlpatterns = [
     path('flight/passenger/booking/payment/method/', views.payment_method, name='payment_method'),
     path('flight/passenger/booking/payment/method/success/', views.payment_success, name='payment_success'),
     path("flight/book-again/", views.book_again, name="book_again"),
+    # path('submission/<int:submission_id>/', views.submission_detail, name='submission_detail'),
+    path('student/work/<int:submission_id>/', views.student_work_detail, name='student_work_detail'),
+
+
+
 
     # Authentication
     path('auth/login/', views.login_view, name='login'),
@@ -38,4 +43,17 @@ urlpatterns = [
 
     # in bookingapp/urls.py
     path('debug-activities/', views.debug_student_activities, name='debug_student_activities'),
+    path('debug-submission/<int:submission_id>/', views.debug_submission_data, name='debug_submission'),
+    path('testsubmission/<int:submission_id>/', views.test_submission_detail, name='test_submission_detail'),
+    path('student/debug-scoring/<int:submission_id>/', views.debug_scoring, name='debug_scoring'),
+    path('student/debug-original/<int:submission_id>/', views.check_original_scoring, name='check_original_scoring'),
+    path('student/deep-debug/<int:submission_id>/', views.deep_debug_scoring, name='deep_debug_scoring'),
+
+
+    
+     # Practice booking URLs
+    path('practice/', views.practice_booking_home, name='practice_home'),
+    path('practice/start/', views.start_practice_booking, name='start_practice'),
+    path('practice/guided/', views.guided_practice, name='guided_practice'),
+    path('practice/save/', views.save_practice_booking, name='save_practice'),
 ]

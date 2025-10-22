@@ -1,0 +1,52 @@
+{% extends 'booking/student/base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Practice Booking</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Free Practice Card -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">Free Practice</h2>
+            <p class="text-gray-600 mb-4">Practice booking flights without any specific requirements. Perfect for exploring the system.</p>
+            <a href="{% url 'bookingapp:start_practice' %}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                Start Free Practice
+            </a>
+        </div>
+        
+        <!-- Guided Practice Card -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">Guided Practice</h2>
+            <p class="text-gray-600 mb-4">Practice with specific scenarios and requirements to test your skills.</p>
+            <a href="{% url 'bookingapp:guided_practice' %}" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
+                Start Guided Practice
+            </a>
+        </div>
+    </div>
+    
+    <!-- Recent Practice Bookings -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold mb-4">Recent Practice Bookings</h2>
+        {% if practice_bookings %}
+            <div class="space-y-4">
+                {% for practice in practice_bookings %}
+                <div class="border rounded-lg p-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="font-semibold">Booking #{{ practice.booking.id }}</h3>
+                            <p class="text-sm text-gray-600">{{ practice.created_at|date:"F j, Y g:i A" }}</p>
+                            <p class="text-sm">{{ practice.get_practice_type_display }}</p>
+                        </div>
+                        <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">
+                            Completed
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-gray-600">No practice bookings yet. Start your first practice session!</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

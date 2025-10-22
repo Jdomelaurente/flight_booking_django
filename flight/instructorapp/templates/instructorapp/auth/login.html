@@ -1,48 +1,358 @@
-{% extends 'instructorapp/base.html' %}
-{% block title %}Login{% endblock %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="{% static '/src/output.css' %}" rel="stylesheet">
 
-{% block content %}
-<div class="flex  flex-1 items-center h-[80vh] justify-end px-10  ">
-    <div class="w-[450px] border border-gray-400 py-8 px-10 space-y-10 rounded-md shadow-sm/30">
-        <div class="flex justify-center gap-2">
-            <p class="w-13 h-13 bg-gray-300 rounded-full"></p>
-            <p class="w-13 h-13 bg-gray-300 rounded-full"></p>
-        </div>
-        <p class="text-xs mx-10 text-center ">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
 
-        <!-- Display Messages -->
-        {% if messages %}
-        <div class="space-y-2">
-            {% for message in messages %}
-            <div class="p-3 text-sm rounded-md {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
-                {{ message }}
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inria+Sans:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Inria+Serif:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=La+Belle+Aurore&family=Medula+One&family=Odor+Mean+Chey&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Racing+Sans+One&family=Roboto:ital,wght@0,100..900;1,100..900&family=Sora:wght@100..800&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+ 
+ 
+  <title>{% block title %}  {% endblock %}</title>
 
-        <form method="POST" action="{% url 'instructor_login' %}">
-            {% csrf_token %}
-            <div class="flex flex-col space-y-5">
-                <div class="flex flex-col w-full space-y-2">
-                    <label for="username" class="text-sm">Username:</label>
-                    <input type="text" name="username" class="h-[50px] border rounded-sm border-gray-400 px-3" required>
+    <style>
+        .poppins-thin {
+        font-family: "Poppins", sans-serif;
+        font-weight: 100;
+        font-style: normal;
+        }
+
+.poppins-extralight {
+  font-family: "Poppins", sans-serif;
+  font-weight: 200;
+  font-style: normal;
+}
+
+.poppins-light {
+  font-family: "Poppins", sans-serif;
+  font-weight: 300;
+  font-style: normal;
+}
+
+.poppins-regular {
+  font-family: "Poppins", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.poppins-medium {
+  font-family: "Poppins", sans-serif;
+  font-weight: 500;
+  font-style: normal;
+}
+
+.poppins-semibold {
+  font-family: "Poppins", sans-serif;
+  font-weight: 600;
+  font-style: normal;
+}
+
+.poppins-bold {
+  font-family: "Poppins", sans-serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.poppins-extrabold {
+  font-family: "Poppins", sans-serif;
+  font-weight: 800;
+  font-style: normal;
+}
+
+.poppins-black {
+  font-family: "Poppins", sans-serif;
+  font-weight: 900;
+  font-style: normal;
+}
+
+.poppins-thin-italic {
+  font-family: "Poppins", sans-serif;
+  font-weight: 100;
+  font-style: italic;
+}
+
+.poppins-extralight-italic {
+  font-family: "Poppins", sans-serif;
+  font-weight: 200;
+  font-style: italic;
+}
+
+.poppins-light-italic {
+  font-family: "Poppins", sans-serif;
+  font-weight: 300;
+  font-style: italic;
+}
+
+.poppins-regular-italic {
+  font-family: "Poppins", sans-serif;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.poppins-medium-italic {
+  font-family: "Poppins", sans-serif;
+  font-weight: 500;
+  font-style: italic;
+}
+
+.poppins-semibold-italic {
+  font-family: "Poppins", sans-serif;
+  font-weight: 600;
+  font-style: italic;
+}
+
+.poppins-bold-italic {
+  font-family: "Poppins", sans-serif;
+  font-weight: 700;
+  font-style: italic;
+}
+
+.poppins-extrabold-italic {
+  font-family: "Poppins", sans-serif;
+  font-weight: 800;
+  font-style: italic;
+}
+
+.poppins-black-italic {
+  font-family: "Poppins", sans-serif;
+  font-weight: 900;
+  font-style: italic;
+}
+
+.inria-sans-light {
+  font-family: "Inria Sans", sans-serif;
+  font-weight: 300;
+  font-style: normal;
+}
+
+.inria-sans-regular {
+  font-family: "Inria Sans", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.inria-sans-bold {
+  font-family: "Inria Sans", sans-serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.inria-sans-light-italic {
+  font-family: "Inria Sans", sans-serif;
+  font-weight: 300;
+  font-style: italic;
+}
+
+.inria-sans-regular-italic {
+  font-family: "Inria Sans", sans-serif;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.inria-sans-bold-italic {
+  font-family: "Inria Sans", sans-serif;
+  font-weight: 700;
+  font-style: italic;
+}
+
+.medula-one-regular {
+  font-family: "Medula One", system-ui;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.racing-sans-one-regular {
+  font-family: "Racing Sans One", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+
+.bg-image {
+  background-image: url('{% static 'bookingapp/images/csucc-front.svg' %}');
+  background-size: cover;   /* makes it fill the whole area */
+  background-position: center; /* centers the image */
+  background-repeat: no-repeat; /* avoids repeating */
+  background-attachment: fixed;
+
+  width: 100%;
+  height: 100vh; /* full screen height */
+}
+
+
+.glow {
+    box-shadow: 0 0 2px white, 0 0 2px white, 0 0 2px white;
+}
+
+.syncopate-regular {
+  font-family: "Syncopate", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.syncopate-bold {
+  font-family: "Syncopate", sans-serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.inria-serif-light {
+  font-family: "Inria Serif", serif;
+  font-weight: 300;
+  font-style: normal;
+}
+
+.inria-serif-regular {
+  font-family: "Inria Serif", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.inria-serif-bold {
+  font-family: "Inria Serif", serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.inria-serif-light-italic {
+  font-family: "Inria Serif", serif;
+  font-weight: 300;
+  font-style: italic;
+}
+
+.inria-serif-regular-italic {
+  font-family: "Inria Serif", serif;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.inria-serif-bold-italic {
+  font-family: "Inria Serif", serif;
+  font-weight: 700;
+  font-style: italic;
+}
+
+
+
+    </style>
+</head>
+<body class=" poppins-regular ease-in-out bg-image">
+
+    <header class=" w-full bg-[#093704] h-[79px] flex items-center ">
+        <div class=" max-w-screen-2xl w-full mx-auto">
+            <div class="flex justify-between w-full  items-center px-10">
+                <img src="{% static 'bookingapp/images/logo-csucc.svg' %}" alt="" class=" h-auto">
+                <div class="flex gap-5">
+                    <a href="#" class="py-1 px-8 bg-[#FFCC00] hover:bg-[#FFCC00]/90 cursor-pointer rounded-xs font-medium">Register</a>
+                    <a href="#" class="py-1 px-8 border text-gray-200 border-white rounded-xs font-medium hover:bg-white/20 cursor-pointer">Contact Us</a>
                 </div>
-                <div class="flex flex-col w-full space-y-2">
-                    <label for="password" class="text-sm">Password:</label>
-                    <input type="password" name="password" class="h-[50px] border rounded-sm border-gray-400 px-3" required>
-                </div>
             </div>
-
-            <div class="flex flex-col mt-5">
-                <a href="#" class="text-blue-500 mb-3">forgot password?</a>
-                <button type="submit" class="h-[50px] w-full rounded-sm bg-[#FFC83D] hover:bg-[#e6b435] transition-colors">LOGIN</button>
-            </div>
-        </form>
-
-        <div class="text-center">
-            <p class="text-sm">Don't have an account? <a href="{% url 'instructor_register' %}" class="text-blue-500 hover:underline">Register here</a></p>
         </div>
-    </div>
-</div>
-{% endblock %}
+        
+    </header>
+
+    <main class="w-full ">
+        <div class=" max-w-screen-2xl w-full mx-auto ">
+
+
+
+            <div class="w-full flex gap-15 px-10 h-[500px] mt-10">
+
+                <div class="flex-1  ">
+                  <div class="w-full  h-full text-white space-y-5">
+                    <div class="flex flex-col gap-2">
+                      <h1 class="text-[40px] inria-serif-bold ">
+                      TourEdu : Flight Booking and Tourism Training Platform
+                      </h1>
+                      <p class="text-sm text-gray-200 text-justify leading-5">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+
+                    </div>
+                    
+                    <div class="flex gap-8">
+                        <img src="{% static 'bookingapp/images/kumbira.jpg' %}" alt="" class="max-w-[212px] ">
+                        <div class="space-y-2">
+                          <h1 class="inria-serif-bold text-base">College of Tourism and Hospitality Management Shines at Kumbira 2024</h1>
+                          <p class="text-sm text-gray-200">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+                        </div>
+                    </div>
+
+
+                    <div class="flex gap-10">
+                        
+                        <div class="space-y-2">
+                          <h1 class="inria-serif-bold text-right text-base ">CSUCC-CTHM Brings Home the Gold</h1>
+                          <p class="text-sm text-gray-200">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+                        </div>
+                        <img src="{% static 'bookingapp/images/bhtg.jpg' %}" alt="" class="max-w-[212px] ">
+                    </div>
+
+                    <div  class="flex gap-10">
+                        <img src="{% static 'bookingapp/images/csucc.svg' %}" alt="" class="max-w-[80px] ">
+                        <img src="{% static 'bookingapp/images/csu.svg' %}" alt="" class="max-w-[80px] ">
+                        <img src="{% static 'bookingapp/images/cthm.svg' %}" alt="" class="max-w-[80px] ">
+                        <img src="{% static 'bookingapp/images/ceit.svg' %}" alt="" class="max-w-[80px] ">
+
+                    </div>
+
+                  </div>
+                </div>
+
+                <!-- login component -->
+                <form method="POST"  class=" flex-1 max-w-[400px] " action="{% url 'instructor_login' %}" >
+                  {% csrf_token %}
+                  <div class="w-full h-full rounded-sm bg-[#FFFCF5] flex flex-col items-center p-10">
+
+                    <div class="flex flex-col w-[250px] items-center gap-2 ">
+                      <h1 class="text-2xl">Login Here!</h1>
+                      <p class="text-[10px] text-gray-400 poppins-light text-center">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+                    </div>
+
+                    <div class="space-y-5 mt-10 w-full">
+                      <div class="flex flex-col w-full gap-2">
+                        <label for="">Username:</label>
+                        <input type="text" name="username" placeholder="Enter your email" class=" px-2 h-[46px] border rounded-xs bg-white">
+                      </div>
+                      <div class="flex flex-col w-full gap-2">
+                        <label for="">Password:</label>
+                        <input type="password" name="password" placeholder="Enter your password" class=" px-2 h-[46px] border rounded-xs bg-white">
+                      </div>            
+                    </div>
+
+                    <div class="w-full  flex items-end  mt-8 flex-col">
+                        <button type="submit" class="h-[46px]   bg-[#FFC83D] hover:bg-[#FFD56C] cursor-pointer w-full  rounded-xs">Login</button>
+                        <a href="#" class="underline text-blue-500 text-right text-xs ">forgot password?</a>
+                    </div>
+
+                  </div>
+
+                </form>
+
+            </div>
+
+
+
+
+        </div>
+    </main>
+
+
+
+
+
+
+<script>
+window.addEventListener('pageshow', function(event) {
+    // Reload if page was loaded from cache
+    if (event.persisted) {
+        window.location.reload();
+    }
+});
+</script>
+
+</body>
+</html>

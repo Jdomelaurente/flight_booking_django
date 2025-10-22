@@ -244,3 +244,34 @@ def log_activity_submission(sender, instance, created, **kwargs):
                    f"Student: {instance.student.first_name} {instance.student.last_name}, "
                    f"Booking: {instance.booking.id if instance.booking else 'None'}")
         print(f"✅ AUTOMATIC LOG: ActivitySubmission {instance.id} created!")    
+
+
+
+class PracticeBooking(models.Model):
+    """Model for practice bookings that are not graded activities"""
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='practice_bookings')
+    booking = models.ForeignKey('flightapp.Booking', on_delete=models.CASCADE, related_name='practice_booking')
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_completed = models.BooleanField(default=False)
+    
+    # Practice booking details (for analysis/feedback)
+    practice_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('free_practice', 'Free Practice'),
+            ('guided_practice', 'Guided Practice'),
+        ],
+        default='free_practice'
+    )
+    
+    # Optional: Practice scenario description
+    scenario_description = models.TextField(blank=True, null=True)
+    
+    # Optional: Practice requirements (for guided practice)
+    practice_requirements = models.JSONField(blank=True, null=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Practice Booking - {self.student.first_name} {self.student.last_name} - {self.created_at.strftime('%Y-%m-%d')}"        

@@ -27,4 +27,7 @@ urlpatterns = [
     path('debug/submissions/', views.debug_submissions, name='debug_submissions'),
     # in instructorapp/urls.py
     path('debug-session/', views.debug_session, name='debug_session'),
+
+
+
 ]

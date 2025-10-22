@@ -7,10 +7,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="{% static '/src/output.css' %}" rel="stylesheet">
 
-    <link href='https://cdn.boxicons.com/fonts/basic/boxicons.min.css' rel='stylesheet'>  
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inria+Sans:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Medula+One&family=Odor+Mean+Chey&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Racing+Sans+One&family=Roboto:ital,wght@0,100..900;1,100..900&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inria+Sans:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Inria+Serif:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=La+Belle+Aurore&family=Medula+One&family=Odor+Mean+Chey&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Racing+Sans+One&family=Roboto:ital,wght@0,100..900;1,100..900&family=Sora:wght@100..800&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+ 
+    
     <title>{% block title %}  {% endblock %}</title>
 
     <style>
@@ -195,31 +196,63 @@
 }
 
 
+.inria-serif-regular {
+  font-family: "Inria Serif", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.inria-serif-bold {
+  font-family: "Inria Serif", serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
     </style>
 </head>
-<body class="bg-[#F8F8F8] poppins-regular ease-in-out">
-    <header class="flex-1 flex mx-auto  bg-[#045946]">
-        <div class="max-w-screen-2xl  px-10 h-15 w-full flex justify-end items-center">
-            <p class="text-lg text-white"> Contact Us</p>
+<body class="bg-[#FFFCF5] inria-sans-regular ease-in-out flex flex-col items-center">
+        <header class=" w-full bg-[#093704] h-[79px] flex items-center ">
+        <div class=" max-w-screen-2xl w-full mx-auto">
+            <div class="flex justify-between w-full  items-center px-10">
+                <img src="{% static 'bookingapp/images/logo-csucc.svg' %}" alt="" class=" h-auto">
+                <div class="flex gap-5">
+                    <div class="w-12 h-12 rounded-full border-4 border-[#FEB938] bg-gray-200"></div>
+                </div>
+            </div>
         </div>
-
+        
     </header>
-
-    <main class="flex-1 my-10 max-w-screen-2xl flex mx-auto">
+    
+    <main class="flex-1 mt-10 flex flex-col w-full  max-w-screen-2xl  mx-auto">
     {% block content %}
     {% endblock %}
     </main>
 
 
-    <footer class="mt-10"></footer>
-<script>
-window.addEventListener('pageshow', function(event) {
-    // Reload if page was loaded from cache
-    if (event.persisted) {
-        window.location.reload();
-    }
-});
-</script>
+    <!-- <footer class="w-full bg-[#045946] text-white text-center py-4 mt-10">
+      <p class="text-sm">&copy;  All rights reserved.</p>
+    </footer> -->
+    <script>
+    window.addEventListener('pageshow', function(event) {
+        // Reload if page was loaded from cache
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
+
+
+
+  function goBack() {
+      // Try to go back in browser history
+      if (window.history.length > 1) {
+          window.history.back();
+      } else {
+          // If no history, redirect to student activities page as fallback
+          window.location.href = "{% url 'instructor_home' %}";
+      }
+  }
+
+    </script>
 
 </body>
 </html>
