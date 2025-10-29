@@ -43,6 +43,7 @@
             <th class="border border-gray-400 px-4 py-2">Code</th>
             <th class="border border-gray-400 px-4 py-2">Name</th>
             <th class="border border-gray-400 px-4 py-2">Location</th>
+            <th class="border border-gray-400 px-4 py-2">Type</th> <!-- ✅ New -->
             <th class="border border-gray-400 px-4 py-2">Actions</th>
         </tr>
     </thead>
@@ -52,6 +53,7 @@
             <td class="border border-gray-400 px-4 py-2">{{ airport.code }}</td>
             <td class="border border-gray-400 px-4 py-2">{{ airport.name }}</td>
             <td class="border border-gray-400 px-4 py-2">{{ airport.location }}</td>
+            <td class="border border-gray-400 px-4 py-2 capitalize">{{ airport.get_airport_type_display }}</td> <!-- ✅ -->
             <td class="border border-gray-400 px-4 py-2 text-center space-x-2">
                 <a href="{% url 'update_airport' airport.id %}" 
                    class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded inline-flex items-center">
@@ -66,9 +68,10 @@
         </tr>
         {% empty %}
         <tr>
-            <td colspan="4" class="text-center py-4">No airports available</td>
+            <td colspan="5" class="text-center py-4">No airports available</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
+
 {% endblock %}

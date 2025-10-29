@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +6,7 @@
   <title>Admin Dashboard Login</title>
 
   <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="{% static '/src/output.css' %}" rel="stylesheet">
 
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&family=Poppins:wght@400;500&display=swap" rel="stylesheet">
@@ -14,71 +15,125 @@
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
   <style>
-    .unbounded { font-family: 'Unbounded', sans-serif; }
-    .poppins { font-family: 'Poppins', sans-serif; }
-    .poppins-small { font-family: 'Poppins', sans-serif; font-size: 12px; }
+    .second-color { background-color: #FFC83D; }
+    .first-color { color: #045946; }
+    .sidebar { background-color: #053322; }
+    .rotate-180 { transform: rotate(180deg); }
+    .unbounded { font-family: 'Unbounded', sans-serif; font-size: 16px; }
+    .unbounded-none { font-family: 'Unbounded', sans-serif; } 
+    .poppins { font-family: 'Poppins', sans-serif; font-size: 14px; }
+    .poppins-none { font-family: 'Poppins', sans-serif; }
+    .poppins-small { font-family: 'Poppins', sans-serif; font-size: 10px; }
+    .submenu a { display: block; }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
+<body class="bg-no-repeat bg-center min-h-screen flex flex-col"
+      style="background-image: url('{% static 'flightapp/images/csucc-front.png' %}'); background-size: 100% 100%; background-attachment: fixed;">
+
 
 <!-- Header -->
-<header class="bg-green-900 text-white p-4 shadow-md">
+<header class="bg-green-900 text-white p- shadow-md relative">
+  <div class="flex items-center space-x-3">
+    <img src="{% static 'flightapp/images/header-logo.png' %}" alt="CSU Logo" class="ml-4 h-10 w-10">
+    <div>
+      <h1 class="unbounded-none  text-[15px]">Caraga State University</h1>
+      <p class="poppins-none text-[10px]">Cabadbaran City</p>
+      <p class="font-extralight poppins-none text-[10px] mb-1">
+        T. Curato St., Cabadbaran City, Agusan del Norte, 8604
+      </p>
+
+
+    </div>
+  </div>
+  <div class="absolute bottom-0 left-0 w-full h-1 second-color"></div>
 </header>
 
+    
+
 <!-- Main Content -->
-<main class="flex-grow flex items-center justify-center">
-    <div class="bg-white p-4 rounded shadow-md w-full max-w-sm">
-        <h2 class="text-xl font-bold mb-5 text-center unbounded">Login</h2>
+<main class="flex flex-grow">
 
-        {% if messages %}
-            <div class="mb-3">
-                {% for message in messages %}
-                    <div class="p-2 rounded bg-red-100 text-red-700 flex items-center text-sm">
-                        <i class="ph ph-warning-circle mr-2 text-red-700"></i>
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-
-        <form method="POST" class="space-y-3">
-            {% csrf_token %}
-
-            <!-- Username Field -->
-            <label class="block poppins text-sm mb-1">Username:</label>
-            <div class="flex items-center bg-gray-100 border rounded shadow-inner p-2 text-sm">
-                <i class="ph ph-user text-gray-500 mr-2"></i>
-                <input type="text" name="username" placeholder="Enter username" 
-                       class="w-full bg-gray-100 outline-none text-sm" required>
-            </div>
-
-            <!-- Password Field -->
-            <label class="block poppins text-sm mb-1 mt-2">Password:</label>
-            <div class="flex items-center bg-gray-100 border rounded shadow-inner p-2 text-sm">
-                <i class="ph ph-lock-key text-gray-500 mr-2"></i>
-                <input type="password" name="password" placeholder="Enter password"
-                       class="w-full bg-gray-100 outline-none text-sm" required>
-            </div>
-
-            <!-- Submit Button -->
-            <button type="submit" 
-                    class="w-full mt-3 bg-green-900 text-white p-2  hover:bg-green-800 font-semibold poppins flex items-center justify-center text-sm">
-                <i class="ph ph-sign-in mr-2"></i>
-                Login
-            </button>
-        </form>
-
-        <!-- Register Link -->
-        <p class="text-center mt-3 poppins-small text-sm">No account? 
-            <a href="{% url 'register' %}" class="text-green-800 hover:underline">Register</a>
-        </p>
+  <!-- Left Side -->
+  <div class="w-1/2  flex flex-col justify-center pl-20 pr-10 relative overflow-hidden">
+    <div class="absolute inset-0 flex items-center justify-center opacity-5">
     </div>
+
+   <div class="relative z-10 flex flex-col items-center justify-center text-center">
+    <h2 class="text-5xl font-bold mb-3 text-white unbounded-none ">
+        Welcome back,<br>Administrators.
+    </h2>
+    <p class="text-white poppins max-w-md xjustify-center">
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+    </p>
+
+    <div class="flex justify-center items-center space-x-6 mt-4">
+      <img src="{% static 'flightapp/images/logo-1.png' %}" alt="Image 1" class="h-16 w-16 object-contain">
+      <img src="{% static 'flightapp/images/logo-2.png' %}" alt="Image 2" class="h-20 w-16 object-contain">
+      <img src="{% static 'flightapp/images/logo-3.png' %}" alt="Image 3" class="h-16 w-16 object-contain">
+      <img src="{% static 'flightapp/images/logo-4.png' %}" alt="Image 4" class="h-16 w-16 object-contain">
+    </div>
+
+    </div>
+
+  </div>
+
+  <!-- Right Side (Login Form) -->
+  <div class="w-1/2 flex items-center justify-center">
+    <div class="bg-white p-6 rounded shadow-md w-full max-w-sm">
+      <h2 class="text-xl font-bold mb-4 text-center unbounded">Login</h2>
+      <p class="poppins-small text-center mb-3">Please  enter your information</p>
+
+      {% if messages %}
+      <div class="mb-3">
+        {% for message in messages %}
+        <div class="p-2 rounded bg-red-100 text-red-700 flex items-center text-sm">
+          <i class="ph ph-warning-circle mr-2 text-red-700"></i>
+          {{ message }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <form method="POST" class="space-y-3">
+        {% csrf_token %}
+
+        <!-- Username Field -->
+        <label class="block poppins text-sm mb-1">Username:</label>
+        <div class="flex items-center bg-gray-100 border rounded shadow-inner p-2 text-sm">
+          <i class="ph ph-user text-gray-500 mr-2"></i>
+          <input type="text" name="username" placeholder="Enter username" 
+                 class="w-full bg-gray-100 outline-none text-sm" required>
+        </div>
+
+        <!-- Password Field -->
+        <label class="block poppins text-sm mb-1 mt-2">Password:</label>
+        <div class="flex items-center bg-gray-100 border rounded shadow-inner p-2 text-sm">
+          <i class="ph ph-lock-key text-gray-500 mr-2"></i>
+          <input type="password" name="password" placeholder="Enter password"
+                 class="w-full bg-gray-100 outline-none text-sm" required>
+        </div>
+
+
+        <a href="{% url 'register' %}" class="poppins-small hover:underline">Forget password?</a>
+        
+        <!-- Submit Button -->
+        <button type="submit" 
+                class="w-full mt-3 second-color text-black p-2 font-semibold poppins flex items-center justify-center text-sm">
+          <i class="ph ph-sign-in mr-2"></i>
+          Login
+        </button>
+      </form>
+
+   
+    </div>
+  </div>
 </main>
 
 <!-- Footer -->
-<footer class="bg-green-900 text-white text-center p-2 poppins-small text-sm">
-    &copy; 2025 All rights reserved.
+<footer class="bg-green-900 text-white flex items-center justify-center p-2 poppins-small h-14">
+  &copy; 2025 All rights reserved.
 </footer>
+
 
 </body>
 </html>

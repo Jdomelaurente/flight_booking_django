@@ -932,9 +932,6 @@ def booking_summary(request):
     passengers = request.session.get('passengers', [])
     seats = request.session.get('selected_seats', {})
 
-    passengers = request.session.get('passengers', [])
-    seats = request.session.get('selected_seats', {})
-
     # DEBUG PRINT START
     print("=== SESSION PASSENGERS & SELECTED SEATS ===")
     for passenger in passengers:
@@ -944,7 +941,6 @@ def booking_summary(request):
     print("Full selected_seats dict:", seats)
     print("=========================================")
     # DEBUG PRINT END
-
 
     passenger_data = []
     for passenger in passengers:
@@ -968,20 +964,109 @@ def booking_summary(request):
             'passenger_type' : passenger.get('passenger_type', '')
         })
 
-        
     contact_info = request.session.get('contact_info', {})
 
+    # **FIXED: Use the same calculation as BookingDetail.save() method**
     num_passengers = len(passengers)
-    price_per_passenger = 0
-    if depart_schedule:
-        price_per_passenger += depart_schedule.price
-    if return_schedule:
-        price_per_passenger += return_schedule.price
+    
+    # Count adults and children (infants are free)
+    adult_child_count = sum(1 for p in passengers if p.get('passenger_type', '').lower() in ['adult', 'child'])
+    infant_count = sum(1 for p in passengers if p.get('passenger_type', '').lower() == 'infant')
+    
+    print(f"📊 Booking Summary Calculation:")
+    print(f"  - Total passengers: {num_passengers}")
+    print(f"  - Adults/Children: {adult_child_count}")
+    print(f"  - Infants: {infant_count}")
 
-    subtotal = price_per_passenger * num_passengers
-    taxes = 20 * num_passengers
-    insurance = 515 * num_passengers
+    # **REPLACE THIS SECTION WITH THE MODEL'S CALCULATION LOGIC**
+    from decimal import Decimal
+    from django.utils import timezone
+    
+    subtotal = Decimal('0.00')
+    
+    # Calculate price for each adult/child passenger using the same logic as BookingDetail.save()
+    for passenger in passengers:
+        if passenger.get('passenger_type', '').lower() in ['adult', 'child']:
+            passenger_price = Decimal('0.00')
+            
+            # Departure flight price
+            if depart_schedule:
+                base_price = depart_schedule.flight.route.base_price
+                
+                # Get seat class multiplier for this passenger
+                pid = str(passenger.get("id"))
+                seat_info = seats.get(pid, {})
+                depart_seat_number = seat_info.get("depart")
+                
+                multiplier = Decimal('1.0')  # Default multiplier
+                if depart_seat_number and depart_schedule:
+                    try:
+                        seat_obj = Seat.objects.get(
+                            schedule=depart_schedule, 
+                            seat_number=depart_seat_number
+                        )
+                        if seat_obj.seat_class:
+                            multiplier = seat_obj.seat_class.price_multiplier
+                    except Seat.DoesNotExist:
+                        pass
+                
+                # Calculate days difference factor (same as model logic)
+                days_diff = (depart_schedule.departure_time.date() - timezone.now().date()).days
+                if days_diff >= 30:
+                    factor = Decimal("0.8")
+                elif 7 <= days_diff <= 29:
+                    factor = Decimal("1.0")
+                else:
+                    factor = Decimal("1.5")
+                
+                depart_price = base_price * multiplier * factor
+                passenger_price += depart_price
+                print(f"  - {passenger['first_name']} depart: {base_price} × {multiplier} × {factor} = {depart_price}")
+            
+            # Return flight price (if applicable)
+            if return_schedule:
+                base_price = return_schedule.flight.route.base_price
+                
+                # Get seat class multiplier for return flight
+                return_seat_number = seat_info.get("return")
+                
+                multiplier = Decimal('1.0')  # Default multiplier
+                if return_seat_number and return_schedule:
+                    try:
+                        seat_obj = Seat.objects.get(
+                            schedule=return_schedule, 
+                            seat_number=return_seat_number
+                        )
+                        if seat_obj.seat_class:
+                            multiplier = seat_obj.seat_class.price_multiplier
+                    except Seat.DoesNotExist:
+                        pass
+                
+                # Calculate days difference factor
+                days_diff = (return_schedule.departure_time.date() - timezone.now().date()).days
+                if days_diff >= 30:
+                    factor = Decimal("0.8")
+                elif 7 <= days_diff <= 29:
+                    factor = Decimal("1.0")
+                else:
+                    factor = Decimal("1.5")
+                
+                return_price = base_price * multiplier * factor
+                passenger_price += return_price
+                print(f"  - {passenger['first_name']} return: {base_price} × {multiplier} × {factor} = {return_price}")
+            
+            subtotal += passenger_price
+    
+    # Taxes and insurance (same as before)
+    taxes = 20 * num_passengers  # All passengers pay taxes
+    insurance = 515 * num_passengers  # All passengers pay insurance
     total_price = subtotal + taxes + insurance
+
+    print(f"💰 Final Calculation:")
+    print(f"  - Subtotal (using model logic): {subtotal}")
+    print(f"  - Taxes (all passengers): {taxes}")
+    print(f"  - Insurance (all passengers): {insurance}")
+    print(f"  - Total: {total_price}")
 
     template = loader.get_template("booking/booking_summary.html")
     context = {
@@ -989,8 +1074,9 @@ def booking_summary(request):
         "return_schedule": return_schedule,
         "passengers": passenger_data,
         "contact_info": contact_info,
-        "price_per_passenger": price_per_passenger,
         "num_passengers": num_passengers,
+        "adult_child_count": adult_child_count,
+        "infant_count": infant_count,
         "subtotal": subtotal,
         "taxes": taxes,
         "insurance": insurance,
@@ -1027,6 +1113,16 @@ def confirm_booking(request):
         depart_schedule = Schedule.objects.get(id=depart_schedule_id)
         return_schedule = Schedule.objects.filter(id=return_schedule_id).first() if return_schedule_id else None
         student = Student.objects.get(id=student_id)
+
+         # **ADD PRICE DEBUGGING**
+        print(f"=== SCHEDULE PRICE DEBUG ===")
+        print(f"Depart Schedule: {depart_schedule}")
+        print(f"Depart Schedule Price: {depart_schedule.price}")
+        if return_schedule:
+            print(f"Return Schedule: {return_schedule}")
+            print(f"Return Schedule Price: {return_schedule.price}")
+        print("============================")
+        # **END DEBUGGING**
 
         # 1️⃣ Create Booking
         booking = Booking.objects.create(
@@ -1137,6 +1233,7 @@ def confirm_booking(request):
                         seat_class=outbound_seat_obj.seat_class,
                         price=0.00 if p.get('passenger_type', '').lower() == 'infant' else depart_schedule.price
                     )
+
                     print(f"✅ Created depart booking for {p['first_name']} ({p.get('passenger_type')}) - Seat: {depart_seat_number}")        
 
                 except Seat.DoesNotExist:
@@ -1216,6 +1313,8 @@ def payment_method(request):
     print(f"=== PAYMENT_METHOD DEBUG ===")
     print(f"Booking ID from session: {booking_id}")
     print(f"Activity ID from session: {activity_id}")
+
+
     
     # Debug: Check if this is an activity booking
     if activity_id:
@@ -1231,18 +1330,47 @@ def payment_method(request):
         booking = Booking.objects.get(id=booking_id)
         
         print(f"✅ Found booking: {booking.id}")
+
+         # **ADD DETAILED DEBUGGING**
+        print("=== DETAILED BOOKING ANALYSIS ===")
+        print(f"Booking Details Count: {booking.details.count()}")
+        
+        for detail in booking.details.all():
+            print(f"Detail ID: {detail.id}")
+            print(f"  - Passenger: {detail.passenger.first_name} ({detail.passenger.passenger_type})")
+            print(f"  - Schedule: {detail.schedule}")
+            print(f"  - Schedule Price: {detail.schedule.price}")  # This should be 5000.00
+            print(f"  - Detail Price: {detail.price}")  # This is what's actually stored
+            print(f"  - Seat: {detail.seat}")
+            print(f"  - Seat Class: {detail.seat_class}")
+        
+        # Check if there are any issues with the booking details
+        if booking.details.count() == 0:
+            print("❌ No booking details found!")
         
         # Check if booking details exist
         if not booking.details.exists():
             messages.error(request, "No booking details found. Please create a new booking.")
             return redirect("bookingapp:main")
 
-        # Calculate total amount properly - only charge adults and children
-        non_infant_details = booking.details.filter(passenger__passenger_type__in=['Adult', 'Child'])
-        subtotal = sum(detail.price for detail in non_infant_details)
-        taxes = Decimal(20) * non_infant_details.count()
-        insurance = Decimal(500) * non_infant_details.count()
+        # **FIXED CALCULATION**: Use the same logic as booking_summary
+        # Count ALL passengers (adults + children + infants) but only charge adults and children
+        all_passengers_count = booking.details.count()
+        adult_child_details = booking.details.filter(passenger__passenger_type__in=['Adult', 'Child'])
+        adult_child_count = adult_child_details.count()
+        infant_count = all_passengers_count - adult_child_count
+        
+        print(f"📊 Passenger breakdown - Total: {all_passengers_count}, Adults/Children: {adult_child_count}, Infants: {infant_count}")
+        
+        # Calculate prices - infants are free (PHP 0.00)
+        subtotal = sum(detail.price for detail in adult_child_details)
+        
+        # **FIXED**: Use the same tax and insurance rates as booking_summary
+        taxes = Decimal(20) * all_passengers_count  # PHP 20 per passenger (including infants)
+        insurance = Decimal(515) * all_passengers_count  # PHP 515 per passenger (including infants)
         total_amount = subtotal + taxes + insurance
+
+        print(f"💰 Price calculation - Subtotal: {subtotal}, Taxes: {taxes}, Insurance: {insurance}, Total: {total_amount}")
 
         if request.method == "POST":
             method = request.POST.get("payment_method")
@@ -1298,11 +1426,20 @@ def payment_method(request):
 
                         print(f"✅ Payment completed. Keeping booking_id ({booking_id}) and activity_id for payment_success")
                         messages.success(request, "Payment completed successfully!")
+
+                        # Add this debug section after getting the booking
+                        print("=== BOOKING DETAILS DEBUG ===")
+                        for detail in booking.details.all():
+                            print(f"Passenger: {detail.passenger.first_name} ({detail.passenger.passenger_type}) - Price: {detail.price} - Schedule: {detail.schedule}")
+                        print("=============================")
+
                         return redirect("bookingapp:payment_success")
 
                 except Exception as e:
+                    print(f"❌ Payment error: {str(e)}")
                     messages.error(request, f"Payment failed: {str(e)}")
                     return redirect("bookingapp:payment_method")
+                
 
         return render(request, "booking/payment.html", {
             "booking": booking,

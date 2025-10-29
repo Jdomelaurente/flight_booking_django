@@ -2,18 +2,18 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.main, name="main"),
 
+    path('', views.main, name="main"),
+    
     #user
-    path("admins/", views.admin_dashboard, name="admin_dashboard"),
-    path("instructors/", views.instructor_dashboard, name="instructor_dashboard"),
+    path("administrator/dashboard/", views.admin_dashboard, name="admin_dashboard"),
     
     #login
     path("dashboard/", views.dashboard, name="dashboard"),
-    path("profile/", views.profile_view, name="profile"),
-    path("register/", views.register_view, name="register"),
-    path("login/", views.login_view, name="login"),
-    path("logout/", views.logout_view, name="logout"),
+    path("administrator/profile/", views.profile_view, name="profile"),
+    path("administrator/register/", views.register_view, name="register"),
+    path("administrator/login/", views.login_view, name="login"),
+    path("administrator/logout/", views.logout_view, name="logout"),
 
     # flight
     path('flight/', views.flight_view, name='flight'),
@@ -24,14 +24,12 @@ urlpatterns = [
     path("flights/import/", views.import_flights, name="import_flights"),
 
 
-
     # route
     path('route/', views.route_view, name='route'),
     path('routes/add/', views.add_route, name='add_route'),
     path('routes/update/<int:route_id>/', views.update_route, name='update_route'),
     path('routes/delete/<int:route_id>/', views.delete_route, name='delete_route'),
     path("routes/import/", views.import_routes, name="import_routes"),
-
 
 
     #schedule 
@@ -81,6 +79,13 @@ urlpatterns = [
     path("seat-classes/delete/<int:seat_class_id>/", views.delete_seat_class, name="delete_seat_class"),
     path("seat-classes/import/", views.import_seat_classes, name="import_seat_classes"),
 
+    # add-ons
+    path('addons/', views.addon_view, name='addon'),
+    path('addons/add/', views.add_addon, name='add_addon'),
+    path('addons/edit/<int:id>/', views.update_addon, name='update_addon'),
+    path('addons/delete/<int:id>/', views.delete_addon, name='delete_addon'),
+    path('addons/import/', views.import_addons, name='import_addons'),
+
 
     # booking
     path('booking/', views.booking_view, name='booking'),
@@ -117,6 +122,14 @@ urlpatterns = [
     path("students/delete/<int:student_id>/", views.delete_student, name="delete_student"),
     path("students/import/", views.import_students, name="import_students"),
 
+    # instructor
+    path('instructor/', views.instructor_view, name='instructor'),
+    path('instructors/add/', views.add_instructor, name='add_instructor'),
+    path('instructors/update/<int:instructor_id>/', views.update_instructor, name='update_instructor'),
+    path('instructors/delete/<int:instructor_id>/', views.delete_instructor, name='delete_instructor'),
+    path("instructors/import/", views.import_instructors, name="import_instructors"),
+
+
 
     # passenger
     path('passenger/', views.passenger_view, name='passenger'),
@@ -129,7 +142,6 @@ urlpatterns = [
     path("tracklogs/add/", views.add_tracklog, name="add_tracklog"),
     path("tracklogs/update/<int:tracklog_id>/", views.update_tracklog, name="update_tracklog"),
     path("tracklogs/delete/<int:tracklog_id>/", views.delete_tracklog, name="delete_tracklog"),
-
 
     path("payment/checkout/<int:booking_id>/", views.create_checkout, name="create_checkout"),
     path("payment/success/<int:booking_id>/", views.payment_success, name="payment_success"),

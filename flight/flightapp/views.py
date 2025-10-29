@@ -35,22 +35,45 @@ from .models import CheckInDetail
 from .models import Student
 from .models import PassengerInfo
 from .models import  TrackLog
+from .models import AddOn
+from .models import Instructor
 
 # ------------------------------------ Users ----------------------------------------------------------
 
-# main
+from django.shortcuts import render, redirect
+from django.http import HttpResponse
+from django.template import loader
+from django.contrib import messages
+from .models import User
+import hashlib
+
+# ---------------------------
+# MAIN
+# ---------------------------
 def main(request):
     template = loader.get_template('main.html')
     return HttpResponse(template.render())
 
+# ---------------------------
+# ADMIN DASHBOARD (Admins only)
+# ---------------------------
 def admin_dashboard(request):
+    user_id = request.session.get("user_id")
+    role = request.session.get("role")
+
+    if not user_id:
+        messages.error(request, "You must be logged in to access this page.")
+        return redirect("login")
+
+    if role != "admin":
+        messages.error(request, "Access denied. Admins only.")
+        return redirect("login")
+
     return render(request, "dashboard.html")
 
-def instructor_dashboard(request):
-    return render(request, "instructor_dashboard.html")
-
-
-# profile
+# ---------------------------
+# PROFILE VIEW
+# ---------------------------
 def profile_view(request):
     user_id = request.session.get("user_id")
     if not user_id:
@@ -66,25 +89,28 @@ def profile_view(request):
             user.username = username
 
         if password:
-            user.set_password(password)  # hash the new password
+            user.password = hash_password(password)  # properly hash password
 
         user.save()
         return redirect("profile")  # reload the profile page
 
     return render(request, "profile.html", {"user": user})
 
-# Hash
+# ---------------------------
+# HASH FUNCTION
+# ---------------------------
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-# REGISTER
+# ---------------------------
+# REGISTER (Admins only)
+# ---------------------------
 def register_view(request):
     if request.method == "POST":
         username = request.POST.get("username")
         email = request.POST.get("email")
         password = request.POST.get("password")
         password2 = request.POST.get("password2")
-        role = request.POST.get("role")
 
         if password != password2:
             messages.error(request, "Passwords do not match.")
@@ -98,18 +124,21 @@ def register_view(request):
             messages.error(request, "Email already exists.")
             return redirect("register")
 
+        # Create admin account only
         User.objects.create(
             username=username,
             email=email,
             password=hash_password(password),
-            role=role
+            role="admin"
         )
-        messages.success(request, "Account created. Please login.")
+        messages.success(request, "Admin account created. Please login.")
         return redirect("login")
 
     return render(request, "register.html")
 
+# ---------------------------
 # LOGIN
+# ---------------------------
 def login_view(request):
     if request.method == "POST":
         username = request.POST.get("username")
@@ -119,25 +148,24 @@ def login_view(request):
             user = User.objects.get(username=username, password=password)
             request.session["user_id"] = user.id
             request.session["username"] = user.username
-            request.session["role"] = user.role  # store role in session
+            request.session["role"] = user.role
 
-            # redirect based on role
+            # Only Admin redirect (since Instructor removed)
             if user.role == "admin":
                 return redirect("admin_dashboard")
-            elif user.role == "instructor":
-                return redirect("instructor_dashboard")
-            elif user.role == "student":
-                return redirect("student_dashboard")
             else:
-                return redirect("login")  # fallback
+                messages.error(request, "Access denied. Admins only.")
+                return redirect("login")
+
         except User.DoesNotExist:
             messages.error(request, "Invalid username or password.")
             return redirect("login")
 
     return render(request, "login.html")
 
-
+# ---------------------------
 # LOGOUT
+# ---------------------------
 def logout_view(request):
     request.session.flush()
     return redirect("login")
@@ -361,6 +389,113 @@ def admin_dashboard(request):
 
 
 # ------------------------------------ ASSETS ----------------------------------------------------------
+
+
+# ---------------------------
+# add-ons
+# ---------------------------
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from .models import AddOn
+
+def addon_view(request):
+    addons = AddOn.objects.all()
+    return render(request, 'asset/addon/addons.html', {'addons': addons})
+
+def add_addon(request):
+    if request.method == 'POST':
+        name = request.POST['name']
+        description = request.POST.get('description', '')
+        price = request.POST['price']
+        AddOn.objects.create(name=name, description=description, price=price)
+        messages.success(request, 'Add-On added successfully!')
+        return redirect('addon')
+    return render(request, 'asset/addon/add_addon.html')
+
+def update_addon(request, id):
+    addon = get_object_or_404(AddOn, id=id)
+    if request.method == 'POST':
+        addon.name = request.POST['name']
+        addon.description = request.POST.get('description', '')
+        addon.price = request.POST['price']
+        addon.save()
+        messages.success(request, 'Add-On updated successfully!')
+        return redirect('addon')
+    return render(request, 'asset/addon/edit_addon.html', {'addon': addon})
+
+def delete_addon(request, id):
+    addon = get_object_or_404(AddOn, id=id)
+    addon.delete()
+    messages.success(request, 'Add-On deleted successfully!')
+    return redirect('addon')
+
+from django.shortcuts import redirect
+from django.contrib import messages
+from .models import AddOn
+import openpyxl
+
+# 📥 Import Add-Ons from Excel
+def import_addons(request):
+    if request.method == "POST" and request.FILES.get("file"):
+        file = request.FILES["file"]
+
+        try:
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
+
+            duplicates_in_file = set()
+            new_addons = []
+            already_in_db = set(AddOn.objects.values_list("name", flat=True))
+
+            seen_names_in_pass2 = set()
+
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                name, description, price = row
+                if not name:
+                    continue
+                clean_name = str(name).strip()
+
+                # Detect duplicates inside the Excel file
+                if clean_name in seen_names_in_pass2:
+                    duplicates_in_file.add(clean_name)
+                    continue
+                seen_names_in_pass2.add(clean_name)
+
+                # Skip if already exists in DB
+                if clean_name in already_in_db:
+                    continue
+
+                # Create new Add-On
+                AddOn.objects.create(
+                    name=clean_name,
+                    description=description or "",
+                    price=price or 0.00
+                )
+                new_addons.append(clean_name)
+
+            # ✅ Display user-friendly messages
+            if duplicates_in_file:
+                messages.warning(
+                    request,
+                    f"Duplicate add-on names found in the file (skipped): {', '.join(duplicates_in_file)}"
+                )
+
+            if new_addons:
+                messages.success(
+                    request,
+                    f"Successfully added: {', '.join(new_addons)}"
+                )
+            elif not duplicates_in_file:
+                messages.info(request, "No new add-ons to add.")
+
+        except Exception as e:
+            messages.error(request, f"Error importing add-ons: {e}")
+
+    else:
+        messages.error(request, "No file uploaded.")
+
+    return redirect("addon")
 
 # ---------------------------
 # Seat Class
@@ -694,19 +829,27 @@ def delete_airline(request, airline_id):
     airline = get_object_or_404(Airline, id=airline_id)
     airline.delete()
     return redirect("airline")
-
 # ---------------------------
 # Airport
 # ---------------------------
 
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.db import IntegrityError
+import openpyxl
+from .models import Airport
+
+# ---------------------------
 # List
+# ---------------------------
 def airport_view(request):
     airports = Airport.objects.all()
     return render(request, "asset/airport/airport.html", {"airports": airports})
 
-import openpyxl
-from django.contrib import messages
 
+# ---------------------------
+# Import from Excel
+# ---------------------------
 def import_airports(request):
     if request.method == "POST" and request.FILES.get("file"):
         file = request.FILES["file"]
@@ -717,14 +860,15 @@ def import_airports(request):
 
             duplicates_in_file = set()
             new_airports = []
-            already_in_db_codes = set(
-                Airport.objects.values_list("code", flat=True)
-            )
-
+            already_in_db_codes = set(Airport.objects.values_list("code", flat=True))
             seen_codes_in_file = set()
 
             for row in sheet.iter_rows(min_row=2, values_only=True):
-                code, name, location = row
+                # ✅ Expecting columns: Code | Name | Location | Type (optional)
+                code, name, location, *rest = row
+                airport_type = rest[0].strip().lower() if rest and rest[0] else "unknown"
+
+                # Validate
                 if not code or not name:
                     continue
 
@@ -742,15 +886,20 @@ def import_airports(request):
                 if clean_code in already_in_db_codes:
                     continue
 
+                # Normalize type value
+                if airport_type not in ["domestic", "international", "unknown"]:
+                    airport_type = "unknown"
+
                 # Add new airport
                 Airport.objects.create(
                     code=clean_code,
                     name=clean_name,
                     location=clean_location,
+                    airport_type=airport_type,
                 )
                 new_airports.append(f"{clean_code} - {clean_name}")
 
-            # Show messages
+            # ✅ Show user feedback
             if duplicates_in_file:
                 messages.warning(
                     request,
@@ -771,9 +920,9 @@ def import_airports(request):
     return redirect("airport")
 
 
-
-from django.db import IntegrityError
+# ---------------------------
 # Add
+# ---------------------------
 def add_airport(request):
     error_message = None
 
@@ -781,6 +930,7 @@ def add_airport(request):
         name = request.POST.get("name")
         code = request.POST.get("code")
         location = request.POST.get("location")
+        airport_type = request.POST.get("airport_type", "unknown")
 
         # Check for duplicate airport code
         if Airport.objects.filter(code=code).exists():
@@ -791,15 +941,22 @@ def add_airport(request):
                     name=name,
                     code=code,
                     location=location,
+                    airport_type=airport_type,
                 )
                 return redirect("airport")
             except IntegrityError:
                 error_message = "Something went wrong while saving."
 
-    return render(request, "asset/airport/add_airport.html", {"error_message": error_message})
+    return render(
+        request,
+        "asset/airport/add_airport.html",
+        {"error_message": error_message},
+    )
 
 
+# ---------------------------
 # Update
+# ---------------------------
 def update_airport(request, airport_id):
     airport = get_object_or_404(Airport, pk=airport_id)
 
@@ -807,16 +964,25 @@ def update_airport(request, airport_id):
         airport.name = request.POST.get("name")
         airport.code = request.POST.get("code")
         airport.location = request.POST.get("location")
+        airport.airport_type = request.POST.get("airport_type", "unknown")
         airport.save()
         return redirect("airport")
 
-    return render(request, "asset/airport/update_airport.html", {"airport": airport})
+    return render(
+        request,
+        "asset/airport/update_airport.html",
+        {"airport": airport},
+    )
 
+
+# ---------------------------
 # Delete
+# ---------------------------
 def delete_airport(request, airport_id):
     airport = get_object_or_404(Airport, pk=airport_id)
     airport.delete()
     return redirect("airport")
+
 
 # ------------------------------------------ Manage Flight ----------------------------------------
 
@@ -1994,13 +2160,65 @@ def delete_passenger(request, passsenger_id):
     return redirect("passenger")
 
 # -----------------------------
-# Students
+# Check-in
 # -----------------------------
 
 # List 
 def check_in_view(request):
     checkins = CheckInDetail.objects.select_related("booking_detail__booking").all()
     return render(request, "passenger_info/check_in/check_in.html", {"checkins": checkins})
+
+
+# Add Check-In
+def add_checkin(request):
+    booking_details = BookingDetail.objects.all()
+
+    if request.method == "POST":
+        booking_detail_id = request.POST.get("booking_detail")
+        boarding_pass = request.POST.get("boarding_pass")
+        baggage_count = request.POST.get("baggage_count") or 0
+        baggage_weight = request.POST.get("baggage_weight") or 0.0
+
+        CheckInDetail.objects.create(
+            booking_detail_id=booking_detail_id,
+            boarding_pass=boarding_pass,
+            baggage_count=baggage_count,
+            baggage_weight=baggage_weight
+        )
+        messages.success(request, "Check-in added successfully!")
+        return redirect("check_in")
+
+    return render(request, "passenger_info/check_in/add_check_in.html", {"booking_details": booking_details})
+
+# Update
+def update_checkin(request, checkin_id):
+    checkin = get_object_or_404(CheckInDetail, id=checkin_id)
+    booking_details = BookingDetail.objects.all()
+
+    if request.method == "POST":
+        checkin.booking_detail_id = request.POST.get("booking_detail")
+        checkin.boarding_pass = request.POST.get("boarding_pass")
+        checkin.baggage_count = request.POST.get("baggage_count") or 0
+        checkin.baggage_weight = request.POST.get("baggage_weight") or 0.0
+        checkin.save()
+
+        messages.success(request, "Check-in updated successfully!")
+        return redirect("check_in")
+
+    return render(request, "passenger_info/check_in/update_check_in.html", {"checkin": checkin, "booking_details": booking_details})
+
+# Delete 
+def delete_checkin(request, checkin_id):
+    checkin = get_object_or_404(CheckInDetail, id=checkin_id)
+    checkin.delete()
+    messages.success(request, "Check-in deleted successfully!")
+    return redirect("check_in")
+
+# ---------------------------------------Student Info-----------------------------------------------
+
+# -----------------------------
+# Students
+# -----------------------------
 
 import openpyxl
 from django.contrib import messages
@@ -2060,57 +2278,6 @@ def import_students(request):
 
     return redirect("student")
 
-
-# Add Check-In
-def add_checkin(request):
-    booking_details = BookingDetail.objects.all()
-
-    if request.method == "POST":
-        booking_detail_id = request.POST.get("booking_detail")
-        boarding_pass = request.POST.get("boarding_pass")
-        baggage_count = request.POST.get("baggage_count") or 0
-        baggage_weight = request.POST.get("baggage_weight") or 0.0
-
-        CheckInDetail.objects.create(
-            booking_detail_id=booking_detail_id,
-            boarding_pass=boarding_pass,
-            baggage_count=baggage_count,
-            baggage_weight=baggage_weight
-        )
-        messages.success(request, "Check-in added successfully!")
-        return redirect("check_in")
-
-    return render(request, "passenger_info/check_in/add_check_in.html", {"booking_details": booking_details})
-
-# Update
-def update_checkin(request, checkin_id):
-    checkin = get_object_or_404(CheckInDetail, id=checkin_id)
-    booking_details = BookingDetail.objects.all()
-
-    if request.method == "POST":
-        checkin.booking_detail_id = request.POST.get("booking_detail")
-        checkin.boarding_pass = request.POST.get("boarding_pass")
-        checkin.baggage_count = request.POST.get("baggage_count") or 0
-        checkin.baggage_weight = request.POST.get("baggage_weight") or 0.0
-        checkin.save()
-
-        messages.success(request, "Check-in updated successfully!")
-        return redirect("check_in")
-
-    return render(request, "passenger_info/check_in/update_check_in.html", {"checkin": checkin, "booking_details": booking_details})
-
-# Delete 
-def delete_checkin(request, checkin_id):
-    checkin = get_object_or_404(CheckInDetail, id=checkin_id)
-    checkin.delete()
-    messages.success(request, "Check-in deleted successfully!")
-    return redirect("check_in")
-
-# ---------------------------------------Student Info-----------------------------------------------
-
-# -----------------------------
-# Students
-# -----------------------------
 
 # List Students
 def student_view(request):
@@ -2221,6 +2388,138 @@ def delete_tracklog(request, tracklog_id):
     tracklog.delete()
     messages.success(request, "TrackLog deleted successfully!")
     return redirect("tracklog")
+
+# ---------------------------------------Instructor Info-----------------------------------------------
+
+# -----------------------------
+# Instructors
+# -----------------------------
+
+# -----------------------------
+# Instructors
+# -----------------------------
+
+def import_instructors(request):
+    if request.method == "POST" and request.FILES.get("file"):
+        file = request.FILES["file"]
+        errors = []
+        imported_instructors = []
+
+        try:
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
+
+            # Expecting columns: Instructor ID | First Name | Middle Initial | Last Name | Email | Phone | Password
+            for idx, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
+                instructor_id, first_name, middle_initial, last_name, email, phone, password = row
+
+                # Check required fields
+                if not instructor_id or not first_name or not last_name or not email:
+                    errors.append(f"Row {idx}: Missing required data (Instructor ID, First Name, Last Name, or Email)")
+                    continue
+
+                # Check for duplicates
+                if Instructor.objects.filter(instructor_id=instructor_id).exists():
+                    errors.append(f"Row {idx}: Instructor ID '{instructor_id}' already exists")
+                    continue
+                if Instructor.objects.filter(email=email).exists():
+                    errors.append(f"Row {idx}: Email '{email}' already exists")
+                    continue
+
+                # Create instructor
+                Instructor.objects.create(
+                    instructor_id=instructor_id,
+                    first_name=first_name,
+                    middle_initial=middle_initial or "",
+                    last_name=last_name,
+                    email=email,
+                    phone=phone or "",
+                    password=make_password(password or "12345"),  # hash or set default password
+                )
+                imported_instructors.append(instructor_id)
+
+            # Messages
+            if imported_instructors:
+                messages.success(
+                    request, f"Successfully imported instructors: {', '.join(imported_instructors)}"
+                )
+            for err in errors:
+                messages.error(request, err)
+            if not imported_instructors and not errors:
+                messages.info(request, "No instructors were imported.")
+
+        except Exception as e:
+            messages.error(request, f"Error importing instructors: {e}")
+
+    return redirect("instructor")
+
+
+# List Instructors
+def instructor_view(request):
+    instructors = Instructor.objects.all().order_by('instructor_id')
+    return render(request, "instructor_info/instructor/instructor.html", {"instructors": instructors})
+
+
+# Add Instructor
+def add_instructor(request):
+    if request.method == "POST":
+        first_name = request.POST.get("first_name")
+        last_name = request.POST.get("last_name")
+        email = request.POST.get("email")
+        password = request.POST.get("password")
+        phone = request.POST.get("phone")
+        instructor_id = request.POST.get("instructor_id")
+
+        if not password:
+            messages.error(request, "Password is required.")
+            return redirect("add_instructor")
+
+        # Hash password
+        hashed_password = make_password(password)
+
+        Instructor.objects.create(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            password=hashed_password,
+            phone=phone,
+            instructor_id=instructor_id
+        )
+        messages.success(request, "Instructor added successfully.")
+        return redirect("instructor")
+
+    return render(request, "instructor_info/instructor/add_instructor.html")
+
+
+# Update Instructor
+def update_instructor(request, instructor_id):
+    instructor = get_object_or_404(Instructor, id=instructor_id)
+
+    if request.method == "POST":
+        instructor.first_name = request.POST.get("first_name")
+        instructor.last_name = request.POST.get("last_name")
+        instructor.email = request.POST.get("email")
+        instructor.phone = request.POST.get("phone")
+        instructor.instructor_id = request.POST.get("instructor_id")
+        password = request.POST.get("password")
+
+        if password:
+            instructor.password = make_password(password)  # hash before saving
+
+        instructor.save()
+        messages.success(request, "Instructor updated successfully.")
+        return redirect("instructor")
+
+    return render(request, "instructor_info/instructor/update_instructor.html", {"instructor": instructor})
+
+
+# Delete Instructor
+def delete_instructor(request, instructor_id):
+    instructor = get_object_or_404(Instructor, id=instructor_id)
+    instructor.delete()
+    messages.success(request, "Instructor deleted successfully.")
+    return redirect("instructor")
+
 
 # --------------------------------sa payment og email ni -----------------
 
@@ -2415,7 +2714,7 @@ def create_checkout(request, booking_id):
             to=[booking.student.email]
         )
         email.content_subtype = "html"
-        email.send(fail_silently=False)
+        email.send(fail_silently=True)
 
     return render(request, "payment_success.html", {
         "booking": booking,

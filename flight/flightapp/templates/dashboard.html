@@ -11,10 +11,10 @@
   <!-- Right: Profile Button -->
   <div class="relative">
     <button onclick="toggleSubmenu('profileMenu')" 
-      class="flex items-center bg-[#053322] px-4 py-1 rounded shadow hover:shadow-md transition poppins">
-      <i class="ph ph-user-circle text-white text-2xl"></i>
-      <span class="ml-3 text-white">{{ username }}</span>
-      <i class="ph ph-caret-down ml-2 text-white"></i>
+      class="flex items-center bg-[#FFC83D] px-4 py-1  shadow hover:shadow-md transition poppins">
+      <i class="ph ph-user-circle text-black text-2xl"></i>
+      <span class="ml-3 text-black">{{ username }}</span>
+      <i class="ph ph-caret-down ml-2 text-black"></i>
     </button>
 
     <!-- Profile Dropdown -->
@@ -23,6 +23,10 @@
       <a href="{% url 'profile' %}" 
         class="block px-4 py-2  text-gray-700 hover:bg-gray-100 poppins">
         <i class="ph ph-user mr-2"></i> Profile
+      </a>
+      <a href="{% url 'register' %}" 
+        class="block px-4 py-2  text-gray-700 hover:bg-gray-100 poppins">
+         <i class="ph ph-user-plus mr-3"></i></i></i>Add Admin
       </a>
       <a href="{% url 'logout' %}" 
         class="block px-4 py-2  text-gray-700 hover:bg-gray-100 poppins">

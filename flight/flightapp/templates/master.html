@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,10 +6,14 @@
   <title>Admin Dashboard</title>
 
   <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="{% static '/src/output.css' %}" rel="stylesheet">
 
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400&family=Poppins:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=BBH+Sans+Hegarty&family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
 
   <!-- Phosphor Icons -->
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -17,11 +22,13 @@
 
 
   <style>
+    .second-color {color: #FFC83D;}
+    .first-color { color: #045946;}
     .sidebar { background-color: #053322; }
     .rotate-180 { transform: rotate(180deg); }
     .unbounded { font-family: 'Unbounded', sans-serif; font-size: 14px; }
-    .poppins { font-family: 'Poppins', sans-serif; font-size: 10px; }
-    .poppins-small { font-family: 'Poppins', sans-serif; font-size: 8px; }
+    .poppins { font-family: 'Poppins', sans-serif; font-size: 12px; }
+    .poppins-small { font-family: 'Poppins', sans-serif; font-size: 9px; }
     .submenu a { display: block; }
   </style>
 </head>
@@ -32,14 +39,20 @@
 
     <!-- Toggle Button -->
     <button onclick="toggleSidebar()"
-      class="absolute -right-3 top-6 bg-white text-black rounded-full p-1 shadow z-50">
+      class="absolute -right-3 top-3 bg-white text-black rounded-full p-1 shadow z-50">
       <i id="toggleIcon" class="ph ph-caret-right text-lg"></i>
     </button>
 
+    <!-- Logo or Image -->
+    <div class="mt-6 mb-4 flex flex-col items-center">
+      <img src="{% static 'flightapp/images/logo-1.png' %}" alt="Admin Logo" 
+          class="w-12 h-12 rounded-full object-cover shadow-lg">
+    </div>
+
     <!-- Dashboard -->
-    <a href="{% url 'dashboard' %}" class="flex mt-12 items-center w-full py-2 px-4 hover:bg-green-900 rounded transition poppins">
-      <i class="ph ph-house mr-3 text-xl"></i>
-      <span class="sidebar-text hidden">Dashboard</span>
+    <a href="{% url 'dashboard' %}" class="flex mt-1 items-center w-full py-2 px-4 hover:bg-green-900 rounded transition poppins">
+      <i class="ph ph-house mr-3 text-xl text-[#FFC83D]"></i>
+      <span class="sidebar-text hidden text-[#FFC83D]">Dashboard</span>
     </a>
 
     <!-- Manage Flight -->
@@ -69,9 +82,10 @@
     </button>
     <div id="assets" class="submenu hidden pl-8 text-sm">
       <a href="{% url 'airport' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Airports</a>
+      <a href="{% url 'addon' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Add-Ons</a>
+      <a href="{% url 'seat_class' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Seat Classes</a>
       <a href="{% url 'airline' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Airlines</a>
       <a href="{% url 'aircraft' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Aircraft</a>
-      <a href="{% url 'seat_class' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Seat Classes</a>
     </div>
 
     <!-- Booking -->
@@ -116,6 +130,20 @@
       <a href="{% url 'student' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Student</a>
       <a href="{% url 'tracklog' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Track Log</a>
     </div>
+
+    <!-- Instructor Info -->
+    <button class="w-full flex justify-between items-center py-2 px-4 hover:bg-green-900 rounded transition poppins"
+            onclick="toggleSubmenu('instructor')">
+      <span class="flex items-center">
+        <i class="ph ph-chalkboard-teacher mr-3 text-xl"></i>
+        <span class="sidebar-text hidden">Instructor Info</span>
+      </span>
+      <i class="ph ph-caret-down transition-transform" id="caret-instructor"></i>
+    </button>
+    <div id="instructor" class="submenu hidden pl-8 text-sm">
+      <a href="{% url 'instructor' %}" class="py-2 px-10 hover:bg-green-800 rounded poppins-small">Instructor</a>
+    </div>
+
 
   </nav>
 

@@ -37,7 +37,6 @@ def create_seats_for_schedule(sender, instance, created, **kwargs):
 class User(models.Model):
     ROLE_CHOICES = [
         ('admin', 'Admin'),
-        ('instructor', 'Instructor'),
     ]
 
     username = models.CharField(max_length=150, unique=True)
@@ -50,18 +49,6 @@ class User(models.Model):
     def __str__(self):
         return f"{self.username} ({self.role})"
 
-
-# ---------------------------
-# Instructor Profile
-# ---------------------------
-class Instructor(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="instructor")
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
-    department = models.CharField(max_length=100)
-
-    def __str__(self):
-        return f"{self.first_name} {self.last_name} ({self.department})"
 
 # ---------------------------
 # Flight & Seat Core
@@ -90,14 +77,25 @@ class Aircraft(models.Model):
     def __str__(self):
         return f"{self.model} ({self.airline.code})"
 
-
 class Airport(models.Model):
+    AIRPORT_TYPE_CHOICES = [
+        ('domestic', 'Domestic'),
+        ('international', 'International'),
+        ('unknown', 'Unknown'),
+    ]
+
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=10, unique=True)
-    location = models.CharField(max_length=150, null=True,)
+    location = models.CharField(max_length=150, null=True, blank=True)
+    airport_type = models.CharField(
+        max_length=20,
+        choices=AIRPORT_TYPE_CHOICES,
+        default='unknown',
+        verbose_name="Airport Type"
+    )
 
     def __str__(self):
-        return f"{self.code} - {self.name}"
+        return f"{self.code} - {self.name} ({self.get_airport_type_display()})"
 
 
 class Route(models.Model):
@@ -222,6 +220,19 @@ class Student(models.Model):
         return f"{self.student_number} - {self.first_name} {self.last_name}"
 
 
+class Instructor(models.Model):
+    first_name = models.CharField(max_length=100)
+    middle_initial = models.CharField(max_length=5, null=True, blank=True)
+    last_name = models.CharField(max_length=100)
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=255)  # hashed password
+    phone = models.CharField(max_length=20, null=True, blank=True)
+    instructor_id = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        if self.middle_initial:
+            return f"{self.instructor_id} - {self.first_name} {self.middle_initial}. {self.last_name}"
+        return f"{self.instructor_id} - {self.first_name} {self.last_name}"
 
 
 
@@ -254,6 +265,14 @@ class Booking(models.Model):
             total += detail.price
         return total
 
+class AddOn(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    def __str__(self):
+        return f"{self.name} - ₱{self.price}"
+    
 class BookingDetail(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="details")
     passenger = models.ForeignKey(PassengerInfo, on_delete=models.CASCADE)
@@ -276,8 +295,6 @@ class BookingDetail(models.Model):
                 factor = Decimal("1.5")
             self.price = base_price * multiplier * factor
         super().save(*args, **kwargs)
-
-
 
 
 class Payment(models.Model):
