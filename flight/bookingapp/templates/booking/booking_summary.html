@@ -3,6 +3,7 @@
 
 {% block content %}
 {% load static %}
+{% load custom_filters %}
 
 <main class="mx-auto flex flex-col justify-center space-y-8 py-6">
 
@@ -117,7 +118,7 @@
 
                         <div class=" w-full flex justify-end items-end gap-1">
                             <span class="text-[11px]">base price: </span>
-                            <p class="text-sm font-semibold">PHP {{ depart_schedule.price|floatformat:2 }}</p>
+                            <p class="text-sm font-semibold">PHP {{ depart_schedule.flight.route.base_price|floatformat:2 }}</p>
                         </div>
                         {% endif %}
                     </div>
@@ -139,11 +140,36 @@
 
                         <div class=" w-full flex justify-end items-end gap-1">
                             <span class="text-[11px]">base price: </span>
-                            <p class="text-sm font-semibold">PHP {{ return_schedule.price|floatformat:2 }}</p>
+                            <p class="text-sm font-semibold">PHP {{ return_schedule.flight.route.base_price|floatformat:2 }}</p>
                         </div>
                         {% endif %}
                     </div>
 
+                    <!-- Add Add-ons Section -->
+                    {% if addons_total > 0 %}
+                    <div class="mt-6">
+                        <h2 class="font-semibold text-lg mb-3">Selected Add-ons</h2>
+                        <div class="space-y-3">
+                            {% for passenger in passengers %}
+                                {% with passenger_id=passenger.id|stringformat:"s" %}
+                                    {% if addons_details|get_item:passenger_id %}
+                                    <div class="border border-gray-300 rounded-md p-3">
+                                        <h3 class="font-medium text-sm mb-2">{{ passenger.full_name }} ({{ passenger.passenger_type }})</h3>
+                                        <ul class="space-y-1">
+                                            {% for addon in addons_details|get_item:passenger_id %}
+                                            <li class="flex justify-between text-xs">
+                                                <span>{{ addon.name }}</span>
+                                                <span class="font-medium">PHP {{ addon.price|floatformat:2 }}</span>
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+                                {% endwith %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
                     
                 </div>
                 <div class="flex-1  border border-gray-300 rounded-md bg-white px-10 py-7 space-y-3"></div>
@@ -180,7 +206,7 @@
                 </div>
             </div>
 
-            <div class="flex-1 max-w-[400px] h-[454px] space-y-5 ">
+            <div class="flex-1 max-w-[400px] h-auto space-y-5 ">
                 <div class="flex-1 rounded-md border p-7 px-10 bg-white border-gray-300 space-y-5">
                     <h1 class="font-semibold text-lg mb-7">Price Summary</h1>
                     
@@ -190,9 +216,19 @@
                     </div>
                     <div class="w-full border border-gray-100"></div>
                     <div class="flex justify-between items-end">
-                        <p class="text-[11px] text-gray-400">Subtotal:</p>
-                        <p class="font-medium"><span class="text-[11px] font-light">PHP</span>{{ subtotal|floatformat:2 }}</p>
+                        <p class="text-[11px] text-gray-400">Subtotal (Flights):</p>
+                        <p class="font-medium"><span class="text-[11px] font-light">PHP</span> {{ subtotal|floatformat:2 }}</p>
                     </div>
+                    
+                    <!-- Add-ons Section in Price Summary -->
+                    {% if addons_total > 0 %}
+                    <div class="w-full border border-gray-100"></div>
+                    <div class="flex justify-between items-end">
+                        <p class="text-[11px] text-gray-400">Add-ons:</p>
+                        <p class="font-medium"><span class="text-[11px] font-light">PHP</span> {{ addons_total|floatformat:2 }}</p>
+                    </div>
+                    {% endif %}
+                    
                     <div class="w-full border border-gray-100"></div>
                     <div class="flex justify-between items-end">
                         <button class="px-3 py-1 text-[11px] text-white bg-[#2975F7] hover:bg-[#2975F7]/80 cursor-pointer"> Taxes/Fees</button>
@@ -205,9 +241,17 @@
                     </div>
                     <div class="w-full border border-gray-200"></div>
 
+                    <!-- Flight Total (without add-ons) -->
                     <div class="flex justify-between items-end">
-                        <p class="text-[11px] text-gray-400">total:</p>
-                        <p class="font-semibold text-xl"><span class="text-[11px] font-light">PHP</span>  {{ total|floatformat:2 }}</p>
+                        <p class="text-[11px] text-gray-400">Flight Total:</p>
+                        <p class="font-medium"><span class="text-[11px] font-light">PHP</span> {{ total_flight_price|floatformat:2 }}</p>
+                    </div>
+                    
+                    <!-- Grand Total (including add-ons) -->
+                    <div class="w-full border border-gray-200"></div>
+                    <div class="flex justify-between items-end">
+                        <p class="text-[11px] text-gray-800 font-semibold">Grand Total:</p>
+                        <p class="font-semibold text-xl"><span class="text-[11px] font-light">PHP</span> {{ grand_total|floatformat:2 }}</p>
                     </div>        
                 </div>
 
@@ -222,12 +266,6 @@
                 </div>
             </div>
         </div>
-
-
-    
-
-   
-
     </div>
 
 </main>

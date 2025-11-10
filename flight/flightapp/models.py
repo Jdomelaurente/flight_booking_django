@@ -1,7 +1,5 @@
 from django.db import models
 from django.utils import timezone
-from django.db import models
-from django.utils import timezone
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -10,7 +8,7 @@ from django.dispatch import receiver
 # Signal inside models.py
 # ---------------------------
 
-@receiver(post_save, sender="flightapp.Schedule")  # ⚠ replace "yourapp" with your Django app name
+@receiver(post_save, sender="flightapp.Schedule")  # ⚠ replace "flightapp" with your Django app name
 def create_seats_for_schedule(sender, instance, created, **kwargs):
     if created:
         aircraft = instance.flight.aircraft
@@ -40,8 +38,8 @@ class User(models.Model):
     ]
 
     username = models.CharField(max_length=150, unique=True)
-    password = models.CharField(max_length=255)  # hashed in real use
-    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=255,null=True)  # hashed in real use
+    email = models.EmailField(unique=True, null=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     last_login = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
@@ -56,9 +54,14 @@ class User(models.Model):
 class SeatClass(models.Model):
     name = models.CharField(max_length=50)
     price_multiplier = models.DecimalField(max_digits=5, decimal_places=2)
+    airline = models.ForeignKey("Airline", on_delete=models.CASCADE, related_name="seat_classes", null=True)
+    description = models.TextField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ("airline", "name")
 
     def __str__(self):
-        return f"{self.name} (x{self.price_multiplier})"
+        return f"{self.name} (x{self.price_multiplier}) - {self.airline.code if self.airline else 'No Airline'}"
 
 
 class Airline(models.Model):
@@ -105,7 +108,6 @@ class Route(models.Model):
     
     def __str__(self):
         return f"{self.origin_airport.code} → {self.destination_airport.code}"
-
 
 
 class Flight(models.Model):
@@ -209,8 +211,8 @@ class Student(models.Model):
     first_name = models.CharField(max_length=100)
     middle_initial = models.CharField(max_length=5, null=True, blank=True)  # optional
     last_name = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
-    password = models.CharField(max_length=255)  # hashed password
+    email = models.EmailField(unique=True, null=True)
+    password = models.CharField(max_length=255, null=True)  # hashed password
     phone = models.CharField(max_length=20, null=True, blank=True)
     student_number = models.CharField(max_length=50, unique=True)
 
@@ -224,10 +226,10 @@ class Instructor(models.Model):
     first_name = models.CharField(max_length=100)
     middle_initial = models.CharField(max_length=5, null=True, blank=True)
     last_name = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
-    password = models.CharField(max_length=255)  # hashed password
+    email = models.EmailField(unique=True, null=True)
+    password = models.CharField(max_length=255, null=True)  # hashed password
     phone = models.CharField(max_length=20, null=True, blank=True)
-    instructor_id = models.CharField(max_length=50, unique=True)
+    instructor_id = models.CharField(max_length=50, unique=True, null=True)
 
     def __str__(self):
         if self.middle_initial:
@@ -264,14 +266,54 @@ class Booking(models.Model):
         for detail in self.details.all():
             total += detail.price
         return total
+    
+    
+class AddOnType(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name
 
 class AddOn(models.Model):
+    airline = models.ForeignKey(
+        "Airline",
+        on_delete=models.CASCADE,
+        related_name="addons",
+        null=True
+    )
+
+    seat_class = models.ForeignKey(
+        "SeatClass",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="addons",
+        help_text="If included=True, this add-on is automatically included in this seat class."
+    )
+
+    type = models.ForeignKey(
+        "AddOnType",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="addons"
+    )
+
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
+    included = models.BooleanField(
+        default=False,
+        help_text="If true, this add-on is automatically included with the seat class."
+    )
+
     def __str__(self):
-        return f"{self.name} - ₱{self.price}"
+        status = "Included" if self.included else "Optional"
+        cls = f" ({self.seat_class.name})" if self.seat_class else ""
+        return f"{self.name}{cls} - {self.airline.code} - ₱{self.price} [{status}]"
+
     
 class BookingDetail(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="details")

@@ -4,11 +4,11 @@
 {% block title %} Payment {% endblock %}
 
 {% block content %}
-<main class="mx-auto flex flex-col items-center py-10">
+<main class="mx-auto flex flex-col items-center py-10 max-w-4xl">
 
     <!-- Display any messages -->
     {% if messages %}
-        <div class="mb-4">
+        <div class="mb-4 w-full">
             {% for message in messages %}
             <div class="p-3 rounded {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
                 {{ message }}
@@ -17,54 +17,178 @@
         </div>
     {% endif %}
 
-    <h1 class="text-3xl font-bold mb-8">Choose Payment Method (Temporary)</h1>
+    <h1 class="text-3xl font-bold mb-8">Choose Payment Method</h1>
 
-    <div class="mb-4">
-        <p class="text-lg font-semibold">Total Amount: <span class="text-[#2975F7]">₱{{ total_amount|floatformat:2 }}</span></p>
-        <p class="text-sm text-gray-600">Booking Reference: #{{ booking.id }}</p>
+    <!-- Exact Calculation Breakdown -->
+    <div class="w-full bg-gray-50 border border-gray-200 rounded-lg p-6 mb-8">
+        <h2 class="text-xl font-bold mb-4 text-gray-800">Exact Price Calculation</h2>
+        
+        <!-- Flight Fares Section -->
+        <div class="mb-6">
+            <h3 class="font-semibold text-gray-700 mb-3">Flight Fares</h3>
+            <div class="space-y-2 ml-4">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Departure Flight:</span>
+                    <span class="font-medium">₱{{ calculation_breakdown.flight_fares.departure|floatformat:2 }}</span>
+                </div>
+                {% if calculation_breakdown.flight_fares.return > 0 %}
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Return Flight:</span>
+                    <span class="font-medium">₱{{ calculation_breakdown.flight_fares.return|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+                <div class="flex justify-between pt-2 border-t border-gray-200">
+                    <span class="font-semibold">Total Flight Fares:</span>
+                    <span class="font-semibold">₱{{ calculation_breakdown.totals.subtotal|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Passengers Section -->
+        <div class="mb-6">
+            <h3 class="font-semibold text-gray-700 mb-3">Passengers</h3>
+            <div class="space-y-2 ml-4">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Adults:</span>
+                    <span>{{ calculation_breakdown.passengers.adults }}</span>
+                </div>
+                {% if calculation_breakdown.passengers.children > 0 %}
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Children:</span>
+                    <span>{{ calculation_breakdown.passengers.children }}</span>
+                </div>
+                {% endif %}
+                {% if calculation_breakdown.passengers.infants > 0 %}
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Infants:</span>
+                    <span>{{ calculation_breakdown.passengers.infants }}</span>
+                </div>
+                {% endif %}
+                <div class="flex justify-between pt-2 border-t border-gray-200">
+                    <span class="font-semibold">Total Passengers:</span>
+                    <span class="font-semibold">{{ calculation_breakdown.passengers.total }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Taxes & Fees Section -->
+        <div class="mb-6">
+            <h3 class="font-semibold text-gray-700 mb-3">Taxes & Fees</h3>
+            <div class="space-y-2 ml-4">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Taxes ({{ calculation_breakdown.passengers.total }} × ₱{{ calculation_breakdown.taxes_per_passenger }}):</span>
+                    <span class="font-medium">₱{{ calculation_breakdown.totals.taxes|floatformat:2 }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Insurance ({{ calculation_breakdown.passengers.total }} × ₱{{ calculation_breakdown.insurance_per_passenger }}):</span>
+                    <span class="font-medium">₱{{ calculation_breakdown.totals.insurance|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Final Total Section -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 class="font-semibold text-gray-700 mb-3">Final Total</h3>
+            <div class="space-y-2">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Subtotal:</span>
+                    <span>₱{{ calculation_breakdown.totals.subtotal|floatformat:2 }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">+ Taxes:</span>
+                    <span>₱{{ calculation_breakdown.totals.taxes|floatformat:2 }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">+ Insurance:</span>
+                    <span>₱{{ calculation_breakdown.totals.insurance|floatformat:2 }}</span>
+                </div>
+                <div class="flex justify-between pt-3 border-t-2 border-blue-300 mt-2">
+                    <strong class="text-lg text-gray-800">Grand Total:</strong>
+                    <strong class="text-lg text-[#2975F7]">₱{{ calculation_breakdown.totals.grand_total|floatformat:2 }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Reference -->
+    <div class="mb-6 text-center">
+        <p class="text-lg font-semibold">Booking Reference: <span class="text-[#2975F7]">#{{ booking.id }}</span></p>
     </div>
 
     <!-- Payment Method Form -->
-    <form action="{% url 'bookingapp:payment_method' %}" method="POST">
-        {% csrf_token %}
-        
-        <div class="space-y-4 mb-6">
-            <h3 class="font-semibold text-gray-700">Select Payment Method:</h3>
+    <div class="w-full bg-white border border-gray-200 rounded-lg p-6">
+        <form action="{% url 'bookingapp:payment_method' %}" method="POST">
+            {% csrf_token %}
             
-            {% for method_value, method_name in payment_methods %}
-            <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                <input type="radio" id="method_{{ method_value }}" name="payment_method" value="{{ method_value }}" 
-                        class="h-4 w-4 text-[#2975F7] focus:ring-[#2975F7]" 
-                        {% if forloop.first %}checked{% endif %} required>
-                <label for="method_{{ method_value }}" class="ml-3 block text-sm font-medium text-gray-700 cursor-pointer">
-                    {{ method_name }}
-                </label>
+            <div class="space-y-4 mb-6">
+                <h3 class="font-semibold text-gray-700 text-lg">Select Payment Method:</h3>
+                
+                {% for method_value, method_name in payment_methods %}
+                <div class="payment-option flex items-center p-4 border-2 border-gray-200 rounded-lg hover:bg-gray-50 hover:border-[#2975F7] cursor-pointer transition-all duration-200">
+                    <input type="radio" id="method_{{ method_value }}" name="payment_method" value="{{ method_value }}" 
+                            class="h-5 w-5 text-[#2975F7] focus:ring-[#2975F7]" 
+                            {% if forloop.first %}checked{% endif %} required>
+                    <label for="method_{{ method_value }}" class="ml-3 block text-base font-medium text-gray-700 cursor-pointer">
+                        {{ method_name }}
+                    </label>
+                </div>
+                {% endfor %}
             </div>
-            {% endfor %}
-        </div>
 
-        <div class="flex space-x-4">
-            <a href="{% url 'bookingapp:booking_summary' %}" 
-                class="flex-1 text-center bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold transition">
-                Back
-            </a>
-            <button type="submit" 
-                    class="flex-1 bg-[#2975F7] hover:bg-[#2975F7]/90 text-white px-6 py-3 rounded-lg font-semibold transition">
-                Confirm Payment
-            </button>
-        </div>
-    </form>
+            <div class="flex space-x-4">
+                <a href="{% url 'bookingapp:booking_summary' %}" 
+                    class="flex-1 text-center bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold transition">
+                    Back to Summary
+                </a>
+                <button type="submit" 
+                        class="flex-1 bg-[#2975F7] hover:bg-[#2975F7]/90 text-white px-6 py-3 rounded-lg font-semibold transition">
+                    Confirm Payment
+                </button>
+            </div>
+        </form>
+    </div>
 
 </main>
 
 <script>
-    // Make the whole card clickable
+    // Make the whole card clickable and show selection
     document.querySelectorAll('.payment-option').forEach(option => {
         option.addEventListener('click', () => {
-            option.querySelector('input[type="radio"]').checked = true;
-            document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('border-yellow-500'));
-            option.classList.add('border-yellow-500');
+            // Uncheck all other options
+            document.querySelectorAll('.payment-option input[type="radio"]').forEach(radio => {
+                radio.checked = false;
+            });
+            
+            // Remove selected style from all options
+            document.querySelectorAll('.payment-option').forEach(o => {
+                o.classList.remove('border-[#2975F7]', 'bg-blue-50');
+                o.classList.add('border-gray-200');
+            });
+            
+            // Check the clicked option and add selected style
+            const radio = option.querySelector('input[type="radio"]');
+            radio.checked = true;
+            option.classList.remove('border-gray-200');
+            option.classList.add('border-[#2975F7]', 'bg-blue-50');
         });
+
+        // Initialize selected state on page load
+        const radio = option.querySelector('input[type="radio"]');
+        if (radio.checked) {
+            option.classList.remove('border-gray-200');
+            option.classList.add('border-[#2975F7]', 'bg-blue-50');
+        }
     });
 </script>
+
+<style>
+    .payment-option {
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .payment-option:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+</style>
 {% endblock %}
