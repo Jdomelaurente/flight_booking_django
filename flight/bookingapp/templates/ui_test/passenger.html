@@ -1,0 +1,977 @@
+{% extends 'ui_test/base.html' %}
+{% load static %}
+
+{% block title %}Passenger Information{% endblock %}
+
+{% block content %}
+
+<!-- Step by Step Process -->
+<div class="bg-[#FFC83D] w-full h-[160px] my-2 mx-auto flex flex-col">
+    <!-- Progress Steps -->
+    <div class="flex justify-between items-center flex-1 mx-20">
+        <!-- Step 1 -->
+        <div class="rounded-full p-1 border-2 border-[#093704]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" class="bg-[#093704] p-1 rounded-full" fill="white" viewBox="0 0 24 24">
+                <path d="m17.54,3.64l-2.9,2.9-9.88-1.16c-.15-.02-.3.03-.41.14l-.59.59c-.24.24-.17.66.14.8l7.01,3.36-3.25,3.25-3.27-.65c-.16-.03-.33.02-.45.14l-.7.7c-.25.25-.17.67.16.81l4.27,1.83,1.83,4.27c.14.33.56.41.81.16l.7-.7c.12-.12.17-.29.14-.45l-.65-3.27,3.31-3.31,3.31,7.06c.15.31.56.39.81.14l.66-.66c.11-.11.16-.26.14-.41l-1.16-9.88,2.75-2.75c.7-.7.88-1.84.29-2.65-.74-1.03-2.19-1.12-3.05-.26Z"/>
+            </svg>
+        </div>
+
+        <div class="flex-1 h-1 border-t-4 border-dashed border-[#093704] mx-4"></div>
+
+        <!-- Step 2 -->
+        <div class="rounded-full p-1 border-2 border-[#093704]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" class="bg-[#093704] p-1 rounded-full" fill="white" viewBox="0 0 24 24">
+                <path d="m19,2H5c-.55,0-1,.45-1,1v4h-2v2h2v2h-2v2h2v2h-2v2h2v4c0,.55.45,1,1,1h14c1.1,0,2-.9,2-2V4c0-1.1-.9-2-2-2Zm-6.5,5c1.43,0,2.5,1.07,2.5,2.5s-1.07,2.5-2.5,2.5-2.5-1.07-2.5-2.5,1.07-2.5,2.5-2.5Zm4.5,10h-9v-1c0-1.66,1.34-3,3-3h3c1.66,0,3,1.34,3,3v1Z"/>
+            </svg>
+        </div>
+
+        <div class="flex-1 h-1 border-t-4 border-dashed border-[#093704] mx-4"></div>
+
+        <!-- Step 3 -->
+        <div class="rounded-full p-1 border-2 border-[#093704]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" class="bg-[#093704] p-1 rounded-full" fill="white" viewBox="0 0 24 24">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4z"/>
+            </svg>
+        </div>
+
+        <div class="flex-1 h-1 border-t-4 border-dashed border-[#093704] mx-4"></div>
+
+        <!-- Step 4 -->
+        <div class="rounded-full p-1 border-2 border-[#093704]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" class="bg-[#093704] p-1 rounded-full" fill="white" viewBox="0 0 24 24">
+                <path d="m4,5v4h2v-4h4v-2h-4c-1.1,0-2,.9-2,2Z"/><path d="m6,15h-2v4c0,1.1.9,2,2,2h4v-2h-4v-4Z"/><path d="m20,19h-4v2h4c1.1,0,2-.9,2-2v-4h-2v4Z"/><path d="m16,3v2h4v4h2v-4c0-1.1-.9-2-2-2h-4Z"/><path d="M8 15H18V17H8z"/><path d="M18 7 8 7 8 11 3 11 3 13 8 13 18 13 23 13 23 11 18 11 18 7z"/>
+            </svg>
+        </div>
+
+        <div class="flex-1 h-1 border-t-4 border-dashed border-[#093704] mx-4"></div>
+
+        <!-- Step 5 -->
+        <div class="rounded-full p-1 border-2 border-[#093704]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" class="bg-[#093704] p-1 rounded-full" fill="white" viewBox="0 0 24 24">
+                <path d="m21,7h-1v-3c0-.55-.45-1-1-1H5c-1.65,0-3,1.35-3,3v12c0,2.2,1.79,3,3,3h16c.55,0,1-.45,1-1v-12c0-.55-.45-1-1-1Zm-3,9h-2v-4h2v4ZM5,5h13v2H5c-.55,0-1-.45-1-1s.45-1,1-1Z"/>
+            </svg>
+        </div>
+
+        <div class="flex-1 h-1 border-t-4 border-dashed border-[#093704] mx-4"></div>
+
+        <!-- Step 6 -->
+        <div class="rounded-full p-1 border-2 border-[#093704]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" class="bg-[#093704] p-1 rounded-full" fill="white" viewBox="0 0 24 24">
+                <path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10 10-4.49 10-10S17.51 2 12 2m-1.29 13.71c-.2.2-.45.29-.71.29s-.51-.1-.71-.29l-3-3L7.7 11.3l2.29 2.29 5.29-5.29 1.41 1.41-6 6Z"/>
+            </svg>
+        </div>
+    </div>
+</div>
+
+<div class="mx-auto mt-10 max-w-8xl w-full px-4">
+    <div class="flex w-full flex-col mx-auto">
+        <div class="flex mx-8 md:mx-20">
+            <h1 class="text-3xl font-semibold text-gray-500 flex justify-center gap-2 items-center">
+                Passenger Information
+            </h1>
+        </div>
+
+        <form action="#" method="post" id="passenger-form" class="mt-5 w-full">
+            <!-- Passenger Forms Container -->
+            <div class="flex w-full justify-center items-center">
+                <div class="flex bg-white shadow-md w-full max-w-6xl min-h-[600px] rounded-lg overflow-hidden">
+                    <!-- Passenger Sidebar -->
+                    <div class="w-48 bg-gray-100 border-r">
+                        <div class="passenger-tab py-4 px-3 border-b cursor-pointer transition-colors active bg-white border-l-4 border-[#FFC83D]" data-passenger="1">
+                            <p class="text-sm font-medium text-[#093704]">Passenger 1</p>
+                            <p class="text-xs text-[#093704]">Adult</p>
+                            <div class="status-indicator mt-1 text-xs hidden"></div>
+                        </div>
+                    </div>
+
+                    <!-- Passenger Forms -->
+                    <div class="flex-1 p-8">
+                        <!-- Passenger 1 Form -->
+                        <div class="passenger-form" id="passenger-1" data-type="Adult">
+                            <div class="mb-6">
+                                <h2 class="text-xl font-bold text-gray-900">Passenger 1 (Adult)</h2>
+                                <p class="text-sm text-gray-600 mt-1">
+                                    Please ensure names match exactly with your valid government-issued ID
+                                </p>
+                            </div>
+
+                            <!-- Personal Information -->
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-medium text-gray-700">Title <span class="text-red-500">*</span></label>
+                                    <select name="gender_1" class="w-full px-3 py-2 border border-gray-500 rounded-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                        <option value="" disabled selected>Select title</option>
+                                        <option value="male">Mr</option>
+                                        <option value="female">Mrs/Ms</option>
+                                    </select>
+                                </div>
+
+                                <div class="space-y-2 md:col-span-1">
+                                    <label class="block text-sm font-medium text-gray-700">First Name <span class="text-red-500">*</span></label>
+                                    <input type="text" name="first_name_1" placeholder="Juan" 
+                                           class="w-full px-3 py-2 border border-gray-500 rounded-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" required
+                                           pattern="[A-Za-z\s]{2,}" title="Please enter a valid first name">
+                                </div>
+
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-medium text-gray-700">Middle Initial</label>
+                                    <input type="text" name="mi_1" placeholder="L" 
+                                           class="w-full px-3 py-2 border border-gray-500 rounded-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                           maxlength="1" pattern="[A-Za-z]?" title="Optional middle initial (one letter)">
+                                </div>
+
+                                <div class="space-y-2 md:col-span-1">
+                                    <label class="block text-sm font-medium text-gray-700">Last Name <span class="text-red-500">*</span></label>
+                                    <input type="text" name="last_name_1" placeholder="Dela Cruz" 
+                                           class="w-full px-3 py-2 border border-gray-500 rounded-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" required
+                                           pattern="[A-Za-z\s]{2,}" title="Please enter a valid last name">
+                                </div>
+                            </div>
+
+                            <!-- Date of Birth -->
+                            <div class="mb-6">
+                                <h3 class="text-lg font-semibold mb-3">Date of Birth <span class="text-red-500">*</span></h3>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">Day</label>
+                                        <select name="dob_day_1" class="w-full px-3 py-2 border border-gray-500 rounded-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                            <option value="" disabled selected>Day</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">Month</label>
+                                        <select name="dob_month_1" class="w-full px-3 py-2 border border-gray-500 rounded-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                            <option value="" disabled selected>Month</option>
+                                            <option value="1">January</option>
+                                            <option value="2">February</option>
+                                            <option value="3">March</option>
+                                            <option value="4">April</option>
+                                            <option value="5">May</option>
+                                            <option value="6">June</option>
+                                            <option value="7">July</option>
+                                            <option value="8">August</option>
+                                            <option value="9">September</option>
+                                            <option value="10">October</option>
+                                            <option value="11">November</option>
+                                            <option value="12">December</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">Year</label>
+                                        <select name="dob_year_1" class="w-full px-3 py-2 border border-gray-500 rounded-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                            <option value="" disabled selected>Year</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="age-validation mt-2 text-sm hidden"></div>
+                            </div>
+
+                            <!-- Passport & Nationality -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-medium text-gray-700">Passport Number <span class="text-red-500">*</span></label>
+                                    <input type="text" name="passport_1" placeholder="DASD4D44ASD" 
+                                           class="w-full px-3 py-2 border border-gray-500 rounded-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase" required
+                                           pattern="[A-Z0-9]{5,}" title="Please enter a valid passport number">
+                                </div>
+
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-medium text-gray-700">Nationality <span class="text-red-500">*</span></label>
+                                    <input type="text" name="nationality_1" placeholder="Philippines" 
+                                           class="w-full px-3 py-2 border border-gray-500 rounded-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" required
+                                           pattern="[A-Za-z\s]{3,}" title="Please enter a valid nationality">
+                                </div>
+                            </div>
+
+                            <!-- Additional Options -->
+                            <div class="space-y-3">
+                                <div class="flex items-center">
+                                    <input type="checkbox" name="declaration_1" id="declaration_1" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <label for="declaration_1" class="ml-2 block text-sm text-gray-700">
+                                        I have a declaration / special request
+                                    </label>
+                                </div>
+                                
+                                <div class="flex items-center">
+                                    <input type="checkbox" name="pwd_1" id="pwd_1" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <label for="pwd_1" class="ml-2 block text-sm text-gray-700">
+                                        I am a Person with Disability
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Navigation -->
+                            <div class="flex justify-between items-center mt-8 pt-6 border-t">
+                                <div></div>
+                                <button type="button" class="next-passenger-btn bg-[#093704] hover:bg-[#072a03] text-[#FFC83D] px-6 py-2 rounded-xs cursor-pointer font-medium transition-colors">
+                                    Next Passenger
+                                </button>
+                            </div>
+                        </div>
+
+                        
+
+                        
+
+                        
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Information -->
+            <div class="flex w-full justify-center items-center mt-10">
+                <div class="flex bg-white flex-col shadow-md w-full max-w-6xl px-8 py-8 rounded-lg">
+                    <h2 class="text-xl font-bold mb-2">Contact Information</h2>
+                    <p class="text-sm text-gray-600 mb-6">
+                        We'll use this to contact you about changes to your booking and send your itinerary.
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">First Name <span class="text-red-500">*</span></label>
+                            <input type="text" name="f_name_contact" value="Juan" 
+                                   class="w-full px-3 py-2 border border-gray-500 rounded-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Last Name <span class="text-red-500">*</span></label>
+                            <input type="text" name="l_name_contact" value="Dela Cruz" 
+                                   class="w-full px-3 py-2 border border-gray-500 rounded-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Middle Name <span class="text-red-500">*</span></label>
+                            <input type="text" name="m_name_contact" value="J " 
+                                   class="w-full px-3 py-2 border border-gray-500 rounded-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Mobile Number <span class="text-red-500">*</span></label>
+                            <input type="tel" name="number_contact" value="09171234567" 
+                                   class="w-full px-3 py-2 border border-gray-500 rounded-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                                   pattern="[0-9]{10,}" placeholder="09171234567" required>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">Email Address <span class="text-red-500">*</span></label>
+                            <input type="email" name="email_contact" value="juan.delacruz@example.com" 
+                                   class="w-full px-3 py-2 border border-gray-500 rounded-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                                   placeholder="juan.delacruz@example.com" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terms and Conditions -->
+            <div class="flex w-full justify-center items-center mt-7">
+                <div class="flex bg-white flex-col shadow-md w-full max-w-6xl px-8 py-6 rounded-lg">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="terms_accept" required class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="terms_accept" class="ml-2 block text-sm text-gray-700">
+                            I confirm that I have read, understood, and agree to the updated 
+                            <a href="#" class="text-[#093704] hover:underline">Privacy Policy</a>. 
+                            I consent to the collection, use, processing and sharing of my personal information.
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex w-full justify-center items-center mt-6">
+                <div class="flex justify-end w-full max-w-6xl">
+                    <button type="submit" id="submit-btn" 
+                    class="bg-[#093704] hover:bg-[#072a03] text-[#FFC83D] px-12 py-3 rounded-xs cursor-pointer font-medium text-lg transition-colors">
+                        Confirm Passenger Details
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the form
+    initPassengerForm();
+});
+
+function initPassengerForm() {
+    const passengerForms = document.querySelectorAll('.passenger-form');
+    const passengerTabs = document.querySelectorAll('.passenger-tab');
+    let currentPassenger = 1;
+    let validationEnabled = false; // Disable validation on initial load
+
+    // Initialize year and day dropdowns
+    initYearDropdowns();
+    initDayDropdowns();
+
+    // Setup event listeners
+    setupEventListeners();
+
+    function initYearDropdowns() {
+        const currentYear = new Date().getFullYear();
+        document.querySelectorAll('select[name^="dob_year_"]').forEach(select => {
+            // Clear existing options except the first one
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+            
+            for (let year = currentYear; year >= 1900; year--) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                select.appendChild(option);
+            }
+        });
+    }
+
+    function initDayDropdowns() {
+        document.querySelectorAll('select[name^="dob_day_"]').forEach(select => {
+            // Clear existing options except the first one
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+            
+            for (let day = 1; day <= 31; day++) {
+                const option = document.createElement('option');
+                option.value = day;
+                option.textContent = day;
+                select.appendChild(option);
+            }
+        });
+    }
+
+    function setupEventListeners() {
+        // Passenger tab clicks
+        passengerTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const passengerNum = parseInt(tab.dataset.passenger);
+                if (passengerNum > currentPassenger) {
+                    // Don't allow skipping ahead to incomplete passengers
+                    showNotification('Please complete the current passenger before moving ahead.', 'error');
+                    return;
+                }
+                showPassenger(passengerNum);
+            });
+        });
+
+        // Next passenger buttons
+        document.querySelectorAll('.next-passenger-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Enable validation when user tries to proceed
+                validationEnabled = true;
+                
+                // Validate and only proceed if current passenger is valid
+                if (validatePassenger(currentPassenger)) {
+                    markPassengerComplete(currentPassenger);
+                    showPassenger(currentPassenger + 1);
+                } else {
+                    markPassengerIncomplete(currentPassenger);
+                    showNotification('Please fix all validation errors before proceeding to the next passenger.', 'error');
+                }
+            });
+        });
+
+        // Previous passenger buttons
+        document.querySelectorAll('.prev-passenger-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                showPassenger(currentPassenger - 1);
+            });
+        });
+
+        // Real-time validation (only after validation is enabled)
+        setupRealTimeValidation();
+
+        // Form submission - only validate on final submit
+        document.getElementById('passenger-form').addEventListener('submit', function(e) {
+            console.log('Form submission attempted');
+            
+            // Enable validation for final submission
+            validationEnabled = true;
+            
+            // Show loading state
+            const submitBtn = document.getElementById('submit-btn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'Processing...';
+            submitBtn.disabled = true;
+            
+            // Validate all passengers on final submission
+            if (!validateAllPassengers()) {
+                e.preventDefault();
+                showNotification('Please fix all validation errors before submitting.', 'error');
+                
+                // Restore button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            } else {
+                console.log('Form validation passed, submitting...');
+                // Form will submit normally - button will stay in loading state
+                
+                // For demo purposes, prevent actual submission and show success message
+                e.preventDefault();
+                setTimeout(() => {
+                    showNotification('Passenger information saved successfully!', 'success');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }, 2000);
+            }
+        });
+    }
+
+    function showPassenger(passengerNum) {
+        // Hide all forms
+        passengerForms.forEach(form => form.classList.add('hidden'));
+        
+        // Show selected form
+        const targetForm = document.getElementById(`passenger-${passengerNum}`);
+        if (targetForm) {
+            targetForm.classList.remove('hidden');
+        }
+
+        // Update tabs
+        passengerTabs.forEach(tab => {
+            tab.classList.remove('active', 'bg-white', 'border-l-4', 'border-[#FFC83D]');
+        });
+
+        const targetTab = document.querySelector(`[data-passenger="${passengerNum}"]`);
+        if (targetTab) {
+            targetTab.classList.add('active', 'bg-white', 'border-l-4', 'border-[#FFC83D]');
+        }
+
+        currentPassenger = passengerNum;
+        updateNavigation();
+        
+        // Clear errors when switching passengers (unless validation is enabled)
+        if (!validationEnabled) {
+            clearAllErrors();
+        }
+    }
+
+    function validatePassenger(passengerNum) {
+        const form = document.getElementById(`passenger-${passengerNum}`);
+        
+        if (!form) {
+            console.error(`Form for passenger ${passengerNum} not found`);
+            return false;
+        }
+        
+        let isValid = true;
+
+        // Clear previous errors
+        clearErrors(form);
+
+        // Validate required fields
+        const requiredFields = form.querySelectorAll('[required]');
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                console.log(`Required field empty: ${field.name}`);
+                showFieldError(field, 'This field is required');
+                isValid = false;
+            }
+        });
+
+        // Validate name fields - check even if empty (since they're required)
+        const firstName = form.querySelector('[name^="first_name_"]');
+        const lastName = form.querySelector('[name^="last_name_"]');
+        
+        if (firstName) {
+            if (!firstName.value.trim()) {
+                showFieldError(firstName, 'First name is required');
+                isValid = false;
+            } else if (!isValidName(firstName.value)) {
+                showFieldError(firstName, 'Please enter a valid first name (letters only, min 2 characters)');
+                isValid = false;
+            }
+        }
+
+        if (lastName) {
+            if (!lastName.value.trim()) {
+                showFieldError(lastName, 'Last name is required');
+                isValid = false;
+            } else if (!isValidName(lastName.value)) {
+                showFieldError(lastName, 'Please enter a valid last name (letters only, min 2 characters)');
+                isValid = false;
+            }
+        }
+
+        // Validate middle initial - only if it has value
+        const middleInitial = form.querySelector('[name^="mi_"]');
+        if (middleInitial && middleInitial.value.trim() && !isValidMiddleInitial(middleInitial.value)) {
+            showFieldError(middleInitial, 'Middle initial must be a single letter');
+            isValid = false;
+        }
+
+        // Validate date of birth - all fields required
+        const daySelect = form.querySelector('[name^="dob_day_"]');
+        const monthSelect = form.querySelector('[name^="dob_month_"]');
+        const yearSelect = form.querySelector('[name^="dob_year_"]');
+        
+        if (daySelect && !daySelect.value) {
+            showFieldError(daySelect, 'Day is required');
+            isValid = false;
+        }
+        if (monthSelect && !monthSelect.value) {
+            showFieldError(monthSelect, 'Month is required');
+            isValid = false;
+        }
+        if (yearSelect && !yearSelect.value) {
+            showFieldError(yearSelect, 'Year is required');
+            isValid = false;
+        }
+
+        // Additional date validation if all fields are filled
+        if (daySelect && monthSelect && yearSelect && daySelect.value && monthSelect.value && yearSelect.value) {
+            try {
+                if (!validateDateOfBirth(passengerNum)) {
+                    isValid = false;
+                }
+            } catch (error) {
+                console.error('Date validation error:', error);
+                isValid = false;
+            }
+        }
+
+        // Validate passport
+        const passport = form.querySelector('[name^="passport_"]');
+        if (passport) {
+            if (!passport.value.trim()) {
+                showFieldError(passport, 'Passport number is required');
+                isValid = false;
+            } else if (!isValidPassport(passport.value)) {
+                showFieldError(passport, 'Please enter a valid passport number (min 5 alphanumeric characters)');
+                isValid = false;
+            }
+        }
+
+        // Validate nationality
+        const nationality = form.querySelector('[name^="nationality_"]');
+        if (nationality) {
+            if (!nationality.value.trim()) {
+                showFieldError(nationality, 'Nationality is required');
+                isValid = false;
+            } else if (!isValidName(nationality.value)) {
+                showFieldError(nationality, 'Please enter a valid nationality');
+                isValid = false;
+            }
+        }
+
+        // Special validation for infants
+        if (form.dataset.type === 'Infant') {
+            const adultSelect = form.querySelector('[name^="infant_adult_"]');
+            if (adultSelect && !adultSelect.value) {
+                showFieldError(adultSelect, 'Please select an accompanying adult');
+                isValid = false;
+            }
+        }
+
+        // Update passenger status
+        if (isValid) {
+            markPassengerComplete(passengerNum);
+        } else {
+            markPassengerIncomplete(passengerNum);
+        }
+
+        return isValid;
+    }
+
+    function validateDateOfBirth(passengerNum) {
+        const daySelect = document.querySelector(`[name="dob_day_${passengerNum}"]`);
+        const monthSelect = document.querySelector(`[name="dob_month_${passengerNum}"]`);
+        const yearSelect = document.querySelector(`[name="dob_year_${passengerNum}"]`);
+
+        if (!daySelect || !monthSelect || !yearSelect) {
+            console.error(`Date fields not found for passenger ${passengerNum}`);
+            return false;
+        }
+
+        const day = daySelect.value;
+        const month = monthSelect.value;
+        const year = yearSelect.value;
+
+        if (!day || !month || !year) {
+            return false;
+        }
+
+        try {
+            // Basic date validation
+            const birthDate = new Date(year, month - 1, day);
+            const today = new Date();
+            
+            // Check if date is valid
+            if (isNaN(birthDate.getTime())) {
+                showDateError(passengerNum, 'Please select a valid date');
+                return false;
+            }
+            
+            if (birthDate > today) {
+                showDateError(passengerNum, 'Date of birth cannot be in the future');
+                return false;
+            }
+
+            // Age validation based on passenger type
+            const form = document.getElementById(`passenger-${passengerNum}`);
+            const passengerType = form.dataset.type;
+            const age = calculateAge(birthDate, today);
+
+            if (!validateAgeForPassengerType(age, passengerType)) {
+                showDateError(passengerNum, getAgeErrorMessage(age, passengerType));
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Date validation error:', error);
+            showDateError(passengerNum, 'Invalid date selected');
+            return false;
+        }
+    }
+
+    function calculateAge(birthDate, today) {
+        let years = today.getFullYear() - birthDate.getFullYear();
+        let months = today.getMonth() - birthDate.getMonth();
+        let days = today.getDate() - birthDate.getDate();
+
+        if (days < 0) {
+            months--;
+            days += new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+        }
+
+        if (months < 0) {
+            years--;
+            months += 12;
+        }
+
+        return { years, months, days };
+    }
+
+    function validateAgeForPassengerType(age, type) {
+        switch (type) {
+            case 'Adult':
+                return age.years >= 18;
+            case 'Child':
+                return age.years >= 2 && age.years < 12;
+            case 'Infant':
+                return age.years < 2 || (age.years === 2 && age.months === 0 && age.days === 0);
+            default:
+                return true;
+        }
+    }
+
+    function getAgeErrorMessage(age, type) {
+        const ageText = `${age.years} years, ${age.months} months`;
+        
+        switch (type) {
+            case 'Adult':
+                return `Adults must be 18 years or older. Passenger is ${ageText}`;
+            case 'Child':
+                return `Children must be 2-11 years old. Passenger is ${ageText}`;
+            case 'Infant':
+                return `Infants must be under 2 years old. Passenger is ${ageText}`;
+            default:
+                return 'Invalid age for passenger type';
+        }
+    }
+
+    function isValidName(name) {
+        return /^[A-Za-z\s]{2,}$/.test(name);
+    }
+
+    function isValidMiddleInitial(mi) {
+        return /^[A-Za-z]$/.test(mi);
+    }
+
+    function isValidPassport(passport) {
+        return /^[A-Z0-9]{5,}$/.test(passport);
+    }
+
+    function showFieldError(field, message) {
+        field.classList.add('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+        
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'field-error text-red-500 text-xs mt-1';
+        errorDiv.textContent = message;
+        
+        field.parentNode.appendChild(errorDiv);
+    }
+
+    function showDateError(passengerNum, message) {
+        const form = document.getElementById(`passenger-${passengerNum}`);
+        if (!form) return;
+        
+        const dateSection = form.querySelector('.grid.grid-cols-1.md\\:grid-cols-3.gap-4');
+        if (!dateSection) return;
+        
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'date-error text-red-500 text-sm mt-2 font-medium';
+        errorDiv.textContent = message;
+        
+        dateSection.parentNode.appendChild(errorDiv);
+    }
+
+    function clearErrors(form) {
+        if (!form) {
+            console.warn('clearErrors: form is null');
+            return;
+        }
+        
+        // Remove error classes from fields
+        const errorFields = form.querySelectorAll('.border-red-500');
+        if (errorFields) {
+            errorFields.forEach(field => {
+                field.classList.remove('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+                field.classList.add('border-gray-300', 'focus:ring-blue-500', 'focus:border-transparent');
+            });
+        }
+        
+        // Remove field error messages
+        const fieldErrors = form.querySelectorAll('.field-error');
+        if (fieldErrors) {
+            fieldErrors.forEach(error => error.remove());
+        }
+        
+        // Remove date error messages
+        const dateErrors = form.querySelectorAll('.date-error');
+        if (dateErrors) {
+            dateErrors.forEach(error => error.remove());
+        }
+    }
+
+    function clearAllErrors() {
+        passengerForms.forEach(form => {
+            clearErrors(form);
+        });
+    }
+
+    function markPassengerComplete(passengerNum) {
+        const tab = document.querySelector(`[data-passenger="${passengerNum}"]`);
+        if (!tab) return;
+        
+        const status = tab.querySelector('.status-indicator');
+        if (!status) return;
+        
+        status.textContent = '✓ Complete';
+        status.className = 'status-indicator mt-1 text-xs text-green-600';
+        status.classList.remove('hidden');
+        
+        tab.classList.add('complete');
+        tab.classList.remove('incomplete');
+    }
+
+    function markPassengerIncomplete(passengerNum) {
+        const tab = document.querySelector(`[data-passenger="${passengerNum}"]`);
+        if (!tab) return;
+        
+        const status = tab.querySelector('.status-indicator');
+        if (!status) return;
+        
+        status.textContent = '✗ Incomplete';
+        status.className = 'status-indicator mt-1 text-xs text-red-600';
+        status.classList.remove('hidden');
+        
+        tab.classList.add('incomplete');
+        tab.classList.remove('complete');
+    }
+
+    function setupRealTimeValidation() {
+        // Add input event listeners for real-time validation
+        document.querySelectorAll('input, select').forEach(field => {
+            field.addEventListener('blur', function() {
+                // Only validate on blur if validation is enabled
+                if (validationEnabled) {
+                    const fieldName = this.getAttribute('name');
+                    if (fieldName && fieldName.includes('_')) {
+                        const passengerNum = fieldName.split('_').pop();
+                        validatePassenger(passengerNum);
+                    }
+                }
+            });
+
+            // Real-time validation for specific fields (only after validation is enabled)
+            field.addEventListener('input', function() {
+                if (!validationEnabled) return;
+                
+                const fieldName = this.getAttribute('name');
+                
+                // Clear error state when user starts typing
+                if (this.classList.contains('border-red-500')) {
+                    this.classList.remove('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+                    this.classList.add('border-gray-300', 'focus:ring-blue-500', 'focus:border-transparent');
+                    
+                    // Remove error message
+                    const errorMessage = this.parentNode.querySelector('.field-error');
+                    if (errorMessage) {
+                        errorMessage.remove();
+                    }
+                }
+                
+                // Validate middle initial in real-time
+                if (fieldName && fieldName.startsWith('mi_')) {
+                    const value = this.value.trim();
+                    if (value && !isValidMiddleInitial(value)) {
+                        this.classList.add('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+                        showFieldError(this, 'Middle initial must be a single letter');
+                    }
+                }
+                
+                // Validate names in real-time
+                if (fieldName && (fieldName.startsWith('first_name_') || fieldName.startsWith('last_name_'))) {
+                    const value = this.value.trim();
+                    if (value && !isValidName(value)) {
+                        this.classList.add('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+                        showFieldError(this, `Please enter a valid ${fieldName.startsWith('first_name_') ? 'first name' : 'last name'} (letters only, min 2 characters)`);
+                    }
+                }
+                
+                // Validate passport in real-time
+                if (fieldName && fieldName.startsWith('passport_')) {
+                    const value = this.value.trim();
+                    if (value && !isValidPassport(value)) {
+                        this.classList.add('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+                        showFieldError(this, 'Please enter a valid passport number (min 5 alphanumeric characters)');
+                    }
+                }
+                
+                // Validate nationality in real-time
+                if (fieldName && fieldName.startsWith('nationality_')) {
+                    const value = this.value.trim();
+                    if (value && !isValidName(value)) {
+                        this.classList.add('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+                        showFieldError(this, 'Please enter a valid nationality');
+                    }
+                }
+                
+                // Update passenger status when user types
+                if (fieldName && fieldName.includes('_')) {
+                    const passengerNum = fieldName.split('_').pop();
+                    validatePassenger(passengerNum);
+                }
+            });
+        });
+    }
+
+    function validateAllPassengers() {
+        let allValid = true;
+
+        console.log('=== Starting validation for all passengers ===');
+        
+        // Show all forms temporarily for validation
+        passengerForms.forEach(form => form.classList.remove('hidden'));
+        
+        try {
+            passengerForms.forEach((form, index) => {
+                const passengerNum = index + 1;
+                console.log(`Validating passenger ${passengerNum}`);
+                
+                const isValid = validatePassenger(passengerNum);
+                console.log(`Passenger ${passengerNum} valid: ${isValid}`);
+                
+                if (!isValid) {
+                    allValid = false;
+                    
+                    // Show first invalid passenger
+                    if (allValid === false) {
+                        showPassenger(passengerNum);
+                        // Scroll to the first error
+                        const firstError = form.querySelector('.border-red-500');
+                        if (firstError) {
+                            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }
+                }
+            });
+
+            // Restore the current passenger view
+            showPassenger(currentPassenger);
+            
+            console.log('All passengers valid:', allValid);
+            return allValid;
+        } catch (error) {
+            console.error('Validation error:', error);
+            showNotification('There was an error validating the form. Please check all fields.', 'error');
+            return false;
+        }
+    }
+
+    function updateNavigation() {
+        // Update button states based on current passenger
+        const prevButtons = document.querySelectorAll('.prev-passenger-btn');
+        const nextButtons = document.querySelectorAll('.next-passenger-btn');
+        
+        // Show/hide previous buttons
+        if (currentPassenger === 1) {
+            prevButtons.forEach(btn => btn.style.visibility = 'hidden');
+        } else {
+            prevButtons.forEach(btn => btn.style.visibility = 'visible');
+        }
+    }
+
+    function showNotification(message, type) {
+        // Remove existing notifications
+        const existingNotification = document.querySelector('.custom-notification');
+        if (existingNotification) {
+            existingNotification.remove();
+        }
+        
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `custom-notification fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+            type === 'error' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
+        }`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+
+    // Initialize first passenger - NO validation on initial load
+    showPassenger(1);
+
+    // Debug functions
+    window.debugValidation = function() {
+        console.log('=== DEBUG VALIDATION ===');
+        
+        passengerForms.forEach((form, index) => {
+            const passengerNum = index + 1;
+            console.log(`\nPassenger ${passengerNum}:`);
+            
+            const requiredFields = form.querySelectorAll('[required]');
+            requiredFields.forEach(field => {
+                console.log(`${field.name}: "${field.value}" - Valid: ${field.value.trim() !== ''}`);
+            });
+            
+            // Check date fields
+            const day = document.querySelector(`[name="dob_day_${passengerNum}"]`)?.value;
+            const month = document.querySelector(`[name="dob_month_${passengerNum}"]`)?.value;
+            const year = document.querySelector(`[name="dob_year_${passengerNum}"]`)?.value;
+            console.log(`Date: ${day}/${month}/${year}`);
+        });
+    };
+
+    window.debugFormState = function() {
+        console.log('=== FORM DEBUG INFO ===');
+        console.log('Current passenger:', currentPassenger);
+        console.log('Total passengers:', passengerForms.length);
+        
+        passengerForms.forEach((form, index) => {
+            const passengerNum = index + 1;
+            console.log(`\nPassenger ${passengerNum} (${form.dataset.type}):`);
+            console.log('Visible:', !form.classList.contains('hidden'));
+            
+            const requiredFields = form.querySelectorAll('[required]');
+            requiredFields.forEach(field => {
+                console.log(`  ${field.name}: "${field.value}"`);
+            });
+        });
+    };
+}
+</script>
+{% endblock %}

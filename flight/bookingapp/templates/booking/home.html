@@ -1,417 +1,528 @@
-{% extends 'booking/base.html' %}
-{% block title %} Home
-{% endblock %}
+{% extends 'ui_test/base.html' %}
+{% load static %}
+
+{% block title %}Home{% endblock %}
 
 {% block content %}
-{% load static %}
-<main class=" mx-auto  flex  justify-center relative">
-    <div class="absolute -top-4">
-        <img src="{% static 'bookingapp/images/bg-globe.svg' %}" alt="" class="w-[600px] h-auto" >
+<div class="w-full flex justify-center p-3">
+  <div
+    class="bg-no-repeat bg-center bg-cover p-2 px-4 rounded-3xl h-[600px] w-[1350px] relative"
+    style="background-image: url('{% static 'bookingapp/asset/bg_plane.svg' %}');"
+  >
+    <!-- logo -->
+    <div class="w-full flex justify-end gap-5">
+        <img src="{% static 'bookingapp/images/csucc.svg' %}" alt="" class="max-w-[30px]">
+        <img src="{% static 'bookingapp/images/csu.svg' %}" alt="" class="max-w-[30px]">
+        <img src="{% static 'bookingapp/images/cthm.svg' %}" alt="" class="max-w-[30px]">
+        <img src="{% static 'bookingapp/images/ceit.svg' %}" alt="" class="max-w-[30px]">
     </div>
-    <div class="z-10">
-        <div class="flex flex-1 justify-center flex-col gap-20 ">
-        
-           <!-- right -->
-                <div class="flex flex-1 items-center justify-center   ">
-                        <img src="{% static 'bookingapp/images/plane2.svg' %}" alt="" class="w-[500px] h-auto">
-                </div>
-        </div>
-        
-        <div class="w-full  bg-[#F8F8F8]  flex flex-col  items-center">
-            <h1 class=" text-5xl  syncopate-bold text-[#2975F7]">Travel around the Globe</h1>
-            <p class="font-medium text-sm">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-        </div>
 
-        <div class=" flex flex-col z-20 gap-3 mt-10 px-10   w-full">
-        <form action="{% url 'bookingapp:search_schedule' %}" method="POST">
-            {% csrf_token %}
-        <!-- Trip Type Toggle -->
-            <div class="flex ml-5 gap-5 mb-5 text-xs ">
-                <label   class="trip-btn active flex bg-[#F4EB08] py-2 px-5 rounded-full  shadow-md cursor-pointer transition">
-                    <input type="radio" name="trip_type" value="one_way" checked hidden>
-                    <span class="trip-btn active">One-way</span>
-                </label>
-
-                <label   class="trip-btn  flex  py-2 px-5 rounded-full  shadow-md cursor-pointer transition">
-                    <input type="radio" name="trip_type" value="round_trip" hidden>
-                    <span class="trip-btn active">Round-Trip</span>
-                </label>
-
-                <label   class="trip-btn  flex py-2 px-5 rounded-full  shadow-md cursor-pointer transition">
-                    <input type="radio" name="trip_type" value="trip_type"  hidden>
-                    <span class="trip-btn active">Multi-City</span>
-                </label>
-
+    <!-- home carousel -->
+    <div class="w-full flex justify-between px-15 gap-20 mt-10">
+      <!-- left -->
+      <div class="flex-1">
+        <div class="flex flex-col text-[#FFC83D] syncopate-bold">
+          <div class="flex items-end gap-2">
+            <div class="border-b-5 flex items-center">
+              <p class="text-[80px] leading-none">Let's</p>
             </div>
+            <p class="text-[48px]">plan</p>
+          </div>
+          <div class="flex gap-3">
+            <p class="text-[48px]">your</p>
+            <div class="border-b-5 flex items-center">
+              <p class="text-[128px] leading-none">trip</p>
+            </div>
+          </div>
+        </div>
 
-            <!-- Search Bar -->
-            <div class="flex flex-wrap shadow-md/20 bg-white rounded-4xl h-auto items-center justify-between px-8 py-4 gap-2">
+        <div class="w-full backdrop-blur-xs rounded-lg p-3 poppins-light-italic text-white mt-3">
+          <h1>-Lorem ipsum</h1>
+          <p class="font-light">"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."</p>
+        </div>
+      </div>
+      <!-- right -->
+      <div class="flex-1 py-5 px-2">
+        <div class="flex justify-between my-1 text-sm">
+          <p class="text-[#FFC83D] font-medium">Popular wonder</p>
+          <!-- date -->
+          <p class="text-white" id="current-date"></p>
+        </div>
 
+        <div class="rounded-sm">
+          <div>
+            <img src="{% static 'bookingapp/asset/carousel.svg' %}" alt="" class="w-full">
+          </div>
+          <div class="w-full flex justify-center gap-2 mt-3">
+            <p class="p-1 bg-[#FFC83D] rounded-full"></p>
+            <p class="p-1 bg-white rounded-full"></p>
+            <p class="p-1 bg-white rounded-full"></p>
+            <p class="p-1 bg-white rounded-full"></p>
+          </div>
+        </div>
+      </div>
+    </div>
 
-                <!-- From -->
-                <div class="flex flex-col flex-1 min-w-[150px] relative ">
-                    <label class=" text-gray-500 mb-2  text-xs">From</label>
-                    <input text="text" name="origin" id="fromHidden"  hidden>
-                    <input type="text"  id="fromInput"   
-                        class="poppins-bold text-sm text-gray-800 bg-gray-100 rounded-xl px-5 py-2 focus:outline-none focus:ring-2 focus:ring-[#2975F7] shadow-inner/20" placeholder="Enter your origin">
-
-
-                <ul id="fromDropdown"
-                        class="absolute top-[72px] left-0 w-full bg-white rounded-xl shadow-md hidden h-auto overflow-y-auto z-50">
-                        {% for origin in origins %}
-                        <li class="px-5 py-2 hover:bg-gray-100 cursor-pointer"
-                            data-id="{{ origin.id }}"
-                            data-value="{{ origin.code }} - {{ origin.location }}">
-                            {{ origin.code }} - {{ origin.location }}
-                        </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-
-                <!-- To -->
-                <div class="flex flex-col flex-1 relative min-w-[150px] ">
-                    <label class=" text-gray-500 mb-2  text-xs">To</label>
-                    <input text="text" name="destination" id="toHidden"  hidden>
-                    <input type="text"  id="toInput"
-                        class="poppins-bold text-sm text-gray-800 bg-gray-100 rounded-xl px-5 py-2 focus:outline-none focus:ring-2 focus:ring-[#2975F7] shadow-inner/20" placeholder="Enter your destination" >
+    <!-- search area -->
+    <form method="post" action="{% url 'bookingapp:search_schedule' %}" class="w-full px-20 absolute -bottom-15" id="search-form">
+      {% csrf_token %}
+      <div class="space-y-5 border border-gray-400 rounded-[10px] bg-[#FFFCF5] px-10 py-4">
+        <!-- top -->
+        <div class="text-sm flex w-full justify-between">
+          <!-- trip type -->
+          <div class="flex gap-2">
+            <button type="button" name="trip_type" value="one_way" class="trip-type-btn bg-[#093704] hover:cursor-pointer text-[#FFC83D] px-5 py-1.5 rounded-sm">One-Way</button>
+            <button type="button" name="trip_type" value="round_trip" class="trip-type-btn bg-white border border-gray-400 hover:bg-gray-200 hover:cursor-pointer text-gray-600 px-5 py-1.5 rounded-sm">Round-trip</button>
+            <input type="hidden" name="trip_type" id="trip_type" value="one_way">
+          </div>
+          <!-- passenger count -->
+          <div class="flex gap-2 items-center">
             
-                    
-                <ul id="toDropdown"
-                        class="absolute top-[72px] left-0 w-full bg-white  rounded-xl shadow-md hidden h-auto overflow-y-auto z-50">
-                        {% for destination in destinations %}
-                        <li class="px-5 py-2 hover:bg-gray-100 cursor-pointer"
-                            data-id="{{ destination.id }}"
-                            data-value="{{ destination.code }} - {{ destination.location }}">
-                            {{ destination.code }} - {{ destination.location }}
-                        </li>
-                        {% endfor %}
-                    </ul>     
+            <div class="p-1 flex gap-1  items-center rounded-sm text-sm space-x-5 px-1 bg-[#093704]">
+              <div class="passenger-display flex  space-x-5 text-[#FFC83D]">
+                <div class="passenger-item">
+                  <span id="adultDisplay">1</span> Adult
                 </div>
-
-                <!-- Departure -->
-                <div class="flex flex-col flex-1">
-                    <label class=" text-gray-500 mb-2 text-xs min-w-[150px] ">Departure</label>
-                    <input type="date" name="departure_date"
-                        class="poppins-bold text-sm text-gray-800 bg-gray-100 rounded-xl px-5 py-2 focus:outline-none focus:ring-2 focus:ring-[#2975F7] shadow-inner/20">
+                <div class="passenger-item">
+                  <span id="childDisplay">0</span> Child
                 </div>
-
-                <!-- Return -->
-                <div id="returnField" class="flex flex-col flex-1 hidden ">
-                    <label class=" text-gray-500 mb-2 text-xs">Return</label>
-                    <input type="date" name="return_date"
-                        class="poppins-bold text-sm text-gray-800 bg-gray-100 rounded-xl px-5 py-2 focus:outline-none focus:ring-2 focus:ring-[#2975F7] shadow-inner/20">
+                <div class="passenger-item">
+                  <span id="infantDisplay">0</span> Infant
                 </div>
-
-                <!-- Passenger -->
-                <!-- Passenger -->
-                <div class="flex flex-col flex-1 relative">
-                    <label class="text-gray-500 mb-2 text-xs min-w-[150px]">Passengers</label>
-
-                    <!-- Trigger input -->
-                    <div id="passengerBox" 
-                        class="flex items-center bg-gray-100 rounded-xl justify-between px-4 py-2 cursor-pointer shadow-inner/20">
-                        <span id="passengerSummary" class="poppins-bold text-sm text-gray-800">1 Adult</span>
-                        <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                d="M19 9l-7 7-7-7"/>
-                        </svg>
-                    </div>
-
-                    <!-- Dropdown -->
-                    <div id="passengerDropdown" 
-                        class="absolute top-[65px] left-0 w-64 bg-white rounded-xl shadow-md p-4 hidden z-50">
-
-                        <!-- Adult -->
-                        <div class="flex justify-between items-center py-2">
-                            <span class="text-sm">Adults</span>
-                            <div class="flex items-center gap-2">
-                                <button type="button" data-type="adult" class="decrement px-2 py-1 bg-gray-200 rounded">-</button>
-                                <input type="text" id="adultCount" name="adults" value="1" 
-                                    class="w-8 text-center border-none focus:outline-none" readonly>
-                                <button type="button" data-type="adult" class="increment px-2 py-1 bg-gray-200 rounded">+</button>
-                            </div>
-                        </div>
-
-                        <!-- Children -->
-                        <div class="flex justify-between items-center py-2">
-                            <span class="text-sm">Children</span>
-                            <div class="flex items-center gap-2">
-                                <button type="button" data-type="child" class="decrement px-2 py-1 bg-gray-200 rounded">-</button>
-                                <input type="text" id="childCount" name="children" value="0" 
-                                    class="w-8 text-center border-none focus:outline-none" readonly>
-                                <button type="button" data-type="child" class="increment px-2 py-1 bg-gray-200 rounded">+</button>
-                            </div>
-                        </div>
-
-                        <!-- Infants -->
-                        <div class="flex justify-between items-center py-2">
-                            <span class="text-sm">Infants</span>
-                            <div class="flex items-center gap-2">
-                                <button type="button" data-type="infant" class="decrement px-2 py-1 bg-gray-200 rounded">-</button>
-                                <input type="text" id="infantCount" name="infants" value="0" 
-                                    class="w-8 text-center border-none focus:outline-none" readonly>
-                                <button type="button" data-type="infant" class="increment px-2 py-1 bg-gray-200 rounded">+</button>
-                            </div>
-                        </div>
-
-                        <!-- Done -->
-                        <div class="flex justify-end mt-3">
-                            <button type="button" id="donePassenger" 
-                                    class="bg-[#2975F7] text-white px-4 py-1 rounded-full text-sm">Done</button>
-                        </div>
-                    </div>
-                </div>
-
-
-                <!-- Divider -->
-                <div class="w-px h-[60px] bg-gray-300 mx-5"></div>
-
-                <!-- Search Button -->
-                <div class="flex">
-                    <button type="submit"  id="searchBtn"
-                    class="bg-[#2975F7] hover:bg-[#1f5ed6] transition px-8 py-2 rounded-full text-white  shadow-md/20 hover:-translate-y-1 ease-in-out cursor-pointer">
-                        Search
-                    </button>
-                </div>
+              </div>
+              <button type="button" id="passengerEditBtn" class="bg-[#FFC83D] hover:bg-[#FFC83D]/80 cursor-pointer py-1 px-5 rounded-full text-sm">
+                Add passenger
+              </button>
             </div>
-        </form>    
-    </div>
+            <input type="hidden" name="adults" id="adults" value="1">
+            <input type="hidden" name="children" id="children" value="0">
+            <input type="hidden" name="infants" id="infants" value="0">
+          </div>
+        </div>
+
+        <!-- search -->
+        <div class="w-full flex gap-5 items-end">
+          <!-- location -->
+          <div class="flex-1 flex flex-col space-y-2">
+            <label for="from_airport" class="text-gray-500">Location</label>
+            <div class="flex">
+              <!-- From Airport -->
+              <div class="relative w-1/2">
+                <div class="searchable-select">
+                  <input type="text" 
+                         id="fromInput" 
+                         class="py-2 px-3 w-full border border-gray-500 placeholder-gray-800 bg-white  focus:outline-none focus:border-[#093704]" 
+                         placeholder="From " 
+                         autocomplete="off">
+                  <input type="hidden" name="origin" id="fromHidden" required>
+                  <div id="fromDropdown" class="absolute z-50 w-full mt-1 bg-white border border-gray-300  shadow-lg max-h-60 overflow-y-auto hidden">
+                    {% for origin in origins %}
+                    <div class="p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-200 airport-result" 
+                         data-id="{{ origin.id }}" 
+                         data-value="{{ origin.code }} - {{ origin.location }}">
+                      <div class="font-medium">{{ origin.code }} - {{ origin.location }}</div>
+                    </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+              
+              <!-- To Airport -->
+              <div class="relative w-1/2">
+                <div class="searchable-select">
+                  <input type="text" 
+                         id="toInput" 
+                         class="py-2 px-3 w-full border border-gray-500 placeholder-gray-800 bg-white focus:outline-none focus:border-[#093704]" 
+                         placeholder="To " 
+                         autocomplete="off">
+                  <input type="hidden" name="destination" id="toHidden" required>
+                  <div id="toDropdown" class="absolute z-50 w-full mt-1 bg-white border border-gray-300 shadow-lg max-h-60 overflow-y-auto hidden">
+                    {% for destination in destinations %}
+                    <div class="p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-200 airport-result" 
+                         data-id="{{ destination.id }}" 
+                         data-value="{{ destination.code }} - {{ destination.location }}">
+                      <div class="font-medium">{{ destination.code }} - {{ destination.location }}</div>
+                    </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-gray-500 flex items-center mt-5">
+            <h1>&</h1>
+          </div>
+
+          <!-- Date -->
+          <div class="flex-1 flex flex-col space-y-2">
+            <label for="depart_date" class="text-gray-500">Date</label>
+            <div class="flex">
+              <input type="date" name="departure_date" id="departure_date" class="bg-white py-2 px-1 w-full border border-gray-500 placeholder-gray-800" required min="{{ today }}">
+              <input type="date" name="return_date" id="return_date" class="bg-white py-2 px-1 w-full border border-gray-500 placeholder-gray-800 hidden" disabled>
+            </div>
+          </div>
+
+          <div class="flex items-end">
+            <button type="submit" id="searchBtn" class="py-2 px-10 font-medium bg-[#093704] hover:bg-[#093704]/80 cursor-pointer text-lg text-[#FFC83D]">Search</button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
 </div>
 
-
-
+<!-- Passenger Modal -->
+<div id="passenger-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+  <div class="bg-[#FFFCF5] rounded-sm p-6 py-10 w-[500px]">
+    <h3 class="text-lg font-semibold mb-4">Select Passengers</h3>
+    
+    <div class="space-y-4">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="font-medium">Adults</p>
+          <p class="text-sm text-gray-500">12 years and above</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <button type="button" class="passenger-minus w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center" data-type="adult">-</button>
+          <span id="adultCount" class="w-8 text-center">1</span>
+          <button type="button" class="passenger-plus w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center" data-type="adult">+</button>
+        </div>
+      </div>
+      
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="font-medium">Children</p>
+          <p class="text-sm text-gray-500">2-11 years</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <button type="button" class="passenger-minus w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center" data-type="child">-</button>
+          <span id="childCount" class="w-8 text-center">0</span>
+          <button type="button" class="passenger-plus w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center" data-type="child">+</button>
+        </div>
+      </div>
+      
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="font-medium">Infants</p>
+          <p class="text-sm text-gray-500">Under 2 years</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <button type="button" class="passenger-minus w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center" data-type="infant">-</button>
+          <span id="infantCount" class="w-8 text-center">0</span>
+          <button type="button" class="passenger-plus w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center" data-type="infant">+</button>
+        </div>
+      </div>
     </div>
-</main>
+    
+    <div class="flex justify-end gap-3 mt-6">
+      <button type="button" id="cancel-passenger" class="px-4 py-2 border bg-white hover:bg-gray-200 cursor-pointer border-gray-300 rounded-xs">Cancel</button>
+      <button type="button" id="save-passenger" class="px-4 py-2 bg-[#093704] hover:bg-[#093704]/80 cursor-pointer text-white rounded-xs">Save</button>
+    </div>
+  </div>
+</div>
 
-<!-- JS for toggle + return field -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const tripBtns = document.querySelectorAll('.trip-btn');
-    const returnField = document.getElementById('returnField');
+    // Set current date
+    const now = new Date();
+    document.getElementById('current-date').textContent = now.toLocaleDateString();
+    
+    // Set today's date as min for date inputs
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('departure_date').min = today;
+    
+    // Trip type handling
+    const tripTypeBtns = document.querySelectorAll('.trip-type-btn');
+    const tripTypeInput = document.getElementById('trip_type');
+    const returnDateInput = document.getElementById('return_date');
+    
+    tripTypeBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        // Update button styles
+        tripTypeBtns.forEach(b => {
+          b.classList.remove('bg-[#093704]', 'text-[#FFC83D]');
+          b.classList.add('bg-white', 'border', 'border-gray-400', 'text-gray-600');
+        });
+        this.classList.remove('bg-white', 'border', 'border-gray-400', 'text-gray-600');
+        this.classList.add('bg-[#093704]', 'text-[#FFC83D]');
+        
+        // Update hidden input
+        tripTypeInput.value = this.value;
+        
+        // Handle return date
+        if (this.value === 'round_trip') {
+          returnDateInput.classList.remove('hidden');
+          returnDateInput.disabled = false;
+          returnDateInput.required = true;
+        } else {
+          returnDateInput.classList.add('hidden');
+          returnDateInput.disabled = true;
+          returnDateInput.required = false;
+          returnDateInput.value = '';
+        }
+        
+        // Trigger input validation
+        checkInputs();
+      });
+    });
 
-    // Trip toggle
-    tripBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            tripBtns.forEach(b => b.classList.remove('active', 'bg-[#F4EB08]'));
-            btn.classList.add('active', 'bg-[#F4EB08]');
-            if (btn.textContent.trim() === 'One-way') {
-                returnField.style.display = 'none';
-            } else {
-                returnField.style.display = 'flex';
+    // Passenger modal handling
+    const passengerEditBtn = document.getElementById("passengerEditBtn");
+    const passengerModal = document.getElementById("passenger-modal");
+    const savePassenger = document.getElementById("save-passenger");
+    const cancelPassenger = document.getElementById("cancel-passenger");
+
+    const counts = {
+        adult: 1,
+        child: 0,
+        infant: 0
+    };
+
+    // Toggle modal
+    passengerEditBtn.addEventListener("click", () => {
+        passengerModal.classList.remove("hidden");
+        passengerModal.classList.add("flex");
+    });
+
+    // Increment/Decrement
+    document.querySelectorAll(".passenger-plus, .passenger-minus").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const type = btn.dataset.type;
+            if (!type) return;
+
+            if (btn.classList.contains("passenger-plus")) {
+                if (type === "infant" && counts.infant >= counts.adult) {
+                    alert("Number of infants cannot exceed number of adults.");
+                    return;
+                }
+                counts[type]++;
+            } else if (btn.classList.contains("passenger-minus") && counts[type] > 0) {
+                if (type === "adult" && counts[type] === 1) return; // min 1 adult
+                if (type === "adult" && counts.infant > counts.adult - 1) {
+                    counts.infant = counts.adult - 1;
+                }
+                counts[type]--;
             }
+
+            // Update modal display
+            document.getElementById("adultCount").textContent = counts.adult;
+            document.getElementById("childCount").textContent = counts.child;
+            document.getElementById("infantCount").textContent = counts.infant;
         });
     });
 
-    // Passenger increment/decrement
-   // ===== Passenger Selection Dropdown =====
-        const passengerBox = document.getElementById("passengerBox");
-        const passengerDropdown = document.getElementById("passengerDropdown");
-        const passengerSummary = document.getElementById("passengerSummary");
-        const donePassenger = document.getElementById("donePassenger");
+    // Update display text
+    function updatePassengerDisplay() {
+        document.getElementById("adultDisplay").textContent = counts.adult;
+        document.getElementById("childDisplay").textContent = counts.child;
+        document.getElementById("infantDisplay").textContent = counts.infant;
+    }
 
-        const counts = {
-            adult: 1,
-            child: 0,
-            infant: 0
-        };
+    // Save button
+    savePassenger.addEventListener("click", () => {
+        // Update hidden inputs
+        document.getElementById("adults").value = counts.adult;
+        document.getElementById("children").value = counts.child;
+        document.getElementById("infants").value = counts.infant;
+        
+        // Update display
+        updatePassengerDisplay();
+        
+        passengerModal.classList.add("hidden");
+        passengerModal.classList.remove("flex");
+        
+        // Trigger input validation
+        checkInputs();
+    });
 
-        // Toggle dropdown
-        passengerBox.addEventListener("click", () => {
-            passengerDropdown.classList.toggle("hidden");
+    // Cancel button
+    cancelPassenger.addEventListener("click", () => {
+        passengerModal.classList.add("hidden");
+        passengerModal.classList.remove("flex");
+    });
+
+    // ===== Dropdown logic function (reusable) =====
+    function setupDropdown(inputId, dropdownId, hiddenId, otherInputId, otherDropdownId) {
+        const input = document.getElementById(inputId);
+        const dropdown = document.getElementById(dropdownId);
+        const options = dropdown.querySelectorAll(".airport-result");
+        const otherInput = otherInputId ? document.getElementById(otherInputId) : null;
+        const otherDropdown = otherDropdownId ? document.getElementById(otherDropdownId) : null;
+        const hidden = document.getElementById(hiddenId);
+
+        // Show dropdown on focus
+        input.addEventListener("focus", () => {
+            positionDropdown();
+            dropdown.classList.remove("hidden");
         });
 
-        // Increment/Decrement
-        document.querySelectorAll("#passengerDropdown button").forEach(btn => {
-            btn.addEventListener("click", () => {
-                const type = btn.dataset.type;
-                if (!type) return;
+        // Position dropdown based on available space
+        function positionDropdown() {
+            const rect = input.getBoundingClientRect();
+            const dropdownHeight = dropdown.offsetHeight || 200; // fallback height
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
 
-                if (btn.classList.contains("increment")) {
-                    if (type === "infant" && counts.infant >= counts.adult) {
-                        alert("Number of infants cannot exceed number of adults.");
-                        return;
-                    }
-                    counts[type]++;
-                } else if (btn.classList.contains("decrement") && counts[type] > 0) {
-                    if (type === "adult" && counts[type] === 1) return; // min 1 adult
-                    if (type === "adult" && counts.infant > counts.adult - 1) {
-                        counts.infant = counts.adult - 1;
-                    }
-                    counts[type]--;
+            if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+                // show above input
+                dropdown.style.top = "auto";
+                dropdown.style.bottom = `${input.offsetHeight + 4}px`;
+            } else {
+                // show below input
+                dropdown.style.top = `${input.offsetHeight + 4}px`;
+                dropdown.style.bottom = "auto";
+            }
+        }
+
+        // Filter options while typing
+        input.addEventListener("input", () => {
+            const filter = input.value.toLowerCase();
+            const otherValue = otherInput ? otherInput.value.trim().toLowerCase() : "";
+
+            options.forEach(option => {
+                const text = option.dataset.value.toLowerCase();
+                if (text.includes(filter) && option.dataset.value.toLowerCase() !== otherValue) {
+                    option.style.display = "";
+                } else {
+                    option.style.display = "none";
                 }
+            });
 
-                // Update form inputs
-                document.getElementById("adultCount").value = counts.adult;
-                document.getElementById("childCount").value = counts.child;
-                document.getElementById("infantCount").value = counts.infant;
+            positionDropdown();
+            dropdown.classList.remove("hidden");
+        });
 
-                updateSummary();
+        // Select option on click
+        options.forEach(option => {
+            option.addEventListener("click", () => {
+                input.value = option.dataset.value;
+                hidden.value = option.dataset.id;
+                dropdown.classList.add("hidden");
+
+                // Hide this option in the other dropdown
+                if (otherDropdown) {
+                    otherDropdown.querySelectorAll(".airport-result").forEach(opt => {
+                        opt.style.display = (opt.dataset.value === input.value) ? "none" : "";
+                    });
+                }
+                
+                // Trigger input validation
+                checkInputs();
             });
         });
 
-        // Update summary text
-        function updateSummary() {
-            let parts = [];
-            if (counts.adult > 0) parts.push(`${counts.adult} Adult${counts.adult > 1 ? "s" : ""}`);
-            if (counts.child > 0) parts.push(`${counts.child} Child${counts.child > 1 ? "ren" : ""}`);
-            if (counts.infant > 0) parts.push(`${counts.infant} Infant${counts.infant > 1 ? "s" : ""}`);
-            passengerSummary.textContent = parts.join(", ");
-        }
-
-        // Done button
-        donePassenger.addEventListener("click", () => {
-            passengerDropdown.classList.add("hidden");
-        });
-
-        // Hide dropdown when clicking outside
+        // Hide dropdown if clicked outside
         document.addEventListener("click", (e) => {
-            if (!passengerBox.contains(e.target) && !passengerDropdown.contains(e.target)) {
-                passengerDropdown.classList.add("hidden");
+            if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add("hidden");
             }
         });
 
-
-    // ===== Dropdown logic function (reusable) =====
-function setupDropdown(inputId, dropdownId, hiddenId, otherInputId, otherDropdownId) {
-    const input = document.getElementById(inputId);
-    const dropdown = document.getElementById(dropdownId);
-    const options = dropdown.querySelectorAll("li");
-    const otherInput = otherInputId ? document.getElementById(otherInputId) : null;
-    const otherDropdown = otherDropdownId ? document.getElementById(otherDropdownId) : null;
-    const hidden = document.getElementById(hiddenId);
-
-    // Show dropdown on focus
-    input.addEventListener("focus", () => {
-        positionDropdown();
-        dropdown.classList.remove("hidden");
-    });
-
-    // Position dropdown based on available space
-    function positionDropdown() {
-        const rect = input.getBoundingClientRect();
-        const dropdownHeight = dropdown.offsetHeight || 200; // fallback height
-        const spaceBelow = window.innerHeight - rect.bottom;
-        const spaceAbove = rect.top;
-
-        if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
-            // show above input
-            dropdown.style.top = "auto";
-            dropdown.style.bottom = `${input.offsetHeight + 4}px`;
-        } else {
-            // show below input
-            dropdown.style.top = `${input.offsetHeight + 4}px`;
-            dropdown.style.bottom = "auto";
-        }
+        // Reposition dropdown on window resize/scroll
+        window.addEventListener("resize", positionDropdown);
+        window.addEventListener("scroll", positionDropdown, true);
     }
-
-    // Filter options while typing
-    input.addEventListener("input", () => {
-        const filter = input.value.toLowerCase();
-        const otherValue = otherInput ? otherInput.value.trim().toLowerCase() : "";
-
-        options.forEach(option => {
-            const text = option.textContent.toLowerCase();
-            if (text.includes(filter) && option.dataset.value.toLowerCase() !== otherValue) {
-                option.style.display = "";
-            } else {
-                option.style.display = "none";
-            }
-        });
-
-        positionDropdown();
-        dropdown.classList.remove("hidden");
-    });
-
-    // Select option on click
-    options.forEach(option => {
-        option.addEventListener("click", () => {
-            input.value = option.dataset.value;
-            hidden.value = option.dataset.id;
-            dropdown.classList.add("hidden");
-
-            // Hide this option in the other dropdown
-            if (otherDropdown) {
-                otherDropdown.querySelectorAll("li").forEach(opt => {
-                    opt.style.display = (opt.dataset.value === input.value) ? "none" : "";
-                });
-            }
-        });
-    });
-
-    // Hide dropdown if clicked outside
-    document.addEventListener("click", (e) => {
-        if (!input.contains(e.target) && !dropdown.contains(e.target)) {
-            dropdown.classList.add("hidden");
-        }
-    });
-
-    // Reposition dropdown on window resize/scroll
-    window.addEventListener("resize", positionDropdown);
-    window.addEventListener("scroll", positionDropdown, true);
-}
-
 
     // Apply to From + To (cross check)
     setupDropdown("fromInput", "fromDropdown", "fromHidden", "toInput", "toDropdown");
     setupDropdown("toInput", "toDropdown", "toHidden","fromInput", "fromDropdown");
 
+    // Input validation
     const searchBtn = document.getElementById('searchBtn');
-const fromInput = document.getElementById('fromInput');
-const toInput = document.getElementById('toInput');
-const departureInput = document.querySelector('input[name="departure_date"]');
-const returnInput = document.querySelector('input[name="return_date"]');
-const tripRadios = document.querySelectorAll('input[name="trip_type"]');
+    const fromInput = document.getElementById('fromInput');
+    const toInput = document.getElementById('toInput');
+    const departureInput = document.getElementById('departure_date');
+    const returnInput = document.getElementById('return_date');
 
-function checkInputs() {
-    const tripType = document.querySelector('input[name="trip_type"]:checked').value;
+    function checkInputs() {
+        const tripType = document.getElementById('trip_type').value;
 
-    // Required fields for One-way
-    let valid = fromInput.value.trim() !== '' &&
-                toInput.value.trim() !== '' &&
-                departureInput.value.trim() !== '';
+        // Required fields for One-way
+        let valid = fromInput.value.trim() !== '' &&
+                    toInput.value.trim() !== '' &&
+                    departureInput.value.trim() !== '';
 
-    // If round-trip, also require return date
-    if (tripType === 'round_trip') {
-        valid = valid && returnInput.value.trim() !== '';
-    }
+        // If round-trip, also require return date
+        if (tripType === 'round_trip') {
+            valid = valid && returnInput.value.trim() !== '';
+        }
 
-    searchBtn.disabled = !valid;
+        searchBtn.disabled = !valid;
 
-    // Optional: visually indicate disabled
-    if (!valid) {
-        searchBtn.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
-        searchBtn.classList.remove('hover:bg-[#1f5ed6]', 'hover:-translate-y-1');
-    } else {
-        searchBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
-        searchBtn.classList.add('hover:bg-[#1f5ed6]', 'hover:-translate-y-1');
-    }
-}
-
-// Listen to changes
-[fromInput, toInput, departureInput, returnInput].forEach(input => {
-    input.addEventListener('input', checkInputs);
-});
-
-// Listen to trip type changes
-tripRadios.forEach(radio => {
-    radio.addEventListener('change', () => {
-        // Show/hide return field
-        if (radio.value === 'round_trip') {
-            returnField.style.display = 'flex';
+        // Optional: visually indicate disabled
+        if (!valid) {
+            searchBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            searchBtn.classList.remove('hover:bg-[#093704]/80');
         } else {
-            returnField.style.display = 'none';
-            returnInput.value = ''; // reset return input
+            searchBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            searchBtn.classList.add('hover:bg-[#093704]/80');
+        }
+    }
+
+    // Listen to changes
+    [fromInput, toInput, departureInput, returnInput].forEach(input => {
+        input.addEventListener('input', checkInputs);
+        input.addEventListener('change', checkInputs);
+    });
+
+    // Set minimum return date when depart date is selected
+    departureInput.addEventListener('change', function() {
+        const departDate = this.value;
+        returnInput.min = departDate;
+        if (returnInput.value && returnInput.value < departDate) {
+            returnInput.value = departDate;
         }
         checkInputs();
     });
-});
 
-// Initial check
-checkInputs();
-
+    // Initial check
+    checkInputs();
 });
 </script>
 
+<style>
+.searchable-select {
+  position: relative;
+}
 
+#fromDropdown,
+#toDropdown {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f7fafc;
+}
+
+#fromDropdown::-webkit-scrollbar,
+#toDropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+#fromDropdown::-webkit-scrollbar-track,
+#toDropdown::-webkit-scrollbar-track {
+  background: #f7fafc;
+}
+
+#fromDropdown::-webkit-scrollbar-thumb,
+#toDropdown::-webkit-scrollbar-thumb {
+  background-color: #cbd5e0;
+  border-radius: 3px;
+}
+
+.passenger-display {
+  display: flex;
+  gap: 4px;
+}
+
+.passenger-item {
+  white-space: nowrap;
+}
+
+.passenger-plus, .passenger-minus {
+  transition: background-color 0.2s;
+}
+
+.passenger-plus:hover, .passenger-minus:hover {
+  background-color: #e5e7eb;
+}
+</style>
 {% endblock %}
-

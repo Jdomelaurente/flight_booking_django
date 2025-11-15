@@ -1,65 +1,184 @@
-{% extends 'booking/base.html' %}
+{% extends 'ui_test/base.html' %}
+{% load static %}
+
 {% block title %}Review Selected Flights{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8 mt-20">
-    <h1 class="text-2xl font-bold mb-6">Review Your Selected Flights</h1>
-    
-    <!-- Departure Flight -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2 class="text-xl font-semibold mb-4">Departure Flight</h2>
-        {% if depart_schedule %}
-        <div class="flex justify-between items-center">
-            <div>
-                <p class="font-semibold">{{ depart_schedule.flight.route.origin_airport.code }} → {{ depart_schedule.flight.route.destination_airport.code }}</p>
-                <p class="text-gray-600">{{ depart_schedule.departure_time|date:"M d, Y H:i" }}</p>
-                <p class="text-sm">Flight: {{ depart_schedule.flight.flight_number }}</p>
-                <p class="text-sm">Airline: {{ depart_schedule.flight.airline.name }}</p>
+
+<div class="w-full px-30 mt-10">
+    <div class="w-full border rounded-xl h-auto bg-[#FFFCF5] py-5 px-7 space-y-3 border-gray-500">
+        <div class="flex justify-between items-end">
+            <h1 class="text-2xl font-semibold text-gray-700">Flight Details</h1>
+            <p class="text-sm text-gray-400">Check your selected flight</p>
+        </div>
+
+        <!-- Departure Flight -->
+        <div class="w-full shadow-md/20 bg-white rounded-sm">
+            <div class="w-full bg-[#093704] py-3 px-4 text-[#FFC83D]">
+                <h1>
+                    {{ depart_schedule.flight.route.origin_airport.code }} to {{ depart_schedule.flight.route.destination_airport.code }} - 
+                    {{ depart_schedule.departure_time|date:"l, d F Y" }}
+                </h1>
             </div>
-            <div class="text-right">
-                <p class="text-lg font-bold text-green-700">PHP {{ depart_schedule.price|floatformat:2 }}</p>
+
+            <div class="flex gap-2 py-5 px-10">
+                <div class="flex-1 flex justify-around my-5">
+                    <div class="flex flex-col text-sm leading-none">
+                        <p class="text-base leading-none">{{ depart_schedule.departure_time|date:"H:i" }}</p>
+                        <p>{{ depart_schedule.flight.route.origin_airport.code }}</p>
+                        <p class="text-[9px] text-gray-500">{{ depart_schedule.flight.route.origin_airport.name }}</p>
+                        <p class="text-[9px] text-gray-500">Terminal 2</p>
+                    </div>
+                    <div class="text-sm flex flex-col items-center">
+                        <span>==Non-stop==</span>
+                        <span class="text-xs text-gray-500">{{ depart_schedule.duration }}</span>
+                    </div>
+                    <div class="flex flex-col text-sm leading-none">
+                        <p class="text-base leading-none">{{ depart_schedule.arrival_time|date:"H:i" }}</p>
+                        <p>{{ depart_schedule.flight.route.destination_airport.code }}</p>
+                        <p class="text-[9px] text-gray-500">{{ depart_schedule.flight.route.destination_airport.name }}</p>
+                        <p class="text-[9px] text-gray-500">Terminal 2</p>
+                    </div>
+                </div>
+                <div class="flex justify-around px-10 gap-4 items-center w-full max-w-[400px] border-l border-l-gray-400">
+                    <div class="flex flex-col items-center">
+                        <p class="text-sm font-semibold">PHP {{ depart_schedule.price|floatformat:2 }}</p>
+                        <p class="text-xs text-gray-500">Departure</p>
+                    </div>
+                    <div class="flex flex-col gap-2 w-full">
+                        <button class="bg-[#093704] hover:bg-[#093704]/80 cursor-pointer rounded-xs w-full py-2 text-[#FFC83D] text-sm">
+                            Flight Details
+                        </button>
+                        <button class="bg-[#093704] hover:bg-[#093704]/80 cursor-pointer rounded-xs w-full py-2 text-[#FFC83D] text-sm">
+                            Bundle
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Flight Information -->
+            <div class="px-10 pb-4 text-xs text-gray-600">
+                <p><strong>Flight:</strong> {{ depart_schedule.flight.flight_number }} | 
+                   <strong>Airline:</strong> {{ depart_schedule.flight.airline.name }} | 
+                   <strong>Aircraft:</strong> {{ depart_schedule.flight.aircraft.model }}
+                </p>
             </div>
         </div>
-        {% else %}
-        <p class="text-red-500">No departure flight selected.</p>
+
+        <!-- Return Flight (if round trip) -->
+        {% if return_schedule %}
+        <div class="w-full shadow-md/20 bg-white rounded-sm">
+            <div class="w-full bg-[#093704] py-3 px-4 text-[#FFC83D]">
+                <h1>
+                    {{ return_schedule.flight.route.origin_airport.code }} to {{ return_schedule.flight.route.destination_airport.code }} - 
+                    {{ return_schedule.departure_time|date:"l, d F Y" }}
+                </h1>
+            </div>
+
+            <div class="flex gap-2 py-5 px-10">
+                <div class="flex-1 flex justify-around my-5">
+                    <div class="flex flex-col text-sm leading-none">
+                        <p class="text-base leading-none">{{ return_schedule.departure_time|date:"H:i" }}</p>
+                        <p>{{ return_schedule.flight.route.origin_airport.code }}</p>
+                        <p class="text-[9px] text-gray-500">{{ return_schedule.flight.route.origin_airport.name }}</p>
+                        <p class="text-[9px] text-gray-500">Terminal 2</p>
+                    </div>
+                    <div class="text-sm flex flex-col items-center">
+                        <span>==Non-stop==</span>
+                        <span class="text-xs text-gray-500">{{ return_schedule.duration }}</span>
+                    </div>
+                    <div class="flex flex-col text-sm leading-none">
+                        <p class="text-base leading-none">{{ return_schedule.arrival_time|date:"H:i" }}</p>
+                        <p>{{ return_schedule.flight.route.destination_airport.code }}</p>
+                        <p class="text-[9px] text-gray-500">{{ return_schedule.flight.route.destination_airport.name }}</p>
+                        <p class="text-[9px] text-gray-500">Terminal 2</p>
+                    </div>
+                </div>
+                <div class="flex justify-around px-10 gap-4 items-center w-full max-w-[400px] border-l border-l-gray-400">
+                    <div class="flex flex-col items-center">
+                        <p class="text-sm font-semibold">PHP {{ return_schedule.price|floatformat:2 }}</p>
+                        <p class="text-xs text-gray-500">Return</p>
+                    </div>
+                    <div class="flex flex-col gap-2 w-full">
+                        <button class="bg-[#093704] hover:bg-[#093704]/80 cursor-pointer rounded-xs w-full py-2 text-[#FFC83D] text-sm">
+                            Flight Details
+                        </button>
+                        <button class="bg-[#093704] hover:bg-[#093704]/80 cursor-pointer rounded-xs w-full py-2 text-[#FFC83D] text-sm">
+                            Bundle
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Flight Information -->
+            <div class="px-10 pb-4 text-xs text-gray-600">
+                <p><strong>Flight:</strong> {{ return_schedule.flight.flight_number }} | 
+                   <strong>Airline:</strong> {{ return_schedule.flight.airline.name }} | 
+                   <strong>Aircraft:</strong> {{ return_schedule.flight.aircraft.model }}
+                </p>
+            </div>
+        </div>
         {% endif %}
-    </div>
 
-    <!-- Return Flight (if round trip) -->
-    {% if return_schedule %}
-    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2 class="text-xl font-semibold mb-4">Return Flight</h2>
-        <div class="flex justify-between items-center">
-            <div>
-                <p class="font-semibold">{{ return_schedule.flight.route.origin_airport.code }} → {{ return_schedule.flight.route.destination_airport.code }}</p>
-                <p class="text-gray-600">{{ return_schedule.departure_time|date:"M d, Y H:i" }}</p>
-                <p class="text-sm">Flight: {{ return_schedule.flight.flight_number }}</p>
-                <p class="text-sm">Airline: {{ return_schedule.flight.airline.name }}</p>
+        <!-- No Flight Selected Warning -->
+        {% if not depart_schedule %}
+        <div class="w-full shadow-md/20 bg-white rounded-sm p-6 text-center">
+            <p class="text-red-500 text-lg">No departure flight selected.</p>
+            <p class="text-gray-600 mt-2">Please go back and select a flight.</p>
+        </div>
+        {% endif %}
+
+        <div class="w-full flex justify-between mt-15">
+            <!-- left -->
+            <div class="flex flex-col gap-2 text-xs text-green-700">
+                <a href="#" class="underline">Fare Rules, Cancellation and Refund policy</a>
+                <a href="#" class="underline">Dangerous goods policy</a>
+                <a href="#" class="underline">Detailed baggage policy</a>
             </div>
-            <div class="text-right">
-                <p class="text-lg font-bold text-green-700">PHP {{ return_schedule.price|floatformat:2 }}</p>
+            <!-- right -->
+            <div class="flex flex-col gap-2 text-xs items-end">
+                <div class="flex text-2xl items-end gap-2">
+                    <p class="text-base text-gray-400">Total price:</p> 
+                    <strong>
+                        PHP 
+                        {% if depart_schedule and return_schedule %}
+                            {{ depart_schedule.price|add:return_schedule.price|floatformat:2 }}
+                        {% elif depart_schedule %}
+                            {{ depart_schedule.price|floatformat:2 }}
+                        {% else %}
+                            0.00
+                        {% endif %}
+                    </strong>
+                </div>
+                <p>(including taxes, fees and discounts)</p>
+                <a href="#" class="underline text-green-700">See price details</a>
             </div>
         </div>
-    </div>
-    {% endif %}
 
-    <!-- Action Buttons -->
-    <div class="flex justify-between mt-8">
-        <a href="{% url 'bookingapp:flight_schedules' %}" 
-           class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">
-            Back to Flights
-        </a>
-        
-        <form method="POST" action="{% url 'bookingapp:confirm_schedule' %}">
-            {% csrf_token %}
-            <input type="hidden" name="depart_schedule" value="{{ depart_schedule.id }}">
-            {% if return_schedule %}
-            <input type="hidden" name="return_schedule" value="{{ return_schedule.id }}">
-            {% endif %}
-            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg">
-                Confirm Selection
+        <div class="w-full flex justify-between text-xs">
+            <a href="{% url 'bookingapp:flight_schedules' %}" 
+               class="px-10 py-3 cursor-pointer rounded-xs text-black hover:bg-gray-100 bg-white border">
+                Back to Flights
+            </a>
+            
+            {% if depart_schedule %}
+            <form method="POST" action="{% url 'bookingapp:confirm_schedule' %}" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="depart_schedule" value="{{ depart_schedule.id }}">
+                {% if return_schedule %}
+                <input type="hidden" name="return_schedule" value="{{ return_schedule.id }}">
+                {% endif %}
+                <button type="submit" class="py-3 px-5 cursor-pointer rounded-xs bg-[#FFC83D] hover:bg-[#FFC83D]/80">
+                    Fill passengers details
+                </button>
+            </form>
+            {% else %}
+            <button disabled class="py-3 px-5 cursor-not-allowed rounded-xs bg-gray-300 text-gray-500">
+                Fill passengers details
             </button>
-        </form>
+            {% endif %}
+        </div>
     </div>
 </div>
+
 {% endblock %}

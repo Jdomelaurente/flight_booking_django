@@ -11,25 +11,43 @@
     {% endif %}
 
     <main class=" mx-auto flex-1  flex justify-center w-full  max-w-[1500px] my-7 space-y-5 flex-col ">
+        
+        <!-- Context-aware messaging -->
+        {% if from_addons %}
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 mx-auto max-w-[1100px]">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 text-blue-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                    <h3 class="font-semibold text-blue-800">Seat Selection Add-on</h3>
+                    <p class="text-blue-700 text-sm mt-1">
+                        You're selecting seats as part of your add-ons. After seat selection, you'll proceed to the booking summary.
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="flex-1 mx-auto max-w-[1200px] px-8 bg-[#ECEAEA] flex  shadow-md/50  py-4 h-[82px]  w-5xl rounded-full justify-between items-center">
 
             <!-- from -->
             <div class="flex items-center justify-center flex-1 gap-3  ">
                 <div class=" flex-1 flex flex-col justify-center  ">
-                    <p class="poppins-bold first-of-type: text-base leading-none ">MNL</p>
-                    <p class="text-[#828282] text-xs">Manila</p>
+                    <p class="poppins-bold first-of-type: text-base leading-none ">{{ depart_schedule.flight.route.origin_airport.code }}</p>
+                    <p class="text-[#828282] text-xs">{{ depart_schedule.flight.route.origin_airport.city }}</p>
                 </div>
                 <div class="border-2 h-0 w-10"></div>
                 <div class="  flex flex-col justify-center ">
-                    <p class="poppins-bold   text-base leading-none ">BXU</p>
-                    <p class="text-[#828282] text-xs">Butuan City</p>
+                    <p class="poppins-bold   text-base leading-none ">{{ depart_schedule.flight.route.destination_airport.code }}</p>
+                    <p class="text-[#828282] text-xs">{{ depart_schedule.flight.route.destination_airport.city }}</p>
                 </div>
             </div>
 
             <!-- depart -->
             <div class="flex items-center leading-none  justify-center   flex-1">
                 <div class="  flex flex-col justify-center ">
-                    <p class="poppins-bold text-base leading-none">15 May 2025</p>
+                    <p class="poppins-bold text-base leading-none">{{ depart_schedule.departure_time|date:"d M Y" }}</p>
                     <p class="text-[#828282] text-xs">Depart</p>
                 </div>
 
@@ -37,7 +55,13 @@
             <!-- return -->
             <div class="flex items-center leading-none  justify-center   flex-1">
                 <div class="  flex flex-col justify-center ">
-                    <p class="poppins-bold text-base leading-none ">30 May 2025</p>
+                    <p class="poppins-bold text-base leading-none ">
+                        {% if return_schedule %}
+                            {{ return_schedule.departure_time|date:"d M Y" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </p>
                     <p class="text-[#828282] text-xs">Return</p>
                 </div>
             </div>    
@@ -46,12 +70,16 @@
             <!-- passenger -->
            <div class="flex items-center leading-none  justify-center   flex-1">
                 <div class="  flex flex-col justify-center ">
-                    <p class="poppins-bold text-base leading-none">1 Adult</p>
-                    <p class="text-[#828282] text-xs">Passenger</p>
+                    <p class="poppins-bold text-base leading-none">
+                        {% with adults=passengers|length %}
+                            {{ adults }} Passenger{{ adults|pluralize }}
+                        {% endwith %}
+                    </p>
+                    <p class="text-[#828282] text-xs">Passenger{{ passengers|length|pluralize }}</p>
                 </div>
             </div>
             <div class="flex items-center leading-none  flex-1">
-                <button class="bg-[#2975F7] hover:bg-[#2975F7]/80 text-sm cursor-pointer py-2 px-10 rounded-full text-white">Edit search</button>
+                <a href="{% url 'bookingapp:flight_schedules' %}" class="bg-[#2975F7] hover:bg-[#2975F7]/80 text-sm cursor-pointer py-2 px-10 rounded-full text-white">Edit search</a>
             </div>
         </div>
 
@@ -385,12 +413,42 @@
                 {% endif %}
                 
                 
-              <div class="flex justify-end continue-button ">
-                    <form action="{% url 'bookingapp:booking_summary' %}" method="POST">
-                        {% csrf_token %}
-                    <button type="submit"  id="continueBtn"
-                     class="bg-[#F4EB08] hover:bg-[#c5c02e]/90 py-2 px-20 rounded-full shadow-md/50 cursor-pointer"  > Continue </button>
-                    </form>
+                <!-- Updated Navigation Buttons -->
+                <div class="flex justify-between items-center continue-button mt-8">
+                    <div>
+                        {% if from_addons %}
+                        <a href="{% url 'bookingapp:add_ons' %}" 
+                           class="bg-white hover:bg-gray-100 border border-gray-500 py-2 px-8 rounded-full shadow-md/50 cursor-pointer text-gray-700">
+                            ← Back to Add-ons
+                        </a>
+                        {% else %}
+                        <a href="{% url 'bookingapp:add_ons' %}" 
+                           class="bg-white hover:bg-gray-100 border border-gray-500 py-2 px-8 rounded-full shadow-md/50 cursor-pointer text-gray-700">
+                            ← Back to Add-ons
+                        </a>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="flex gap-4">
+                        {% if not from_addons %}
+                        <a href="{% url 'bookingapp:booking_summary' %}?skip_seats=true" 
+                           class="bg-gray-500 hover:bg-gray-600 py-2 px-8 rounded-full shadow-md/50 cursor-pointer text-white">
+                            Skip Seats
+                        </a>
+                        {% endif %}
+                        
+                        <form action="{% url 'bookingapp:booking_summary' %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" id="continueBtn"
+                                    class="bg-[#F4EB08] hover:bg-[#c5c02e]/90 py-2 px-12 rounded-full shadow-md/50 cursor-pointer font-semibold">
+                                {% if from_addons %}
+                                Continue to Summary
+                                {% else %}
+                                Continue to Add-ons
+                                {% endif %}
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
             </div>
@@ -669,6 +727,13 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById('debugActiveTrip').textContent = trip;
         originalSelectPassenger(passengerId, trip);
     };
+
+    // Handle context from add-ons
+    const fromAddons = {{ from_addons|yesno:"true,false" }};
+    if (fromAddons) {
+        console.log("Seat selection accessed from add-ons page");
+        // You can add specific logic for add-ons context here
+    }
 
     // Auto-select first passenger
     const firstPassenger = document.querySelector(".passenger-item[data-trip='depart']");

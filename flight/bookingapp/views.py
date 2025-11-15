@@ -1,8 +1,9 @@
 from django.shortcuts import render,redirect
 from django.http import HttpResponse
+from django.urls import reverse
 from django.template import loader
 from datetime import datetime
-from flightapp.models import Schedule, Route,  Airport,Seat, PassengerInfo
+from flightapp.models import Schedule, Route,  Airport,Seat, PassengerInfo, Flight, Airline
 from flightapp.models import Booking, BookingDetail, Payment, PassengerInfo, Student,AddOn, SeatClass
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -338,10 +339,6 @@ def home(request):
     print(f"GET params - activity_id: {request.GET.get('activity_id')}, activity_code: {request.GET.get('activity_code')}")
     print(f"Practice mode: {request.session.get('is_practice_booking')}")
 
-
-    
-
-    
     # Check for activity code from modal OR activity_id from URL
     activity_code = request.GET.get('activity_code')
     activity_id = request.GET.get('activity_id')
@@ -971,6 +968,414 @@ def add_ons(request):
         messages.error(request, "Error loading add-ons.")
         return redirect('bookingapp:passenger_information')
 
+# Add these new views to your existing views.py file
+@login_required
+def baggage_addon(request):
+    """Page specifically for baggage add-ons"""
+    print(f"=== BAGGAGE_ADDON DEBUG ===")
+    print(f"GET parameters: {request.GET}")
+    
+    airline_id = request.GET.get('airline_id')
+    schedule_id = request.GET.get('schedule_id')
+    return_schedule_id = request.GET.get('return_schedule_id')
+    
+    print(f"Airline ID: {airline_id}")
+    print(f"Schedule ID: {schedule_id}")
+    print(f"Return Schedule ID: {return_schedule_id}")
+    
+    try:
+        # Get airline
+        airline = None
+        if airline_id:
+            try:
+                airline = Airline.objects.get(id=airline_id)
+                print(f"Found airline: {airline.name}")
+            except Airline.DoesNotExist:
+                print(f"Airline not found with ID: {airline_id}")
+                messages.error(request, "Airline not found.")
+                return redirect('bookingapp:add_ons')
+        
+        # Get schedules
+        schedule = None
+        if schedule_id:
+            try:
+                schedule = Schedule.objects.get(id=schedule_id)
+                print(f"Found schedule: {schedule.flight.flight_number}")
+            except Schedule.DoesNotExist:
+                print(f"Schedule not found with ID: {schedule_id}")
+                messages.error(request, "Schedule not found.")
+                return redirect('bookingapp:add_ons')
+        
+        return_schedule = None
+        if return_schedule_id:
+            try:
+                return_schedule = Schedule.objects.get(id=return_schedule_id)
+                print(f"Found return schedule: {return_schedule.flight.flight_number}")
+            except Schedule.DoesNotExist:
+                print(f"Return schedule not found with ID: {return_schedule_id}")
+                # Don't redirect for return schedule - it might be optional
+        
+        # Get passengers from session
+        passengers = request.session.get('passengers', [])
+        print(f"Passengers in session: {len(passengers)}")
+        
+        if not passengers:
+            messages.error(request, "Please enter passenger information first.")
+            return redirect('bookingapp:passenger_information')
+        
+        # Get baggage-specific add-ons
+        baggage_addons = AddOn.objects.filter(
+            airline=airline,
+            type__name__icontains='baggage',
+            included=False
+        ).select_related('type').order_by('price')
+        
+        print(f"Found {baggage_addons.count()} baggage add-ons")
+        
+        # Get previously selected add-ons from session
+        selected_addons = request.session.get('selected_addons', {})
+        print(f"Selected add-ons: {selected_addons}")
+        
+        # Prepare passenger data with their selected add-ons
+        passenger_data = []
+        for passenger in passengers:
+            passenger_id = str(passenger['id'])
+            passenger_addons = selected_addons.get(passenger_id, [])
+            
+            # Get addon objects for this passenger
+            addon_objects = []
+            for addon_id in passenger_addons:
+                try:
+                    addon = AddOn.objects.get(id=addon_id)
+                    addon_objects.append(addon)
+                except AddOn.DoesNotExist:
+                    continue
+            
+            passenger_data.append({
+                'id': passenger_id,
+                'first_name': passenger['first_name'],
+                'last_name': passenger['last_name'],
+                'passenger_type': passenger['passenger_type'],
+                'selected_addons': addon_objects
+            })
+        
+        context = {
+            'addons': baggage_addons,
+            'airline': airline,
+            'schedule': schedule,
+            'return_schedule': return_schedule,
+            'passengers': passenger_data,  # Use processed passenger data
+            'selected_addons': selected_addons,
+            'addon_type': 'Baggage',
+            'depart_schedule': schedule,
+        }
+        
+        return render(request, 'booking/addons/baggage.html', context)
+        
+    except Exception as e:
+        print(f"Error loading baggage options: {e}")
+        import traceback
+        traceback.print_exc()
+        messages.error(request, "Error loading baggage options.")
+        return redirect('bookingapp:add_ons')
+
+@login_required
+def meals_addon(request):
+    """Page specifically for meal add-ons"""
+    airline_id = request.GET.get('airline_id')
+    schedule_id = request.GET.get('schedule_id')
+    return_schedule_id = request.GET.get('return_schedule_id')
+    
+    try:
+        airline = Airline.objects.get(id=airline_id) if airline_id else None
+        schedule = Schedule.objects.get(id=schedule_id) if schedule_id else None
+        return_schedule = Schedule.objects.filter(id=return_schedule_id).first() if return_schedule_id else None
+        
+        # Get passengers from session
+        passengers = request.session.get('passengers', [])
+        
+        # Get meal-specific add-ons
+        meal_addons = AddOn.objects.filter(
+            airline=airline,
+            type__name__icontains='meal',
+            included=False
+        )
+        
+        # Get previously selected add-ons from session
+        selected_addons = request.session.get('selected_addons', {})
+        
+        context = {
+            'addons': meal_addons,
+            'airline': airline,
+            'schedule': schedule,
+            'return_schedule': return_schedule,
+            'passengers': passengers,
+            'selected_addons': selected_addons,
+            'addon_type': 'Meals',
+            'depart_schedule': schedule,  # For template compatibility
+        }
+        return render(request, 'booking/addons/meals.html', context)
+        
+    except Exception as e:
+        print(f"Error loading meal options: {e}")
+        messages.error(request, "Error loading meal options.")
+        return redirect('bookingapp:add_ons')
+
+@login_required
+def seat_selection_addon(request):
+    """Redirect to main seat selection page"""
+    airline_id = request.GET.get('airline_id')
+    schedule_id = request.GET.get('schedule_id')
+    return_schedule_id = request.GET.get('return_schedule_id')
+    
+    redirect_url = f"{reverse('bookingapp:select_seat')}?from_addons=true&airline_id={airline_id}&schedule_id={schedule_id}"
+    if return_schedule_id:
+        redirect_url += f"&return_schedule_id={return_schedule_id}"
+        
+    return redirect(redirect_url)
+
+@login_required
+def lounge_addon(request):
+    """Page specifically for lounge access add-ons"""
+    airline_id = request.GET.get('airline_id')
+    schedule_id = request.GET.get('schedule_id')
+    return_schedule_id = request.GET.get('return_schedule_id')
+    
+    try:
+        airline = Airline.objects.get(id=airline_id) if airline_id else None
+        schedule = Schedule.objects.get(id=schedule_id) if schedule_id else None
+        return_schedule = Schedule.objects.filter(id=return_schedule_id).first() if return_schedule_id else None
+        
+        # Get passengers from session
+        passengers = request.session.get('passengers', [])
+        
+        # Get lounge access add-ons
+        lounge_addons = AddOn.objects.filter(
+            airline=airline,
+            type__name__icontains='lounge',
+            included=False
+        )
+        
+        # Get previously selected add-ons from session
+        selected_addons = request.session.get('selected_addons', {})
+        
+        context = {
+            'addons': lounge_addons,
+            'airline': airline,
+            'schedule': schedule,
+            'return_schedule': return_schedule,
+            'passengers': passengers,
+            'selected_addons': selected_addons,
+            'addon_type': 'Lounge Access',
+            'depart_schedule': schedule,  # For template compatibility
+        }
+        return render(request, 'booking/addons/lounge.html', context)
+        
+    except Exception as e:
+        print(f"Error loading lounge options: {e}")
+        messages.error(request, "Error loading lounge options.")
+        return redirect('bookingapp:add_ons')
+
+@login_required
+def insurance_addon(request):
+    """Page specifically for travel insurance"""
+    airline_id = request.GET.get('airline_id')
+    schedule_id = request.GET.get('schedule_id')
+    return_schedule_id = request.GET.get('return_schedule_id')
+    
+    try:
+        airline = Airline.objects.get(id=airline_id) if airline_id else None
+        schedule = Schedule.objects.get(id=schedule_id) if schedule_id else None
+        return_schedule = Schedule.objects.filter(id=return_schedule_id).first() if return_schedule_id else None
+        
+        # Get passengers from session
+        passengers = request.session.get('passengers', [])
+        
+        # Get insurance add-ons
+        insurance_addons = AddOn.objects.filter(
+            airline=airline,
+            type__name__icontains='insurance',
+            included=False
+        )
+        
+        # Get previously selected add-ons from session
+        selected_addons = request.session.get('selected_addons', {})
+        
+        context = {
+            'addons': insurance_addons,
+            'airline': airline,
+            'schedule': schedule,
+            'return_schedule': return_schedule,
+            'passengers': passengers,
+            'selected_addons': selected_addons,
+            'addon_type': 'Travel Insurance',
+            'depart_schedule': schedule,  # For template compatibility
+        }
+        return render(request, 'booking/addons/insurance.html', context)
+        
+    except Exception as e:
+        print(f"Error loading insurance options: {e}")
+        messages.error(request, "Error loading insurance options.")
+        return redirect('bookingapp:add_ons')
+@login_required
+def wheelchair_addon(request):
+    """Page specifically for wheelchair service add-ons"""
+    airline_id = request.GET.get('airline_id')
+    schedule_id = request.GET.get('schedule_id')
+    return_schedule_id = request.GET.get('return_schedule_id')
+    
+    try:
+        airline = Airline.objects.get(id=airline_id) if airline_id else None
+        schedule = Schedule.objects.get(id=schedule_id) if schedule_id else None
+        return_schedule = Schedule.objects.filter(id=return_schedule_id).first() if return_schedule_id else None
+        
+        # Get passengers from session
+        passengers = request.session.get('passengers', [])
+        
+        # Get wheelchair service add-ons
+        wheelchair_addons = AddOn.objects.filter(
+            airline=airline,
+            type__name__icontains='wheelchair',
+            included=False
+        )
+        
+        # Get previously selected add-ons from session
+        selected_addons = request.session.get('selected_addons', {})
+        
+        context = {
+            'addons': wheelchair_addons,
+            'airline': airline,
+            'schedule': schedule,
+            'return_schedule': return_schedule,
+            'passengers': passengers,
+            'selected_addons': selected_addons,
+            'addon_type': 'Wheelchair Service',
+            'depart_schedule': schedule,
+        }
+        return render(request, 'booking/addons/wheelchair.html', context)
+        
+    except Exception as e:
+        print(f"Error loading wheelchair options: {e}")
+        messages.error(request, "Error loading wheelchair service options.")
+        return redirect('bookingapp:add_ons')    
+
+@login_required
+def quick_addons(request):
+    """Quick selection page for all add-ons"""
+    airline_id = request.GET.get('airline_id')
+    schedule_id = request.GET.get('schedule_id')
+    return_schedule_id = request.GET.get('return_schedule_id')
+    
+    try:
+        airline = Airline.objects.get(id=airline_id) if airline_id else None
+        schedule = Schedule.objects.get(id=schedule_id) if schedule_id else None
+        return_schedule = Schedule.objects.filter(id=return_schedule_id).first() if return_schedule_id else None
+        
+        # Get passengers from session
+        passengers = request.session.get('passengers', [])
+        
+        # Get all available add-ons for this airline
+        available_addons = AddOn.objects.filter(
+            airline=airline,
+            included=False
+        ).select_related('type').order_by('type__name', 'name')
+        
+        # Group add-ons by type for better organization
+        addons_by_type = {}
+        for addon in available_addons:
+            type_name = addon.type.name if addon.type else "Other"
+            if type_name not in addons_by_type:
+                addons_by_type[type_name] = []
+            addons_by_type[type_name].append(addon)
+        
+        # Get previously selected add-ons from session
+        selected_addons = request.session.get('selected_addons', {})
+        
+        context = {
+            'depart_schedule': schedule,
+            'return_schedule': return_schedule,
+            'passengers': passengers,
+            'addons_by_type': addons_by_type,
+            'selected_addons': selected_addons,
+            'airline': airline,
+        }
+        return render(request, 'booking/addons/quick_selection.html', context)
+        
+    except Exception as e:
+        print(f"Error loading quick add-ons: {e}")
+        messages.error(request, "Error loading add-ons.")
+        return redirect('bookingapp:add_ons')
+
+@login_required
+def save_single_addon(request):
+    """Save add-on selections from individual add-on pages - handles both selection and deselection"""
+    if request.method != 'POST':
+        return redirect('bookingapp:add_ons')
+    
+    try:
+        passengers = request.session.get('passengers', [])
+        selected_addons = request.session.get('selected_addons', {})
+        
+        # Process add-on selections for each passenger
+        for passenger in passengers:
+            passenger_id = str(passenger['id'])
+            
+            # Get selected add-ons for this passenger from the form
+            # This will be an empty list if nothing is checked
+            passenger_addons = request.POST.getlist(f'addons_{passenger_id}')
+            
+            # Update the selected add-ons for this passenger
+            # This REPLACES the entire list, so unchecked items are removed
+            selected_addons[passenger_id] = passenger_addons
+        
+        # Save to session
+        request.session['selected_addons'] = selected_addons
+        request.session.modified = True
+        
+        print(f"=== SAVED SINGLE ADD-ON DEBUG ===")
+        print(f"Selected add-ons after save: {selected_addons}")
+        
+        messages.success(request, "Baggage selections updated successfully!")
+        
+        # Redirect back to the baggage page with the same parameters
+        airline_id = request.POST.get('airline_id')
+        schedule_id = request.POST.get('schedule_id')
+        return_schedule_id = request.POST.get('return_schedule_id')
+        
+        redirect_url = f"{reverse('bookingapp:baggage_addon')}?airline_id={airline_id}&schedule_id={schedule_id}"
+        if return_schedule_id:
+            redirect_url += f"&return_schedule_id={return_schedule_id}"
+            
+        return redirect(redirect_url)
+        
+    except Exception as e:
+        print(f"Error saving add-ons: {e}")
+        messages.error(request, "Error saving baggage selections.")
+        return redirect('bookingapp:add_ons')
+
+@login_required
+def remove_addon(request):
+    """Remove a specific add-on from a passenger"""
+    if request.method == 'POST':
+        try:
+            passenger_id = request.POST.get('passenger_id')
+            addon_id = request.POST.get('addon_id')
+            
+            selected_addons = request.session.get('selected_addons', {})
+            
+            if passenger_id in selected_addons and addon_id in selected_addons[passenger_id]:
+                selected_addons[passenger_id].remove(addon_id)
+                request.session['selected_addons'] = selected_addons
+                request.session.modified = True
+                
+                messages.success(request, "Add-on removed successfully!")
+            
+        except Exception as e:
+            print(f"Error removing add-on: {e}")
+            messages.error(request, "Error removing add-on.")
+    
+    return redirect('bookingapp:add_ons')    
+
 @login_required
 def save_add_ons(request):
     """Save add-on selections for each passenger"""
@@ -1014,6 +1419,16 @@ def select_seat(request):
     if not depart_id:
         return redirect("bookingapp:flight_schedules")
 
+    # Check if coming from add-ons page
+    from_addons = request.GET.get('from_addons') == 'true'
+    skip_addons = request.GET.get('skip_addons') == 'true'
+    
+    # If skipping add-ons, clear any selected add-ons
+    if skip_addons:
+        request.session['selected_addons'] = {}
+        request.session.modified = True
+        messages.info(request, "Add-ons skipped. You can add them later if needed.")
+
     depart_schedule = Schedule.objects.get(id=depart_id)
     return_schedule = Schedule.objects.filter(id=return_id).first() if return_id else None
 
@@ -1025,12 +1440,13 @@ def select_seat(request):
     selected_seats = request.session.get("selected_seats", {})  # { passenger_id: {"depart": "A1", "return": "B1"} }
 
     context = {
-        'depart_schedule' : depart_schedule,
-        'return_schedule' : return_schedule,
+        'depart_schedule': depart_schedule,
+        'return_schedule': return_schedule,
         "depart_seats": depart_seats,
         "return_seats": return_seats,
         "passengers": passengers,
         "selected_seats": selected_seats,
+        "from_addons": from_addons,  # Pass this to template to show different messaging
     }
     return render(request, "booking/select_seats.html", context)
 
@@ -3481,3 +3897,128 @@ def save_practice_booking(request):
         print(f"Error saving practice booking: {e}")
         messages.error(request, "Error saving practice booking.")
         return redirect('bookingapp:payment_success')
+    
+
+
+
+
+
+
+# testing UI/UX
+
+
+def test_home(request):
+    from_airport = Airport.objects.all()
+    to_airports = Airport.objects.all()
+
+
+    today = timezone.now().date()
+    template = loader.get_template("ui_test/home.html")
+    context ={
+        'origins' : from_airport,
+        'destinations' : to_airports,
+        'today': today.isoformat()
+    }
+
+    return HttpResponse(template.render(context, request))
+
+
+
+
+def test_schedule(request):
+    if request.method == 'POST':
+        # Get form data
+        trip_type = request.POST.get('trip_type', 'one_way')
+        from_airport_id = request.POST.get('from_airport')
+        to_airport_id = request.POST.get('to_airport')
+        depart_date = request.POST.get('depart_date')
+        return_date = request.POST.get('return_date')
+        adults = int(request.POST.get('adults', 1))
+        children = int(request.POST.get('children', 0))
+        infants = int(request.POST.get('infants', 0))
+        
+        # Validate required fields
+        if not all([from_airport_id, to_airport_id, depart_date]):
+            return redirect('test_home')
+        
+        # Get airport objects
+        try:
+            from_airport = Airport.objects.get(id=from_airport_id)
+            to_airport = Airport.objects.get(id=to_airport_id)
+        except Airport.DoesNotExist:
+            return redirect('test_home')
+        
+        # Parse dates
+        depart_date_obj = datetime.strptime(depart_date, '%Y-%m-%d').date()
+        return_date_obj = None
+        
+        if trip_type == 'round_trip' and return_date:
+            return_date_obj = datetime.strptime(return_date, '%Y-%m-%d').date()
+        
+        # Calculate total passengers
+        total_passengers = adults + children + infants
+        
+        # Query flights for depart date
+        depart_flights = Flight.objects.filter(
+            departure_airport=from_airport,
+            arrival_airport=to_airport,
+            departure_time__date=depart_date_obj
+        ).select_related('departure_airport', 'arrival_airport', 'airline')
+        
+        # Query return flights if round trip
+        return_flights = None
+        if trip_type == 'round_trip' and return_date_obj:
+            return_flights = Flight.objects.filter(
+                departure_airport=to_airport,
+                arrival_airport=from_airport,
+                departure_time__date=return_date_obj
+            ).select_related('departure_airport', 'arrival_airport', 'airline')
+        
+        template = loader.get_template("ui_test/schedule.html")
+        context = {
+            'trip_type': trip_type,
+            'from_airport': from_airport,
+            'to_airport': to_airport,
+            'depart_date': depart_date_obj,
+            'return_date': return_date_obj,
+            'adults': adults,
+            'children': children,
+            'infants': infants,
+            'total_passengers': total_passengers,
+            'depart_flights': depart_flights,
+            'return_flights': return_flights,
+        }
+        
+        return HttpResponse(template.render(context, request))
+    
+    # If not POST, redirect to home
+    return redirect('test_home')
+
+def test_selected_schedule(request):
+    template = loader.get_template("ui_test/selected_schedule.html")
+    context ={
+    }
+    return HttpResponse(template.render(context, request))
+
+def test_passenger(request):
+    template = loader.get_template("ui_test/passenger.html")
+    context ={
+
+    }
+
+    return HttpResponse(template.render(context, request))
+
+def test_addons(request):
+    template = loader.get_template("ui_test/add_ons.html")
+    context ={
+
+    }
+
+    return HttpResponse(template.render(context, request))
+def test_booking_summary(request):
+    template = loader.get_template("ui_test/booking_summary.html")
+    context ={
+
+    }
+
+    return HttpResponse(template.render(context, request))

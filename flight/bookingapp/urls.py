@@ -18,6 +18,9 @@ urlpatterns = [
     path("flight/schedule/reset/", views.reset_selection, name="reset_selection"),
 
 
+
+
+
     # FIXED: Put review before select to avoid URL conflicts
     path('flight/select/review/', views.review_scheduled, name='review_selected_scheduled'),
     path('flight/select/', views.select_schedule, name='select_schedule'),
@@ -27,8 +30,24 @@ urlpatterns = [
     path('flight/select/confirm/', views.confirm_schedule, name='confirm_schedule'),
     path('flight/passenger/information/', views.passenger_information, name='passenger_information'),
     path('flight/passenger/information/save/', views.save_passengers, name='save_passengers'),
-    path('add-ons/', views.add_ons, name='add_ons'),
-    path('save-add-ons/', views.save_add_ons, name='save_add_ons'),
+
+    # Add-on pages
+    path('flight/add-ons/', views.add_ons, name='add_ons'),
+    path('flight/save-add-ons/', views.save_add_ons, name='save_add_ons'),
+    
+    # Individual add-on pages
+    path('flight/add-ons/baggage/', views.baggage_addon, name='baggage_addon'),
+    path('flight/add-ons/meals/', views.meals_addon, name='meals_addon'),
+    path('flight/add-ons/seat-selection/', views.seat_selection_addon, name='seat_selection_addon'),
+    path('flight/add-ons/wheelchair/', views.wheelchair_addon, name='wheelchair_addon'),
+    path('flight/add-ons/insurance/', views.insurance_addon, name='insurance_addon'),
+    path('flight/add-ons/quick/', views.quick_addons, name='quick_addons'),
+
+    # Add-on action URLs - ADD THESE
+    path('flight/add-ons/save-single/', views.save_single_addon, name='save_single_addon'),
+    path('flight/add-ons/remove/', views.remove_addon, name='remove_addon'),
+
+    
     path('flight/passenger/select/seat/', views.select_seat, name='select_seat'),
     path('flight/passenger/select/seat/confirm/', views.confirm_seat, name='confirm_seat'),
     path('flight/passenger/print/passenger/session/', views.print_booking_info, name='print_booking_info'),
@@ -56,4 +75,14 @@ urlpatterns = [
     path('practice/start/', views.start_practice_booking, name='start_practice'),
     path('practice/guided/', views.guided_practice, name='guided_practice'),
     path('practice/save/', views.save_practice_booking, name='save_practice'),
+
+
+
+
+    path('test/home/', views.test_home, name='test_home'),
+    path('test/schedule/', views.test_schedule, name='test_schedule'),
+    path('test/selected/schedule/', views.test_selected_schedule, name='test_selected_schedule'),
+    path('test/passenger/', views.test_passenger, name='test_passenger'),
+    path('test/addons/', views.test_addons, name='test_addon'),
+    path('test/booking/summary/', views.test_booking_summary, name='test_booking_summary'),
 ]
