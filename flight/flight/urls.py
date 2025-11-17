@@ -21,7 +21,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('flightapp.urls')),
-    path('instructor/', include('instructorapp.urls')),
+    path('instructor/h/', include('instructorapp.urls')),
 
 
     # crissaunt

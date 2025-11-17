@@ -1,0 +1,156 @@
+{% extends 'booking/student/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="px-30 py-4">
+    <button onclick="goBack()" class="inline-flex items-center text-gray-600 hover:text-gray-900">
+        <i class="fas fa-arrow-left mr-2"></i>
+        Go Back
+    </button>
+</div>
+    
+<div class="flex-1 flex flex-col gap-7 px-30 py-8 ">
+    <div class="bg-white border flex-1 gap-17 flex  border-gray-300 rounded-lg   px-15 py-7 ">
+
+        <div class="flex flex-col gap-2 flex-1">
+            <div class="flex flex-col gap-2">
+                <h1 class="text-4xl inria-serif-bold capitalize">{{ activity.title }}</h1>
+                <h3 class="text-gray-400 text-lg">{{ activity.section.section_code }} - {{ activity.section.section_name }}</h3>
+                <p class="text-gray-400 text-sm">Due: {{ activity.due_date|date:"F j, Y" }}</p>
+                <div class="flex text-xs gap-1">
+                    <p class="bg-[#BAE0FF] text-[#367FFB] px-2 py-0.5 rounded-full">{{ activity.activity_type }}</p>
+                    <p class="bg-[#ADE1A8] text-[#24A216] px-2 py-0.5 rounded-full">{{ activity.status }}</p>
+                    <p class="bg-[#FEF3C8] text-[#B49000] px-2 py-0.5 rounded-full">{{ submission.status }}</p>
+                </div>
+            </div>
+            <div class="w-full border border-gray-300"></div>
+            <!-- grade -->
+            <div class="flex flex-col gap-1">
+                <p class="text-sm text-gray-600">Your Score:</p>
+                <div class="bg-[#D1F7DC] h-[85px] p-5 rounded-lg">
+                    <p class="text-4xl font-semibold">{{ submission.score }}/{{ activity.total_points }}</p>
+                </div>
+            </div>
+        </div>
+
+       <!-- Score Breakdown -->
+        <div class="flex flex-col gap-2 flex-1">
+            <h1 class="font-medium">Score Breakdown</h1>
+            <div class="flex-1 rounded-md border-gray-300 border py-5 px-5 space-y-4">
+
+                <div class="w-full flex flex-col">
+                    <div class="flex w-full items-center gap-1"> 
+                        <span class="text-sm text-gray-600">Completion: </span> 
+                        <h3>{{ comparison.score_breakdown.base_points|floatformat:1 }} pts</h3>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+                        <div class="bg-green-500 h-2 rounded-full" style="width: 100%"></div>
+                    </div>
+                </div>
+
+                <div class="w-full flex flex-col">
+                    <div class="flex w-full items-center gap-1"> 
+                        <span class="text-sm text-gray-600">Passengers: </span> 
+                        <h3>{{ comparison.score_breakdown.passenger_points|floatformat:1 }} pts</h3>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+                        <div class="bg-[#FFC194] h-2 rounded-full" 
+                             style="width: {% widthratio comparison.score_breakdown.passenger_points comparison.score_breakdown.max_passenger_points 100 %}%"></div>
+                    </div>
+                </div>
+
+                <div class="w-full flex flex-col">
+                    <div class="flex w-full items-center gap-1"> 
+                        <span class="text-sm text-gray-600">Budget: </span> 
+                        <h3>{{ comparison.score_breakdown.price_points|floatformat:1 }} pts</h3>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+                        <div class="bg-blue-500 h-2 rounded-full" 
+                             style="width: {% widthratio comparison.score_breakdown.price_points comparison.score_breakdown.max_price_points 100 %}%"></div>
+                    </div>
+                </div>
+
+                <div class="w-full flex flex-col">
+                    <div class="flex w-full items-center gap-1"> 
+                        <span class="text-sm text-gray-600">Compliance: </span> 
+                        <h3>{{ comparison.score_breakdown.compliance_points|floatformat:1 }} pts</h3>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+                        <div class="bg-[#F4EB08] h-2 rounded-full" 
+                             style="width: {% widthratio comparison.score_breakdown.compliance_points comparison.score_breakdown.max_compliance_points 100 %}%"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+
+    <div class="bg-white border flex-1 gap-17 flex  border-gray-300 rounded-lg  flex-col  px-15 py-7 ">
+        <div class="flex items-end gap-2">
+            <h1 class="text-2xl font-semibold">Requirements</h1>
+            <span class="text-xs">VS</span>
+            <h1 class="text-2xl font-semibold">Your Work</h1>
+        </div>
+
+        <div class="overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                                Category
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/6">
+                                Activity Requirement
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/6">
+                                Your Work
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                                Status
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for req in comparison.requirements %}
+                        <tr class="{% if req.met %}bg-green-50 border-l-4 border-l-green-500{% else %}bg-red-50 border-l-4 border-l-red-500{% endif %} {% if req.optional %}bg-gray-50 border-l-4 border-l-gray-500{% endif %} hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ req.category }}</div>
+                                {% if req.weight and req.weight != 'Info' %}
+                                <div class="text-xs text-gray-500">({{ req.weight }} priority)</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900">{{ req.requirement }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900">{{ req.student_work }}</div>
+                                {% if req.overage and req.overage > 0 %}
+                                <div class="text-xs text-red-600 font-medium mt-1">
+                                    (${{ req.overage|floatformat:2 }} over budget)
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if req.met %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    {% if req.met %}
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    {% else %}
+                                    <i class="fas fa-times-circle mr-1"></i>
+                                    {% endif %}
+                                    {% if req.met %}Met{% else %}Not Met{% endif %}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -85,6 +85,7 @@ urlpatterns = [
     path('addons/edit/<int:id>/', views.update_addon, name='update_addon'),
     path('addons/delete/<int:id>/', views.delete_addon, name='delete_addon'),
     path('addons/import/', views.import_addons, name='import_addons'),
+    path('addons/type/add/', views.add_addon_type, name='add_addon_type'),
 
 
     # booking

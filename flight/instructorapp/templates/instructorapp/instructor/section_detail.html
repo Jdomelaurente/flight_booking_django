@@ -2,9 +2,13 @@
 {% block title %}{{ section.section_name }}{% endblock %}
 
 {% block content %}
+
+<h1 class="text-4xl inria-serif-bold ">Instructor </h1>
+
 <div class="flex flex-1 h-[80vh] py-10 flex-col">
 
-    <div class="flex-1 max-h-[138px] mx-30 rounded-lg flex items-start flex-col justify-center bg-[#045946] h-[140px] py-10 p-5">
+
+    <div class="flex-1 max-h-[138px] mx-30 rounded-lg flex items-start flex-col justify-center bg-[#093704] h-[140px] py-10 p-5">
         <h1 class="text-4xl text-[#FFC83D] font-semibold">{{ section.section_name }}</h1>
         <p class="text-[#FFC83D] text-lg">{{ section.section_code }} • {{ section.semester }} Semester • {{ section.academic_year }}</p>
         {% if section.schedule %}
@@ -23,9 +27,9 @@
     </div>
     {% endif %}
 
-    <div class="flex-1 flex flex-col mx-50 mt-10">
+    <div class="flex-1 flex flex-col mx-35 mt-10">
         <div class="flex justify-between items-center">
-            <div class="text-xs mx-10 space-x-10 font-medium">
+            <div class="text-xs  space-x-10 font-medium">
                 <a href="#" class="text-[#045946] border-b-2 border-[#045946] pb-1">Activity</a>
                 <a href="#" class="text-gray-600 hover:text-[#045946]">People</a>
                 <a href="#" class="text-gray-600 hover:text-[#045946]">Settings</a>
@@ -337,7 +341,7 @@
 <!-- Delete Activity Modal -->
 <div id="deleteModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
     <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-        <div class="bg-red-600 rounded-t-lg px-6 py-4 flex justify-between items-center">
+        <div class="bg-red-500 rounded-t-lg px-6 py-4 flex justify-between items-center">
             <h2 class="text-xl font-semibold text-white">Delete Activity</h2>
             <button onclick="closeDeleteModal()" class="text-white hover:text-gray-200 text-2xl">
                 &times;
@@ -347,7 +351,7 @@
         <div class="p-6">
             <div class="flex items-center justify-center mb-4">
                 <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-6 h-6 text-red-600 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                     </svg>
                 </div>
@@ -375,11 +379,11 @@
                 {% csrf_token %}
                 <div class="flex justify-end space-x-3">
                     <button type="button" onclick="closeDeleteModal()" 
-                        class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+                        class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 cursor-pointer transition-colors">
                         Cancel
                     </button>
                     <button type="submit" 
-                        class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md transition-colors">
+                        class="bg-red-500 hover:bg-red-700 cursor-pointer text-white px-6 py-2 rounded-md transition-colors">
                         Delete Activity
                     </button>
                 </div>

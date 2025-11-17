@@ -7,10 +7,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="{% static '/src/output.css' %}" rel="stylesheet">
 
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inria+Sans:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Medula+One&family=Odor+Mean+Chey&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Racing+Sans+One&family=Roboto:ital,wght@0,100..900;1,100..900&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inria+Sans:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Inria+Serif:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=La+Belle+Aurore&family=Medula+One&family=Odor+Mean+Chey&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Racing+Sans+One&family=Roboto:ital,wght@0,100..900;1,100..900&family=Sora:wght@100..800&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+ 
+    
     <title>{% block title %}  {% endblock %}</title>
 
     <style>
@@ -195,26 +196,34 @@
 }
 
 
+.inria-serif-regular {
+  font-family: "Inria Serif", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.inria-serif-bold {
+  font-family: "Inria Serif", serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
     </style>
 </head>
-<body class="bg-[#FBFBFB] poppins-regular ease-in-out flex flex-col items-center">
-    <header class="bg-[#045946] h-15 w-full flex items-center justify-end px-6">
-        <div class="max-w-screen-2xl  flex justify-end  w-full">
-          
-          <div class="w-12 h-12 rounded-full border-4 border-[#FEB938] bg-gray-200"></div>
-          <!-- Add this navigation to your base.html -->
-          <!-- In the navigation section of booking/student/home.html -->
-          <div class="flex items-center">
-              <div class="text-xs mx-10 space-x-10 font-medium">
-                  <a href="{% url 'bookingapp:student_home' %}" class="text-[#045946] border-b-2 border-[#045946] pb-1">Active Activities</a>
-                  <a href="{% url 'bookingapp:student_activities' %}" class="text-gray-600 hover:text-[#045946]">All Activities</a>
-                  <a href="{% url 'bookingapp:main' %}" class="text-gray-600 hover:text-[#045946]">Regular Booking</a>
-              </div>
-          </div>
+<body class="bg-[#FFFCF5] inria-sans-regular ease-in-out flex flex-col items-center">
+        <header class=" w-full bg-[#093704] h-[79px] flex items-center ">
+        <div class=" max-w-screen-2xl w-full mx-auto">
+            <div class="flex justify-between w-full  items-center px-10">
+                <img src="{% static 'bookingapp/images/logo-csucc.svg' %}" alt="" class=" h-auto">
+                <div class="flex gap-5">
+                    <div class="w-12 h-12 rounded-full border-4 border-[#FEB938] bg-gray-200"></div>
+                </div>
+            </div>
         </div>
+        
     </header>
     
-    <main class="flex-1 mt-20 flex flex-col max-w-screen-2xl  mx-auto">
+    <main class="flex-1 mt-10 flex flex-col w-full  max-w-screen-2xl  mx-auto">
     {% block content %}
     {% endblock %}
     </main>
@@ -230,6 +239,19 @@
             window.location.reload();
         }
     });
+
+
+
+  function goBack() {
+      // Try to go back in browser history
+      if (window.history.length > 1) {
+          window.history.back();
+      } else {
+          // If no history, redirect to student activities page as fallback
+          window.location.href = "{% url 'bookingapp:student_activities' %}";
+      }
+  }
+
     </script>
 
 </body>
