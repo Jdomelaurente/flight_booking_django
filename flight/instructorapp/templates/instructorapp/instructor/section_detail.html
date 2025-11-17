@@ -130,6 +130,15 @@
                             Maximum Price: ${{ activity.required_max_price }}
                         </div>
                         {% endif %}
+                        <!-- Display add-on requirements if any -->
+                        {% if activity.required_addons.exists %}
+                        <div class="text-xs text-purple-600">
+                            ✓ Add-ons required: 
+                            {% for addon_req in activity.required_addons.all %}
+                                {{ addon_req.addon.name }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}
@@ -316,6 +325,89 @@
                         </div>
                     </div>
 
+                    <!-- Add Add-ons Section -->
+                    <div class="border-t border-gray-200 pt-4">
+                        <div class="mb-6">
+                            <div class="flex items-center mb-4">
+                                <input type="checkbox" name="require_addons" id="require_addons" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                <label for="require_addons" class="ml-2 block text-sm font-medium text-gray-700">
+                                    Enable Add-ons for Passengers
+                                </label>
+                            </div>
+
+                            <!-- Add-ons Selection (initially hidden) -->
+                            <div id="addons-section" class="hidden mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                <h4 class="text-sm font-medium text-gray-900 mb-3">Passenger Add-ons</h4>
+                                
+                                <!-- Info message -->
+                                <div class="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
+                                    <p class="text-sm text-blue-700">
+                                        <strong>How it works:</strong> When you enable passenger details and add-ons, each passenger will get their own add-on section below. 
+                                        You can select different add-ons for each passenger individually.
+                                    </p>
+                                </div>
+                                
+                                <!-- Hidden template for add-ons -->
+                                <div id="original-addons-list" class="hidden">
+                                    {% for addon in addons %}
+                                    <div class="flex items-start p-3 bg-white rounded border border-gray-200">
+                                        <input type="checkbox" name="selected_addons[]" value="{{ addon.id }}" 
+                                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1">
+                                        
+                                        <div class="ml-3 flex-1">
+                                            <div class="flex justify-between items-start">
+                                                <div>
+                                                    <label class="text-sm font-medium text-gray-700">
+                                                        {{ addon.name }}
+                                                        {% if addon.airline %}
+                                                        <span class="text-xs text-gray-500">({{ addon.airline.code }})</span>
+                                                        {% endif %}
+                                                    </label>
+                                                    {% if addon.type %}
+                                                    <p class="text-xs text-gray-500">{{ addon.type.name }}</p>
+                                                    {% endif %}
+                                                    <p class="text-xs text-gray-600">{{ addon.description|default:"" }}</p>
+                                                </div>
+                                                <span class="text-sm font-semibold text-green-600">₱{{ addon.price }}</span>
+                                            </div>
+                                            
+                                            <!-- Add-on requirements (shown when selected) -->
+                                            <div class="mt-2 space-y-2 addon-requirements hidden">
+                                                <div class="flex items-center space-x-4">
+                                                    <div class="flex items-center">
+                                                        <input type="checkbox" name="addon_required_{{ addon.id }}" 
+                                                               class="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                                        <label class="ml-1 text-xs text-gray-600">
+                                                            Required for this passenger
+                                                        </label>
+                                                    </div>
+                                                    
+                                                    <div class="flex items-center">
+                                                        <label class="text-xs text-gray-600 mr-2">Quantity:</label>
+                                                        <input type="number" name="addon_quantity_{{ addon.id }}" 
+                                                               value="1" min="1" max="10"
+                                                               class="w-16 px-2 py-1 text-xs border border-gray-300 rounded">
+                                                    </div>
+                                                </div>
+                                                
+                                                <div>
+                                                    <label class="text-xs text-gray-600 block mb-1">Notes (optional):</label>
+                                                    <textarea name="addon_notes_{{ addon.id }}" 
+                                                              rows="2"
+                                                              class="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                                              placeholder="Special instructions for this add-on..."></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <!-- Passenger-specific add-on sections will be dynamically inserted here -->
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Additional Details -->
                     <div class="border-t border-gray-200 pt-4">
                         <div class="md:col-span-2">
@@ -408,6 +500,8 @@
         document.body.classList.add('overflow-hidden');
         // Initialize passenger forms when modal opens
         updatePassengerForms();
+        // Initialize add-ons functionality
+        initializeAddons();
     }
 
     function closeActivityModal() {
@@ -530,11 +624,14 @@
         } else {
             passengerFields.classList.add('hidden');
         }
+        
+        // Update add-on sections when passenger forms change
+        generatePassengerAddonSections();
     }
 
     function updatePassengerForms() {
         const requirePassengerDetails = document.getElementById('requirePassengerDetails');
-        if (!requirePassengerDetails.checked) return;
+        if (!requirePassengerDetails || !requirePassengerDetails.checked) return;
 
         const adults = parseInt(document.getElementById('adultsCount').value) || 0;
         const children = parseInt(document.getElementById('childrenCount').value) || 0;
@@ -570,6 +667,9 @@
         if (passengerNumber === 1) {
             passengerFields.innerHTML = '<p class="text-sm text-gray-500 text-center">No passengers added. Increase passenger counts above.</p>';
         }
+        
+        // Update add-on sections
+        generatePassengerAddonSections();
     }
 
     function createPassengerForm(number, type, isPrimary) {
@@ -628,6 +728,148 @@
         return passengerDiv;
     }
 
+    // Add-ons functionality
+    function initializeAddons() {
+        const requireAddonsCheckbox = document.getElementById('require_addons');
+        const addonsSection = document.getElementById('addons-section');
+        
+        // Toggle add-ons section
+        if (requireAddonsCheckbox && addonsSection) {
+            requireAddonsCheckbox.addEventListener('change', function() {
+                addonsSection.classList.toggle('hidden', !this.checked);
+                if (this.checked) {
+                    generatePassengerAddonSections();
+                } else {
+                    // Remove passenger add-on sections when add-ons are disabled
+                    document.querySelectorAll('.passenger-addon-section').forEach(section => section.remove());
+                }
+            });
+        }
+        
+        // Initial generation of passenger add-on sections
+        setTimeout(generatePassengerAddonSections, 500);
+    }
+
+    // NEW: Function to generate per-passenger add-on sections for EVERY passenger
+    function generatePassengerAddonSections() {
+        const requirePassengerDetails = document.getElementById('requirePassengerDetails');
+        const requireAddonsCheckbox = document.getElementById('require_addons');
+        
+        // Only show add-ons if both passenger details and add-ons are enabled
+        if (!requirePassengerDetails || !requirePassengerDetails.checked || !requireAddonsCheckbox || !requireAddonsCheckbox.checked) {
+            // Remove passenger add-on sections if conditions aren't met
+            document.querySelectorAll('.passenger-addon-section').forEach(section => section.remove());
+            return;
+        }
+        
+        const adults = parseInt(document.getElementById('adultsCount').value) || 0;
+        const children = parseInt(document.getElementById('childrenCount').value) || 0;
+        const infants = parseInt(document.getElementById('infantsCount').value) || 0;
+        const totalPassengers = adults + children + infants;
+        
+        const addonsSection = document.getElementById('addons-section');
+        if (!addonsSection) return;
+        
+        // Remove existing passenger-specific add-on sections
+        document.querySelectorAll('.passenger-addon-section').forEach(section => section.remove());
+        
+        // If no passengers, return
+        if (totalPassengers === 0) return;
+        
+        // Create add-on section for EACH passenger
+        for (let i = 0; i < totalPassengers; i++) {
+            const passengerAddonSection = document.createElement('div');
+            passengerAddonSection.className = 'passenger-addon-section mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200';
+            
+            // Determine passenger type and number
+            let passengerType = 'Adult';
+            let passengerNumber = i + 1;
+            
+            if (i < adults) {
+                passengerType = 'Adult';
+            } else if (i < adults + children) {
+                passengerType = 'Child';
+            } else {
+                passengerType = 'Infant';
+            }
+            
+            passengerAddonSection.innerHTML = `
+                <h4 class="text-md font-semibold text-blue-800 mb-3">
+                    Add-ons for Passenger ${passengerNumber} (${passengerType})
+                </h4>
+                <p class="text-sm text-blue-600 mb-3">Select which add-ons this passenger should have:</p>
+                <div class="space-y-3" id="passenger-${i}-addons">
+                    <!-- Add-on checkboxes for this passenger will be inserted here -->
+                </div>
+            `;
+            
+            addonsSection.appendChild(passengerAddonSection);
+            
+            // Create add-on options for this passenger using JavaScript
+            const passengerAddonsContainer = document.getElementById(`passenger-${i}-addons`);
+
+            // Get the original addons list to use as a template
+            const originalAddonsContainer = document.getElementById('original-addons-list');
+            if (originalAddonsContainer) {
+                const originalAddons = originalAddonsContainer.querySelectorAll('.bg-white');
+                
+                originalAddons.forEach((originalAddon, addonIndex) => {
+                    const addonClone = originalAddon.cloneNode(true);
+                    const checkbox = addonClone.querySelector('input[type="checkbox"]');
+                    const addonId = checkbox ? checkbox.value : null;
+                    
+                    if (checkbox && addonId) {
+                        // Update the checkbox name for this specific passenger
+                        checkbox.name = `selected_addons_passenger_${i}[]`;
+                        checkbox.checked = false;
+                        
+                        // Update all requirement fields for this passenger
+                        const requirementInputs = addonClone.querySelectorAll('input[type="checkbox"], input[type="number"], textarea');
+                        requirementInputs.forEach(input => {
+                            if (input.name.includes('addon_required_')) {
+                                const currentAddonId = input.name.split('_')[2]; // Extract addon ID
+                                input.name = `addon_required_${currentAddonId}_passenger_${i}`;
+                                input.checked = false;
+                            } else if (input.name.includes('addon_quantity_')) {
+                                const currentAddonId = input.name.split('_')[2]; // Extract addon ID
+                                input.name = `addon_quantity_${currentAddonId}_passenger_${i}`;
+                                input.value = '1';
+                            } else if (input.name.includes('addon_notes_')) {
+                                const currentAddonId = input.name.split('_')[2]; // Extract addon ID
+                                input.name = `addon_notes_${currentAddonId}_passenger_${i}`;
+                                input.value = '';
+                            }
+                        });
+                        
+                        // Add event listener for showing requirements
+                        checkbox.addEventListener('change', function() {
+                            const requirementsDiv = this.closest('.bg-white').querySelector('.addon-requirements');
+                            if (requirementsDiv) {
+                                requirementsDiv.classList.toggle('hidden', !this.checked);
+                            }
+                        });
+                    }
+                    
+                    passengerAddonsContainer.appendChild(addonClone);
+                });
+            }
+        }
+        
+        // Add a note about per-passenger add-ons
+        const existingNote = addonsSection.querySelector('.per-passenger-note');
+        if (!existingNote) {
+            const noteDiv = document.createElement('div');
+            noteDiv.className = 'per-passenger-note bg-green-50 border border-green-200 rounded-md p-3 mt-4';
+            noteDiv.innerHTML = `
+                <p class="text-sm text-green-700">
+                    <strong>✓ Per-Passenger Add-ons Enabled:</strong> Each passenger has their own add-on section. 
+                    You can select different add-ons for each passenger and mark them as required individually.
+                </p>
+            `;
+            addonsSection.appendChild(noteDiv);
+        }
+    }
+
     // Initialize passenger forms when page loads
     document.addEventListener('DOMContentLoaded', function() {
         // Add event listeners to passenger count inputs
@@ -635,6 +877,17 @@
         document.getElementById('childrenCount').addEventListener('change', updatePassengerForms);
         document.getElementById('infantsCount').addEventListener('change', updatePassengerForms);
         document.getElementById('requirePassengerDetails').addEventListener('change', togglePassengerForms);
+        
+        // Also update add-ons when passenger counts change
+        const passengerInputs = ['adultsCount', 'childrenCount', 'infantsCount'];
+        passengerInputs.forEach(inputId => {
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.addEventListener('change', function() {
+                    setTimeout(generatePassengerAddonSections, 100);
+                });
+            }
+        });
     });
 </script>
 {% endblock %}

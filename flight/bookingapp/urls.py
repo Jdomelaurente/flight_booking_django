@@ -8,6 +8,7 @@ urlpatterns = [
     # Student Activity URLs
     path('student/dashboard/', views.student_home, name='student_home'),
     path('student/activity/<int:activity_id>/', views.student_activity_detail, name='student_activity_detail'),
+    path('student/work/<int:submission_id>/', views.student_work_detail, name='student_work_detail'),
     path('student/activities/', views.student_activities, name='student_activities'),
 
     # Main Booking Flow - REORDERED URLs

@@ -208,6 +208,46 @@
   font-style: normal;
 }
 
+/* Dropdown Styles */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background-color: white;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1000;
+    border-radius: 8px;
+    margin-top: 8px;
+}
+
+.dropdown-content a {
+    color: #333;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    border-bottom: 1px solid #f1f1f1;
+    transition: background-color 0.3s;
+}
+
+.dropdown-content a:hover {
+    background-color: #f1f1f1;
+}
+
+.dropdown-content a:last-child {
+    border-bottom: none;
+    color: #dc2626;
+}
+
+.dropdown-content a:last-child:hover {
+    background-color: #fee2e2;
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
     </style>
 </head>
 <body class="bg-[#FFFCF5] inria-sans-regular ease-in-out flex flex-col items-center">
@@ -216,7 +256,15 @@
             <div class="flex justify-between w-full  items-center px-10">
                 <img src="{% static 'bookingapp/images/logo-csucc.svg' %}" alt="" class=" h-auto">
                 <div class="flex gap-5">
-                    <div class="w-12 h-12 rounded-full border-4 border-[#FEB938] bg-gray-200"></div>
+                    <!-- Profile Dropdown -->
+                    <div class="dropdown relative">
+                        <div class="w-12 h-12 rounded-full border-4 border-[#FEB938] bg-gray-200 cursor-pointer hover:border-[#FFD166] transition-colors"></div>
+                        <div class="dropdown-content">
+                            <a href="#" class="hover:bg-gray-100">Profile</a>
+                            <a href="#" class="hover:bg-gray-100">Settings</a>
+                            <a href="{% url 'bookingapp:logout' %}" class="text-red-600 hover:bg-red-50 font-medium">Logout</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -240,17 +288,42 @@
         }
     });
 
+    function goBack() {
+        // Try to go back in browser history
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            // If no history, redirect to student activities page as fallback
+            window.location.href = "{% url 'bookingapp:student_activities' %}";
+        }
+    }
 
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdowns = document.querySelectorAll('.dropdown');
+        dropdowns.forEach(dropdown => {
+            if (!dropdown.contains(event.target)) {
+                const dropdownContent = dropdown.querySelector('.dropdown-content');
+                if (dropdownContent) {
+                    dropdownContent.style.display = 'none';
+                }
+            }
+        });
+    });
 
-  function goBack() {
-      // Try to go back in browser history
-      if (window.history.length > 1) {
-          window.history.back();
-      } else {
-          // If no history, redirect to student activities page as fallback
-          window.location.href = "{% url 'bookingapp:student_activities' %}";
-      }
-  }
+    // Toggle dropdown on profile click
+    document.querySelectorAll('.dropdown').forEach(dropdown => {
+        const profile = dropdown.querySelector('div[class*="rounded-full"]');
+        const dropdownContent = dropdown.querySelector('.dropdown-content');
+        
+        if (profile && dropdownContent) {
+            profile.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const isVisible = dropdownContent.style.display === 'block';
+                dropdownContent.style.display = isVisible ? 'none' : 'block';
+            });
+        }
+    });
 
     </script>
 

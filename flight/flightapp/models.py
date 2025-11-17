@@ -323,6 +323,7 @@ class BookingDetail(models.Model):
     seat_class = models.ForeignKey("SeatClass", on_delete=models.SET_NULL, null=True, blank=True)
     booking_date = models.DateTimeField(default=timezone.now)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    addons = models.ManyToManyField(AddOn, blank=True, related_name='booking_details')
 
     def save(self, *args, **kwargs):
         if self.seat:

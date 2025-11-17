@@ -169,6 +169,7 @@
 
         <div class="w-full border border-gray-300"></div>
 
+        <!-- Passenger Information with Add-ons Integrated -->
         {% if activity.require_passenger_details and activity.passengers.exists %}
         <div class="space-y-5">
             <h1 class="text-2xl font-semibold">Passenger Information</h1>
@@ -250,9 +251,138 @@
                         <div class="flex flex-col min-w-15 gap-2"></div>
                     </div>
                 </div>
+
+                <!-- Add-ons for this specific passenger -->
+                {% with passenger_addons=activity.activity_addons.all %}
+                    {% for addon_req in passenger_addons %}
+                        {% if addon_req.passenger == passenger %}
+                            {% if forloop.first %}
+                            <div class="mt-8 border-t border-gray-300 pt-6">
+                                <h2 class="text-lg font-semibold text-gray-800 mb-4">Required Add-ons for this Passenger</h2>
+                                <div class="space-y-3">
+                            {% endif %}
+                            
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-[#045946] rounded-full flex items-center justify-center">
+                                        <span class="text-white text-xs font-semibold">+</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-sm font-semibold text-gray-800">
+                                            {{ addon_req.addon.name }}
+                                            {% if addon_req.addon.airline %}
+                                            <span class="text-xs text-gray-500">({{ addon_req.addon.airline.code }})</span>
+                                            {% endif %}
+                                        </h3>
+                                        {% if addon_req.addon.type %}
+                                        <p class="text-xs text-gray-600">{{ addon_req.addon.type.name }}</p>
+                                        {% endif %}
+                                        {% if addon_req.addon.description %}
+                                        <p class="text-xs text-gray-500 mt-1">{{ addon_req.addon.description }}</p>
+                                        {% endif %}
+                                        {% if addon_req.notes %}
+                                        <p class="text-xs text-blue-600 mt-1"><strong>Notes:</strong> {{ addon_req.notes }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center space-x-4">
+                                    <div class="text-right">
+                                        <span class="text-sm font-semibold text-green-600">₱{{ addon_req.addon.price }}</span>
+                                        {% if addon_req.quantity_per_passenger > 1 %}
+                                        <p class="text-xs text-gray-500">Qty: {{ addon_req.quantity_per_passenger }}</p>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if addon_req.is_required %}
+                                    <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full font-semibold">
+                                        Required
+                                    </span>
+                                    {% else %}
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-semibold">
+                                        Optional
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            {% if forloop.last %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                {% endwith %}
             </div>
             {% endfor %}
+
+            <!-- General Add-ons (not assigned to specific passengers) -->
+            {% with passenger_addons=activity.activity_addons.all %}
+                {% for addon_req in passenger_addons %}
+                    {% if not addon_req.passenger %}
+                        {% if forloop.first %}
+                        <div class="space-y-5">
+                            <h1 class="text-2xl font-semibold">General Add-ons</h1>
+                            <p class="text-sm text-gray-600">The following add-ons apply to the booking in general:</p>
+                            
+                            <div class="bg-white border border-gray-200 rounded-lg p-6">
+                                <div class="space-y-3">
+                        {% endif %}
+                        
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 bg-[#045946] rounded-full flex items-center justify-center">
+                                    <span class="text-white text-xs font-semibold">+</span>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-semibold text-gray-800">
+                                        {{ addon_req.addon.name }}
+                                        {% if addon_req.addon.airline %}
+                                        <span class="text-xs text-gray-500">({{ addon_req.addon.airline.code }})</span>
+                                        {% endif %}
+                                    </h3>
+                                    {% if addon_req.addon.type %}
+                                    <p class="text-xs text-gray-600">{{ addon_req.addon.type.name }}</p>
+                                    {% endif %}
+                                    {% if addon_req.addon.description %}
+                                    <p class="text-xs text-gray-500 mt-1">{{ addon_req.addon.description }}</p>
+                                    {% endif %}
+                                    {% if addon_req.notes %}
+                                    <p class="text-xs text-blue-600 mt-1"><strong>Notes:</strong> {{ addon_req.notes }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-4">
+                                <div class="text-right">
+                                    <span class="text-sm font-semibold text-green-600">₱{{ addon_req.addon.price }}</span>
+                                    {% if addon_req.quantity_per_passenger > 1 %}
+                                    <p class="text-xs text-gray-500">Qty: {{ addon_req.quantity_per_passenger }}</p>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if addon_req.is_required %}
+                                <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full font-semibold">
+                                    Required
+                                </span>
+                                {% else %}
+                                <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-semibold">
+                                    Optional
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        {% if forloop.last %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            {% endwith %}
         </div>
+
         {% elif activity.require_passenger_details %}
         <div class="space-y-5">
             <h1 class="text-2xl font-semibold">Passenger Information</h1>
@@ -263,6 +393,62 @@
                     </svg>
                     <span class="text-sm font-semibold text-yellow-800">Passenger details are required but no specific passenger information has been provided.</span>
                 </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Display add-ons if there are no passenger details required -->
+        {% if not activity.require_passenger_details and activity.activity_addons.exists %}
+        <div class="space-y-5">
+            <h1 class="text-2xl font-semibold">Required Add-ons</h1>
+            <p class="text-sm text-gray-600">Students must include the following add-ons in their booking:</p>
+            
+            <div class="space-y-4">
+                {% for addon_req in activity.activity_addons.all %}
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-[#045946] rounded-full flex items-center justify-center">
+                            <span class="text-white text-xs font-semibold">+</span>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-800">
+                                {{ addon_req.addon.name }}
+                                {% if addon_req.addon.airline %}
+                                <span class="text-xs text-gray-500">({{ addon_req.addon.airline.code }})</span>
+                                {% endif %}
+                            </h3>
+                            {% if addon_req.addon.type %}
+                            <p class="text-xs text-gray-600">{{ addon_req.addon.type.name }}</p>
+                            {% endif %}
+                            {% if addon_req.addon.description %}
+                            <p class="text-xs text-gray-500 mt-1">{{ addon_req.addon.description }}</p>
+                            {% endif %}
+                            {% if addon_req.notes %}
+                            <p class="text-xs text-blue-600 mt-1"><strong>Notes:</strong> {{ addon_req.notes }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <div class="text-right">
+                            <span class="text-sm font-semibold text-green-600">₱{{ addon_req.addon.price }}</span>
+                            {% if addon_req.quantity_per_passenger > 1 %}
+                            <p class="text-xs text-gray-500">Qty: {{ addon_req.quantity_per_passenger }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        {% if addon_req.is_required %}
+                        <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full font-semibold">
+                            Required
+                        </span>
+                        {% else %}
+                        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-semibold">
+                            Optional
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
         {% endif %}
@@ -286,9 +472,9 @@
                     <p class="text-sm text-green-600">Share this code with students to allow submissions</p>
                     <p class="text-xs text-green-500">Expires: {{ activity.code_expires_at|date:"M j, Y g:i A" }}</p>
                 </div>
-                <button class="bg-[#045946] hover:bg-[#045946]/80 cursor-pointer py-3 w-[434px] text-lg text-white mx-auto">
+                <a href="{% url 'activity_submissions' activity.id %}" class="bg-[#045946] hover:bg-[#045946]/80 cursor-pointer py-3 w-[434px] text-lg text-white mx-auto block">
                     View Submissions
-                </button>
+                </a>
             </div>
             {% else %}
             <form method="POST" action="{% url 'activate_activity' activity.id %}" class="text-center">

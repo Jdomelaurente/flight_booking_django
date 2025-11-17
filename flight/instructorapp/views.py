@@ -2,8 +2,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.template import loader
 from django.contrib import messages
-from .models import Section, Activity, ActivitySubmission, SectionEnrollment, ActivityPassenger
-from flightapp.models import User, Student
+from django.db import models
+from decimal import Decimal
+from .models import Section, Activity, ActivitySubmission, SectionEnrollment, ActivityPassenger, ActivityAddOn
+from flightapp.models import User, Student  # Add these imports
+
 
 # Helper function for session-based authentication
 def get_current_user(request):
@@ -209,7 +212,6 @@ def instructor_activity(request):
     }
     return HttpResponse(template.render(context, request))
 
-# Add these additional views for full functionality
 def create_activity(request, section_id):
     user = get_current_user(request)
     if not user:
@@ -220,6 +222,12 @@ def create_activity(request, section_id):
         return redirect('instructor_login')
     
     section = get_object_or_404(Section, id=section_id, instructor=user)
+    
+    # Get available add-ons for the form
+    from flightapp.models import AddOn, Airline
+    
+    airlines = Airline.objects.all()
+    addons = AddOn.objects.select_related('type', 'airline').filter(included=False)
     
     if request.method == 'POST':
         title = request.POST.get('title')
@@ -245,6 +253,38 @@ def create_activity(request, section_id):
         total_points = request.POST.get('total_points', '100')
         due_date = request.POST.get('due_date')
         time_limit_minutes = request.POST.get('time_limit_minutes')
+        
+        # Add-on requirements
+        require_addons = request.POST.get('require_addons') == 'on'
+        
+        # NEW: Collect per-passenger add-on requirements for ALL addons
+        passenger_addon_requirements = {}
+
+        # Get passenger count from form
+        passenger_first_names = request.POST.getlist('passenger_first_name[]')
+        passenger_count = len(passenger_first_names)
+
+        # Get ALL selected addons (not per passenger)
+        all_selected_addons = request.POST.getlist('selected_addons[]')
+
+        # Collect per-passenger add-on requirements for ALL selected addons
+        for passenger_index in range(passenger_count):
+            passenger_addons = {}
+            
+            for addon_id in all_selected_addons:
+                # Check if this addon is required for this specific passenger
+                is_required = request.POST.get(f'addon_required_{addon_id}_passenger_{passenger_index}') == 'on'
+                quantity = request.POST.get(f'addon_quantity_{addon_id}_passenger_{passenger_index}', '1')
+                notes = request.POST.get(f'addon_notes_{addon_id}_passenger_{passenger_index}', '')
+                
+                # Only store if this addon is selected for this passenger
+                if is_required:
+                    passenger_addons[addon_id] = {
+                        'is_required': is_required,
+                        'quantity': int(quantity) if quantity and quantity.isdigit() else 1,
+                        'notes': notes
+                    }
+            passenger_addon_requirements[passenger_index] = passenger_addons
         
         # Basic validation
         if not title or not instructions or not due_date:
@@ -267,7 +307,7 @@ def create_activity(request, section_id):
                 messages.error(request, 'Number of infants cannot exceed number of adults')
                 return redirect('section_detail', section_id=section_id)
             
-            # Create activity
+            # Create activity with addon_grading_enabled
             activity = Activity.objects.create(
                 title=title,
                 description=description or "",
@@ -287,10 +327,12 @@ def create_activity(request, section_id):
                 instructions=instructions,
                 total_points=float(total_points) if total_points and total_points.strip() else 100.00,
                 due_date=due_date,
-                time_limit_minutes=int(time_limit_minutes) if time_limit_minutes and time_limit_minutes.strip() else None
+                time_limit_minutes=int(time_limit_minutes) if time_limit_minutes and time_limit_minutes.strip() else None,
+                addon_grading_enabled=require_addons,  # Enable grading if add-ons are required
             )
             
             # Handle passenger details if required
+            passenger_objects = []
             if require_passenger_details:
                 passenger_first_names = request.POST.getlist('passenger_first_name[]')
                 passenger_middle_names = request.POST.getlist('passenger_middle_name[]')
@@ -309,7 +351,7 @@ def create_activity(request, section_id):
                         passenger_dobs[i] and 
                         passenger_nationalities[i].strip()):
                         
-                        ActivityPassenger.objects.create(
+                        passenger = ActivityPassenger.objects.create(
                             activity=activity,
                             first_name=passenger_first_names[i].strip(),
                             middle_name=passenger_middle_names[i].strip() if passenger_middle_names[i] else None,
@@ -319,12 +361,49 @@ def create_activity(request, section_id):
                             nationality=passenger_nationalities[i].strip(),
                             is_primary=(i == 0)  # First passenger is primary
                         )
+                        passenger_objects.append(passenger)
                         passengers_created += 1
                 
                 if passengers_created == 0 and require_passenger_details:
                     messages.warning(request, 'Activity created but no passenger details were provided despite the requirement.')
             
-            messages.success(request, f'Activity "{activity.title}" created successfully!')
+            # NEW: Handle PER-PASSENGER add-on requirements with points
+            if require_addons and all_selected_addons and passenger_objects:
+                addons_created = 0
+                
+                # For each passenger, create their specific add-on requirements
+                for passenger_index, passenger in enumerate(passenger_objects):
+                    passenger_requirements = passenger_addon_requirements.get(passenger_index, {})
+                    
+                    for addon_id, requirements in passenger_requirements.items():
+                        try:
+                            addon = AddOn.objects.get(id=addon_id)
+                            
+                            ActivityAddOn.objects.create(
+                                activity=activity,
+                                addon=addon,
+                                passenger=passenger,  # Link to specific passenger
+                                is_required=requirements.get('is_required', False),
+                                quantity_per_passenger=requirements.get('quantity', 1),
+                                points_value=10.00,  # SET DEFAULT POINTS VALUE FOR GRADING
+                                notes=requirements.get('notes', '')
+                            )
+                            addons_created += 1
+                                
+                        except AddOn.DoesNotExist:
+                            messages.warning(request, f'Add-on with ID {addon_id} not found and was skipped.')
+                
+                if addons_created > 0:
+                    messages.success(request, f'Activity created with {addons_created} passenger-specific add-on requirements!')
+                else:
+                    messages.warning(request, 'Activity created but no valid add-ons were selected for any passenger.')
+            elif require_addons and not all_selected_addons:
+                messages.warning(request, 'Activity created but no add-ons were selected despite the requirement.')
+            elif require_addons and not passenger_objects:
+                messages.warning(request, 'Activity created but no passengers were defined for add-on assignment.')
+            else:
+                messages.success(request, f'Activity "{activity.title}" created successfully!')
+            
             return redirect('section_detail', section_id=section_id)
             
         except ValueError as e:
@@ -337,8 +416,6 @@ def create_activity(request, section_id):
     # If GET request, redirect to section detail
     return redirect('section_detail', section_id=section_id)
 
-
-# In your section_detail view in views.py
 def section_detail(request, section_id):
     user = get_current_user(request)
     if not user:
@@ -352,9 +429,13 @@ def section_detail(request, section_id):
     enrollments = SectionEnrollment.objects.filter(section=section)
     activities = Activity.objects.filter(section=section)
     
-    # Get airports from flightapp
-    from flightapp.models import Airport
+    # Get airports and add-ons from flightapp
+    from flightapp.models import Airport, AddOn, Airline
     airports = Airport.objects.all()
+    airlines = Airline.objects.all()
+    
+    # FILTER: Only show add-ons that are NOT included (included=False)
+    addons = AddOn.objects.select_related('type', 'airline').filter(included=False)
     
     # Handle student enrollment
     if request.method == 'POST' and 'enroll_student' in request.POST:
@@ -375,11 +456,12 @@ def section_detail(request, section_id):
         'section': section,
         'enrollments': enrollments,
         'activities': activities,
-        'airports': airports,  # Add airports to context
+        'airports': airports,
+        'airlines': airlines,
+        'addons': addons,  # Add add-ons to context
         'current_user': user,
     }
     return HttpResponse(template.render(context, request))
-
 
 def edit_activity(request, activity_id):
     user = get_current_user(request)
@@ -391,6 +473,13 @@ def edit_activity(request, activity_id):
         return redirect('instructor_login')
     
     activity = get_object_or_404(Activity, id=activity_id, section__instructor=user)
+    
+    # Get available add-ons for the form
+    from flightapp.models import AddOn, Airline, Airport
+    
+    airlines = Airline.objects.all()
+    addons = AddOn.objects.select_related('type', 'airline').filter(included=False)
+    airports = Airport.objects.all()
     
     if request.method == 'POST':
         title = request.POST.get('title')
@@ -417,6 +506,37 @@ def edit_activity(request, activity_id):
         due_date = request.POST.get('due_date')
         time_limit_minutes = request.POST.get('time_limit_minutes')
         
+        # Add-on requirements - PER PASSENGER
+        require_addons = request.POST.get('require_addons') == 'on'
+        
+        # NEW: Collect per-passenger add-on requirements for ALL passengers
+        passenger_addon_requirements = {}
+
+        # Get passenger count from form
+        passenger_first_names = request.POST.getlist('passenger_first_name[]')
+        passenger_count = len(passenger_first_names)
+
+        # Get ALL selected addons for each passenger
+        for passenger_index in range(passenger_count):
+            passenger_addons = {}
+            
+            # Get addons selected for this specific passenger
+            selected_addons_for_passenger = request.POST.getlist(f'selected_addons_passenger_{passenger_index}[]')
+            
+            for addon_id in selected_addons_for_passenger:
+                # Check if this addon is required for this specific passenger
+                is_required = request.POST.get(f'addon_required_{addon_id}_passenger_{passenger_index}') == 'on'
+                quantity = request.POST.get(f'addon_quantity_{addon_id}_passenger_{passenger_index}', '1')
+                notes = request.POST.get(f'addon_notes_{addon_id}_passenger_{passenger_index}', '')
+                
+                passenger_addons[addon_id] = {
+                    'is_required': is_required,
+                    'quantity': int(quantity) if quantity and quantity.isdigit() else 1,
+                    'notes': notes
+                }
+            
+            passenger_addon_requirements[passenger_index] = passenger_addons
+        
         # Basic validation
         if not title or not instructions or not due_date:
             messages.error(request, 'Please fill all required fields')
@@ -428,7 +548,17 @@ def edit_activity(request, activity_id):
             required_children_int = int(required_children) if required_children else 0
             required_infants_int = int(required_infants) if required_infants else 0
             
-            # Update activity
+            # Validate passenger counts
+            if required_passengers_int < 1:
+                messages.error(request, 'At least one adult passenger is required')
+                return redirect('edit_activity', activity_id=activity_id)
+            
+            # Validate infants don't exceed adults
+            if required_infants_int > required_passengers_int:
+                messages.error(request, 'Number of infants cannot exceed number of adults')
+                return redirect('edit_activity', activity_id=activity_id)
+            
+            # Update activity with addon_grading_enabled
             activity.title = title
             activity.description = description or ""
             activity.activity_type = activity_type
@@ -447,10 +577,12 @@ def edit_activity(request, activity_id):
             activity.total_points = float(total_points) if total_points else 100.00
             activity.due_date = due_date
             activity.time_limit_minutes = int(time_limit_minutes) if time_limit_minutes else None
+            activity.addon_grading_enabled = require_addons  # Update grading setting
             
             activity.save()
             
             # Handle passenger details if required
+            passenger_objects = []
             if require_passenger_details:
                 # Delete existing passengers
                 activity.passengers.all().delete()
@@ -461,7 +593,6 @@ def edit_activity(request, activity_id):
                 passenger_genders = request.POST.getlist('passenger_gender[]')
                 passenger_dobs = request.POST.getlist('passenger_dob[]')
                 passenger_nationalities = request.POST.getlist('passenger_nationality[]')
-                passenger_types = request.POST.getlist('passenger_type[]')
                 passenger_is_primary = request.POST.getlist('passenger_is_primary[]')
                 
                 # Create passenger objects only for valid entries
@@ -473,7 +604,10 @@ def edit_activity(request, activity_id):
                         passenger_dobs[i] and 
                         passenger_nationalities[i].strip()):
                         
-                        ActivityPassenger.objects.create(
+                        # Determine if this passenger is primary
+                        is_primary = str(i) in passenger_is_primary
+                        
+                        passenger = ActivityPassenger.objects.create(
                             activity=activity,
                             first_name=passenger_first_names[i].strip(),
                             middle_name=passenger_middle_names[i].strip() if passenger_middle_names[i] else None,
@@ -481,24 +615,74 @@ def edit_activity(request, activity_id):
                             gender=passenger_genders[i],
                             date_of_birth=passenger_dobs[i],
                             nationality=passenger_nationalities[i].strip(),
-                            is_primary=(i == 0)  # First passenger is primary
+                            is_primary=is_primary
                         )
+                        passenger_objects.append(passenger)
             
-            messages.success(request, f'Activity "{activity.title}" updated successfully!')
+            # NEW: Handle PER-PASSENGER add-on requirements with points
+            # Delete existing add-ons
+            activity.activity_addons.all().delete()
+            
+            if require_addons and passenger_objects:
+                addons_created = 0
+                
+                # For each passenger, create their specific add-on requirements
+                for passenger_index, passenger in enumerate(passenger_objects):
+                    passenger_requirements = passenger_addon_requirements.get(passenger_index, {})
+                    
+                    for addon_id, requirements in passenger_requirements.items():
+                        try:
+                            addon = AddOn.objects.get(id=addon_id)
+                            
+                            ActivityAddOn.objects.create(
+                                activity=activity,
+                                addon=addon,
+                                passenger=passenger,  # Link to specific passenger
+                                is_required=requirements.get('is_required', False),
+                                quantity_per_passenger=requirements.get('quantity', 1),
+                                points_value=10.00,  # SET DEFAULT POINTS VALUE FOR GRADING
+                                notes=requirements.get('notes', '')
+                            )
+                            addons_created += 1
+                                
+                        except AddOn.DoesNotExist:
+                            messages.warning(request, f'Add-on with ID {addon_id} not found and was skipped.')
+                
+                if addons_created > 0:
+                    messages.success(request, f'Activity updated with {addons_created} passenger-specific add-on requirements!')
+                else:
+                    messages.warning(request, 'Activity updated but no add-ons were selected for any passenger.')
+            elif require_addons and not passenger_objects:
+                messages.warning(request, 'Activity updated but no passengers were defined for add-on assignment.')
+            else:
+                messages.success(request, f'Activity "{activity.title}" updated successfully!')
+            
             return redirect('section_detail', section_id=activity.section.id)
             
         except Exception as e:
             messages.error(request, f'Error updating activity: {str(e)}')
             return redirect('edit_activity', activity_id=activity_id)
     
-    # Get airports from flightapp for the form
-    from flightapp.models import Airport
-    airports = Airport.objects.all()
+    # Prepare context for existing add-ons data
+    existing_addon_data = {}
+    for addon_req in activity.activity_addons.all():
+        if addon_req.passenger:
+            passenger_id = addon_req.passenger.id
+            if passenger_id not in existing_addon_data:
+                existing_addon_data[passenger_id] = []
+            existing_addon_data[passenger_id].append({
+                'addon_id': addon_req.addon.id,
+                'is_required': addon_req.is_required,
+                'quantity': addon_req.quantity_per_passenger,
+                'notes': addon_req.notes
+            })
     
     template = loader.get_template('instructorapp/instructor/activity/edit_activity.html')
     context = {
         'activity': activity,
         'airports': airports,
+        'addons': addons,
+        'existing_addon_data': existing_addon_data,
         'current_user': user,
     }
     return HttpResponse(template.render(context, request))
@@ -542,12 +726,10 @@ def activate_activity(request, activity_id):
     activity = get_object_or_404(Activity, id=activity_id, section__instructor=user)
     
     if request.method == 'POST':
-        expiration_hours = int(request.POST.get('expiration_hours', 24))
-        activity.activate_code(expiration_hours)
+        activity.activate_code()
         messages.success(request, f'Activity code activated: {activity.activity_code}')
     
     return redirect('section_detail', section_id=activity.section.id)
-
 
 def activity_detail(request, activity_id):
     user = get_current_user(request)
@@ -621,6 +803,36 @@ def activity_submissions(request, activity_id):
     }
     return HttpResponse(template.render(context, request))
 
+def manage_addon_points(request, activity_id):
+    """View to manage points for activity add-ons"""
+    user = get_current_user(request)
+    if not user or not is_instructor(user):
+        messages.error(request, 'Access denied.')
+        return redirect('instructor_login')
+    
+    activity = get_object_or_404(Activity, id=activity_id, section__instructor=user)
+    
+    if request.method == 'POST':
+        # Update add-on points
+        for addon_req in activity.activity_addons.all():
+            points_field = f'points_{addon_req.id}'
+            if points_field in request.POST:
+                try:
+                    points_value = Decimal(request.POST[points_field])
+                    addon_req.points_value = points_value
+                    addon_req.save()
+                except (ValueError, InvalidOperation):
+                    messages.error(request, f'Invalid points value for {addon_req.addon.name}')
+        
+        messages.success(request, 'Add-on points updated successfully!')
+        return redirect('section_detail', section_id=activity.section.id)
+    
+    template = loader.get_template('instructorapp/instructor/activity/manage_addon_points.html')
+    context = {
+        'activity': activity,
+        'current_user': user,
+    }
+    return HttpResponse(template.render(context, request))
 
 def debug_submissions(request):
     """Debug view to check all ActivitySubmission data"""
@@ -647,7 +859,6 @@ def debug_submissions(request):
         'current_user': user,
     }
     return HttpResponse(template.render(context, request))
-
 
 def debug_session(request):
     """Temporary debug view to check session and user info"""

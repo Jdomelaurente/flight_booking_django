@@ -156,7 +156,7 @@ class ActivityAdmin(admin.ModelAdmin):
         'updated_at',
         'activity_code',
         'code_generated_at',
-        'code_expires_at',
+       
         'submissions_count_display',
         'get_total_passengers_display'
     ]
@@ -207,7 +207,7 @@ class ActivityAdmin(admin.ModelAdmin):
                 'activity_code',
                 'is_code_active',
                 'code_generated_at',
-                'code_expires_at'
+                
             ],
             'classes': ['collapse']
         }),

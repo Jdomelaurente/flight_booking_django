@@ -1,4 +1,5 @@
 {% extends 'instructorapp/base.html' %}
+{% load dict_filters %}
 {% block title %}Edit Activity - {{ activity.title }}{% endblock %}
 
 {% block content %}
@@ -214,7 +215,7 @@
                                 <div id="passengers-container">
                                     {% if activity.passengers.exists %}
                                         {% for passenger in activity.passengers.all %}
-                                        <div class="passenger-card bg-white border border-gray-200 rounded-lg p-4 mb-4">
+                                        <div class="passenger-card bg-white border border-gray-200 rounded-lg p-4 mb-4" data-passenger-id="{{ passenger.id }}">
                                             <div class="flex justify-between items-center mb-3">
                                                 <h5 class="font-medium text-gray-700">Passenger {{ forloop.counter }}</h5>
                                                 <button type="button" class="remove-passenger text-red-600 hover:text-red-800 text-sm">
@@ -325,6 +326,107 @@
                             </div>
                         </div>
 
+                        <!-- Add Add-ons Section -->
+                        <div class="border-t border-gray-200 pt-4">
+                            <div class="mb-6">
+                                <div class="flex items-center mb-4">
+                                    <input type="checkbox" name="require_addons" id="require_addons" 
+                                        {% if activity.activity_addons.exists %}checked{% endif %}
+                                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <label for="require_addons" class="ml-2 block text-sm font-medium text-gray-700">
+                                        Enable Add-ons for Passengers
+                                    </label>
+                                </div>
+
+                                <!-- Add-ons Selection (initially hidden) -->
+                                <div id="addons-section" class="{% if not activity.activity_addons.exists %}hidden{% endif %} mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                    <h4 class="text-sm font-medium text-gray-900 mb-3">Passenger Add-ons</h4>
+                                    
+                                    <!-- Info message -->
+                                    <div class="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
+                                        <p class="text-sm text-blue-700">
+                                            <strong>How it works:</strong> When you enable passenger details and add-ons, each passenger will get their own add-on section below. 
+                                            You can select different add-ons for each passenger individually.
+                                        </p>
+                                    </div>
+                                    
+                                    <!-- Passenger-specific add-on sections will be displayed here -->
+                                    <div id="passenger-addons-container">
+                                        {% if activity.passengers.exists and activity.activity_addons.exists %}
+                                            {% for passenger in activity.passengers.all %}
+                                            <div class="passenger-addon-section mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200" data-passenger-index="{{ forloop.counter0 }}">
+                                                <h4 class="text-md font-semibold text-blue-800 mb-3">
+                                                    Add-ons for Passenger {{ forloop.counter }}
+                                                </h4>
+                                                <p class="text-sm text-blue-600 mb-3">Select which add-ons this passenger should have:</p>
+                                                <div class="space-y-3" id="passenger-{{ forloop.counter0 }}-addons">
+                                                    {% for addon in addons %}
+                                                    {% with passenger_addons=existing_addon_data|get_item:passenger.id %}
+                                                    {% with existing_addon=passenger_addons|get_addon_by_id:addon.id %}
+                                                    <div class="flex items-start p-3 bg-white rounded border border-gray-200">
+                                                        <input type="checkbox" name="selected_addons_passenger_{{ forloop.parentloop.counter0 }}[]" value="{{ addon.id }}" 
+                                                               {% if existing_addon %}checked{% endif %}
+                                                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1">
+                                                        
+                                                        <div class="ml-3 flex-1">
+                                                            <div class="flex justify-between items-start">
+                                                                <div>
+                                                                    <label class="text-sm font-medium text-gray-700">
+                                                                        {{ addon.name }}
+                                                                        {% if addon.airline %}
+                                                                        <span class="text-xs text-gray-500">({{ addon.airline.code }})</span>
+                                                                        {% endif %}
+                                                                    </label>
+                                                                    {% if addon.type %}
+                                                                    <p class="text-xs text-gray-500">{{ addon.type.name }}</p>
+                                                                    {% endif %}
+                                                                    <p class="text-xs text-gray-600">{{ addon.description|default:"" }}</p>
+                                                                </div>
+                                                                <span class="text-sm font-semibold text-green-600">₱{{ addon.price }}</span>
+                                                            </div>
+                                                            
+                                                            <!-- Add-on requirements (shown when selected) -->
+                                                            <div class="mt-2 space-y-2 addon-requirements {% if existing_addon %}{% else %}hidden{% endif %}">
+                                                                <div class="flex items-center space-x-4">
+                                                                    <div class="flex items-center">
+                                                                        <input type="checkbox" name="addon_required_{{ addon.id }}_passenger_{{ forloop.parentloop.counter0 }}" 
+                                                                               {% if existing_addon.is_required %}checked{% endif %}
+                                                                               class="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                                                        <label class="ml-1 text-xs text-gray-600">
+                                                                            Required for this passenger
+                                                                        </label>
+                                                                    </div>
+                                                                    
+                                                                    <div class="flex items-center">
+                                                                        <label class="text-xs text-gray-600 mr-2">Quantity:</label>
+                                                                        <input type="number" name="addon_quantity_{{ addon.id }}_passenger_{{ forloop.parentloop.counter0 }}" 
+                                                                               value="{% if existing_addon %}{{ existing_addon.quantity }}{% else %}1{% endif %}" min="1" max="10"
+                                                                               class="w-16 px-2 py-1 text-xs border border-gray-300 rounded">
+                                                                    </div>
+                                                                </div>
+                                                                
+                                                                <div>
+                                                                    <label class="text-xs text-gray-600 block mb-1">Notes (optional):</label>
+                                                                    <textarea name="addon_notes_{{ addon.id }}_passenger_{{ forloop.parentloop.counter0 }}" 
+                                                                              rows="2"
+                                                                              class="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                                                              placeholder="Special instructions for this add-on...">{% if existing_addon %}{{ existing_addon.notes }}{% endif %}</textarea>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {% endwith %}
+                                                    {% endwith %}
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Additional Details -->
                         <div class="border-t border-gray-200 pt-4">
                             <div class="md:col-span-2">
@@ -381,6 +483,29 @@
                 }
             });
         }
+
+        // Show/hide add-ons section based on checkbox
+        const requireAddonsCheckbox = document.getElementById('require_addons');
+        const addonsSection = document.getElementById('addons-section');
+        
+        if (requireAddonsCheckbox && addonsSection) {
+            requireAddonsCheckbox.addEventListener('change', function() {
+                addonsSection.classList.toggle('hidden', !this.checked);
+            });
+        }
+
+        // Add event listeners for showing/hiding add-on requirements
+        document.addEventListener('change', function(e) {
+            if (e.target && e.target.type === 'checkbox' && e.target.name.includes('selected_addons_passenger_')) {
+                const checkbox = e.target;
+                const addonDiv = checkbox.closest('.bg-white');
+                const requirementsDiv = addonDiv.querySelector('.addon-requirements');
+                
+                if (requirementsDiv) {
+                    requirementsDiv.classList.toggle('hidden', !checkbox.checked);
+                }
+            }
+        });
 
         // Add passenger functionality
         const addPassengerBtn = document.getElementById('add-passenger-btn');
@@ -455,6 +580,8 @@
                         alert('At least one passenger is required.');
                     }
                 });
+
+                updatePassengerNumbers();
             });
         }
 
