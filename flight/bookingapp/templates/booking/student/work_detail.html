@@ -92,18 +92,18 @@
         </div>
     </div>
 
-    <!-- Grading Rubrics Table -->
+    <!-- Comprehensive Activity Requirements Table -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
             <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
                 <i class="fas fa-clipboard-check text-blue-600"></i>
-                Grading Rubrics
+                Activity Requirements & Performance
             </h2>
-            <p class="text-sm text-gray-600 mt-1">Detailed breakdown of your performance based on activity requirements</p>
+            <p class="text-sm text-gray-600 mt-1">Complete breakdown of activity requirements and your submission</p>
         </div>
         
         <div class="p-6">
-            <!-- Main Rubrics Table -->
+            <!-- Main Comprehensive Table -->
             <div class="overflow-x-auto rounded-lg border border-gray-200">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
@@ -145,6 +145,200 @@
                                 <span class="text-sm font-semibold text-gray-900">{{ comparison.score_breakdown.base_points|floatformat:1 }} pts</span>
                                 <div class="text-xs text-gray-500">
                                     {% widthratio comparison.score_breakdown.base_points comparison.score_breakdown.total_possible_base_points 100 %}% of category
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Flight Route Requirements -->
+                        <!-- Origin Airport -->
+                        <tr class="hover:bg-gray-50 transition-colors duration-150 {% if comparison.flight_comparison.origin_match %}bg-green-50{% else %}bg-red-50{% endif %}">
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-plane-departure {% if comparison.flight_comparison.origin_match %}text-green-500{% else %}text-red-500{% endif %}"></i>
+                                    <span class="text-sm font-medium text-gray-900">Flight Route</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4">
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium {% if comparison.flight_comparison.origin_match %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    Included
+                                </span>
+                            </td>
+                            <td class="px-4 py-4">
+                                <div class="text-sm text-gray-900 space-y-1">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-flag text-gray-400 text-xs"></i>
+                                        <span>Origin: {% if comparison.flight_comparison.required_origin %}{{ comparison.flight_comparison.required_origin }}{% else %}Any airport{% endif %}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-flag-checkered text-gray-400 text-xs"></i>
+                                        <span>Destination: {% if comparison.flight_comparison.required_destination %}{{ comparison.flight_comparison.required_destination }}{% else %}Any airport{% endif %}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4">
+                                <div class="text-sm text-gray-900 space-y-1">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-plane text-gray-400 text-xs"></i>
+                                        <span>Origin: {{ comparison.flight_comparison.booked_origin }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-plane text-gray-400 text-xs"></i>
+                                        <span>Destination: {{ comparison.flight_comparison.booked_destination }}</span>
+                                    </div>
+                                </div>
+                                {% if not comparison.flight_comparison.origin_match or not comparison.flight_comparison.destination_match %}
+                                <div class="text-xs {% if not comparison.flight_comparison.origin_match and not comparison.flight_comparison.destination_match %}text-red-600{% else %}text-yellow-600{% endif %} font-medium mt-2 p-2 {% if not comparison.flight_comparison.origin_match and not comparison.flight_comparison.destination_match %}bg-red-50{% else %}bg-yellow-50{% endif %} rounded border {% if not comparison.flight_comparison.origin_match and not comparison.flight_comparison.destination_match %}border-red-100{% else %}border-yellow-100{% endif %}">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                    {% if not comparison.flight_comparison.origin_match %}Origin airport mismatch{% endif %}
+                                    {% if not comparison.flight_comparison.destination_match %}{% if not comparison.flight_comparison.origin_match %}, {% endif %}Destination airport mismatch{% endif %}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                {% if comparison.flight_comparison.origin_match and comparison.flight_comparison.destination_match %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-1"></i>Correct Route
+                                </span>
+                                {% elif comparison.flight_comparison.origin_match or comparison.flight_comparison.destination_match %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>Partial Match
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <i class="fas fa-times mr-1"></i>Incorrect Route
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                <span class="text-sm font-semibold text-gray-900">
+                                    {% if comparison.flight_comparison.origin_match and comparison.flight_comparison.destination_match %}
+                                        Included in compliance
+                                    {% else %}
+                                        Route mismatch
+                                    {% endif %}
+                                </span>
+                                <div class="text-xs text-gray-500">
+                                    Affects overall compliance
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Trip Type Requirement -->
+                        <tr class="hover:bg-gray-50 transition-colors duration-150 {% if comparison.flight_comparison.trip_type_match %}bg-green-50{% else %}bg-yellow-50{% endif %}">
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-route {% if comparison.flight_comparison.trip_type_match %}text-green-500{% else %}text-yellow-500{% endif %}"></i>
+                                    <span class="text-sm font-medium text-gray-900">Trip Type</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4">
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium {% if comparison.flight_comparison.trip_type_match %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    Included
+                                </span>
+                            </td>
+                            <td class="px-4 py-4">
+                                <div class="text-sm text-gray-900">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-suitcase text-gray-400 text-xs"></i>
+                                        <span>{{ activity.required_trip_type|title }} Trip</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4">
+                                <div class="text-sm text-gray-900">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-suitcase text-gray-400 text-xs"></i>
+                                        <span>{{ comparison.flight_comparison.submitted_trip_type|title }} Trip</span>
+                                    </div>
+                                </div>
+                                {% if not comparison.flight_comparison.trip_type_match %}
+                                <div class="text-xs text-yellow-600 font-medium mt-2 p-2 bg-yellow-50 rounded border border-yellow-100">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                    Trip type does not match requirement
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                {% if comparison.flight_comparison.trip_type_match %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-1"></i>Correct
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>Incorrect
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                <span class="text-sm font-semibold text-gray-900">
+                                    {% if comparison.flight_comparison.trip_type_match %}
+                                        Included in compliance
+                                    {% else %}
+                                        Affects compliance score
+                                    {% endif %}
+                                </span>
+                                <div class="text-xs text-gray-500">
+                                    Part of flight compliance
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Travel Class Requirement -->
+                        <tr class="hover:bg-gray-50 transition-colors duration-150 {% if comparison.flight_comparison.has_correct_class %}bg-green-50{% else %}bg-yellow-50{% endif %}">
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-couch {% if comparison.flight_comparison.has_correct_class %}text-green-500{% else %}text-yellow-500{% endif %}"></i>
+                                    <span class="text-sm font-medium text-gray-900">Travel Class</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4">
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium {% if comparison.flight_comparison.has_correct_class %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    Included
+                                </span>
+                            </td>
+                            <td class="px-4 py-4">
+                                <div class="text-sm text-gray-900">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-crown text-gray-400 text-xs"></i>
+                                        <span>{{ activity.required_travel_class|title }} Class</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4">
+                                <div class="text-sm text-gray-900">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-chair text-gray-400 text-xs"></i>
+                                        <span>{{ comparison.flight_comparison.actual_travel_classes|title }}</span>
+                                    </div>
+                                </div>
+                                {% if not comparison.flight_comparison.has_correct_class %}
+                                <div class="text-xs text-yellow-600 font-medium mt-2 p-2 bg-yellow-50 rounded border border-yellow-100">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                    Travel class does not match requirement
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                {% if comparison.flight_comparison.has_correct_class %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-1"></i>Correct
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>Incorrect
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                <span class="text-sm font-semibold text-gray-900">
+                                    {% if comparison.flight_comparison.has_correct_class %}
+                                        Included in compliance
+                                    {% else %}
+                                        Affects compliance score
+                                    {% endif %}
+                                </span>
+                                <div class="text-xs text-gray-500">
+                                    Part of flight compliance
                                 </div>
                             </td>
                         </tr>
@@ -217,69 +411,6 @@
                                 <span class="text-sm font-semibold text-gray-900">{{ comparison.score_breakdown.passenger_points|floatformat:1 }} pts</span>
                                 <div class="text-xs text-gray-500">
                                     {% widthratio comparison.score_breakdown.passenger_points comparison.score_breakdown.total_possible_passenger_points 100 %}% of category
-                                </div>
-                            </td>
-                        </tr>
-
-                        <!-- Trip Type & Class Compliance -->
-                        <tr class="hover:bg-gray-50 transition-colors duration-150 {% if comparison.flight_comparison.trip_type_match and comparison.flight_comparison.has_correct_class %}bg-green-50{% else %}bg-yellow-50{% endif %}">
-                            <td class="px-4 py-4 whitespace-nowrap">
-                                <div class="flex items-center gap-2">
-                                    <i class="fas fa-clipboard-check {% if comparison.flight_comparison.trip_type_match and comparison.flight_comparison.has_correct_class %}text-green-500{% else %}text-yellow-500{% endif %}"></i>
-                                    <span class="text-sm font-medium text-gray-900">Flight Compliance</span>
-                                </div>
-                            </td>
-                            <td class="px-4 py-4">
-                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium {% if comparison.flight_comparison.trip_type_match and comparison.flight_comparison.has_correct_class %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
-                                    15%
-                                </span>
-                            </td>
-                            <td class="px-4 py-4">
-                                <div class="text-sm text-gray-900 space-y-1">
-                                    <div class="flex items-center gap-2">
-                                        <i class="fas fa-route text-gray-400 text-xs"></i>
-                                        <span>Trip: {{ activity.required_trip_type|title }}</span>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <i class="fas fa-couch text-gray-400 text-xs"></i>
-                                        <span>Class: {{ activity.required_travel_class|title }}</span>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-4 py-4">
-                                <div class="text-sm text-gray-900 space-y-1">
-                                    <div class="flex items-center gap-2">
-                                        <i class="fas fa-route text-gray-400 text-xs"></i>
-                                        <span>Trip: {{ comparison.flight_comparison.submitted_trip_type|title }}</span>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <i class="fas fa-couch text-gray-400 text-xs"></i>
-                                        <span>Class: {{ comparison.flight_comparison.actual_travel_classes|title }}</span>
-                                    </div>
-                                </div>
-                                {% if not comparison.flight_comparison.trip_type_match or not comparison.flight_comparison.has_correct_class %}
-                                <div class="text-xs text-yellow-600 font-medium mt-2 p-2 bg-yellow-50 rounded border border-yellow-100">
-                                    <i class="fas fa-exclamation-triangle mr-1"></i>
-                                    {% if not comparison.flight_comparison.trip_type_match %}Trip type mismatch{% endif %}
-                                    {% if not comparison.flight_comparison.has_correct_class %}{% if not comparison.flight_comparison.trip_type_match %}, {% endif %}Class mismatch{% endif %}
-                                </div>
-                                {% endif %}
-                            </td>
-                            <td class="px-4 py-4 whitespace-nowrap">
-                                {% if comparison.flight_comparison.trip_type_match and comparison.flight_comparison.has_correct_class %}
-                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    <i class="fas fa-check mr-1"></i>Fully Compliant
-                                </span>
-                                {% else %}
-                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                    <i class="fas fa-exclamation-triangle mr-1"></i>Partial Compliance
-                                </span>
-                                {% endif %}
-                            </td>
-                            <td class="px-4 py-4 whitespace-nowrap">
-                                <span class="text-sm font-semibold text-gray-900">{{ comparison.score_breakdown.compliance_points|floatformat:1 }} pts</span>
-                                <div class="text-xs text-gray-500">
-                                    {% widthratio comparison.score_breakdown.compliance_points comparison.score_breakdown.total_possible_compliance_points 100 %}% of category
                                 </div>
                             </td>
                         </tr>
@@ -365,7 +496,7 @@
                 </table>
             </div>
 
-            <!-- Total Score Row -->
+            <!-- Total Score Summary -->
             <div class="mt-6 bg-gradient-to-r from-gray-50 to-blue-50 border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow duration-200">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div class="flex items-center gap-3">
@@ -373,8 +504,9 @@
                             <i class="fas fa-star text-white text-lg"></i>
                         </div>
                         <div>
-                            <h3 class="text-lg font-semibold text-gray-900">Total Score</h3>
-                            <p class="text-sm text-gray-600">Sum of all categories: 25% + 25% + 15% + 15% = 80%</p>
+                            <h3 class="text-lg font-semibold text-gray-900">Total Score Summary</h3>
+                            <p class="text-sm text-gray-600">Weighted sum of all categories</p>
+                            
                         </div>
                     </div>
                     <div class="text-right">
@@ -385,156 +517,10 @@
                         <div class="text-xs text-gray-400 mt-1">
                             Base: {{ comparison.score_breakdown.base_points|floatformat:1 }} + 
                             Passengers: {{ comparison.score_breakdown.passenger_points|floatformat:1 }} + 
+                            Price: {{ comparison.score_breakdown.price_points|floatformat:1 }} +
                             Compliance: {{ comparison.score_breakdown.compliance_points|floatformat:1 }} + 
                             Add-ons: {{ submission.addon_score|floatformat:1 }}
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Detailed Score Breakdown -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-pink-50">
-            <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <i class="fas fa-calculator text-purple-600"></i>
-                Score Calculation Details
-            </h2>
-            <p class="text-sm text-gray-600 mt-1">How your score was calculated</p>
-        </div>
-        
-        <div class="p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Points Breakdown -->
-                <div class="space-y-4">
-                    <h3 class="text-lg font-semibold text-gray-900">Points Breakdown</h3>
-                    <div class="space-y-3">
-                        <!-- Base Points -->
-                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-150">
-                            <div>
-                                <span class="text-sm text-gray-600">Base Completion Points</span>
-                                <div class="text-xs text-gray-500">25% of total</div>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-sm font-semibold text-gray-900">{{ comparison.score_breakdown.base_points|floatformat:1 }} pts</span>
-                                <div class="text-xs text-gray-500">
-                                    {% widthratio comparison.score_breakdown.base_points comparison.score_breakdown.total_possible_base_points 100 %}% of category
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Passenger Points -->
-                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-150">
-                            <div>
-                                <span class="text-sm text-gray-600">Passenger Requirements</span>
-                                <div class="text-xs text-gray-500">25% of total</div>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-sm font-semibold text-gray-900">{{ comparison.score_breakdown.passenger_points|floatformat:1 }} pts</span>
-                                <div class="text-xs text-gray-500">
-                                    {% widthratio comparison.score_breakdown.passenger_points comparison.score_breakdown.total_possible_passenger_points 100 %}% of category
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Compliance Points -->
-                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-150">
-                            <div>
-                                <span class="text-sm text-gray-600">Flight Compliance</span>
-                                <div class="text-xs text-gray-500">15% of total</div>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-sm font-semibold text-gray-900">{{ comparison.score_breakdown.compliance_points|floatformat:1 }} pts</span>
-                                <div class="text-xs text-gray-500">
-                                    {% widthratio comparison.score_breakdown.compliance_points comparison.score_breakdown.total_possible_compliance_points 100 %}% of category
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Add-ons Points -->
-                        {% if activity.addon_grading_enabled %}
-                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-150">
-                            <div>
-                                <span class="text-sm text-gray-600">Add-ons Selection</span>
-                                <div class="text-xs text-gray-500">15% of total</div>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-sm font-semibold text-gray-900">{{ submission.addon_score|floatformat:1 }} pts</span>
-                                <div class="text-xs text-gray-500">
-                                    {% if submission.max_addon_points > 0 %}
-                                        {% widthratio submission.addon_score submission.max_addon_points 100 %}% of category
-                                    {% else %}
-                                        N/A
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
-                        
-                        <!-- Total Score -->
-                        <div class="border-t border-gray-200 pt-3 mt-3">
-                            <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                                <div>
-                                    <span class="text-base font-semibold text-gray-900">Total Score</span>
-                                    <div class="text-xs text-gray-500">Sum of all categories</div>
-                                </div>
-                                <div class="text-right">
-                                    <span class="text-base font-bold text-blue-600">{{ submission.score|floatformat:1 }} pts</span>
-                                    <div class="text-xs text-gray-500">
-                                        {% widthratio submission.score activity.total_points 100 %}% Overall
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Performance Insights -->
-                <div class="space-y-4">
-                    <h3 class="text-lg font-semibold text-gray-900">Performance Insights</h3>
-                    <div class="space-y-3">
-                        {% if comparison.deductions %}
-                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 hover:shadow-sm transition-shadow duration-200">
-                                <h4 class="text-sm font-semibold text-yellow-800 mb-2 flex items-center gap-2">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    Areas for Improvement
-                                </h4>
-                                <ul class="text-xs text-yellow-700 space-y-2">
-                                    {% for deduction in comparison.deductions %}
-                                    <li class="flex items-start gap-2 p-2 bg-yellow-25 rounded border border-yellow-100">
-                                        <i class="fas fa-chevron-right mt-0.5 text-yellow-600"></i>
-                                        <span>{{ deduction.details }}</span>
-                                    </li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                        {% else %}
-                            <div class="bg-green-50 border border-green-200 rounded-lg p-4 hover:shadow-sm transition-shadow duration-200">
-                                <h4 class="text-sm font-semibold text-green-800 mb-2 flex items-center gap-2">
-                                    <i class="fas fa-check-circle"></i>
-                                    Excellent Work!
-                                </h4>
-                                <p class="text-xs text-green-700">You met all the activity requirements perfectly.</p>
-                            </div>
-                        {% endif %}
-                        
-                        {% if comparison.recommendations %}
-                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 hover:shadow-sm transition-shadow duration-200">
-                                <h4 class="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-2">
-                                    <i class="fas fa-lightbulb"></i>
-                                    Recommendations
-                                </h4>
-                                <ul class="text-xs text-blue-700 space-y-2">
-                                    {% for recommendation in comparison.recommendations %}
-                                    <li class="flex items-start gap-2 p-2 bg-blue-25 rounded border border-blue-100">
-                                        <i class="fas fa-arrow-right mt-0.5 text-blue-600"></i>
-                                        <span>{{ recommendation }}</span>
-                                    </li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -555,6 +541,7 @@
         </a>
     </div>
 </div>
+
 
 <script>
 function goBack() {
@@ -616,7 +603,7 @@ tr:hover {
 }
 
 /* Smooth transitions */
-.bg-green-500, .bg-orange-500, .bg-blue-500, .bg-yellow-500, .bg-teal-500 {
+.bg-green-500, .bg-orange-500, .bg-blue-500, .bg-yellow-500, .bg-teal-500, .bg-red-500 {
     transition: all 0.3s ease-in-out;
 }
 
@@ -627,6 +614,10 @@ tr:hover {
 
 .bg-blue-25 {
     background-color: #eff6ff;
+}
+
+.bg-red-50 {
+    background-color: #fef2f2;
 }
 
 /* Animation for score progress bars */

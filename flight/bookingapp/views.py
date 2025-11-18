@@ -2451,6 +2451,18 @@ def payment_success(request):
             print(f"   - Activity: {activity.title} (ID: {activity.id})")
             print(f"   - Student: {student.first_name} {student.last_name} (ID: {student.id})")
             
+            # Get origin and destination airports from the booking
+            origin_airport = None
+            destination_airport = None
+            
+            # Get the first booking detail to extract route information
+            first_booking_detail = booking.details.first()
+            if first_booking_detail:
+                route = first_booking_detail.schedule.flight.route
+                origin_airport = route.origin_airport
+                destination_airport = route.destination_airport
+                print(f"🌍 Airport info - Origin: {origin_airport.code}, Destination: {destination_airport.code}")
+            
             # Check if submission already exists
             existing_submission = ActivitySubmission.objects.filter(
                 activity=activity, 
@@ -2468,7 +2480,7 @@ def payment_success(request):
                     score = calculate_activity_score(booking, activity)
                     print(f"📊 Calculated score: {score}/{activity.total_points}")
                     
-                    # FIX: Create activity submission WITHOUT required_max_price
+                    # Create activity submission WITH airport data
                     submission_data = {
                         'activity': activity,
                         'student': student,
@@ -2485,6 +2497,12 @@ def payment_success(request):
                         'submitted_at': timezone.now()
                     }
                     
+                    # ADD AIRPORT DATA if available
+                    if origin_airport:
+                        submission_data['required_origin_airport'] = origin_airport
+                    if destination_airport:
+                        submission_data['required_destination_airport'] = destination_airport
+                    
                     # Create the submission
                     submission = ActivitySubmission.objects.create(**submission_data)
                     
@@ -2497,6 +2515,9 @@ def payment_success(request):
                     print(f"✅ SUCCESS: Created submission: {submission.id}")
                     print(f"   Submission details - Activity: {submission.activity.title}, Student: {submission.student.first_name}, Booking: {submission.booking.id}, Score: {submission.score}")
                     print(f"   Add-on Score: {submission.addon_score}/{submission.max_addon_points}")
+                    print(f"   Origin Airport: {submission.required_origin_airport.code if submission.required_origin_airport else 'None'}")
+                    print(f"   Destination Airport: {submission.required_destination_airport.code if submission.required_destination_airport else 'None'}")
+                    
                     messages.success(request, f"Activity '{activity.title}' submitted successfully! Score: {score}/{activity.total_points}")
                     
                 except Exception as create_error:
@@ -2519,6 +2540,13 @@ def payment_success(request):
                         'score': Decimal('0.0'),
                         'submitted_at': timezone.now()
                     }
+                    
+                    # Add airport data to minimal submission too
+                    if origin_airport:
+                        minimal_submission_data['required_origin_airport'] = origin_airport
+                    if destination_airport:
+                        minimal_submission_data['required_destination_airport'] = destination_airport
+                    
                     submission = ActivitySubmission.objects.create(**minimal_submission_data)
                     messages.warning(request, f"Activity submitted but scoring failed. Please contact instructor.")
             
@@ -3402,6 +3430,9 @@ def get_detailed_comparison(activity, booking, booking_details):
         }
     }
 
+
+
+
 def calculate_detailed_score_breakdown(activity, booking, booking_details, seat_class_names):
     """Calculate detailed score breakdown for display with CORRECT weights"""
     total_points = float(activity.total_points)
@@ -3589,6 +3620,25 @@ def get_detailed_comparison(activity, booking, booking_details, submission=None)
     
     # Get trip type from booking
     submitted_trip_type = getattr(booking, 'trip_type', 'Not specified')
+
+    # Get airport information from booking
+    origin_match = True
+    destination_match = True
+    booked_origin = None
+    booked_destination = None
+    
+    # Extract airport info from booking details
+    if booking_details.get('flights'):
+        first_flight = next(iter(booking_details['flights'].values()), None)
+        if first_flight:
+            booked_origin = first_flight['schedule'].flight.route.origin_airport
+            booked_destination = first_flight['schedule'].flight.route.destination_airport
+            
+            # Check if activity has specific airport requirements
+            if hasattr(activity, 'required_origin') and activity.required_origin:
+                origin_match = booked_origin.code == activity.required_origin
+            if hasattr(activity, 'required_destination') and activity.required_destination:
+                destination_match = booked_destination.code == activity.required_destination
     
     # Build passenger comparison
     passenger_comparison = {
@@ -3618,6 +3668,12 @@ def get_detailed_comparison(activity, booking, booking_details, submission=None)
         'required_travel_class': activity.required_travel_class,
         'actual_travel_classes': actual_classes,
         'has_correct_class': has_correct_class,
+        'required_origin': getattr(activity, 'required_origin', None),
+        'required_destination': getattr(activity, 'required_destination', None),
+        'booked_origin': booked_origin.code if booked_origin else 'Not specified',
+        'booked_destination': booked_destination.code if booked_destination else 'Not specified',
+        'origin_match': origin_match,
+        'destination_match': destination_match,
     }
     
     # Build requirements list
@@ -3635,7 +3691,7 @@ def get_detailed_comparison(activity, booking, booking_details, submission=None)
         'weight': 'High'
     })
     
-    # 2. Passenger Count Requirements
+   # 2. Passenger Count Requirements
     requirements.append({
         'category': 'Passengers',
         'requirement': f'{activity.required_passengers} Adult(s)',
@@ -3644,7 +3700,8 @@ def get_detailed_comparison(activity, booking, booking_details, submission=None)
         'icon': '✓' if adult_count == activity.required_passengers else '✗',
         'weight': 'High'
     })
-    
+
+
     if activity.required_children > 0:
         requirements.append({
             'category': 'Passengers',
@@ -3654,6 +3711,7 @@ def get_detailed_comparison(activity, booking, booking_details, submission=None)
             'icon': '✓' if child_count == activity.required_children else '✗',
             'weight': 'Medium'
         })
+
     
     if activity.required_infants > 0:
         requirements.append({
@@ -3674,6 +3732,29 @@ def get_detailed_comparison(activity, booking, booking_details, submission=None)
         'icon': '✓' if has_correct_class else '✗',
         'weight': 'High'
     })
+
+
+    # 4. Origin Airport Requirement (if specified)
+    if hasattr(activity, 'required_origin') and activity.required_origin:
+        requirements.append({
+            'category': 'Flight Route',
+            'requirement': f'Depart from {activity.required_origin}',
+            'student_work': f'Depart from {booked_origin.code if booked_origin else "Not specified"}',
+            'met': origin_match,
+            'icon': '✓' if origin_match else '✗',
+            'weight': 'Medium'
+        })
+    
+    # 5. Destination Airport Requirement (if specified)
+    if hasattr(activity, 'required_destination') and activity.required_destination:
+        requirements.append({
+            'category': 'Flight Route',
+            'requirement': f'Arrive at {activity.required_destination}',
+            'student_work': f'Arrive at {booked_destination.code if booked_destination else "Not specified"}',
+            'met': destination_match,
+            'icon': '✓' if destination_match else '✗',
+            'weight': 'Medium'
+        })
     
     # 4. Budget Requirement
     # if activity.required_max_price:
