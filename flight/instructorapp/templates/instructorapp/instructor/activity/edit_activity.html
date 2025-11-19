@@ -165,6 +165,19 @@
                                 </div>
                             </div>
 
+                            <!-- NEW: Passport Requirement Checkbox -->
+                            <div class="mb-4">
+                                <div class="flex items-center">
+                                    <input type="checkbox" name="require_passport" id="requirePassport"
+                                        {% if activity.require_passport %}checked{% endif %}
+                                        class="mr-2 rounded border-gray-300 text-[#093704] focus:ring-[#093704]">
+                                    <label class="text-md font-semibold text-gray-700">Require Passport Information for ALL Passengers</label>
+                                </div>
+                                <p class="text-sm text-gray-600 ml-6 mt-1">
+                                    Students must provide passport numbers for every passenger in the booking
+                                </p>
+                            </div>
+
                             <!-- Passenger Details Requirements -->
                             <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6">
                                 <div class="flex items-center mb-3">
@@ -199,6 +212,11 @@
                                     <div class="flex items-center">
                                         <div class="w-2 h-2 bg-[#093704] rounded-full mr-2"></div>
                                         <span>Nationality</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-2 h-2 bg-[#093704] rounded-full mr-2"></div>
+                                        <span>Passport Number</span>
+                                        <span class="text-red-500 ml-1 passport-required-text {% if not activity.require_passport %}hidden{% endif %}">*</span>
                                     </div>
                                 </div>
                             </div>
@@ -238,6 +256,18 @@
                                                     <input type="text" name="passenger_last_name[]" value="{{ passenger.last_name }}" required
                                                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
                                                 </div>
+                                                
+                                                <!-- NEW: Passenger Type Field -->
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Passenger Type *</label>
+                                                    <select name="passenger_type[]" required
+                                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                                        <option value="adult" {% if passenger.passenger_type == 'adult' %}selected{% endif %}>Adult (12+ years)</option>
+                                                        <option value="child" {% if passenger.passenger_type == 'child' %}selected{% endif %}>Child (2-11 years)</option>
+                                                        <option value="infant" {% if passenger.passenger_type == 'infant' %}selected{% endif %}>Infant (Under 2 years)</option>
+                                                    </select>
+                                                </div>
+                                                
                                                 <div>
                                                     <label class="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
                                                     <select name="passenger_gender[]" required
@@ -256,6 +286,20 @@
                                                     <label class="block text-sm font-medium text-gray-700 mb-1">Nationality *</label>
                                                     <input type="text" name="passenger_nationality[]" value="{{ passenger.nationality }}" required
                                                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                                </div>
+                                                <!-- NEW: Passport Number Field -->
+                                                <div class="passport-field">
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                                        Passport Number 
+                                                        <span class="text-red-500 passport-required-indicator {% if not activity.require_passport %}hidden{% endif %}">*</span>
+                                                    </label>
+                                                    <input type="text" name="passenger_passport[]" value="{{ passenger.passport_number|default:'' }}"
+                                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704] text-sm passport-input" 
+                                                           placeholder="{% if activity.require_passport %}Enter passport number *{% else %}Enter passport number{% endif %}"
+                                                           {% if activity.require_passport %}required{% endif %}>
+                                                    <p class="text-xs text-gray-500 mt-1 passport-help-text {% if not activity.require_passport %}hidden{% endif %}">
+                                                        Required for all passengers
+                                                    </p>
                                                 </div>
                                                 <div class="md:col-span-2">
                                                     <div class="flex items-center">
@@ -293,6 +337,18 @@
                                                     <input type="text" name="passenger_last_name[]" required
                                                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
                                                 </div>
+                                                
+                                                <!-- NEW: Passenger Type Field -->
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Passenger Type *</label>
+                                                    <select name="passenger_type[]" required
+                                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                                        <option value="adult">Adult (12+ years)</option>
+                                                        <option value="child">Child (2-11 years)</option>
+                                                        <option value="infant">Infant (Under 2 years)</option>
+                                                    </select>
+                                                </div>
+                                                
                                                 <div>
                                                     <label class="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
                                                     <select name="passenger_gender[]" required
@@ -311,6 +367,20 @@
                                                     <label class="block text-sm font-medium text-gray-700 mb-1">Nationality *</label>
                                                     <input type="text" name="passenger_nationality[]" required
                                                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                                </div>
+                                                <!-- NEW: Passport Number Field -->
+                                                <div class="passport-field">
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                                        Passport Number 
+                                                        <span class="text-red-500 passport-required-indicator {% if not activity.require_passport %}hidden{% endif %}">*</span>
+                                                    </label>
+                                                    <input type="text" name="passenger_passport[]"
+                                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704] text-sm passport-input" 
+                                                           placeholder="{% if activity.require_passport %}Enter passport number *{% else %}Enter passport number{% endif %}"
+                                                           {% if activity.require_passport %}required{% endif %}>
+                                                    <p class="text-xs text-gray-500 mt-1 passport-help-text {% if not activity.require_passport %}hidden{% endif %}">
+                                                        Required for all passengers
+                                                    </p>
                                                 </div>
                                                 <div class="md:col-span-2">
                                                     <div class="flex items-center">
@@ -494,6 +564,45 @@
             });
         }
 
+        // NEW: Toggle passport requirement for ALL passengers
+        const requirePassportCheckbox = document.getElementById('requirePassport');
+        
+        function togglePassportRequirement() {
+            const requirePassport = requirePassportCheckbox.checked;
+            const passportInputs = document.querySelectorAll('.passport-input');
+            const passportIndicators = document.querySelectorAll('.passport-required-indicator');
+            const passportHelpTexts = document.querySelectorAll('.passport-help-text');
+            const passportRequiredTexts = document.querySelectorAll('.passport-required-text');
+            
+            passportInputs.forEach(input => {
+                input.required = requirePassport;
+                if (requirePassport) {
+                    input.placeholder = "Enter passport number *";
+                } else {
+                    input.placeholder = "Enter passport number";
+                }
+            });
+            
+            passportIndicators.forEach(indicator => {
+                indicator.classList.toggle('hidden', !requirePassport);
+            });
+            
+            passportHelpTexts.forEach(helpText => {
+                helpText.classList.toggle('hidden', !requirePassport);
+            });
+            
+            passportRequiredTexts.forEach(text => {
+                text.classList.toggle('hidden', !requirePassport);
+            });
+        }
+
+        // Initialize passport requirement
+        if (requirePassportCheckbox) {
+            requirePassportCheckbox.addEventListener('change', togglePassportRequirement);
+            // Apply initial state
+            togglePassportRequirement();
+        }
+
         // Add event listeners for showing/hiding add-on requirements
         document.addEventListener('change', function(e) {
             if (e.target && e.target.type === 'checkbox' && e.target.name.includes('selected_addons_passenger_')) {
@@ -539,6 +648,18 @@
                             <input type="text" name="passenger_last_name[]" required
                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
                         </div>
+                        
+                        <!-- NEW: Passenger Type Field -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Passenger Type *</label>
+                            <select name="passenger_type[]" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                <option value="adult">Adult (12+ years)</option>
+                                <option value="child">Child (2-11 years)</option>
+                                <option value="infant">Infant (Under 2 years)</option>
+                            </select>
+                        </div>
+                        
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
                             <select name="passenger_gender[]" required
@@ -557,6 +678,20 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Nationality *</label>
                             <input type="text" name="passenger_nationality[]" required
                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                        </div>
+                        <!-- NEW: Passport Number Field -->
+                        <div class="passport-field">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Passport Number 
+                                <span class="text-red-500 passport-required-indicator {% if not activity.require_passport %}hidden{% endif %}">*</span>
+                            </label>
+                            <input type="text" name="passenger_passport[]"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704] text-sm passport-input" 
+                                   placeholder="{% if activity.require_passport %}Enter passport number *{% else %}Enter passport number{% endif %}"
+                                   {% if activity.require_passport %}required{% endif %}>
+                            <p class="text-xs text-gray-500 mt-1 passport-help-text {% if not activity.require_passport %}hidden{% endif %}">
+                                Required for all passengers
+                            </p>
                         </div>
                         <div class="md:col-span-2">
                             <div class="flex items-center">
@@ -619,6 +754,7 @@
         if (form) {
             form.addEventListener('submit', function(e) {
                 const requirePassengerDetails = document.getElementById('require_passenger_details');
+                const requirePassport = document.getElementById('requirePassport');
                 const passengerCards = document.querySelectorAll('.passenger-card');
                 
                 if (requirePassengerDetails && requirePassengerDetails.checked) {
@@ -627,18 +763,28 @@
                     passengerCards.forEach(card => {
                         const firstName = card.querySelector('input[name="passenger_first_name[]"]');
                         const lastName = card.querySelector('input[name="passenger_last_name[]"]');
+                        const passengerType = card.querySelector('select[name="passenger_type[]"]'); // NEW: Check passenger type
                         const gender = card.querySelector('select[name="passenger_gender[]"]');
                         const dob = card.querySelector('input[name="passenger_dob[]"]');
                         const nationality = card.querySelector('input[name="passenger_nationality[]"]');
+                        const passport = card.querySelector('.passport-input');
                         
-                        if (firstName.value.trim() && lastName.value.trim() && gender.value && dob.value && nationality.value.trim()) {
+                        let isValid = firstName.value.trim() && lastName.value.trim() && passengerType.value && gender.value && dob.value && nationality.value.trim();
+                        
+                        // Check passport if required
+                        if (requirePassport && requirePassport.checked) {
+                            isValid = isValid && passport.value.trim();
+                        }
+                        
+                        if (isValid) {
                             hasValidPassengers = true;
                         }
                     });
                     
                     if (!hasValidPassengers) {
                         e.preventDefault();
-                        alert('Please fill in all required passenger details for at least one passenger.');
+                        alert('Please fill in all required passenger details for at least one passenger.' + 
+                              (requirePassport && requirePassport.checked ? ' Passport numbers are required for all passengers.' : ''));
                         return false;
                     }
                 }

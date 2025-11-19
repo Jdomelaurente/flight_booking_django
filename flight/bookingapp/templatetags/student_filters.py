@@ -3,6 +3,17 @@ from django import template
 register = template.Library()
 
 @register.filter
+def subtract(value, arg):
+    """Subtract the argument from the value"""
+    try:
+        return float(value) - float(arg)
+    except (ValueError, TypeError):
+        try:
+            return value - arg
+        except:
+            return 0
+
+@register.filter
 def filter_by_type(passengers, passenger_type):
     """Filter passengers by type"""
     if not passengers:
@@ -87,3 +98,37 @@ def calculate_percentage(met_count, total_count):
         return (float(met_count) / float(total_count)) * 100
     except (ValueError, ZeroDivisionError, TypeError):
         return 0
+    
+@register.filter
+def is_passenger_complete(passenger):
+    """Check if passenger has complete information"""
+    if not passenger:
+        return False
+    
+    required_fields = ['name', 'date_of_birth', 'gender']
+    for field in required_fields:
+        if not passenger.get(field):
+            return False
+    
+    # Check if date of birth is valid
+    dob = passenger.get('date_of_birth')
+    if dob and hasattr(dob, 'year'):  # It's a date object
+        return True
+    elif dob and isinstance(dob, str) and len(dob) > 0:  # It's a string
+        return True
+    
+    return False
+
+@register.filter
+def filter_complete_passengers(passengers):
+    """Filter only complete passengers"""
+    if not passengers:
+        return []
+    return [p for p in passengers if p|is_passenger_complete]
+
+@register.filter
+def filter_incomplete_passengers(passengers):
+    """Filter only incomplete passengers"""
+    if not passengers:
+        return []
+    return [p for p in passengers if not p|is_passenger_complete]    

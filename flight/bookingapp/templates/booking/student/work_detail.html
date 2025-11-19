@@ -50,7 +50,7 @@
     </div>
 
     <!-- Performance Overview Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <!-- Requirements Met -->
         <div class="bg-white border border-gray-200 rounded-lg p-6 text-center hover:shadow-md transition-shadow duration-200">
             <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -90,6 +90,329 @@
                 {% endif %}
             </p>
         </div>
+
+        <!-- Passenger Information Quality -->
+        <div class="bg-white border border-gray-200 rounded-lg p-6 text-center hover:shadow-md transition-shadow duration-200">
+            <div class="w-12 h-12 {% if comparison.passenger_comparison.information_quality_percentage >= 80 %}bg-green-500{% elif comparison.passenger_comparison.information_quality_percentage >= 60 %}bg-blue-500{% else %}bg-orange-500{% endif %} rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fas fa-user-check text-white text-lg"></i>
+            </div>
+            <h3 class="text-sm font-semibold text-gray-800 mb-2">Passenger Info Quality</h3>
+            <p class="text-2xl font-bold {% if comparison.passenger_comparison.information_quality_percentage >= 80 %}text-green-600{% elif comparison.passenger_comparison.information_quality_percentage >= 60 %}text-blue-600{% else %}text-orange-600{% endif %}">
+                {{ comparison.passenger_comparison.information_quality_percentage|floatformat:1 }}%
+            </p>
+            <p class="text-xs text-gray-500 mt-1">
+                {% if comparison.passenger_comparison.information_quality_percentage >= 80 %}
+                    Excellent
+                {% elif comparison.passenger_comparison.information_quality_percentage >= 60 %}
+                    Good
+                {% else %}
+                    Needs Improvement
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <!-- Detailed Passenger Information Comparison -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-indigo-50">
+            <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-users text-purple-600"></i>
+                Passenger Information Details
+            </h2>
+            <p class="text-sm text-gray-600 mt-1">Comparison between activity requirements and your submitted passenger information</p>
+        </div>
+        
+        <div class="p-6">
+            <!-- Activity Passenger Requirements -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <i class="fas fa-clipboard-list text-blue-600"></i>
+                    Activity Passenger Requirements
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-user text-blue-600"></i>
+                            <span class="font-semibold text-gray-900">Adults</span>
+                        </div>
+                        <p class="text-2xl font-bold text-blue-700">{{ activity.required_passengers }}</p>
+                        <p class="text-xs text-gray-600 mt-1">Required passengers</p>
+                    </div>
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-child text-green-600"></i>
+                            <span class="font-semibold text-gray-900">Children</span>
+                        </div>
+                        <p class="text-2xl font-bold text-green-700">{{ activity.required_children }}</p>
+                        <p class="text-xs text-gray-600 mt-1">Required children (2-11 years)</p>
+                    </div>
+                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-baby text-orange-600"></i>
+                            <span class="font-semibold text-gray-900">Infants</span>
+                        </div>
+                        <p class="text-2xl font-bold text-orange-700">{{ activity.required_infants }}</p>
+                        <p class="text-xs text-gray-600 mt-1">Required infants (under 2 years)</p>
+                    </div>
+                </div>
+
+                <!-- Activity Predefined Passengers (if any) -->
+                {% if activity_passengers %}
+                <div class="mt-6">
+                    <h4 class="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <i class="fas fa-list-check text-purple-600"></i>
+                        Predefined Passenger Details
+                    </h4>
+                    <div class="overflow-x-auto rounded-lg border border-gray-200">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date of Birth</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Passport</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nationality</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for passenger in activity_passengers %}
+                                <tr class="hover:bg-gray-50 transition-colors duration-150">
+                                    <td class="px-4 py-4 whitespace-nowrap">
+                                        <div class="flex items-center gap-2">
+                                            {% if passenger.is_primary %}
+                                            <i class="fas fa-crown text-yellow-500" title="Primary Passenger"></i>
+                                            {% endif %}
+                                            <span class="text-sm font-medium text-gray-900">
+                                                {{ passenger.first_name }} 
+                                                {% if passenger.middle_name %}{{ passenger.middle_name }} {% endif %}
+                                                {{ passenger.last_name }}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 capitalize">
+                                            {{ passenger.gender }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ passenger.date_of_birth|date:"M j, Y" }}
+                                    </td>
+                                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ passenger.passport_number }}
+                                    </td>
+                                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ passenger.nationality }}
+                                    </td>
+                                    <td class="px-4 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium 
+                                            {% if passenger.is_primary %}bg-yellow-100 text-yellow-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                            {% if passenger.is_primary %}Primary {% endif %}{{ passenger.get_passenger_type }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Your Submitted Passenger Information -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <i class="fas fa-user-check text-green-600"></i>
+                    Your Submitted Passenger Information
+                </h3>
+                
+                {% if booking_details.passengers %}
+                <div class="overflow-x-auto rounded-lg border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date of Birth</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Passport</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for passenger in booking_details.passengers %}
+                            <tr class="hover:bg-gray-50 transition-colors duration-150 
+                                {% if passenger.email and passenger.phone and passenger.date_of_birth %}bg-green-50{% else %}bg-orange-50{% endif %}">
+                                <td class="px-4 py-4 whitespace-nowrap">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-medium text-gray-900">{{ passenger.name }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium 
+                                        {% if passenger.type == 'Adult' %}bg-blue-100 text-blue-800
+                                        {% elif passenger.type == 'Child' %}bg-green-100 text-green-800
+                                        {% else %}bg-orange-100 text-orange-800{% endif %}">
+                                        <i class="fas 
+                                            {% if passenger.type == 'Adult' %}fa-user
+                                            {% elif passenger.type == 'Child' %}fa-child
+                                            {% else %}fa-baby{% endif %} mr-1">
+                                        </i>
+                                        {{ passenger.type }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-4 whitespace-nowrap">
+                                    <span class="text-sm text-gray-900 capitalize">{{ passenger.gender }}</span>
+                                </td>
+                                <td class="px-4 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        {{ passenger.date_of_birth|date:"M j, Y" }}
+                                    </div>
+                                    {% if not passenger.date_of_birth %}
+                                    <div class="text-xs text-red-600 font-medium mt-1">
+                                        <i class="fas fa-exclamation-circle"></i> Missing
+                                    </div>
+                                    {% endif %}
+                                </td>
+                               
+                                <td class="px-4 py-4 whitespace-nowrap">
+                                    {% if passenger.passport %}
+                                    <span class="text-sm text-gray-900">{{ passenger.passport }}</span>
+                                    {% else %}
+                                    <span class="text-xs text-orange-600 font-medium">
+                                        <i class="fas fa-exclamation-triangle"></i> Not provided
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-4 whitespace-nowrap">
+                                    {% if passenger.email and passenger.phone and passenger.date_of_birth %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        <i class="fas fa-check mr-1"></i> Complete
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i> Incomplete
+                                    </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Passenger Count Comparison -->
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+                        <h4 class="text-md font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <i class="fas fa-chart-bar text-blue-600"></i>
+                            Passenger Count Comparison
+                        </h4>
+                        <div class="space-y-4">
+                            {% with submitted=comparison.passenger_comparison %}
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium text-gray-700">Adults:</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm {% if submitted.adults_match %}text-green-600{% else %}text-red-600{% endif %} font-semibold">
+                                        {{ submitted.submitted_adults }}
+                                    </span>
+                                    <span class="text-sm text-gray-500">/</span>
+                                    <span class="text-sm text-gray-700">{{ submitted.required_adults }}</span>
+                                    {% if submitted.adults_match %}
+                                    <i class="fas fa-check text-green-500"></i>
+                                    {% else %}
+                                    <i class="fas fa-times text-red-500"></i>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium text-gray-700">Children:</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm {% if submitted.children_match %}text-green-600{% else %}text-red-600{% endif %} font-semibold">
+                                        {{ submitted.submitted_children }}
+                                    </span>
+                                    <span class="text-sm text-gray-500">/</span>
+                                    <span class="text-sm text-gray-700">{{ submitted.required_children }}</span>
+                                    {% if submitted.children_match %}
+                                    <i class="fas fa-check text-green-500"></i>
+                                    {% else %}
+                                    <i class="fas fa-times text-red-500"></i>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium text-gray-700">Infants:</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm {% if submitted.infants_match %}text-green-600{% else %}text-red-600{% endif %} font-semibold">
+                                        {{ submitted.submitted_infants }}
+                                    </span>
+                                    <span class="text-sm text-gray-500">/</span>
+                                    <span class="text-sm text-gray-700">{{ submitted.required_infants }}</span>
+                                    {% if submitted.infants_match %}
+                                    <i class="fas fa-check text-green-500"></i>
+                                    {% else %}
+                                    <i class="fas fa-times text-red-500"></i>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endwith %}
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6">
+                        <h4 class="text-md font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <i class="fas fa-info-circle text-purple-600"></i>
+                            Information Quality Summary
+                        </h4>
+                        <div class="space-y-3">
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-sm font-medium text-gray-700">Overall Quality:</span>
+                                    <span class="text-sm font-semibold {% if comparison.passenger_comparison.information_quality_percentage >= 80 %}text-green-600{% elif comparison.passenger_comparison.information_quality_percentage >= 60 %}text-blue-600{% else %}text-orange-600{% endif %}">
+                                        {{ comparison.passenger_comparison.information_quality_percentage|floatformat:1 }}%
+                                    </span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="h-2 rounded-full {% if comparison.passenger_comparison.information_quality_percentage >= 80 %}bg-green-500{% elif comparison.passenger_comparison.information_quality_percentage >= 60 %}bg-blue-500{% else %}bg-orange-500{% endif %}" 
+                                         style="width: {{ comparison.passenger_comparison.information_quality_percentage }}%"></div>
+                                </div>
+                            </div>
+                            <div class="text-xs text-gray-600 space-y-1">
+                                {% with passengers=booking_details.passengers %}
+                                {% with total_passengers=passengers|length %}
+                                {% with incomplete_count=0 %}
+                                    {% for passenger in passengers %}
+                                        {% if not passenger.email or not passenger.phone or not passenger.date_of_birth %}
+                                            {% with incomplete_count=incomplete_count|add:1 %}{% endwith %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% with complete_count=total_passengers|subtract:incomplete_count %}
+                                <div class="flex justify-between">
+                                    <span>Total passengers:</span>
+                                    <span>{{ total_passengers }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Complete profiles:</span>
+                                    <span class="{% if complete_count == total_passengers %}text-green-600{% else %}text-orange-600{% endif %}">
+                                        {{ complete_count }}/{{ total_passengers }}
+                                    </span>
+                                </div>
+                                {% endwith %}
+                                {% endwith %}
+                                {% endwith %}
+                                {% endwith %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+                    <i class="fas fa-users text-gray-400 text-4xl mb-3"></i>
+                    <p class="text-gray-600">No passenger information available</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 
     <!-- Comprehensive Activity Requirements Table -->
@@ -127,7 +450,7 @@
                             </td>
                             <td class="px-4 py-4">
                                 <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
-                                    25%
+                                    20%
                                 </span>
                             </td>
                             <td class="px-4 py-4">
@@ -142,104 +465,228 @@
                                 </span>
                             </td>
                             <td class="px-4 py-4 whitespace-nowrap">
-                                <span class="text-sm font-semibold text-gray-900">{{ comparison.score_breakdown.base_points|floatformat:1 }} pts</span>
+                                <span class="text-sm font-semibold text-gray-900">{{ comparison.score_breakdown.base_points|default:0|floatformat:1 }} pts</span>
                                 <div class="text-xs text-gray-500">
-                                    {% widthratio comparison.score_breakdown.base_points comparison.score_breakdown.total_possible_base_points 100 %}% of category
+                                    100% of category
                                 </div>
                             </td>
                         </tr>
 
-                        <!-- Flight Route Requirements -->
-                        <!-- Origin Airport -->
-                        <tr class="hover:bg-gray-50 transition-colors duration-150 {% if comparison.flight_comparison.origin_match %}bg-green-50{% else %}bg-red-50{% endif %}">
+                        <!-- Passenger Information Quality -->
+                        <tr class="hover:bg-gray-50 transition-colors duration-150 
+                            {% if comparison.passenger_comparison.information_quality_percentage >= 80 %}bg-green-50
+                            {% elif comparison.passenger_comparison.information_quality_percentage >= 60 %}bg-blue-50
+                            {% else %}bg-orange-50{% endif %}">
                             <td class="px-4 py-4 whitespace-nowrap">
                                 <div class="flex items-center gap-2">
-                                    <i class="fas fa-plane-departure {% if comparison.flight_comparison.origin_match %}text-green-500{% else %}text-red-500{% endif %}"></i>
-                                    <span class="text-sm font-medium text-gray-900">Flight Route</span>
+                                    <i class="fas fa-user-check 
+                                        {% if comparison.passenger_comparison.information_quality_percentage >= 80 %}text-green-500
+                                        {% elif comparison.passenger_comparison.information_quality_percentage >= 60 %}text-blue-500
+                                        {% else %}text-orange-500{% endif %}"></i>
+                                    <span class="text-sm font-medium text-gray-900">Passenger Information</span>
                                 </div>
                             </td>
                             <td class="px-4 py-4">
-                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium {% if comparison.flight_comparison.origin_match %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
-                                    Included
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium 
+                                    {% if comparison.passenger_comparison.information_quality_percentage >= 80 %}bg-green-100 text-green-800
+                                    {% elif comparison.passenger_comparison.information_quality_percentage >= 60 %}bg-blue-100 text-blue-800
+                                    {% else %}bg-orange-100 text-orange-800{% endif %}">
+                                    10%
                                 </span>
                             </td>
                             <td class="px-4 py-4">
                                 <div class="text-sm text-gray-900 space-y-1">
                                     <div class="flex items-center gap-2">
-                                        <i class="fas fa-flag text-gray-400 text-xs"></i>
-                                        <span>Origin: {% if comparison.flight_comparison.required_origin %}{{ comparison.flight_comparison.required_origin }}{% else %}Any airport{% endif %}</span>
+                                        <i class="fas fa-id-card text-gray-400 text-xs"></i>
+                                        <span>Complete passenger details</span>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <i class="fas fa-flag-checkered text-gray-400 text-xs"></i>
-                                        <span>Destination: {% if comparison.flight_comparison.required_destination %}{{ comparison.flight_comparison.required_destination }}{% else %}Any airport{% endif %}</span>
+                                    <div class="text-xs text-gray-500 pl-4">
+                                        Names, dates of birth, gender, passport info
+                                        {% if activity_passengers %}
+                                        <br><span class="text-orange-600 font-medium">
+                                            <i class="fas fa-exclamation-triangle"></i> Passport must match predefined
+                                        </span>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </td>
                             <td class="px-4 py-4">
-                                <div class="text-sm text-gray-900 space-y-1">
-                                    <div class="flex items-center gap-2">
-                                        <i class="fas fa-plane text-gray-400 text-xs"></i>
-                                        <span>Origin: {{ comparison.flight_comparison.booked_origin }}</span>
+                                <div class="text-sm text-gray-900">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <i class="fas fa-chart-line text-gray-400 text-xs"></i>
+                                        <span>Quality Score: {{ comparison.passenger_comparison.information_quality_percentage|floatformat:1 }}%</span>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <i class="fas fa-plane text-gray-400 text-xs"></i>
-                                        <span>Destination: {{ comparison.flight_comparison.booked_destination }}</span>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="h-2 rounded-full 
+                                            {% if comparison.passenger_comparison.information_quality_percentage >= 80 %}bg-green-500
+                                            {% elif comparison.passenger_comparison.information_quality_percentage >= 60 %}bg-blue-500
+                                            {% else %}bg-orange-500{% endif %}" 
+                                             style="width: {{ comparison.passenger_comparison.information_quality_percentage }}%"></div>
                                     </div>
                                 </div>
-                                {% if not comparison.flight_comparison.origin_match or not comparison.flight_comparison.destination_match %}
-                                <div class="text-xs {% if not comparison.flight_comparison.origin_match and not comparison.flight_comparison.destination_match %}text-red-600{% else %}text-yellow-600{% endif %} font-medium mt-2 p-2 {% if not comparison.flight_comparison.origin_match and not comparison.flight_comparison.destination_match %}bg-red-50{% else %}bg-yellow-50{% endif %} rounded border {% if not comparison.flight_comparison.origin_match and not comparison.flight_comparison.destination_match %}border-red-100{% else %}border-yellow-100{% endif %}">
-                                    <i class="fas fa-exclamation-triangle mr-1"></i>
-                                    {% if not comparison.flight_comparison.origin_match %}Origin airport mismatch{% endif %}
-                                    {% if not comparison.flight_comparison.destination_match %}{% if not comparison.flight_comparison.origin_match %}, {% endif %}Destination airport mismatch{% endif %}
+                                
+                                <!-- Passport Mismatch Warning -->
+                                {% if activity_passengers and comparison.passenger_comparison.information_quality_percentage < 100 %}
+                                <div class="text-xs text-orange-600 font-medium mt-2 p-2 bg-orange-50 border border-orange-100 rounded">
+                                    <i class="fas fa-passport mr-1"></i>
+                                    <strong>Passport Mismatch:</strong> Your passport numbers don't match the predefined passengers
+                                    {% for passenger in booking_details.passengers %}
+                                        {% for predefined in activity_passengers %}
+                                            {% if forloop.counter0 == forloop.parentloop.counter0 and passenger.passport != predefined.passport_number %}
+                                                <br><span class="text-xs">
+                                                    Expected: <code class="bg-gray-100 px-1 rounded">{{ predefined.passport_number }}</code> 
+                                                    Got: <code class="bg-gray-100 px-1 rounded">{{ passenger.passport }}</code>
+                                                </span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                
+                                {% if comparison.passenger_comparison.information_quality_percentage < 80 %}
+                                <div class="text-xs 
+                                    {% if comparison.passenger_comparison.information_quality_percentage >= 60 %}text-blue-600
+                                    {% else %}text-orange-600{% endif %} font-medium mt-2 p-2 
+                                    {% if comparison.passenger_comparison.information_quality_percentage >= 60 %}bg-blue-50 border border-blue-100
+                                    {% else %}bg-orange-50 border border-orange-100{% endif %} rounded">
+                                    <i class="fas fa-exclamation-circle mr-1"></i>
+                                    {% if comparison.passenger_comparison.information_quality_percentage >= 60 %}
+                                        Good, but could be more complete
+                                    {% else %}
+                                        Missing or incomplete passenger details
+                                    {% endif %}
                                 </div>
                                 {% endif %}
                             </td>
                             <td class="px-4 py-4 whitespace-nowrap">
-                                {% if comparison.flight_comparison.origin_match and comparison.flight_comparison.destination_match %}
+                                {% if comparison.passenger_comparison.information_quality_percentage >= 90 %}
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    <i class="fas fa-check mr-1"></i>Correct Route
+                                    <i class="fas fa-check mr-1"></i>Excellent
                                 </span>
-                                {% elif comparison.flight_comparison.origin_match or comparison.flight_comparison.destination_match %}
-                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                    <i class="fas fa-exclamation-triangle mr-1"></i>Partial Match
+                                {% elif comparison.passenger_comparison.information_quality_percentage >= 70 %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    <i class="fas fa-check-circle mr-1"></i>Good
+                                </span>
+                                {% elif comparison.passenger_comparison.information_quality_percentage >= 50 %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>Fair
                                 </span>
                                 {% else %}
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                    <i class="fas fa-times mr-1"></i>Incorrect Route
+                                    <i class="fas fa-times mr-1"></i>Poor
                                 </span>
                                 {% endif %}
                             </td>
                             <td class="px-4 py-4 whitespace-nowrap">
                                 <span class="text-sm font-semibold text-gray-900">
-                                    {% if comparison.flight_comparison.origin_match and comparison.flight_comparison.destination_match %}
-                                        Included in compliance
-                                    {% else %}
-                                        Route mismatch
-                                    {% endif %}
+                                    {{ comparison.score_breakdown.passenger_info_points|default:0|floatformat:1 }} pts
                                 </span>
                                 <div class="text-xs text-gray-500">
-                                    Affects overall compliance
+                                    {% widthratio comparison.score_breakdown.passenger_info_points|default:0 comparison.score_breakdown.total_possible_passenger_info_points|default:1 100 %}% of category
                                 </div>
                             </td>
                         </tr>
 
+                        <!-- Flight Route Requirements -->
+                        <!-- Flight Route Requirements - FIXED -->
+<tr class="hover:bg-gray-50 transition-colors duration-150 
+    {% if comparison.flight_comparison.origin_match and comparison.flight_comparison.destination_match %}bg-green-50
+    {% else %}bg-yellow-50{% endif %}">
+    <td class="px-4 py-4 whitespace-nowrap">
+        <div class="flex items-center gap-2">
+            <i class="fas fa-route 
+                {% if comparison.flight_comparison.origin_match and comparison.flight_comparison.destination_match %}text-green-500
+                {% else %}text-yellow-500{% endif %}"></i>
+            <span class="text-sm font-medium text-gray-900">Flight Route</span>
+        </div>
+    </td>
+    <td class="px-4 py-4">
+        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium 
+            {% if comparison.flight_comparison.origin_match and comparison.flight_comparison.destination_match %}bg-green-100 text-green-800
+            {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+            10%
+        </span>
+    </td>
+    <td class="px-4 py-4">
+        <div class="text-sm text-gray-900 space-y-1">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-flag text-gray-400 text-xs"></i>
+                <span>Origin: {% if comparison.flight_comparison.required_origin %}{{ comparison.flight_comparison.required_origin }}{% else %}Any airport{% endif %}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <i class="fas fa-flag-checkered text-gray-400 text-xs"></i>
+                <span>Destination: {% if comparison.flight_comparison.required_destination %}{{ comparison.flight_comparison.required_destination }}{% else %}Any airport{% endif %}</span>
+            </div>
+        </div>
+    </td>
+    <td class="px-4 py-4">
+        <div class="text-sm text-gray-900 space-y-1">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-plane text-gray-400 text-xs"></i>
+                <span>Origin: {{ comparison.flight_comparison.booked_origin }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <i class="fas fa-plane text-gray-400 text-xs"></i>
+                <span>Destination: {{ comparison.flight_comparison.booked_destination }}</span>
+            </div>
+        </div>
+        {% if not comparison.flight_comparison.origin_match or not comparison.flight_comparison.destination_match %}
+        <div class="text-xs text-yellow-600 font-medium mt-2 p-2 bg-yellow-50 rounded border border-yellow-100">
+            <i class="fas fa-exclamation-triangle mr-1"></i>
+            {% if not comparison.flight_comparison.origin_match %}Origin airport mismatch{% endif %}
+            {% if not comparison.flight_comparison.destination_match %}{% if not comparison.flight_comparison.origin_match %}, {% endif %}Destination airport mismatch{% endif %}
+        </div>
+        {% endif %}
+    </td>
+    <td class="px-4 py-4 whitespace-nowrap">
+        {% if comparison.flight_comparison.origin_match and comparison.flight_comparison.destination_match %}
+        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            <i class="fas fa-check mr-1"></i>Correct Route
+        </span>
+        {% elif comparison.flight_comparison.origin_match or comparison.flight_comparison.destination_match %}
+        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+            <i class="fas fa-exclamation-triangle mr-1"></i>Partial Match
+        </span>
+        {% else %}
+        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+            <i class="fas fa-times mr-1"></i>Incorrect Route
+        </span>
+        {% endif %}
+    </td>
+    <td class="px-4 py-4 whitespace-nowrap">
+        <span class="text-sm font-semibold text-gray-900">
+            <!-- FIXED: Use the actual earned points from score_breakdown -->
+            {{ comparison.score_breakdown.flight_route_points|default:0|floatformat:1 }} pts
+        </span>
+        <div class="text-xs text-gray-500">
+            {% widthratio comparison.score_breakdown.flight_route_points|default:0 comparison.score_breakdown.total_possible_flight_route_points|default:1 100 %}% of category
+        </div>
+    </td>
+</tr>
+
                         <!-- Trip Type Requirement -->
-                        <tr class="hover:bg-gray-50 transition-colors duration-150 {% if comparison.flight_comparison.trip_type_match %}bg-green-50{% else %}bg-yellow-50{% endif %}">
+                        <tr class="hover:bg-gray-50 transition-colors duration-150 
+                            {% if comparison.flight_comparison.trip_type_match %}bg-green-50
+                            {% else %}bg-yellow-50{% endif %}">
                             <td class="px-4 py-4 whitespace-nowrap">
                                 <div class="flex items-center gap-2">
-                                    <i class="fas fa-route {% if comparison.flight_comparison.trip_type_match %}text-green-500{% else %}text-yellow-500{% endif %}"></i>
+                                    <i class="fas fa-suitcase 
+                                        {% if comparison.flight_comparison.trip_type_match %}text-green-500
+                                        {% else %}text-yellow-500{% endif %}"></i>
                                     <span class="text-sm font-medium text-gray-900">Trip Type</span>
                                 </div>
                             </td>
                             <td class="px-4 py-4">
-                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium {% if comparison.flight_comparison.trip_type_match %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
-                                    Included
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium 
+                                    {% if comparison.flight_comparison.trip_type_match %}bg-green-100 text-green-800
+                                    {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    15%
                                 </span>
                             </td>
                             <td class="px-4 py-4">
                                 <div class="text-sm text-gray-900">
                                     <div class="flex items-center gap-2">
-                                        <i class="fas fa-suitcase text-gray-400 text-xs"></i>
+                                        <i class="fas fa-exchange-alt text-gray-400 text-xs"></i>
                                         <span>{{ activity.required_trip_type|title }} Trip</span>
                                     </div>
                                 </div>
@@ -247,7 +694,7 @@
                             <td class="px-4 py-4">
                                 <div class="text-sm text-gray-900">
                                     <div class="flex items-center gap-2">
-                                        <i class="fas fa-suitcase text-gray-400 text-xs"></i>
+                                        <i class="fas fa-exchange-alt text-gray-400 text-xs"></i>
                                         <span>{{ comparison.flight_comparison.submitted_trip_type|title }} Trip</span>
                                     </div>
                                 </div>
@@ -271,29 +718,35 @@
                             </td>
                             <td class="px-4 py-4 whitespace-nowrap">
                                 <span class="text-sm font-semibold text-gray-900">
-                                    {% if comparison.flight_comparison.trip_type_match %}
-                                        Included in compliance
-                                    {% else %}
-                                        Affects compliance score
-                                    {% endif %}
+                                    {{ comparison.score_breakdown.trip_type_points|default:0|floatformat:1 }} pts
                                 </span>
                                 <div class="text-xs text-gray-500">
-                                    Part of flight compliance
+                                    {% if comparison.flight_comparison.trip_type_match %}
+                                        100% of category
+                                    {% else %}
+                                        0% of category
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
 
                         <!-- Travel Class Requirement -->
-                        <tr class="hover:bg-gray-50 transition-colors duration-150 {% if comparison.flight_comparison.has_correct_class %}bg-green-50{% else %}bg-yellow-50{% endif %}">
+                        <tr class="hover:bg-gray-50 transition-colors duration-150 
+                            {% if comparison.flight_comparison.has_correct_class %}bg-green-50
+                            {% else %}bg-yellow-50{% endif %}">
                             <td class="px-4 py-4 whitespace-nowrap">
                                 <div class="flex items-center gap-2">
-                                    <i class="fas fa-couch {% if comparison.flight_comparison.has_correct_class %}text-green-500{% else %}text-yellow-500{% endif %}"></i>
+                                    <i class="fas fa-couch 
+                                        {% if comparison.flight_comparison.has_correct_class %}text-green-500
+                                        {% else %}text-yellow-500{% endif %}"></i>
                                     <span class="text-sm font-medium text-gray-900">Travel Class</span>
                                 </div>
                             </td>
                             <td class="px-4 py-4">
-                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium {% if comparison.flight_comparison.has_correct_class %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
-                                    Included
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium 
+                                    {% if comparison.flight_comparison.has_correct_class %}bg-green-100 text-green-800
+                                    {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    15%
                                 </span>
                             </td>
                             <td class="px-4 py-4">
@@ -331,29 +784,35 @@
                             </td>
                             <td class="px-4 py-4 whitespace-nowrap">
                                 <span class="text-sm font-semibold text-gray-900">
-                                    {% if comparison.flight_comparison.has_correct_class %}
-                                        Included in compliance
-                                    {% else %}
-                                        Affects compliance score
-                                    {% endif %}
+                                    {{ comparison.score_breakdown.travel_class_points|default:0|floatformat:1 }} pts
                                 </span>
                                 <div class="text-xs text-gray-500">
-                                    Part of flight compliance
+                                    {% if comparison.flight_comparison.has_correct_class %}
+                                        100% of category
+                                    {% else %}
+                                        0% of category
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
 
-                        <!-- Passenger Requirements -->
-                        <tr class="hover:bg-gray-50 transition-colors duration-150 {% if comparison.passenger_comparison.adults_match and comparison.passenger_comparison.children_match and comparison.passenger_comparison.infants_match %}bg-green-50{% else %}bg-orange-50{% endif %}">
+                        <!-- Passenger Count Requirements -->
+                        <tr class="hover:bg-gray-50 transition-colors duration-150 
+                            {% if comparison.passenger_comparison.adults_match and comparison.passenger_comparison.children_match and comparison.passenger_comparison.infants_match %}bg-green-50
+                            {% else %}bg-orange-50{% endif %}">
                             <td class="px-4 py-4 whitespace-nowrap">
                                 <div class="flex items-center gap-2">
-                                    <i class="fas fa-users {% if comparison.passenger_comparison.adults_match and comparison.passenger_comparison.children_match and comparison.passenger_comparison.infants_match %}text-green-500{% else %}text-orange-500{% endif %}"></i>
+                                    <i class="fas fa-users 
+                                        {% if comparison.passenger_comparison.adults_match and comparison.passenger_comparison.children_match and comparison.passenger_comparison.infants_match %}text-green-500
+                                        {% else %}text-orange-500{% endif %}"></i>
                                     <span class="text-sm font-medium text-gray-900">Passenger Count</span>
                                 </div>
                             </td>
                             <td class="px-4 py-4">
-                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium {% if comparison.passenger_comparison.adults_match and comparison.passenger_comparison.children_match and comparison.passenger_comparison.infants_match %}bg-green-100 text-green-800{% else %}bg-orange-100 text-orange-800{% endif %}">
-                                    25%
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium 
+                                    {% if comparison.passenger_comparison.adults_match and comparison.passenger_comparison.children_match and comparison.passenger_comparison.infants_match %}bg-green-100 text-green-800
+                                    {% else %}bg-orange-100 text-orange-800{% endif %}">
+                                    20% <!-- CHANGED FROM 25% TO 20% -->
                                 </span>
                             </td>
                             <td class="px-4 py-4">
@@ -408,25 +867,31 @@
                                 {% endif %}
                             </td>
                             <td class="px-4 py-4 whitespace-nowrap">
-                                <span class="text-sm font-semibold text-gray-900">{{ comparison.score_breakdown.passenger_points|floatformat:1 }} pts</span>
+                                <span class="text-sm font-semibold text-gray-900">{{ comparison.score_breakdown.passenger_points|default:0|floatformat:1 }} pts</span>  <!-- This should be 20.0, not 25.0 -->
                                 <div class="text-xs text-gray-500">
-                                    {% widthratio comparison.score_breakdown.passenger_points comparison.score_breakdown.total_possible_passenger_points 100 %}% of category
+                                    {% widthratio comparison.score_breakdown.passenger_points|default:0 comparison.score_breakdown.total_possible_passenger_points|default:1 100 %}% of category
                                 </div>
                             </td>
                         </tr>
 
                         <!-- Add-ons Compliance -->
                         {% if activity.addon_grading_enabled %}
-                        <tr class="hover:bg-gray-50 transition-colors duration-150 {% if submission.addon_score == submission.max_addon_points %}bg-green-50{% else %}bg-teal-50{% endif %}">
+                        <tr class="hover:bg-gray-50 transition-colors duration-150 
+                            {% if submission.addon_score == submission.max_addon_points %}bg-green-50
+                            {% else %}bg-teal-50{% endif %}">
                             <td class="px-4 py-4 whitespace-nowrap">
                                 <div class="flex items-center gap-2">
-                                    <i class="fas fa-plus-circle {% if submission.addon_score == submission.max_addon_points %}text-green-500{% else %}text-teal-500{% endif %}"></i>
+                                    <i class="fas fa-plus-circle 
+                                        {% if submission.addon_score == submission.max_addon_points %}text-green-500
+                                        {% else %}text-teal-500{% endif %}"></i>
                                     <span class="text-sm font-medium text-gray-900">Add-ons Selection</span>
                                 </div>
                             </td>
                             <td class="px-4 py-4">
-                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium {% if submission.addon_score == submission.max_addon_points %}bg-green-100 text-green-800{% else %}bg-teal-100 text-teal-800{% endif %}">
-                                    15%
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium 
+                                    {% if submission.addon_score == submission.max_addon_points %}bg-green-100 text-green-800
+                                    {% else %}bg-teal-100 text-teal-800{% endif %}">
+                                    10%
                                 </span>
                             </td>
                             <td class="px-4 py-4">
@@ -506,7 +971,6 @@
                         <div>
                             <h3 class="text-lg font-semibold text-gray-900">Total Score Summary</h3>
                             <p class="text-sm text-gray-600">Weighted sum of all categories</p>
-                            
                         </div>
                     </div>
                     <div class="text-right">
@@ -515,11 +979,13 @@
                             {% widthratio submission.score activity.total_points 100 %}% Overall
                         </div>
                         <div class="text-xs text-gray-400 mt-1">
-                            Base: {{ comparison.score_breakdown.base_points|floatformat:1 }} + 
-                            Passengers: {{ comparison.score_breakdown.passenger_points|floatformat:1 }} + 
-                            Price: {{ comparison.score_breakdown.price_points|floatformat:1 }} +
-                            Compliance: {{ comparison.score_breakdown.compliance_points|floatformat:1 }} + 
-                            Add-ons: {{ submission.addon_score|floatformat:1 }}
+                            Base: {{ comparison.score_breakdown.base_points|default:0|floatformat:1 }} + 
+                            Passenger Info: {{ comparison.score_breakdown.passenger_info_points|default:0|floatformat:1 }} +
+                            Flight Route: {{ comparison.score_breakdown.flight_route_points|default:0|floatformat:1 }} +
+                            Trip Type: {{ comparison.score_breakdown.trip_type_points|default:0|floatformat:1 }} +
+                            Travel Class: {{ comparison.score_breakdown.travel_class_points|default:0|floatformat:1 }} +
+                            Passengers: {{ comparison.score_breakdown.passenger_points|default:0|floatformat:1 }} + 
+                            Add-ons: {{ submission.addon_score|default:0|floatformat:1 }}
                         </div>
                     </div>
                 </div>
@@ -542,6 +1008,25 @@
     </div>
 </div>
 
+
+
+<!-- Add this debug section somewhere in your template -->
+<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
+    <h3 class="text-lg font-semibold text-yellow-800">Debug Tools</h3>
+    <p class="text-sm text-yellow-700 mb-2">Submission ID: {{ submission.id }}</p>
+    <div class="flex gap-2">
+        <a href="{% url 'bookingapp:debug_score_breakdown' submission.id %}" 
+           class="inline-flex items-center px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors">
+            <i class="fas fa-bug mr-2"></i>
+            Debug Score Breakdown
+        </a>
+        <a href="{% url 'bookingapp:debug_scoring_breakdown' submission.id %}" 
+           class="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+            <i class="fas fa-calculator mr-2"></i>
+            Debug Scoring
+        </a>
+    </div>
+</div>
 
 <script>
 function goBack() {

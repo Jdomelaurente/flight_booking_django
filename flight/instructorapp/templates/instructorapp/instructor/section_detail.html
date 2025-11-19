@@ -123,6 +123,9 @@
                         {% if activity.require_passenger_details %}
                         <div class="text-xs text-blue-600">
                             ✓ Passenger details required (Name, Gender, DOB, Nationality)
+                            {% if activity.require_passport %}
+                            <span class="text-red-600">• Passport required for all passengers</span>
+                            {% endif %}
                         </div>
                         {% endif %}
                         {% if activity.required_max_price %}
@@ -308,6 +311,18 @@
                                 <input type="number" name="required_infants" id="infantsCount" value="0" min="0" max="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]" onchange="updatePassengerForms()">
                                 <p class="text-xs text-gray-500 mt-1">Note: Infants must be accompanied by adults</p>
                             </div>
+                        </div>
+
+                        <!-- NEW: Passport Requirement Checkbox -->
+                        <div class="mb-4">
+                            <div class="flex items-center">
+                                <input type="checkbox" name="require_passport" id="requirePassport" 
+                                       class="mr-2 rounded border-gray-300 text-[#093704] focus:ring-[#093704]">
+                                <label class="text-md font-semibold text-gray-700">Require Passport Information for ALL Passengers</label>
+                            </div>
+                            <p class="text-sm text-gray-600 ml-6 mt-1">
+                                Students must provide passport numbers for every passenger in the booking
+                            </p>
                         </div>
 
                         <!-- Passenger Details Requirements - DYNAMIC FORMS -->
@@ -502,6 +517,12 @@
         // Initialize passenger forms
         updatePassengerForms();
         
+        // Initialize passport requirement listener
+        const requirePassportCheckbox = document.getElementById('requirePassport');
+        if (requirePassportCheckbox) {
+            requirePassportCheckbox.addEventListener('change', togglePassportRequirement);
+        }
+        
         // Initialize add-ons with a slight delay to ensure DOM is ready
         setTimeout(() => {
             initializeAddons();
@@ -618,6 +639,31 @@
         }
     });
 
+    // NEW: Function to toggle passport requirement
+    function togglePassportRequirement() {
+        const requirePassport = document.getElementById('requirePassport').checked;
+        const passportInputs = document.querySelectorAll('.passport-input');
+        const passportIndicators = document.querySelectorAll('.passport-required-indicator');
+        const passportHelpTexts = document.querySelectorAll('.passport-help-text');
+        
+        passportInputs.forEach(input => {
+            input.required = requirePassport;
+            if (requirePassport) {
+                input.placeholder = "Enter passport number *";
+            } else {
+                input.placeholder = "Enter passport number";
+            }
+        });
+        
+        passportIndicators.forEach(indicator => {
+            indicator.classList.toggle('hidden', !requirePassport);
+        });
+        
+        passportHelpTexts.forEach(helpText => {
+            helpText.classList.toggle('hidden', !requirePassport);
+        });
+    }
+
     // Passenger field management
     function togglePassengerForms() {
         const requirePassengerDetails = document.getElementById('requirePassengerDetails').checked;
@@ -673,6 +719,9 @@
             passengerFields.innerHTML = '<p class="text-sm text-gray-500 text-center">No passengers added. Increase passenger counts above.</p>';
         }
         
+        // Apply passport requirement to newly created fields
+        togglePassportRequirement();
+        
         // Update add-on sections
         generatePassengerAddonSections();
     }
@@ -725,6 +774,19 @@
                     <label class="block text-xs font-medium text-gray-600 mb-1">Nationality *</label>
                     <input type="text" name="passenger_nationality[]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704] text-sm" placeholder="Enter nationality" required>
                 </div>
+                <!-- NEW: Passport Number Field -->
+                <div class="passport-field">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">
+                        Passport Number 
+                        <span class="text-red-500 passport-required-indicator hidden">*</span>
+                    </label>
+                    <input type="text" name="passenger_passport[]" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704] text-sm passport-input" 
+                           placeholder="Enter passport number">
+                    <p class="text-xs text-gray-500 mt-1 passport-help-text hidden">
+                        Required for all passengers
+                    </p>
+                </div>
             </div>
             <input type="hidden" name="passenger_type[]" value="${type.toLowerCase()}">
             ${isPrimary ? '<input type="hidden" name="passenger_is_primary[]" value="true">' : ''}
@@ -753,124 +815,124 @@
         }
     }
 
-    // NEW: Function to generate per-passenger add-on sections for EVERY passenger
+    // Function to generate per-passenger add-on sections for EVERY passenger
     function generatePassengerAddonSections() {
-    const requirePassengerDetails = document.getElementById('requirePassengerDetails');
-    const requireAddonsCheckbox = document.getElementById('require_addons');
-    
-    // Only show add-ons if both passenger details and add-ons are enabled
-    if (!requirePassengerDetails || !requirePassengerDetails.checked || !requireAddonsCheckbox || !requireAddonsCheckbox.checked) {
-        document.querySelectorAll('.passenger-addon-section').forEach(section => section.remove());
-        return;
-    }
-    
-    const adults = parseInt(document.getElementById('adultsCount').value) || 0;
-    const children = parseInt(document.getElementById('childrenCount').value) || 0;
-    const infants = parseInt(document.getElementById('infantsCount').value) || 0;
-    const totalPassengers = adults + children + infants;
-    
-    const addonsSection = document.getElementById('addons-section');
-    if (!addonsSection) return;
-    
-    // Remove existing passenger-specific add-on sections
-    document.querySelectorAll('.passenger-addon-section').forEach(section => section.remove());
-    
-    // If no passengers, return
-    if (totalPassengers === 0) return;
-    
-    // Get the original addons list template
-    const originalAddonsContainer = document.getElementById('original-addons-list');
-    if (!originalAddonsContainer) return;
-    
-    const originalAddons = originalAddonsContainer.querySelectorAll('.bg-white');
-    
-    // Create add-on section for EACH passenger
-    for (let i = 0; i < totalPassengers; i++) {
-        const passengerAddonSection = document.createElement('div');
-        passengerAddonSection.className = 'passenger-addon-section mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200';
+        const requirePassengerDetails = document.getElementById('requirePassengerDetails');
+        const requireAddonsCheckbox = document.getElementById('require_addons');
         
-        // Determine passenger type and number
-        let passengerType = 'Adult';
-        let passengerNumber = i + 1;
-        
-        if (i < adults) {
-            passengerType = 'Adult';
-        } else if (i < adults + children) {
-            passengerType = 'Child';
-        } else {
-            passengerType = 'Infant';
+        // Only show add-ons if both passenger details and add-ons are enabled
+        if (!requirePassengerDetails || !requirePassengerDetails.checked || !requireAddonsCheckbox || !requireAddonsCheckbox.checked) {
+            document.querySelectorAll('.passenger-addon-section').forEach(section => section.remove());
+            return;
         }
         
-        passengerAddonSection.innerHTML = `
-            <h4 class="text-md font-semibold text-blue-800 mb-3">
-                Add-ons for Passenger ${passengerNumber} (${passengerType})
-            </h4>
-            <p class="text-sm text-blue-600 mb-3">Select which add-ons this passenger should have:</p>
-            <div class="space-y-3" id="passenger-${i}-addons">
-                <!-- Add-on checkboxes for this passenger will be inserted here -->
-            </div>
-        `;
+        const adults = parseInt(document.getElementById('adultsCount').value) || 0;
+        const children = parseInt(document.getElementById('childrenCount').value) || 0;
+        const infants = parseInt(document.getElementById('infantsCount').value) || 0;
+        const totalPassengers = adults + children + infants;
         
-        addonsSection.appendChild(passengerAddonSection);
+        const addonsSection = document.getElementById('addons-section');
+        if (!addonsSection) return;
         
-        // Create add-on options for this passenger
-        const passengerAddonsContainer = document.getElementById(`passenger-${i}-addons`);
+        // Remove existing passenger-specific add-on sections
+        document.querySelectorAll('.passenger-addon-section').forEach(section => section.remove());
         
-        originalAddons.forEach((originalAddon) => {
-            const addonClone = originalAddon.cloneNode(true);
+        // If no passengers, return
+        if (totalPassengers === 0) return;
+        
+        // Get the original addons list template
+        const originalAddonsContainer = document.getElementById('original-addons-list');
+        if (!originalAddonsContainer) return;
+        
+        const originalAddons = originalAddonsContainer.querySelectorAll('.bg-white');
+        
+        // Create add-on section for EACH passenger
+        for (let i = 0; i < totalPassengers; i++) {
+            const passengerAddonSection = document.createElement('div');
+            passengerAddonSection.className = 'passenger-addon-section mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200';
             
-            // Update checkbox name for this specific passenger
-            const checkbox = addonClone.querySelector('input[type="checkbox"]');
-            if (checkbox) {
-                checkbox.name = `selected_addons_passenger_${i}[]`;
-                checkbox.value = checkbox.value; // Keep the original value (addon ID)
-                checkbox.checked = false;
-                
-                // Update requirement fields for this passenger
-                const requirementInputs = addonClone.querySelectorAll('input, textarea');
-                requirementInputs.forEach(input => {
-                    if (input.name.includes('addon_required_')) {
-                        const addonId = input.name.split('_')[2];
-                        input.name = `addon_required_${addonId}_passenger_${i}`;
-                        input.checked = false;
-                    } else if (input.name.includes('addon_quantity_')) {
-                        const addonId = input.name.split('_')[2];
-                        input.name = `addon_quantity_${addonId}_passenger_${i}`;
-                        input.value = '1';
-                    } else if (input.name.includes('addon_notes_')) {
-                        const addonId = input.name.split('_')[2];
-                        input.name = `addon_notes_${addonId}_passenger_${i}`;
-                        input.value = '';
-                    }
-                });
-                
-                // Add event listener for showing requirements
-                checkbox.addEventListener('change', function() {
-                    const requirementsDiv = this.closest('.bg-white').querySelector('.addon-requirements');
-                    if (requirementsDiv) {
-                        requirementsDiv.classList.toggle('hidden', !this.checked);
-                    }
-                });
+            // Determine passenger type and number
+            let passengerType = 'Adult';
+            let passengerNumber = i + 1;
+            
+            if (i < adults) {
+                passengerType = 'Adult';
+            } else if (i < adults + children) {
+                passengerType = 'Child';
+            } else {
+                passengerType = 'Infant';
             }
             
-            passengerAddonsContainer.appendChild(addonClone);
-        });
+            passengerAddonSection.innerHTML = `
+                <h4 class="text-md font-semibold text-blue-800 mb-3">
+                    Add-ons for Passenger ${passengerNumber} (${passengerType})
+                </h4>
+                <p class="text-sm text-blue-600 mb-3">Select which add-ons this passenger should have:</p>
+                <div class="space-y-3" id="passenger-${i}-addons">
+                    <!-- Add-on checkboxes for this passenger will be inserted here -->
+                </div>
+            `;
+            
+            addonsSection.appendChild(passengerAddonSection);
+            
+            // Create add-on options for this passenger
+            const passengerAddonsContainer = document.getElementById(`passenger-${i}-addons`);
+            
+            originalAddons.forEach((originalAddon) => {
+                const addonClone = originalAddon.cloneNode(true);
+                
+                // Update checkbox name for this specific passenger
+                const checkbox = addonClone.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    checkbox.name = `selected_addons_passenger_${i}[]`;
+                    checkbox.value = checkbox.value; // Keep the original value (addon ID)
+                    checkbox.checked = false;
+                    
+                    // Update requirement fields for this passenger
+                    const requirementInputs = addonClone.querySelectorAll('input, textarea');
+                    requirementInputs.forEach(input => {
+                        if (input.name.includes('addon_required_')) {
+                            const addonId = input.name.split('_')[2];
+                            input.name = `addon_required_${addonId}_passenger_${i}`;
+                            input.checked = false;
+                        } else if (input.name.includes('addon_quantity_')) {
+                            const addonId = input.name.split('_')[2];
+                            input.name = `addon_quantity_${addonId}_passenger_${i}`;
+                            input.value = '1';
+                        } else if (input.name.includes('addon_notes_')) {
+                            const addonId = input.name.split('_')[2];
+                            input.name = `addon_notes_${addonId}_passenger_${i}`;
+                            input.value = '';
+                        }
+                    });
+                    
+                    // Add event listener for showing requirements
+                    checkbox.addEventListener('change', function() {
+                        const requirementsDiv = this.closest('.bg-white').querySelector('.addon-requirements');
+                        if (requirementsDiv) {
+                            requirementsDiv.classList.toggle('hidden', !this.checked);
+                        }
+                    });
+                }
+                
+                passengerAddonsContainer.appendChild(addonClone);
+            });
+        }
+        
+        // Add instructional note
+        const existingNote = addonsSection.querySelector('.per-passenger-note');
+        if (!existingNote) {
+            const noteDiv = document.createElement('div');
+            noteDiv.className = 'per-passenger-note bg-green-50 border border-green-200 rounded-md p-3 mt-4';
+            noteDiv.innerHTML = `
+                <p class="text-sm text-green-700">
+                    <strong>✓ Per-Passenger Add-ons Enabled:</strong> Each passenger has their own add-on section. 
+                    You can select different add-ons for each passenger and mark them as required individually.
+                </p>
+            `;
+            addonsSection.appendChild(noteDiv);
+        }
     }
-    
-    // Add instructional note
-    const existingNote = addonsSection.querySelector('.per-passenger-note');
-    if (!existingNote) {
-        const noteDiv = document.createElement('div');
-        noteDiv.className = 'per-passenger-note bg-green-50 border border-green-200 rounded-md p-3 mt-4';
-        noteDiv.innerHTML = `
-            <p class="text-sm text-green-700">
-                <strong>✓ Per-Passenger Add-ons Enabled:</strong> Each passenger has their own add-on section. 
-                You can select different add-ons for each passenger and mark them as required individually.
-            </p>
-        `;
-        addonsSection.appendChild(noteDiv);
-    }
-}
 
     // Initialize passenger forms when page loads
     document.addEventListener('DOMContentLoaded', function() {
@@ -879,6 +941,12 @@
         document.getElementById('childrenCount').addEventListener('change', updatePassengerForms);
         document.getElementById('infantsCount').addEventListener('change', updatePassengerForms);
         document.getElementById('requirePassengerDetails').addEventListener('change', togglePassengerForms);
+        
+        // NEW: Add event listener for passport requirement
+        const requirePassportCheckbox = document.getElementById('requirePassport');
+        if (requirePassportCheckbox) {
+            requirePassportCheckbox.addEventListener('change', togglePassportRequirement);
+        }
         
         // Also update add-ons when passenger counts change
         const passengerInputs = ['adultsCount', 'childrenCount', 'infantsCount'];

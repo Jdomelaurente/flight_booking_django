@@ -184,10 +184,8 @@ class PassengerInfo(models.Model):
     last_name = models.CharField(max_length=100)
     gender = models.CharField(max_length=10)
     date_of_birth = models.DateField()
-    phone = models.CharField(max_length=20, blank=True, null=True)
-    email = models.EmailField(blank=True, null=True)
     passport_number = models.CharField(max_length=50, blank=True, null=True)
-
+    nationality = models.CharField(max_length=100)
     passenger_type = models.CharField(
         max_length=10, choices=TYPE_CHOICES, default="Adult"
     )

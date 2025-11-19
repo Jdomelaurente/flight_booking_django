@@ -103,6 +103,7 @@ class Activity(models.Model):
     require_passenger_details = models.BooleanField(default=True)
     
     # REMOVED: required_max_price field
+    require_passport = models.BooleanField(default=False, help_text="Require passport information for all passengers")
     
     # Instructions & Timing
     instructions = models.TextField()
@@ -216,11 +217,24 @@ class Activity(models.Model):
         return f"{self.title} - {self.section.section_code}"
 
 class ActivityPassenger(models.Model):
-    """Model to store passenger details for activities"""
+    # ADD PASSENGER TYPE CHOICES
+    PASSENGER_TYPE_CHOICES = [
+        ('adult', 'Adult'),
+        ('child', 'Child'),
+        ('infant', 'Infant'),
+    ]
+    
     activity = models.ForeignKey(Activity, on_delete=models.CASCADE, related_name='passengers')
     first_name = models.CharField(max_length=100)
     middle_name = models.CharField(max_length=100, blank=True, null=True)
     last_name = models.CharField(max_length=100)
+    
+    # ADD THIS FIELD
+    passenger_type = models.CharField(
+        max_length=10, 
+        choices=PASSENGER_TYPE_CHOICES,
+        default='adult'  # Default to adult
+    )
     
     GENDER_CHOICES = [
         ('male', 'Male'),
@@ -229,6 +243,7 @@ class ActivityPassenger(models.Model):
     ]
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
     date_of_birth = models.DateField()
+    passport_number = models.CharField(max_length=50, blank=True, null=True)
     nationality = models.CharField(max_length=100)
     
     is_primary = models.BooleanField(default=False)
@@ -239,13 +254,11 @@ class ActivityPassenger(models.Model):
         ordering = ['-is_primary', 'first_name']
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name} - {self.activity.title}"
+        return f"{self.first_name} {self.last_name} - {self.get_passenger_type_display()} - {self.activity.title}"
     
     def get_passenger_type(self):
-        """Determine passenger type based on age (simplified)"""
-        if self.is_primary:
-            return "Adult (Primary)"
-        return "Adult"
+        """Return the passenger type display name"""
+        return self.get_passenger_type_display()
 
 class ActivitySubmission(models.Model):
     activity = models.ForeignKey(Activity, on_delete=models.CASCADE, related_name='submissions')

@@ -1,3 +1,4 @@
+# instructorapp/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.template import loader
@@ -5,7 +6,7 @@ from django.contrib import messages
 from django.db import models
 from decimal import Decimal, InvalidOperation
 from .models import Section, Activity, ActivitySubmission, SectionEnrollment, ActivityPassenger, ActivityAddOn
-from flightapp.models import User, Student, AddOn, Airline, Airport
+from flightapp.models import User, Student, AddOn, Airline, Airport, Booking
 
 
 # Helper function for session-based authentication
@@ -244,6 +245,7 @@ def create_activity(request, section_id):
         required_departure_date = request.POST.get('required_departure_date')
         required_return_date = request.POST.get('required_return_date')
         required_travel_class = request.POST.get('required_travel_class', 'economy')
+        require_passport = request.POST.get('require_passport') == 'on'
         
         # Passenger counts - with proper default handling
         required_passengers = request.POST.get('required_passengers', '1')
@@ -329,6 +331,7 @@ def create_activity(request, section_id):
                 required_children=required_children_int,
                 required_infants=required_infants_int,
                 require_passenger_details=require_passenger_details,
+                require_passport=require_passport,
                 instructions=instructions,
                 total_points=float(total_points) if total_points and total_points.strip() else 100.00,
                 due_date=due_date,
@@ -342,9 +345,11 @@ def create_activity(request, section_id):
                 passenger_first_names = request.POST.getlist('passenger_first_name[]')
                 passenger_middle_names = request.POST.getlist('passenger_middle_name[]')
                 passenger_last_names = request.POST.getlist('passenger_last_name[]')
+                passenger_types = request.POST.getlist('passenger_type[]')
                 passenger_genders = request.POST.getlist('passenger_gender[]')
                 passenger_dobs = request.POST.getlist('passenger_dob[]')
                 passenger_nationalities = request.POST.getlist('passenger_nationality[]')
+                passenger_passports = request.POST.getlist('passenger_passport[]')
                 
                 # Create passenger objects only for valid entries
                 passengers_created = 0
@@ -352,22 +357,32 @@ def create_activity(request, section_id):
                     # Check if all required fields are filled
                     if (passenger_first_names[i].strip() and 
                         passenger_last_names[i].strip() and 
+                        passenger_types[i] and
                         passenger_genders[i] and 
                         passenger_dobs[i] and 
                         passenger_nationalities[i].strip()):
+                        passport_number = passenger_passports[i].strip() if passenger_passports[i] else None
+
+                        if require_passport and not passport_number:
+                            messages.warning(request, f'Passport number is required for {passenger_first_names[i]} {passenger_last_names[i]} but was not provided.')
+                            continue
                         
                         passenger = ActivityPassenger.objects.create(
                             activity=activity,
                             first_name=passenger_first_names[i].strip(),
                             middle_name=passenger_middle_names[i].strip() if passenger_middle_names[i] else None,
                             last_name=passenger_last_names[i].strip(),
+                            passenger_type=passenger_types[i],  
                             gender=passenger_genders[i],
                             date_of_birth=passenger_dobs[i],
                             nationality=passenger_nationalities[i].strip(),
+                            passport_number=passport_number,
                             is_primary=(i == 0)
                         )
                         passenger_objects.append(passenger)
                         passengers_created += 1
+
+                        
                 
                 if passengers_created == 0 and require_passenger_details:
                     messages.warning(request, 'Activity created but no passenger details were provided despite the requirement.')
@@ -498,6 +513,7 @@ def edit_activity(request, activity_id):
         required_departure_date = request.POST.get('required_departure_date')
         required_return_date = request.POST.get('required_return_date')
         required_travel_class = request.POST.get('required_travel_class', 'economy')
+        require_passport = request.POST.get('require_passport') == 'on'
         
         # Passenger counts - with proper default handling
         required_passengers = request.POST.get('required_passengers', '1')
@@ -578,6 +594,7 @@ def edit_activity(request, activity_id):
             activity.required_children = required_children_int
             activity.required_infants = required_infants_int
             activity.require_passenger_details = require_passenger_details
+            activity.require_passport = require_passport 
             activity.instructions = instructions
             activity.total_points = float(total_points) if total_points else 100.00
             activity.due_date = due_date
@@ -595,19 +612,27 @@ def edit_activity(request, activity_id):
                 passenger_first_names = request.POST.getlist('passenger_first_name[]')
                 passenger_middle_names = request.POST.getlist('passenger_middle_name[]')
                 passenger_last_names = request.POST.getlist('passenger_last_name[]')
+                passenger_types = request.POST.getlist('passenger_type[]')
                 passenger_genders = request.POST.getlist('passenger_gender[]')
                 passenger_dobs = request.POST.getlist('passenger_dob[]')
                 passenger_nationalities = request.POST.getlist('passenger_nationality[]')
                 passenger_is_primary = request.POST.getlist('passenger_is_primary[]')
+                passenger_passports = request.POST.getlist('passenger_passport[]')  # NEW: Passport 
                 
                 # Create passenger objects only for valid entries
                 for i in range(len(passenger_first_names)):
                     # Check if all required fields are filled
                     if (passenger_first_names[i].strip() and 
                         passenger_last_names[i].strip() and 
+                        passenger_types[i] and  
                         passenger_genders[i] and 
                         passenger_dobs[i] and 
                         passenger_nationalities[i].strip()):
+                        passport_number = passenger_passports[i].strip() if passenger_passports[i] else None
+
+                        if require_passport and not passport_number:
+                            messages.warning(request, f'Passport number is required for {passenger_first_names[i]} {passenger_last_names[i]} but was not provided.')
+                            continue
                         
                         # Determine if this passenger is primary
                         is_primary = str(i) in passenger_is_primary
@@ -617,12 +642,16 @@ def edit_activity(request, activity_id):
                             first_name=passenger_first_names[i].strip(),
                             middle_name=passenger_middle_names[i].strip() if passenger_middle_names[i] else None,
                             last_name=passenger_last_names[i].strip(),
+                            passenger_type=passenger_types[i],
                             gender=passenger_genders[i],
                             date_of_birth=passenger_dobs[i],
                             nationality=passenger_nationalities[i].strip(),
+                            passport_number=passport_number,
                             is_primary=is_primary
                         )
                         passenger_objects.append(passenger)
+
+                
             
             # Handle PER-PASSENGER add-on requirements with points
             # Delete existing add-ons

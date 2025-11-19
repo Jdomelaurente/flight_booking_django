@@ -86,4 +86,10 @@ urlpatterns = [
     path('test/passenger/', views.test_passenger, name='test_passenger'),
     path('test/addons/', views.test_addons, name='test_addon'),
     path('test/booking/summary/', views.test_booking_summary, name='test_booking_summary'),
+
+
+
+    # debug
+    path('debug/breakdown/<int:submission_id>/', views.debug_scoring_breakdown, name='debug_scoring_breakdown'),
+    path('debug-score/<int:submission_id>/', views.debug_score_breakdown, name='debug_score_breakdown'),
 ]
