@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.db import models
 from decimal import Decimal, InvalidOperation
 from .models import Section, Activity, ActivitySubmission, SectionEnrollment, ActivityPassenger, ActivityAddOn
-from flightapp.models import User, Student, AddOn, Airline, Airport, Booking
+from flightapp.models import User, Student, AddOn, Airline, Airport, Booking, Instructor
 
 
 # Helper function for session-based authentication
@@ -17,6 +17,16 @@ def get_current_user(request):
         try:
             return User.objects.get(id=user_id)
         except User.DoesNotExist:
+            return None
+    return None
+
+def get_current_instructor(request):
+    """Get the current instructor from session"""
+    user = get_current_user(request)
+    if user and user.role == 'instructor':
+        try:
+            return Instructor.objects.get(user=user)
+        except Instructor.DoesNotExist:
             return None
     return None
 
@@ -64,29 +74,44 @@ def instructor_register(request):
         email = request.POST.get('email')
         password = request.POST.get('password')
         confirm_password = request.POST.get('confirm_password')
+        first_name = request.POST.get('first_name', '')
+        last_name = request.POST.get('last_name', '')
         role = 'instructor'
         
         # Validation
-        if password != confirm_password:
+        if not first_name or not last_name:
+            messages.error(request, 'First name and last name are required')
+        elif password != confirm_password:
             messages.error(request, 'Passwords do not match')
         elif User.objects.filter(username=username).exists():
             messages.error(request, 'Username already exists')
         elif User.objects.filter(email=email).exists():
             messages.error(request, 'Email already exists')
         else:
+            # Create user
             user = User.objects.create(
                 username=username,
                 email=email,
                 password=password,
                 role=role
             )
+            
+            # Create instructor profile
+            instructor = Instructor.objects.create(
+                user=user,
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                instructor_id=f"INST{user.id:04d}"
+            )
+            
             # Manual session-based login after registration
             request.session['user_id'] = user.id
             request.session['username'] = user.username
             request.session['role'] = user.role
             request.session.set_expiry(86400)  # 24 hours
             
-            messages.success(request, f'Account created successfully! Welcome {username}')
+            messages.success(request, f'Account created successfully! Welcome {first_name} {last_name}')
             return redirect('instructor_home')
     
     template = loader.get_template('instructorapp/auth/register.html')
@@ -109,6 +134,12 @@ def instructor_home(request):
         messages.error(request, 'Access denied. Instructor role required.')
         return redirect('instructor_login')
     
+    # Get the instructor instance
+    instructor = get_current_instructor(request)
+    if not instructor:
+        messages.error(request, 'Instructor profile not found.')
+        return redirect('instructor_login')
+    
     # Handle section creation from modal form
     if request.method == 'POST':
         section_name = request.POST.get('section_name')
@@ -124,7 +155,7 @@ def instructor_home(request):
         elif Section.objects.filter(section_code=section_code).exists():
             messages.error(request, 'Section code already exists')
         else:
-            # Create section
+            # Create section with INSTRUCTOR instance
             section = Section.objects.create(
                 section_name=section_name,
                 section_code=section_code,
@@ -132,20 +163,22 @@ def instructor_home(request):
                 academic_year=academic_year,
                 schedule=schedule,
                 description=description,
-                instructor=user
+                instructor=instructor  # Use instructor instance, not user
             )
             messages.success(request, f'Section {section.section_code} created successfully!')
             return redirect('instructor_home')
     
-    sections = Section.objects.filter(instructor=user)
-    activities = Activity.objects.filter(section__instructor=user)
+    # Update all queries to use instructor
+    sections = Section.objects.filter(instructor=instructor)
+    activities = Activity.objects.filter(section__instructor=instructor)
     
     template = loader.get_template('instructorapp/instructor/home.html')
     context = {
         'sections': sections,
         'activities': activities,
-        'total_students': SectionEnrollment.objects.filter(section__instructor=user).count(),
+        'total_students': SectionEnrollment.objects.filter(section__instructor=instructor).count(),
         'current_user': user,
+        'current_instructor': instructor,  # Add this to context
     }
     return HttpResponse(template.render(context, request))
 
@@ -156,6 +189,11 @@ def instructor_section(request):
     
     if not is_instructor(user):
         messages.error(request, 'Access denied. Instructor role required.')
+        return redirect('instructor_login')
+    
+    instructor = get_current_instructor(request)
+    if not instructor:
+        messages.error(request, 'Instructor profile not found.')
         return redirect('instructor_login')
     
     # Handle section creation
@@ -173,7 +211,7 @@ def instructor_section(request):
         elif Section.objects.filter(section_code=section_code).exists():
             messages.error(request, 'Section code already exists')
         else:
-            # Create section
+            # Create section with instructor instance
             section = Section.objects.create(
                 section_name=section_name,
                 section_code=section_code,
@@ -181,17 +219,18 @@ def instructor_section(request):
                 academic_year=academic_year,
                 schedule=schedule,
                 description=description,
-                instructor=user
+                instructor=instructor  # Use instructor, not user
             )
             messages.success(request, f'Section {section.section_code} created successfully!')
             return redirect('instructor_section')
     
-    sections = Section.objects.filter(instructor=user)
+    sections = Section.objects.filter(instructor=instructor)  # Use instructor
     
     template = loader.get_template('instructorapp/instructor/section_detail.html')
     context = {
         'sections': sections,
         'current_user': user,
+        'current_instructor': instructor,
     }
     return HttpResponse(template.render(context, request))
 
@@ -204,12 +243,18 @@ def instructor_activity(request):
         messages.error(request, 'Access denied. Instructor role required.')
         return redirect('instructor_login')
     
-    activities = Activity.objects.filter(section__instructor=user)
+    instructor = get_current_instructor(request)
+    if not instructor:
+        messages.error(request, 'Instructor profile not found.')
+        return redirect('instructor_login')
+    
+    activities = Activity.objects.filter(section__instructor=instructor)
     
     template = loader.get_template('instructorapp/instructor/activity/activity.html')
     context = {
         'activities': activities,
         'current_user': user,
+        'current_instructor': instructor,
     }
     return HttpResponse(template.render(context, request))
 
@@ -222,7 +267,12 @@ def create_activity(request, section_id):
         messages.error(request, 'Access denied. Instructor role required.')
         return redirect('instructor_login')
     
-    section = get_object_or_404(Section, id=section_id, instructor=user)
+    instructor = get_current_instructor(request)
+    if not instructor:
+        messages.error(request, 'Instructor profile not found.')
+        return redirect('instructor_login')
+    
+    section = get_object_or_404(Section, id=section_id, instructor=instructor)
     
     # Get available add-ons for the form
     airlines = Airline.objects.all()
@@ -450,7 +500,14 @@ def section_detail(request, section_id):
         messages.error(request, 'Access denied. Instructor role required.')
         return redirect('instructor_login')
     
-    section = get_object_or_404(Section, id=section_id, instructor=user)
+    # Get the instructor instance
+    instructor = get_current_instructor(request)
+    if not instructor:
+        messages.error(request, 'Instructor profile not found.')
+        return redirect('instructor_login')
+    
+    # Use instructor instance, not user
+    section = get_object_or_404(Section, id=section_id, instructor=instructor)
     enrollments = SectionEnrollment.objects.filter(section=section)
     activities = Activity.objects.filter(section=section)
     
@@ -484,6 +541,7 @@ def section_detail(request, section_id):
         'airlines': airlines,
         'addons': addons,
         'current_user': user,
+        'current_instructor': instructor,
     }
     return HttpResponse(template.render(context, request))
 
@@ -496,7 +554,12 @@ def edit_activity(request, activity_id):
         messages.error(request, 'Access denied. Instructor role required.')
         return redirect('instructor_login')
     
-    activity = get_object_or_404(Activity, id=activity_id, section__instructor=user)
+    instructor = get_current_instructor(request)
+    if not instructor:
+        messages.error(request, 'Instructor profile not found.')
+        return redirect('instructor_login')
+    
+    activity = get_object_or_404(Activity, id=activity_id, section__instructor=instructor)
     
     # Get available add-ons for the form
     airlines = Airline.objects.all()
@@ -718,6 +781,7 @@ def edit_activity(request, activity_id):
         'addons': addons,
         'existing_addon_data': existing_addon_data,
         'current_user': user,
+        'current_instructor': instructor,
     }
     return HttpResponse(template.render(context, request))
 
@@ -730,7 +794,12 @@ def delete_activity(request, activity_id):
         messages.error(request, 'Access denied. Instructor role required.')
         return redirect('instructor_login')
     
-    activity = get_object_or_404(Activity, id=activity_id, section__instructor=user)
+    instructor = get_current_instructor(request)
+    if not instructor:
+        messages.error(request, 'Instructor profile not found.')
+        return redirect('instructor_login')
+    
+    activity = get_object_or_404(Activity, id=activity_id, section__instructor=instructor)
     
     if request.method == 'POST':
         activity_title = activity.title
@@ -757,7 +826,12 @@ def activate_activity(request, activity_id):
         messages.error(request, 'Access denied. Instructor role required.')
         return redirect('instructor_login')
     
-    activity = get_object_or_404(Activity, id=activity_id, section__instructor=user)
+    instructor = get_current_instructor(request)
+    if not instructor:
+        messages.error(request, 'Instructor profile not found.')
+        return redirect('instructor_login')
+    
+    activity = get_object_or_404(Activity, id=activity_id, section__instructor=instructor)
     
     if request.method == 'POST':
         activity.activate_code()
@@ -774,7 +848,12 @@ def activity_detail(request, activity_id):
         messages.error(request, 'Access denied. Instructor role required.')
         return redirect('instructor_login')
     
-    activity = get_object_or_404(Activity, id=activity_id, section__instructor=user)
+    instructor = get_current_instructor(request)
+    if not instructor:
+        messages.error(request, 'Instructor profile not found.')
+        return redirect('instructor_login')
+    
+    activity = get_object_or_404(Activity, id=activity_id, section__instructor=instructor)
     
     # Get additional context for the template
     total_passengers = activity.get_total_passengers()
@@ -786,6 +865,7 @@ def activity_detail(request, activity_id):
         'total_passengers': total_passengers,
         'has_passenger_details': has_passenger_details,
         'current_user': user,
+        'current_instructor': instructor,
     }
     return HttpResponse(template.render(context, request))
 
@@ -796,6 +876,11 @@ def activity_submissions(request, activity_id):
     
     if not is_instructor(user):
         messages.error(request, 'Access denied. Instructor role required.')
+        return redirect('instructor_login')
+    
+    instructor = get_current_instructor(request)
+    if not instructor:
+        messages.error(request, 'Instructor profile not found.')
         return redirect('instructor_login')
     
     print(f"=== ACTIVITY_SUBMISSIONS DEBUG ===")
@@ -810,12 +895,12 @@ def activity_submissions(request, activity_id):
         print(f"Activity section instructor: {activity.section.instructor.username} (ID: {activity.section.instructor.id})")
         
         # Check if current user owns this activity
-        if activity.section.instructor.id != user.id:
-            print(f"❌ ACCESS DENIED: Activity belongs to instructor {activity.section.instructor.id}, but current user is {user.id}")
+        if activity.section.instructor.id != instructor.id:
+            print(f"❌ ACCESS DENIED: Activity belongs to instructor {activity.section.instructor.id}, but current user is {instructor.id}")
             messages.error(request, "You don't have permission to view submissions for this activity.")
             return redirect('instructor_home')
             
-        print(f"✅ ACCESS GRANTED: User {user.id} owns this activity")
+        print(f"✅ ACCESS GRANTED: User {instructor.id} owns this activity")
         
     except Activity.DoesNotExist:
         print(f"❌ Activity {activity_id} not found")
@@ -834,6 +919,7 @@ def activity_submissions(request, activity_id):
         'activity': activity,
         'submissions': submissions,
         'current_user': user,
+        'current_instructor': instructor,
     }
     return HttpResponse(template.render(context, request))
 
@@ -844,7 +930,12 @@ def manage_addon_points(request, activity_id):
         messages.error(request, 'Access denied.')
         return redirect('instructor_login')
     
-    activity = get_object_or_404(Activity, id=activity_id, section__instructor=user)
+    instructor = get_current_instructor(request)
+    if not instructor:
+        messages.error(request, 'Instructor profile not found.')
+        return redirect('instructor_login')
+    
+    activity = get_object_or_404(Activity, id=activity_id, section__instructor=instructor)
     
     if request.method == 'POST':
         # Update add-on points
@@ -865,6 +956,7 @@ def manage_addon_points(request, activity_id):
     context = {
         'activity': activity,
         'current_user': user,
+        'current_instructor': instructor,
     }
     return HttpResponse(template.render(context, request))
 
@@ -923,7 +1015,12 @@ def delete_section(request, section_id):
         messages.error(request, 'Access denied.')
         return redirect('instructor_login')
     
-    section = get_object_or_404(Section, id=section_id, instructor=user)
+    instructor = get_current_instructor(request)
+    if not instructor:
+        messages.error(request, 'Instructor profile not found.')
+        return redirect('instructor_login')
+    
+    section = get_object_or_404(Section, id=section_id, instructor=instructor)
     
     if request.method == 'POST':
         section_name = section.section_name
@@ -945,7 +1042,12 @@ def unenroll_student(request, section_id, enrollment_id):
         messages.error(request, 'Access denied.')
         return redirect('instructor_login')
     
-    section = get_object_or_404(Section, id=section_id, instructor=user)
+    instructor = get_current_instructor(request)
+    if not instructor:
+        messages.error(request, 'Instructor profile not found.')
+        return redirect('instructor_login')
+    
+    section = get_object_or_404(Section, id=section_id, instructor=instructor)
     enrollment = get_object_or_404(SectionEnrollment, id=enrollment_id, section=section)
     
     if request.method == 'POST':
@@ -962,7 +1064,12 @@ def grade_submission(request, submission_id):
         messages.error(request, 'Access denied.')
         return redirect('instructor_login')
     
-    submission = get_object_or_404(ActivitySubmission, id=submission_id, activity__section__instructor=user)
+    instructor = get_current_instructor(request)
+    if not instructor:
+        messages.error(request, 'Instructor profile not found.')
+        return redirect('instructor_login')
+    
+    submission = get_object_or_404(ActivitySubmission, id=submission_id, activity__section__instructor=instructor)
     
     if request.method == 'POST':
         score = request.POST.get('score')
@@ -984,5 +1091,6 @@ def grade_submission(request, submission_id):
     context = {
         'submission': submission,
         'current_user': user,
+        'current_instructor': instructor,
     }
     return HttpResponse(template.render(context, request))

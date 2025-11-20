@@ -4,10 +4,11 @@
 {% block content %}
 
 <h1 class="text-4xl inria-serif-bold ">Instructor </h1>
+<a href="{% url 'instructor_home'  %}" class="bg-gray-500 hover:bg-gray-600 max-w-30 text-white px-4 py-2 rounded-md text-sm">
+    Back to Home
+</a>
 
 <div class="flex flex-1 h-[80vh] py-10 flex-col">
-
-
     <div class="flex-1 max-h-[138px] mx-30 rounded-lg flex items-start flex-col justify-center bg-[#093704] h-[140px] py-10 p-5">
         <h1 class="text-4xl text-[#FFC83D] font-semibold">{{ section.section_name }}</h1>
         <p class="text-[#FFC83D] text-lg">{{ section.section_code }} • {{ section.semester }} Semester • {{ section.academic_year }}</p>

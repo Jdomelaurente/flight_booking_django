@@ -2,13 +2,12 @@
 {% block title %}Register{% endblock %}
 
 {% block content %}
-<div class="flex  flex-1 items-center h-[80vh] justify-center px-10  ">
-    <div class="border border-gray-400 py-8 px-10 space-y-10 rounded-md shadow-sm/30">
-        <div class="flex justify-center gap-2">
-            <p class="w-13 h-13 bg-gray-300 rounded-full"></p>
-            <p class="w-13 h-13 bg-gray-300 rounded-full"></p>
+<div class="flex flex-1 items-center h-[80vh] justify-center px-10">
+    <div class="border border-gray-400 py-8 px-10 space-y-10 rounded-md shadow-sm/30 w-full max-w-2xl">
+        <div class="text-center">
+            <h1 class="text-2xl font-bold text-gray-800">Instructor Registration</h1>
+            <p class="text-sm text-gray-600 mt-2">Create your instructor account</p>
         </div>
-        <p class="text-xs mx-10 text-center ">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
 
         <!-- Display Messages -->
         {% if messages %}
@@ -24,35 +23,52 @@
         <form method="POST" action="{% url 'instructor_register' %}">
             {% csrf_token %}
             <div class="flex flex-col space-y-5">
+                <!-- Personal Information -->
                 <div class="flex w-full gap-5">
                     <div class="flex flex-col w-full space-y-2">
-                        <label for="email" class="text-sm">Email:</label>
-                        <input type="email" name="email" class="h-[50px] border rounded-sm border-gray-400 px-3" required>
+                        <label for="first_name" class="text-sm font-medium">First Name:</label>
+                        <input type="text" name="first_name" class="h-[50px] border rounded-sm border-gray-400 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                     </div>
                     <div class="flex flex-col w-full space-y-2">
-                        <label for="username" class="text-sm">Username:</label>
-                        <input type="text" name="username" class="h-[50px] border rounded-sm border-gray-400 px-3" required>
+                        <label for="last_name" class="text-sm font-medium">Last Name:</label>
+                        <input type="text" name="last_name" class="h-[50px] border rounded-sm border-gray-400 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                     </div>
                 </div>
+
+                <!-- Account Information -->
                 <div class="flex w-full gap-5">
                     <div class="flex flex-col w-full space-y-2">
-                        <label for="password" class="text-sm">Password:</label>
-                        <input type="password" name="password" class="h-[50px] border rounded-sm border-gray-400 px-3" required>
+                        <label for="email" class="text-sm font-medium">Email:</label>
+                        <input type="email" name="email" class="h-[50px] border rounded-sm border-gray-400 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                     </div>
                     <div class="flex flex-col w-full space-y-2">
-                        <label for="confirm_password" class="text-sm">Confirm Password:</label>
-                        <input type="password" name="confirm_password" class="h-[50px] border rounded-sm border-gray-400 px-3" required>
+                        <label for="username" class="text-sm font-medium">Username:</label>
+                        <input type="text" name="username" class="h-[50px] border rounded-sm border-gray-400 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                </div>
+
+                <!-- Password Information -->
+                <div class="flex w-full gap-5">
+                    <div class="flex flex-col w-full space-y-2">
+                        <label for="password" class="text-sm font-medium">Password:</label>
+                        <input type="password" name="password" class="h-[50px] border rounded-sm border-gray-400 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div class="flex flex-col w-full space-y-2">
+                        <label for="confirm_password" class="text-sm font-medium">Confirm Password:</label>
+                        <input type="password" name="confirm_password" class="h-[50px] border rounded-sm border-gray-400 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                     </div>
                 </div>
             </div>
 
-            <div class="flex flex-col mt-5">
-                <button type="submit" class="h-[50px] w-full rounded-sm bg-[#FFC83D] hover:bg-[#e6b435] transition-colors">Register</button>
+            <div class="flex flex-col mt-8">
+                <button type="submit" class="h-[50px] w-full rounded-sm bg-[#FFC83D] hover:bg-[#e6b435] transition-colors font-medium text-gray-800">Register as Instructor</button>
             </div>
         </form>
 
-        <div class="text-center">
-            <p class="text-sm">Already have an account? <a href="{% url 'instructor_login' %}" class="text-blue-500 hover:underline">Login here</a></p>
+        <div class="text-center pt-4 border-t border-gray-300">
+            <p class="text-sm text-gray-600">Already have an account? 
+                <a href="{% url 'instructor_login' %}" class="text-blue-500 hover:underline font-medium">Login here</a>
+            </p>
         </div>
     </div>
 </div>

@@ -32,20 +32,20 @@ def create_seats_for_schedule(sender, instance, created, **kwargs):
 # ---------------------------
 # User (Base Table)
 # ---------------------------
+# flightapp/models.py
 class User(models.Model):
     ROLE_CHOICES = [
         ('admin', 'Admin'),
+        ('instructor', 'Instructor'),  # Add this
+        # ('student', 'Student'),
     ]
 
     username = models.CharField(max_length=150, unique=True)
-    password = models.CharField(max_length=255,null=True)  # hashed in real use
+    password = models.CharField(max_length=255, null=True)
     email = models.EmailField(unique=True, null=True)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)  # Make sure this includes 'instructor'
     last_login = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
-
-    def __str__(self):
-        return f"{self.username} ({self.role})"
 
 
 # ---------------------------
@@ -185,7 +185,7 @@ class PassengerInfo(models.Model):
     gender = models.CharField(max_length=10)
     date_of_birth = models.DateField()
     passport_number = models.CharField(max_length=50, blank=True, null=True)
-    nationality = models.CharField(max_length=100)
+    nationality = models.CharField(max_length=100, null=True, blank=True)
     passenger_type = models.CharField(
         max_length=10, choices=TYPE_CHOICES, default="Adult"
     )
@@ -221,6 +221,7 @@ class Student(models.Model):
 
 
 class Instructor(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='instructor_profile', null=True)
     first_name = models.CharField(max_length=100)
     middle_initial = models.CharField(max_length=5, null=True, blank=True)
     last_name = models.CharField(max_length=100)
@@ -229,10 +230,19 @@ class Instructor(models.Model):
     phone = models.CharField(max_length=20, null=True, blank=True)
     instructor_id = models.CharField(max_length=50, unique=True, null=True)
 
-    def __str__(self):
+    def get_full_name(self):
+        """Return full name of instructor"""
+        name_parts = []
+        if self.first_name:
+            name_parts.append(self.first_name)
         if self.middle_initial:
-            return f"{self.instructor_id} - {self.first_name} {self.middle_initial}. {self.last_name}"
-        return f"{self.instructor_id} - {self.first_name} {self.last_name}"
+            name_parts.append(f"{self.middle_initial}.")
+        if self.last_name:
+            name_parts.append(self.last_name)
+        return " ".join(name_parts) if name_parts else self.user.username
+    
+    def __str__(self):
+        return self.get_full_name()
 
 
 

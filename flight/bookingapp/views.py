@@ -20,7 +20,7 @@ from decimal import Decimal
 
 
 
-# @login_required
+@login_required
 def debug_score_breakdown(request, submission_id):
     """Show EXACT score breakdown from calculate_activity_score"""
     student_id = request.session.get('student_id')
@@ -472,7 +472,38 @@ def evaluate_flight_route_compliance(booking, activity):
     
     return max(score, 0.0)  # Ensure score doesn't go below 0
 
-
+def get_instructor_display_name(instructor_user):
+    """Safely get instructor display name from User object"""
+    if not instructor_user:
+        return "Not assigned"
+    
+    try:
+        # Check if there's an instructor profile linked
+        if hasattr(instructor_user, 'instructor_profile') and instructor_user.instructor_profile:
+            instructor_profile = instructor_user.instructor_profile
+            
+            # Build the name from Instructor model fields
+            name_parts = []
+            if instructor_profile.first_name:
+                name_parts.append(instructor_profile.first_name)
+            if instructor_profile.middle_initial:
+                name_parts.append(f"{instructor_profile.middle_initial}.")
+            if instructor_profile.last_name:
+                name_parts.append(instructor_profile.last_name)
+            
+            if name_parts:
+                return " ".join(name_parts)
+        
+        # Fall back to User model fields
+        if instructor_user.first_name and instructor_user.last_name:
+            return f"{instructor_user.first_name} {instructor_user.last_name}"
+        
+        # Final fallback to username
+        return instructor_user.username
+        
+    except Exception as e:
+        print(f"Error getting instructor display name: {e}")
+        return instructor_user.username if instructor_user else "Not assigned"
 
 @login_required
 def student_home(request):
@@ -484,20 +515,23 @@ def student_home(request):
     try:
         student = Student.objects.get(id=student_id)
         
-        # Get student's enrolled sections
+        # Get student's enrolled sections with instructor information
         enrolled_sections = SectionEnrollment.objects.filter(
             student=student, 
             is_active=True
-        ).select_related('section')
-        
-        # Get active activities from enrolled sections - REMOVE invalid select_related fields
+        ).select_related(
+            'section', 
+            'section__instructor',  # This gets the Instructor instance
+            'section__instructor__user'  # This gets the User instance linked to Instructor
+        )
+
+        # Rest of your view code remains the same...
         activities = Activity.objects.filter(
             section__in=[enrollment.section for enrollment in enrolled_sections],
             is_code_active=True,
             status='published'
-        ).select_related('section')  # Only select_related on valid fields
+        ).select_related('section', 'section__instructor', 'section__instructor__user')
         
-        # Check which activities the student has already submitted
         submitted_activities = ActivitySubmission.objects.filter(
             student=student,
             activity__in=activities
@@ -517,7 +551,6 @@ def student_home(request):
         return redirect('bookingapp:login')
 
 
-# bookingapp/views.py - Update the student_activity_detail view
 @login_required
 def student_activity_detail(request, activity_id):
     student_id = request.session.get('student_id')
@@ -554,8 +587,7 @@ def student_activity_detail(request, activity_id):
             'existing_submission': existing_submission,
             'passengers': passengers,
             'code_active': activity.is_code_active,
-            # SIMPLIFIED: Use due_date for expiration check
-            'code_expired': activity.is_due_date_passed,  # Changed this line
+            'code_expired': activity.is_due_date_passed,
         }
         return HttpResponse(template.render(context, request))
         
@@ -640,12 +672,12 @@ def student_activities(request):
         enrolled_sections = SectionEnrollment.objects.filter(
             student=student, 
             is_active=True
-        ).select_related('section')
+        ).select_related('section', 'section__instructor', 'section__instructor__user')
         
         # Get all activities from enrolled sections
         all_activities = Activity.objects.filter(
             section__in=[enrollment.section for enrollment in enrolled_sections]
-        ).select_related('section')
+        ).select_related('section', 'section__instructor', 'section__instructor__user')
         
         # Get submitted activities
         submitted_activities = ActivitySubmission.objects.filter(
@@ -678,7 +710,21 @@ def student_activities(request):
         messages.error(request, "Student not found.")
         return redirect('bookingapp:login')
 
-
+# Add this helper function to get instructor name properly
+def get_instructor_full_name(instructor):
+    """Get full name from Instructor instance"""
+    if not instructor:
+        return "Not assigned"
+    
+    name_parts = []
+    if instructor.first_name:
+        name_parts.append(instructor.first_name)
+    if instructor.middle_initial:
+        name_parts.append(f"{instructor.middle_initial}.")
+    if instructor.last_name:
+        name_parts.append(instructor.last_name)
+    
+    return " ".join(name_parts) if name_parts else instructor.user.username
 
 @login_required
 def home(request):
@@ -3627,8 +3673,8 @@ def get_detailed_comparison(activity, booking, booking_details, submission=None)
     # Build price comparison
     price_comparison = {
         'submitted_total': total_price,
-        'within_budget': True,  # Always true since budget is removed
-        'overage': 0,  # Always 0 since budget is removed
+        'within_budget': True,
+        'overage': 0,
     }
     
     # Build flight comparison
@@ -3645,6 +3691,81 @@ def get_detailed_comparison(activity, booking, booking_details, submission=None)
         'booked_destination': booked_destination.code if booked_destination else 'Not specified',
         'origin_match': origin_match,
         'destination_match': destination_match,
+    }
+    
+    # Calculate score breakdown using CORRECT weights
+    total_points = float(activity.total_points)
+    
+    # CORRECT WEIGHTS (matching calculate_activity_score):
+    base_weight = 0.20              # 20%
+    passenger_info_weight = 0.10    # 10%  
+    flight_route_weight = 0.10      # 10%
+    trip_type_weight = 0.15         # 15%
+    travel_class_weight = 0.15      # 15%
+    passenger_count_weight = 0.20   # 20%  # FIXED: Was 0.25, should be 0.20
+    addon_weight = 0.10             # 10%
+    
+    # Calculate each component with CORRECT weights
+    base_points = total_points * base_weight
+    
+    # Passenger information points
+    passenger_info_points = total_points * passenger_info_weight * passenger_info_score
+    
+    # Flight route points - FIXED: Use correct weight (0.10 instead of 0.15)
+    flight_route_score = 1.0 if (origin_match and destination_match) else 0.0
+    flight_route_points = total_points * flight_route_weight * flight_route_score
+    
+    # Trip type points
+    trip_type_match = 1.0 if booking.trip_type == activity.required_trip_type else 0.0
+    trip_type_points = total_points * trip_type_weight * trip_type_match
+    
+    # Travel class points
+    travel_class_match = 1.0 if has_correct_class else 0.0
+    travel_class_points = total_points * travel_class_weight * travel_class_match
+    
+    # Passenger count points - FIXED: Use correct weight (0.20 instead of 0.25)
+    passenger_match = 0
+    if adult_count == activity.required_passengers:
+        passenger_match += 0.5  # 50% of passenger count points
+    if child_count == activity.required_children:
+        passenger_match += 0.3  # 30% of passenger count points
+    if infant_count == activity.required_infants:
+        passenger_match += 0.2  # 20% of passenger count points
+    passenger_points = total_points * passenger_count_weight * passenger_match
+    
+    # Add-on points
+    addon_points = float(submission.addon_score) if submission and submission.addon_score else 0.0
+    
+    # Calculate total earned
+    total_earned = (
+        base_points + 
+        passenger_info_points + 
+        flight_route_points + 
+        trip_type_points + 
+        travel_class_points + 
+        passenger_points + 
+        addon_points
+    )
+    
+    # Build the score breakdown with CORRECT weights
+    score_breakdown = {
+        'base_points': float(base_points),
+        'passenger_info_points': float(passenger_info_points),
+        'flight_route_points': float(flight_route_points),
+        'trip_type_points': float(trip_type_points),
+        'travel_class_points': float(travel_class_points),
+        'passenger_points': float(passenger_points),
+        'addon_points': float(addon_points),
+        'total_earned': float(total_earned),
+        'total_possible': float(total_points),
+        # For template percentage calculations
+        'total_possible_base_points': float(total_points) * base_weight,
+        'total_possible_passenger_info_points': float(total_points) * passenger_info_weight,
+        'total_possible_flight_route_points': float(total_points) * flight_route_weight,
+        'total_possible_trip_type_points': float(total_points) * trip_type_weight,
+        'total_possible_travel_class_points': float(total_points) * travel_class_weight,
+        'total_possible_passenger_points': float(total_points) * passenger_count_weight,  # FIXED: 20% not 25%
+        'total_possible_addon_points': float(total_points) * addon_weight,
     }
     
     # Build requirements list
@@ -3707,7 +3828,7 @@ def get_detailed_comparison(activity, booking, booking_details, submission=None)
         'category': 'Passenger Information',
         'requirement': 'Complete passenger details',
         'student_work': f'{passenger_info_score * 100:.1f}% complete',
-        'met': passenger_info_score >= 0.8,  # Consider 80% as meeting requirement
+        'met': passenger_info_score >= 0.8,
         'icon': '✓' if passenger_info_score >= 0.8 else '⚠',
         'weight': 'Medium',
         'details': 'Includes names, dates of birth, gender, and contact information'
@@ -3735,98 +3856,7 @@ def get_detailed_comparison(activity, booking, booking_details, submission=None)
             'weight': 'Medium'
         })
     
-    # Calculate score breakdown using the CORRECT weights from calculate_activity_score
-    total_points = float(activity.total_points)
-    
-    # Use the submission's actual score if available, otherwise calculate
-    if submission and submission.score is not None:
-        # Calculate points using the SAME weights as calculate_activity_score
-        base_points = total_points * 0.20  # 20% for completion
-        
-        # Calculate passenger count points (25%)
-        passenger_match = 0
-        if adult_count == activity.required_passengers:
-            passenger_match += 0.5  # 50% of passenger count points
-        if child_count == activity.required_children:
-            passenger_match += 0.3  # 30% of passenger count points
-        if infant_count == activity.required_infants:
-            passenger_match += 0.2  # 20% of passenger count points
-        passenger_points = (total_points * 0.25) * passenger_match
-        
-        # Passenger information quality points (10%)
-        passenger_info_points = total_points * 0.10 * passenger_info_score
-        
-        # Flight route compliance points (15%)
-        flight_route_score = evaluate_flight_route_compliance(booking, activity)
-        flight_route_points = total_points * 0.15 * flight_route_score
-        
-        # Trip type compliance points (15%)
-        trip_type_match = 1.0 if booking.trip_type == activity.required_trip_type else 0.0
-        trip_type_points = total_points * 0.15 * trip_type_match
-        
-        # Travel class compliance points (15%)
-        travel_class_match = 1.0 if has_correct_class else 0.0
-        travel_class_points = total_points * 0.15 * travel_class_match
-        
-        # Use actual add-on score from submission
-        addon_points = float(submission.addon_score) if submission.addon_score else 0.0
-        
-    else:
-        # Fallback calculation if no submission
-        base_points = total_points * 0.20
-        
-        passenger_match = 0
-        if adult_count == activity.required_passengers:
-            passenger_match += 0.5
-        if child_count == activity.required_children:
-            passenger_match += 0.3  
-        if infant_count == activity.required_infants:
-            passenger_match += 0.2
-        passenger_points = (total_points * 0.25) * passenger_match
-        
-        passenger_info_points = total_points * 0.10 * passenger_info_score
-        
-        flight_route_score = evaluate_flight_route_compliance(booking, activity)
-        flight_route_points = total_points * 0.15 * flight_route_score
-        
-        trip_type_match = 1.0 if booking.trip_type == activity.required_trip_type else 0.0
-        trip_type_points = total_points * 0.15 * trip_type_match
-        
-        travel_class_match = 1.0 if has_correct_class else 0.0
-        travel_class_points = total_points * 0.15 * travel_class_match
-        
-        addon_points = total_points * 0.10
-    
-    # Build the COMPLETE score breakdown with ALL categories
-    score_breakdown = {
-        'base_points': float(base_points),
-        'passenger_points': float(passenger_points),
-        'passenger_info_points': float(passenger_info_points),
-        'flight_route_points': float(flight_route_points),  # ADDED
-        'trip_type_points': float(trip_type_points),        # ADDED  
-        'travel_class_points': float(travel_class_points),  # ADDED
-        'addon_points': float(addon_points) if activity.addon_grading_enabled else 0.0,
-        'total_earned': float(submission.score) if submission and submission.score else (
-            float(base_points) + 
-            float(passenger_points) + 
-            float(passenger_info_points) + 
-            float(flight_route_points) + 
-            float(trip_type_points) + 
-            float(travel_class_points) +
-            (float(addon_points) if activity.addon_grading_enabled else 0.0)
-        ),
-        'total_possible': float(total_points),
-        # For template percentage calculations
-        'total_possible_base_points': float(total_points) * 0.20,
-        'total_possible_passenger_points': float(total_points) * 0.25,
-        'total_possible_passenger_info_points': float(total_points) * 0.10,
-        'total_possible_flight_route_points': float(total_points) * 0.15,  # ADDED
-        'total_possible_trip_type_points': float(total_points) * 0.15,     # ADDED
-        'total_possible_travel_class_points': float(total_points) * 0.15,  # ADDED
-        'total_possible_addon_points': float(total_points) * 0.10 if activity.addon_grading_enabled else 0.0,
-    }
-    
-    # Add recommendations
+    # Add recommendations based on passenger information quality
     if passenger_info_score < 0.8:
         recommendations.append("Ensure all passenger details are complete including names, dates of birth, gender, and contact information")
     
@@ -3847,7 +3877,7 @@ def get_detailed_comparison(activity, booking, booking_details, submission=None)
         'requirements': requirements,
         'deductions': deductions,
         'recommendations': recommendations,
-        'score_breakdown': score_breakdown,  # Now includes ALL score components
+        'score_breakdown': score_breakdown,
     }
 
 
@@ -3978,6 +4008,7 @@ def get_booking_details(booking):
             'date_of_birth': detail.passenger.date_of_birth,
             'gender': detail.passenger.gender,
             'passport': detail.passenger.passport_number,
+            # REMOVED: 'nationality': detail.passenger.nationality,  # This field doesn't exist
             'flights': []
         }
         

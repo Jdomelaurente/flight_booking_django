@@ -18,7 +18,11 @@ class Section(models.Model):
     academic_year = models.CharField(max_length=20)
     schedule = models.CharField(max_length=100, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
-    instructor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sections')
+    instructor = models.ForeignKey(
+        'flightapp.Instructor',  # Change this
+        on_delete=models.CASCADE, 
+        related_name='sections', null=True
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

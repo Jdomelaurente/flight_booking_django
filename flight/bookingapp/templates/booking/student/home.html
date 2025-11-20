@@ -6,7 +6,21 @@
 
 <div class="flex-1 max-h-[138px] mx-30 rounded-lg flex items-start flex-col justify-center bg-[#093704] h-[134px] mt-10 p-7">
     <p class="text-[#FFC83D] text-4xl inria-serif-regular">CT 112 FLIGHT BOOKING SIMULATOR!</p>
-    <p class="text-[#FFC83D] text-sm mt-1">Instructor: {{ student.first_name }} {{ student.last_name }}</p>
+    <!-- In the header section -->
+<!-- Instructor Information -->
+    {% if enrolled_sections %}
+        <p class="text-[#FFC83D] text-sm mt-1">
+            {% for enrollment in enrolled_sections %}
+                Instructor: 
+                {% if enrollment.section.instructor %}
+                    {{ enrollment.section.instructor.first_name }} {{ enrollment.section.instructor.last_name }}
+                {% else %}
+                    Not assigned
+                {% endif %}
+                {% if not forloop.last %} | {% endif %}
+            {% endfor %}
+        </p>
+    {% endif %}
 </div>
 
 
