@@ -4,9 +4,9 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-<div class="w-full flex justify-center p-3">
+<div class="w-full flex justify-center py-3">
   <div
-    class="bg-no-repeat bg-center bg-cover p-2 px-4 rounded-3xl h-[600px] w-[1350px] relative"
+    class="bg-no-repeat bg-center bg-cover p-2 px-4 rounded-3xl h-[600px] w-[1300px] relative"
     style="background-image: url('{% static 'bookingapp/asset/bg_plane.svg' %}');"
   >
     <!-- logo -->
@@ -78,8 +78,8 @@
           <!-- passenger count -->
           <div class="flex gap-2 items-center">
             
-            <div class="p-1 flex gap-1  items-center rounded-sm text-sm space-x-5 px-1 bg-[#093704]">
-              <div class="passenger-display flex  space-x-5 text-[#FFC83D]">
+            <div class="p-1 flex gap-1  items-center rounded-sm text-sm space-x-5 px-1 ">
+              <div class="passenger-display flex  space-x-5 text-[#093704]">
                 <div class="passenger-item">
                   <span id="adultDisplay">1</span> Adult
                 </div>
@@ -90,7 +90,7 @@
                   <span id="infantDisplay">0</span> Infant
                 </div>
               </div>
-              <button type="button" id="passengerEditBtn" class="bg-[#FFC83D] hover:bg-[#FFC83D]/80 cursor-pointer py-1 px-5 rounded-full text-sm">
+              <button type="button" id="passengerEditBtn" class="bg-[#FFC83D] hover:bg-[#FFC83D]/80 cursor-pointer font-medium py-1 px-5 rounded-full text-sm">
                 Add passenger
               </button>
             </div>

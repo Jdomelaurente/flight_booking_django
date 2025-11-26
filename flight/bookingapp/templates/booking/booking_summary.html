@@ -156,18 +156,18 @@
                 </div>
 
                 <!-- Optional Add-ons Section -->
-                <div class="mt-6">
-                    <h2 class="font-semibold text-lg mb-3 text-blue-600">Selected Optional Add-ons</h2>
-                    
-                    {% if addons_total > 0 %}
-                        <div class="space-y-4">
-                            {% for passenger in passengers %}
-                                {% with passenger_id=passenger.id %}
-                                    {% if addons_details|get_item:passenger_id %}
+               
+                    <div class="mt-6">
+                        <h2 class="font-semibold text-lg mb-3 text-blue-600">Selected Optional Add-ons</h2>
+                        
+                        {% if addons_total > 0 %}
+                            <div class="space-y-4">
+                                {% for passenger in passengers %}
+                                    {% if passenger.selected_addons %}
                                     <div class="border border-blue-200 rounded-md p-4 bg-blue-50">
                                         <h3 class="font-medium text-sm mb-3 text-blue-700">{{ passenger.full_name }} ({{ passenger.passenger_type }})</h3>
                                         <div class="space-y-2">
-                                            {% for addon in addons_details|get_item:passenger_id %}
+                                            {% for addon in passenger.selected_addons %}
                                             <div class="flex justify-between items-center py-2 border-b border-blue-200 last:border-b-0">
                                                 <div class="flex-1">
                                                     <p class="text-sm font-medium">{{ addon.name }}</p>
@@ -181,26 +181,32 @@
                                                 <span class="font-semibold text-blue-700">PHP {{ addon.price|floatformat:2 }}</span>
                                             </div>
                                             {% endfor %}
+                                            <!-- Passenger subtotal -->
+                                            <div class="flex justify-between items-center pt-2 mt-2 border-t border-blue-300">
+                                                <span class="text-sm font-medium">Subtotal:</span>
+                                                <span class="font-semibold text-blue-800">
+                                                    PHP {% widthratio passenger.selected_addons.0.price 1 passenger.selected_addons|length %}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                     {% endif %}
-                                {% endwith %}
-                            {% endfor %}
-                            
-                            <!-- Total Optional Add-ons Summary -->
-                            <div class="border-t border-blue-300 pt-3 mt-4">
-                                <div class="flex justify-between items-center">
-                                    <span class="font-semibold text-sm">Total Optional Add-ons:</span>
-                                    <span class="font-bold text-lg text-blue-700">PHP {{ addons_total|floatformat:2 }}</span>
+                                {% endfor %}
+                                
+                                <!-- Total Optional Add-ons Summary -->
+                                <div class="border-t border-blue-300 pt-3 mt-4">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-semibold text-sm">Total Optional Add-ons:</span>
+                                        <span class="font-bold text-lg text-blue-700">PHP {{ addons_total|floatformat:2 }}</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    {% else %}
-                        <div class="text-center py-4 border border-gray-300 rounded-md bg-gray-50">
-                            <p class="text-gray-500 text-sm">No optional add-ons selected</p>
-                        </div>
-                    {% endif %}
-                </div>
+                        {% else %}
+                            <div class="text-center py-4 border border-gray-300 rounded-md bg-gray-50">
+                                <p class="text-gray-500 text-sm">No optional add-ons selected</p>
+                            </div>
+                        {% endif %}
+                    </div>
             </div>
 
             <!-- Passenger List Section -->
@@ -251,13 +257,11 @@
                                     {% endif %}
                                 </td>
                                 <td class="py-3 px-4 text-blue-600">
-                                    {% with passenger_id=p.id %}
-                                        {% if addons_details|get_item:passenger_id %}
-                                            {{ addons_details|get_item:passenger_id|length }} add-on(s)
-                                        {% else %}
-                                            None
-                                        {% endif %}
-                                    {% endwith %}
+                                    {% if p.selected_addons %}
+                                        {{ p.selected_addons|length }} add-on(s)
+                                    {% else %}
+                                        None
+                                    {% endif %}
                                 </td>
                                 <td class="py-3 px-4">✓</td>
                             </tr>
@@ -342,4 +346,13 @@
         </div>
     </div>
 </main>
+
+<!-- Debug Section -->
+<div class="bg-yellow-100 border border-yellow-400 p-4 mb-4">
+    <h3 class="font-bold">Debug Info:</h3>
+    <p>Selected Add-ons: {{ selected_addons }}</p>
+    <p>Add-ons Details: {{ addons_details }}</p>
+    <p>Add-ons Total: {{ addons_total }}</p>
+    <p>Grand Total: {{ grand_total }}</p>
+</div>
 {% endblock %}

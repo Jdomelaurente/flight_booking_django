@@ -891,9 +891,59 @@ def search_flight(request):
         print(f"=== SEARCH_FLIGHT DEBUG ===")
         print(f"Activity ID in session: {activity_id}")
         
-        if not trip_type and not origin and not destination and not departure_date and not return_date and (adults + children + infants == 0):
+        # VALIDATION CHECKS
+        validation_errors = []
+        
+        # Check required fields
+        if not trip_type:
+            validation_errors.append("Please select a trip type.")
+        
+        if not origin:
+            validation_errors.append("Please select origin airport.")
+        
+        if not destination:
+            validation_errors.append("Please select destination airport.")
+        
+        if not departure_date:
+            validation_errors.append("Please select departure date.")
+        
+        if trip_type == 'round_trip' and not return_date:
+            validation_errors.append("Please select return date for round trip.")
+        
+        if adults + children + infants == 0:
+            validation_errors.append("Please add at least one passenger.")
+        
+        # Check if origin and destination are different
+        if origin and destination and origin == destination:
+            validation_errors.append("Origin and destination airports cannot be the same.")
+        
+        # Check date validity
+        if departure_date:
+            try:
+                depart_date_obj = datetime.strptime(departure_date, "%Y-%m-%d").date()
+                today = timezone.now().date()
+                
+                if depart_date_obj < today:
+                    validation_errors.append("Departure date cannot be in the past.")
+                
+                if return_date:
+                    return_date_obj = datetime.strptime(return_date, "%Y-%m-%d").date()
+                    if return_date_obj <= depart_date_obj:
+                        validation_errors.append("Return date must be after departure date.")
+                    
+                    if return_date_obj < today:
+                        validation_errors.append("Return date cannot be in the past.")
+                        
+            except ValueError:
+                validation_errors.append("Invalid date format.")
+        
+        # If there are validation errors, return to home with errors
+        if validation_errors:
+            for error in validation_errors:
+                messages.error(request, error)
             return redirect('bookingapp:main')
-
+        
+        # If validation passes, store data in session
         if trip_type:
             request.session['trip_type'] = trip_type
         if origin:    
@@ -916,7 +966,14 @@ def search_flight(request):
             request.session['activity_id'] = activity_id
             print(f"✅ Preserved activity_id: {activity_id}")
 
-        return redirect("bookingapp:flight_schedules")
+        # Show success message
+        messages.success(request, "Flight search criteria saved successfully! Loading available flights...")
+        
+        # Render loading template instead of direct redirect
+        return render(request, 'booking/loading_schedule.html')
+
+    # If GET request, redirect to main
+    return redirect('bookingapp:main')
 
 @never_cache
 @login_required
@@ -929,27 +986,41 @@ def flight_schedules(request):
     depart_date = request.session.get('departure_date')
     dates = range(1, 8)
 
+    # Check if we have required session data
     if not origin_id or not destination_id or not depart_date:
+        messages.error(request, "Please complete your flight search first.")
         return redirect('bookingapp:main')
 
-    origin = Airport.objects.get(id=origin_id)
-    destination = Airport.objects.get(id=destination_id)
+    try:
+        origin = Airport.objects.get(id=origin_id)
+        destination = Airport.objects.get(id=destination_id)
+    except Airport.DoesNotExist:
+        messages.error(request, "Invalid airport selection. Please try again.")
+        return redirect('bookingapp:main')
 
     # Departure date
-    departure_obj = datetime.strptime(depart_date, "%Y-%m-%d")
-    departure_date = departure_obj.strftime("%d %b %Y")
+    try:
+        departure_obj = datetime.strptime(depart_date, "%Y-%m-%d")
+        departure_date = departure_obj.strftime("%d %b %Y")
+    except ValueError:
+        messages.error(request, "Invalid departure date format.")
+        return redirect('bookingapp:main')
 
     # Return date
     return_date_str = request.session.get('return_date', '')
     return_schedules = None
     if return_date_str:
-        return_obj = datetime.strptime(return_date_str, "%Y-%m-%d")
-        return_date = return_obj.strftime("%d %b %Y")
-        return_schedules = Schedule.objects.filter(
-            flight__route__origin_airport=destination,
-            flight__route__destination_airport=origin,
-            departure_time__date=return_obj.date()
-        )
+        try:
+            return_obj = datetime.strptime(return_date_str, "%Y-%m-%d")
+            return_date = return_obj.strftime("%d %b %Y")
+            return_schedules = Schedule.objects.filter(
+                flight__route__origin_airport=destination,
+                flight__route__destination_airport=origin,
+                departure_time__date=return_obj.date()
+            )
+        except ValueError:
+            messages.error(request, "Invalid return date format.")
+            return redirect('bookingapp:main')
     else:
         return_date = None
 
@@ -1041,6 +1112,12 @@ def flight_schedules(request):
             
             schedule.available_seat_classes = schedule_seat_classes
 
+    # Add success message if schedules were found
+    if schedules.exists():
+        messages.success(request, f"Found {schedules.count()} available flights from {origin.code} to {destination.code}")
+    else:
+        messages.warning(request, f"No flights found for your selected route and date. Please try different search criteria.")
+
     template = loader.get_template('booking/schedule.html')
     context = {
         "origin": origin,
@@ -1061,6 +1138,7 @@ def reset_selection(request):
     if request.method == "POST":
         request.session.pop('depart_schedule_id', None)
         request.session.pop('return_schedule_id', None)
+        messages.info(request, "Flight selection has been reset. You can choose new flights.")
     return redirect('bookingapp:flight_schedules')
 
 @login_required
@@ -1068,9 +1146,9 @@ def cancel_selected_schedule(request):
     # remove selected schedules from session
     request.session.pop("depart_schedule_id", None)
     request.session.pop("return_schedule_id", None)
+    messages.info(request, "Flight selection cancelled. You can choose new flights.")
     # keep trip_type so roundtrip still works
     return redirect("bookingapp:flight_schedules")
-
 
 @never_cache
 @login_required
@@ -1078,6 +1156,10 @@ def select_schedule(request):
     if request.method == 'POST':
         schedule_id = request.POST.get('schedule_id')
         trip_type = request.session.get('trip_type', 'one_way')
+        
+        if not schedule_id:
+            messages.error(request, "No schedule selected. Please select a flight.")
+            return redirect('bookingapp:flight_schedules')
         
         try:
             schedule = Schedule.objects.select_related(
@@ -1092,23 +1174,41 @@ def select_schedule(request):
                 if not request.session.get('depart_schedule_id'):
                     # First selection is departure
                     request.session['depart_schedule_id'] = schedule_id
-                    messages.success(request, "Departure flight selected. Now select your return flight.")
+                    messages.success(request, 
+                        f"✅ Departure flight selected: {schedule.flight.airline.code} {schedule.flight.flight_number} "
+                        f"from {schedule.flight.route.origin_airport.code} to {schedule.flight.route.destination_airport.code} "
+                        f"on {schedule.departure_time.strftime('%b %d, %Y')}"
+                    )
                     return redirect('bookingapp:flight_schedules')
                 else:
                     # Second selection is return
                     request.session['return_schedule_id'] = schedule_id
+                    messages.success(request, 
+                        f"✅ Return flight selected: {schedule.flight.airline.code} {schedule.flight.flight_number} "
+                        f"from {schedule.flight.route.origin_airport.code} to {schedule.flight.route.destination_airport.code} "
+                        f"on {schedule.departure_time.strftime('%b %d, %Y')}"
+                    )
                     # Redirect to review both schedules
                     return redirect('bookingapp:review_selected_scheduled')
             else:
                 # One-way trip - store as departure and go to review
                 request.session['depart_schedule_id'] = schedule_id
+                messages.success(request, 
+                    f"✅ Flight selected: {schedule.flight.airline.code} {schedule.flight.flight_number} "
+                    f"from {schedule.flight.route.origin_airport.code} to {schedule.flight.route.destination_airport.code} "
+                    f"on {schedule.departure_time.strftime('%b %d, %Y')}"
+                )
                 return redirect('bookingapp:review_selected_scheduled')
             
         except Schedule.DoesNotExist:
-            messages.error(request, "Selected schedule not found.")
+            messages.error(request, "Selected schedule not found. Please choose another flight.")
+            return redirect('bookingapp:flight_schedules')
+        except Exception as e:
+            messages.error(request, f"Error selecting schedule: {str(e)}")
             return redirect('bookingapp:flight_schedules')
     
     # If not POST, redirect to flight schedules
+    messages.error(request, "Invalid request method.")
     return redirect('bookingapp:flight_schedules')
 
 @never_cache
@@ -1222,8 +1322,6 @@ def passenger_information(request):
     }
     return render(request, 'booking/passenger.html', context)
 
-
-
 @login_required
 def save_passengers(request):
     if request.method != 'POST':
@@ -1288,7 +1386,8 @@ def save_passengers(request):
         print(f"ID: {p['id']}, Name: {p['first_name']}, Type: {p['passenger_type']}, Adult ID: {p.get('adult_id', 'N/A')}")
     print("===================================")
 
-    return redirect('bookingapp:add_ons')
+    # Render loading template instead of direct redirect
+    return render(request, 'booking/loading_passenger.html')
 
 @login_required
 def add_ons(request):
@@ -1929,6 +2028,10 @@ from decimal import Decimal
 
 @login_required
 def booking_summary(request):
+    print(f"=== SESSION DATA DEBUG ===")
+    print(f"Session keys: {list(request.session.keys())}")
+    print(f"Selected add-ons in session: {request.session.get('selected_addons')}")
+    print(f"Passengers in session: {request.session.get('passengers')}")
     activity_id = request.session.get('activity_id')
     print(f"=== BOOKING_SUMMARY DEBUG ===")
     print(f"Activity ID: {activity_id}")
@@ -1949,17 +2052,36 @@ def booking_summary(request):
     selected_addons = request.session.get('selected_addons', {})
     addons_details = {}
     addons_total = Decimal('0.00')
-    
-    # Calculate add-ons cost
-    for passenger_id, addon_ids in selected_addons.items():
-        addons_details[passenger_id] = []
-        for addon_id in addon_ids:
-            try:
-                addon = AddOn.objects.get(id=addon_id)
-                addons_details[passenger_id].append(addon)
-                addons_total += addon.price
-            except AddOn.DoesNotExist:
-                continue
+
+    print(f"=== ADD-ONS DEBUG IN BOOKING SUMMARY ===")
+    print(f"Selected add-ons from session: {selected_addons}")
+
+    # Calculate add-ons cost - CORRECTED LOGIC
+    if selected_addons:
+        for passenger_id, addon_ids in selected_addons.items():
+            if addon_ids:  # Only process if there are add-ons for this passenger
+                addons_details[passenger_id] = []
+                for addon_id in addon_ids:
+                    try:
+                        addon = AddOn.objects.get(id=addon_id)
+                        addons_details[passenger_id].append({
+                            'id': addon.id,
+                            'name': addon.name,
+                            'description': addon.description,
+                            'price': addon.price,
+                            'type': addon.type.name if addon.type else 'General'
+                        })
+                        addons_total += addon.price
+                        print(f"✅ Added add-on: {addon.name} (ID: {addon_id}) - Price: {addon.price} for passenger {passenger_id}")
+                    except AddOn.DoesNotExist:
+                        print(f"❌ Add-on with ID {addon_id} not found - skipping")
+                        continue
+    else:
+        print("❌ No selected add-ons found in session")
+
+    print(f"Total add-ons cost calculated: {addons_total}")
+    print(f"Add-ons details: {addons_details}")
+    print("=========================================")
 
     # Get included add-ons for both schedules based on seat classes
     depart_included_addons = []
@@ -2077,6 +2199,10 @@ def booking_summary(request):
                 included=True
             ).select_related('type', 'seat_class', 'airline')
 
+        # DEBUG: Check what add-ons this passenger has
+        passenger_addons = addons_details.get(str(passenger['id']), [])
+        print(f"Passenger {pid} ({passenger['first_name']}) has {len(passenger_addons)} selected add-ons")
+
         passenger_data.append({
             "full_name": f"{passenger['first_name']} {passenger.get('mi', '')} {passenger['last_name']}",
             "depart_seat": seat_info.get("depart", "Not selected"),
@@ -2088,11 +2214,11 @@ def booking_summary(request):
             "passport": passenger.get('passport', ''),
             "nationality": passenger.get('nationality', ''),
             'passenger_type': passenger.get('passenger_type', ''),
-            'id': passenger['id'],  # Add passenger ID for add-ons display
-            'selected_addons': addons_details.get(pid, []),  # Add selected add-ons for this passenger
-            'depart_included_addons': passenger_depart_included,  # Included add-ons for departure
-            'return_included_addons': passenger_return_included,  # Included add-ons for return
-        })
+            'id': passenger['id'],
+            'selected_addons': passenger_addons,  # This should now have the correct data
+            'depart_included_addons': passenger_depart_included,
+            'return_included_addons': passenger_return_included,
+            })
 
     contact_info = request.session.get('contact_info', {})
 
@@ -2108,6 +2234,8 @@ def booking_summary(request):
     print(f"  - Total passengers: {num_passengers}")
     print(f"  - Adults/Children: {adult_child_count}")
     print(f"  - Infants: {infant_count}")
+    print(f"  - Add-ons Total: {addons_total}")  # DEBUG
+
 
     # Calculate price for each adult/child passenger using EXACT SAME LOGIC as BookingDetail.save()
     for passenger in passengers:
@@ -2222,11 +2350,11 @@ def booking_summary(request):
         "insurance": insurance,
         "total_flight_price": total_flight_price,
         "selected_addons": selected_addons,
-        "addons_details": addons_details,
+        "addons_details": addons_details,  # This should now have the correct data
         "addons_total": addons_total,
         "grand_total": grand_total,
-        "depart_included_addons": depart_included_addons,  # All included add-ons for departure
-        "return_included_addons": return_included_addons,  # All included add-ons for return
+        "depart_included_addons": depart_included_addons,
+        "return_included_addons": return_included_addons,
     }
 
     return HttpResponse(template.render(context, request))
@@ -2250,10 +2378,42 @@ def confirm_booking(request):
     student_id = request.session.get('student_id')
     selected_addons = request.session.get('selected_addons', {})
 
+    # VALIDATION CHECKS
+    validation_errors = []
+    
     # Validate required data
-    if not (depart_schedule_id and student_id and passengers):
-        messages.error(request, "Booking data is missing. Please start over.")
-        return redirect('bookingapp:main')
+    if not depart_schedule_id:
+        validation_errors.append("Please select a departure flight.")
+    
+    if not student_id:
+        validation_errors.append("Student session expired. Please login again.")
+    
+    if not passengers:
+        validation_errors.append("Passenger information is missing.")
+    
+    # Check if all passengers have seats for departure
+    if depart_schedule_id:
+        for passenger in passengers:
+            pid = str(passenger.get("id"))
+            seat_info = seats.get(pid, {})
+            if not seat_info.get("depart"):
+                validation_errors.append(f"Please select a departure seat for {passenger.get('first_name', 'passenger')}.")
+                break
+    
+    # Check if return seats are selected for round trip
+    if return_schedule_id:
+        for passenger in passengers:
+            pid = str(passenger.get("id"))
+            seat_info = seats.get(pid, {})
+            if not seat_info.get("return"):
+                validation_errors.append(f"Please select a return seat for {passenger.get('first_name', 'passenger')}.")
+                break
+
+    # If validation errors, return to summary with errors
+    if validation_errors:
+        for error in validation_errors:
+            messages.error(request, error)
+        return redirect('bookingapp:booking_summary')
 
     try:
         depart_schedule = Schedule.objects.get(id=depart_schedule_id)
@@ -2301,8 +2461,6 @@ def confirm_booking(request):
                 gender=p.get('gender', ''),
                 date_of_birth=dob,
                 passport_number=p.get('passport', ''),
-                # email=student.email,
-                # phone=student.phone,
                 passenger_type=p.get('passenger_type', 'Adult')
             )
             
@@ -2385,7 +2543,8 @@ def confirm_booking(request):
 
                 except Seat.DoesNotExist:
                     print(f"❌ Seat {depart_seat_number} not found or unavailable for depart schedule")
-                    raise ValueError(f"Seat {depart_seat_number} is not available for departure flight")
+                    messages.error(request, f"Seat {depart_seat_number} is no longer available. Please select different seats.")
+                    return redirect('bookingapp:booking_summary')
 
             # Handle return flight booking
             if return_schedule and return_seat_number:
@@ -2429,9 +2588,10 @@ def confirm_booking(request):
                     
                 except Seat.DoesNotExist:
                     print(f"❌ Seat {return_seat_number} not found or unavailable for return schedule")
-                    raise ValueError(f"Seat {return_seat_number} is not available for return flight")
+                    messages.error(request, f"Seat {return_seat_number} is no longer available. Please select different seats.")
+                    return redirect('bookingapp:booking_summary')
 
-        # 🔥 NEW: PROCESS ADD-ONS FOR EACH PASSENGER
+        # 🔥 PROCESS ADD-ONS FOR EACH PASSENGER
         print("=== PROCESSING ADD-ONS ===")
         addons_processed = 0
         
@@ -2447,9 +2607,6 @@ def confirm_booking(request):
                         
                         # Link add-on to ALL booking details for this passenger
                         for flight_type, booking_detail in passenger_details.items():
-                            # Create the relationship between booking detail and add-on
-                            # This assumes you have a ManyToMany relationship between BookingDetail and AddOn
-                            # If not, you might need to create an intermediate model
                             booking_detail.addons.add(addon)
                             
                             print(f"✅ Linked add-on '{addon.name}' ({addon.type}) to {flight_type} flight for passenger {passenger_id}")
@@ -2463,17 +2620,11 @@ def confirm_booking(request):
 
         # DEBUG: Count actual booking details created
         total_booking_details = booking.details.count()
-        unique_passengers_in_booking = booking.details.values('passenger').distinct().count()
         
         print(f"📊 BOOKING CREATION SUMMARY:")
         print(f"  - Total BookingDetail objects created: {total_booking_details}")
-        print(f"  - Unique passengers in booking: {unique_passengers_in_booking}")
         print(f"  - Expected passengers: {len(passengers)}")
         
-        if total_booking_details > len(passengers):
-            print(f"⚠️ WARNING: More BookingDetail objects ({total_booking_details}) than passengers ({len(passengers)})")
-            print(f"   This indicates double-counting in round-trip bookings")
-
         print("✅ Booking created successfully! ID:", booking.id)
         
         # CRITICAL FIX: Save booking ID to session and ensure it persists
@@ -2481,19 +2632,17 @@ def confirm_booking(request):
         request.session.modified = True  # Force session save
         
         print(f"✅ Session updated - current_booking_id: {request.session.get('current_booking_id')}")
+
+        # Show success message
+        messages.success(request, "Booking confirmed successfully! Proceeding to payment...")
         
-        # Debug session state before redirect
-        print("=== SESSION STATE BEFORE REDIRECT ===")
-        for key, value in request.session.items():
-            print(f"{key}: {value}")
-        print("====================================")
+        # Render loading template for booking processing
+        return render(request, 'booking/loading_booking.html')
 
     except Exception as e:
         print(f"❌ Unexpected error in confirm_booking: {str(e)}")
         messages.error(request, "An unexpected error occurred. Please try again.")
         return redirect('bookingapp:booking_summary')
-
-    return redirect('bookingapp:payment_method')
 
 from decimal import Decimal
 from django.contrib import messages
@@ -2714,13 +2863,16 @@ def payment_method(request):
 def payment_success(request):
     booking_id = request.session.get('current_booking_id')
     activity_id = request.session.get('activity_id')
+    is_practice_booking = request.session.get('is_practice_booking', False)
     
     print(f"=== PAYMENT_SUCCESS DEBUG ===")
     print(f"Booking ID from session: {booking_id}")
     print(f"Activity ID from session: {activity_id}")
+    print(f"Is Practice Booking: {is_practice_booking}")
 
     # Check if this is a practice booking
-    if request.session.get('is_practice_booking'):
+    if is_practice_booking:
+        print("🎯 This is a practice booking - saving practice record")
         return save_practice_booking(request)
     
     if not booking_id:
@@ -2728,13 +2880,69 @@ def payment_success(request):
         messages.error(request, "No booking found. Please start over.")
         return redirect('bookingapp:student_home')
     
+    # Handle regular booking without activity (practice or regular booking)
     if not activity_id:
-        print("❌ No activity_id in session - this was probably a regular booking without activity")
-        messages.success(request, "Booking completed successfully!")
-        # Clear session and redirect
-        request.session.pop('current_booking_id', None)
-        return redirect('bookingapp:student_home')
+        print("🎯 Regular booking without activity - showing success page")
+        try:
+            booking = Booking.objects.get(id=booking_id)
+            student = Student.objects.get(id=request.session.get('student_id'))
+            
+            print(f"✅ Found booking: {booking.id} for student: {student.first_name}")
+            
+            # Save as practice booking if it was marked as practice
+            if request.session.get('is_practice_booking'):
+                print("💾 Saving as practice booking")
+                practice_booking = PracticeBooking.objects.create(
+                    student=student,
+                    booking=booking,
+                    practice_type='free_practice',
+                    scenario_description='Free practice booking',
+                    is_completed=True
+                )
+                print(f"✅ Practice booking saved: {practice_booking.id}")
+            
+            # Clear session data but keep student login
+            keys_to_clear = [
+                "passengers", "selected_seats", "confirm_depart_schedule",
+                "confirm_return_schedule", "current_booking_id", "trip_type",
+                "origin", "destination", "departure_date", "return_date",
+                "passenger_count", "contact_info", "adults", "children", "infants",
+                "selected_addons", "is_practice_booking", "is_guided_practice", 
+                "practice_requirements"
+            ]
+            
+            student_id = request.session.get('student_id')
+            for key in keys_to_clear:
+                request.session.pop(key, None)
+            
+            request.session['student_id'] = student_id
+            request.session.modified = True
+            
+            print("🧹 Cleared booking session data")
+            
+            # Render success page for regular/practice booking
+            messages.success(request, "Booking completed successfully!")
+            return render(request, "booking/payment_success.html", {
+                'booking': booking,
+                'student': student,
+                'is_practice_booking': True,
+                'practice_booking': practice_booking if request.session.get('is_practice_booking') else None
+            })
+            
+        except Booking.DoesNotExist:
+            print(f"❌ Booking {booking_id} not found")
+            messages.error(request, "Booking not found.")
+            return redirect('bookingapp:student_home')
+        except Student.DoesNotExist:
+            print(f"❌ Student not found")
+            messages.error(request, "Student not found.")
+            return redirect('bookingapp:login')
+        except Exception as e:
+            print(f"❌ Unexpected error: {e}")
+            messages.error(request, "Error processing booking.")
+            return redirect('bookingapp:student_home')
     
+    # Handle activity submission (existing code)
     try:
         booking = Booking.objects.get(id=booking_id)
         activity = Activity.objects.get(id=activity_id)
@@ -2742,6 +2950,7 @@ def payment_success(request):
         
         print(f"✅ Found objects - Booking: {booking.id}, Activity: {activity.title}, Student: {student.first_name}")
         
+        # ... rest of your existing activity submission code ...
         # Get origin and destination airports from the booking
         origin_airport = None
         destination_airport = None
@@ -2867,6 +3076,15 @@ def payment_success(request):
         request.session.modified = True
         print("🧹 Cleared activity and booking data from session")
         
+        # Render success page for activity submission
+        return render(request, "booking/payment_success.html", {
+            'booking': booking,
+            'student': student,
+            'activity': activity,
+            'submission': submission if 'submission' in locals() else existing_submission,
+            'is_activity_submission': True
+        })
+        
     except Booking.DoesNotExist:
         print(f"❌ Booking {booking_id} not found")
         messages.error(request, "Booking not found.")
@@ -2885,12 +3103,6 @@ def payment_success(request):
         traceback.print_exc()
         messages.error(request, "Error processing submission. Please contact support.")
         return redirect('bookingapp:student_home')
-
-    # Keep student login only
-    student_id = request.session.get('student_id')
-    print(f"🔑 Student ID: {student_id}")
-
-    return render(request, "booking/payment_success.html")
 
 
 @login_required
@@ -5113,7 +5325,7 @@ def guided_practice(request):
 
 @login_required
 def save_practice_booking(request):
-    """Save a completed practice booking"""
+    """Save a completed practice booking and show success page"""
     booking_id = request.session.get('current_booking_id')
     student_id = request.session.get('student_id')
     
@@ -5139,14 +5351,32 @@ def save_practice_booking(request):
             is_completed=True
         )
         
-        # Clear practice session data
-        request.session.pop('is_practice_booking', None)
-        request.session.pop('is_guided_practice', None)
-        request.session.pop('practice_requirements', None)
-        request.session.pop('selected_addons', None)  # Clear add-ons too
+        # Clear practice session data but keep what's needed for success page
+        keys_to_clear = [
+            "is_practice_booking", "is_guided_practice", "practice_requirements",
+            "selected_addons", "passengers", "selected_seats", "confirm_depart_schedule",
+            "confirm_return_schedule", "trip_type", "origin", "destination", 
+            "departure_date", "return_date", "passenger_count", "contact_info", 
+            "adults", "children", "infants"
+        ]
         
-        messages.success(request, "Practice booking saved successfully!")
-        return redirect('bookingapp:practice_booking_home')
+        for key in keys_to_clear:
+            request.session.pop(key, None)
+        
+        # Keep student login
+        request.session['student_id'] = student_id
+        request.session.modified = True
+        
+        print(f"✅ Practice booking saved: {practice_booking.id}")
+        messages.success(request, "Practice booking completed successfully!")
+        
+        # Render success page instead of redirecting
+        return render(request, "booking/payment_success.html", {
+            'booking': booking,
+            'student': student,
+            'practice_booking': practice_booking,
+            'is_practice_booking': True
+        })
         
     except Exception as e:
         print(f"Error saving practice booking: {e}")

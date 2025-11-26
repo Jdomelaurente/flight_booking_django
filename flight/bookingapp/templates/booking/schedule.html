@@ -222,10 +222,10 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- Add-ons Modal -->
 <div id="addOnsModal" class="fixed inset-0 backdrop-blur-md bg-black/30 hidden flex items-center justify-center z-50">
     <div class="bg-white rounded-xs max-w-md w-full mx-4">
-        <div class="p-6">
+        <div class="p-10">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-gray-800">Flight Add-ons</h3>
-                <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
+                <button onclick="closeModal()" class="text-gray-500 hover:text-red-500 cursor-pointer">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
@@ -289,6 +289,8 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 </div>
+
+
 
 <div class="max-w-8xl w-full mx-auto p-4 space-y-5">
     <!-- Schedule Header Card -->
@@ -466,7 +468,8 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
 
         <!-- Filters -->
-        <div class="w-full text-xs mt-5 gap-2">
+        <div class="w-full flex text-xs mt-5 gap-2">
+            <h1 class="text-gray-500 text-lg">Filter: </h1>
             <button class="bg-white hover:bg-gray-100 cursor-pointer border-gray-500 border py-1.5 px-5">Time of Flight</button>
             <button class="bg-white hover:bg-gray-100 cursor-pointer border-gray-500 border py-1.5 px-5">Stops</button>
             <button class="bg-white hover:bg-gray-100 cursor-pointer border-gray-500 border py-1.5 px-5">Price</button>

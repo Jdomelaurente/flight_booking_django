@@ -65,43 +65,55 @@
                     <h4 class="font-semibold text-lg mb-3">Passenger {{ forloop.counter }}: {{ passenger.first_name }} {{ passenger.last_name }}</h4>
                     <p class="text-sm text-gray-500 mb-4">{{ passenger.passenger_type }}</p>
                     
-                    <div class="grid grid-cols-1 gap-4">
-                        {% for addon in addons %}
-                        <div class="border border-gray-300 rounded-sm p-4 hover:border-[#093704] transition-colors {% for selected_addon in passenger.selected_addons %}{% if selected_addon.id == addon.id %}border-[#093704] bg-green-50{% endif %}{% endfor %}">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-4">
-                                    <input class="form-check-input h-5 w-5 text-[#093704] border-gray-300 rounded focus:ring-[#093704]" 
-                                           type="checkbox" 
-                                           name="addons_{{ passenger.id }}" 
-                                           value="{{ addon.id }}" 
-                                           id="addon_{{ passenger.id }}_{{ addon.id }}"
-                                           {% for selected_addon in passenger.selected_addons %}
-                                               {% if selected_addon.id == addon.id %}checked{% endif %}
-                                           {% endfor %}>
-                                    <div>
-                                        <label class="form-check-label font-medium text-gray-900 cursor-pointer" for="addon_{{ passenger.id }}_{{ addon.id }}">
-                                            {{ addon.name }}
-                                            {% for selected_addon in passenger.selected_addons %}
-                                                {% if selected_addon.id == addon.id %}
-                                                <span class="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Selected</span>
-                                                {% endif %}
-                                            {% endfor %}
-                                        </label>
-                                        <p class="text-sm text-gray-500 mt-1">{{ addon.description }}</p>
-                                    </div>
-                                </div>
-                                <span class="text-lg font-semibold text-[#093704]">₱{{ addon.price }}</span>
-                            </div>
-                        </div>
-                        {% empty %}
-                        <div class="text-center py-8">
-                            <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    {% if passenger.passenger_type == "Infant" %}
+                        <!-- Infant - No add-ons allowed -->
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-sm p-4 text-center">
+                            <svg class="w-12 h-12 text-yellow-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
                             </svg>
-                            <p class="text-gray-500">No baggage options available for this airline.</p>
+                            <p class="text-yellow-700 font-medium">Infants cannot purchase extra baggage</p>
+                            <p class="text-sm text-yellow-600 mt-1">Infants are only allowed carry-on items as per airline policy</p>
                         </div>
-                        {% endfor %}
-                    </div>
+                    {% else %}
+                        <!-- Adult and Child - Show add-ons -->
+                        <div class="grid grid-cols-1 gap-4">
+                            {% for addon in addons %}
+                            <div class="border border-gray-300 rounded-sm p-4 hover:border-[#093704] transition-colors {% for selected_addon in passenger.selected_addons %}{% if selected_addon.id == addon.id %}border-[#093704] bg-green-50{% endif %}{% endfor %}">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-4">
+                                        <input class="form-check-input h-5 w-5 text-[#093704] border-gray-300 rounded focus:ring-[#093704]" 
+                                               type="checkbox" 
+                                               name="addons_{{ passenger.id }}" 
+                                               value="{{ addon.id }}" 
+                                               id="addon_{{ passenger.id }}_{{ addon.id }}"
+                                               {% for selected_addon in passenger.selected_addons %}
+                                                   {% if selected_addon.id == addon.id %}checked{% endif %}
+                                               {% endfor %}>
+                                        <div>
+                                            <label class="form-check-label font-medium text-gray-900 cursor-pointer" for="addon_{{ passenger.id }}_{{ addon.id }}">
+                                                {{ addon.name }}
+                                                {% for selected_addon in passenger.selected_addons %}
+                                                    {% if selected_addon.id == addon.id %}
+                                                    <span class="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Selected</span>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </label>
+                                            <p class="text-sm text-gray-500 mt-1">{{ addon.description }}</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-lg font-semibold text-[#093704]">₱{{ addon.price }}</span>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="text-center py-8">
+                                <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                </svg>
+                                <p class="text-gray-500">No baggage options available for this airline.</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 </div>
                 {% endfor %}
 
@@ -145,7 +157,13 @@
                             {% else %}
                             <div class="border border-gray-200 bg-gray-50 rounded-sm p-3">
                                 <h4 class="font-medium text-gray-600 mb-2">{{ passenger.first_name }} {{ passenger.last_name }}</h4>
-                                <p class="text-sm text-gray-500">No baggage selected</p>
+                                <p class="text-sm text-gray-500">
+                                    {% if passenger.passenger_type == "Infant" %}
+                                        No baggage allowed for infants
+                                    {% else %}
+                                        No baggage selected
+                                    {% endif %}
+                                </p>
                             </div>
                             {% endif %}
                         {% endfor %}
@@ -216,6 +234,10 @@
                     <li class="flex items-start space-x-2">
                         <span class="text-blue-500">•</span>
                         <span>Extra baggage is cheaper when purchased in advance</span>
+                    </li>
+                    <li class="flex items-start space-x-2">
+                        <span class="text-blue-500">•</span>
+                        <span><strong>Infants:</strong> Only carry-on items are allowed, no extra baggage can be purchased</span>
                     </li>
                 </ul>
             </div>

@@ -277,8 +277,8 @@
 
                         <div class="space-y-2">
                             <label class="block text-sm font-medium text-gray-700">Middle Name</label>
-                            <input type="text" name="m_name_contact" class="w-full px-3 py-2 border border-gray-500 rounded-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                                   maxlength="1" pattern="[A-Z]">
+                            <input type="text" name="l_name_contact" value="{{ student.middle_initial|default:'' }}" 
+                                    {% if student %}readonly{% endif %} class="w-full px-3 py-2 border border-gray-500 rounded-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" maxlength="1" pattern="A-Z" required>
                         </div>
                     </div>
 
@@ -337,7 +337,7 @@ function initPassengerForm() {
     const passengerForms = document.querySelectorAll('.passenger-form');
     const passengerTabs = document.querySelectorAll('.passenger-tab');
     let currentPassenger = 1;
-    let validationEnabled = false; // Disable validation on initial load
+    let validationEnabled = false; // Track if validation should be active
 
     // Initialize year and day dropdowns
     initYearDropdowns();
@@ -806,15 +806,31 @@ function initPassengerForm() {
         // Add input event listeners for real-time validation
         document.querySelectorAll('input, select').forEach(field => {
             field.addEventListener('blur', function() {
-                // Only validate on blur if validation is enabled
-                if (validationEnabled) {
-                    const fieldName = this.getAttribute('name');
-                    if (fieldName && fieldName.includes('_')) {
-                        const passengerNum = fieldName.split('_').pop();
-                        validatePassenger(passengerNum);
-                    }
+                if (!validationEnabled) return;
+
+                clearErrors(this.parentNode);
+
+                // Validate only THIS field
+                if (this.required && !this.value.trim()) {
+                    showFieldError(this, 'This field is required');
+                    return;
+                }
+
+                // Field-specific checks
+                if (this.name.startsWith('first_name_') || this.name.startsWith('last_name_')) {
+                    if (!isValidName(this.value)) showFieldError(this, 'Please enter a valid name');
+                }
+
+                if (this.name.startsWith('passport_')) {
+                    if (!isValidPassport(this.value)) showFieldError(this, 'Invalid passport');
+                }
+
+                if (this.name.startsWith('dob_')) {
+                    const passengerNum = this.name.split('_').pop();
+                    validateDateOfBirth(passengerNum);
                 }
             });
+
 
             // Real-time validation for specific fields (only after validation is enabled)
             field.addEventListener('input', function() {
@@ -873,7 +889,7 @@ function initPassengerForm() {
                 // Update passenger status when user types
                 if (fieldName && fieldName.includes('_')) {
                     const passengerNum = fieldName.split('_').pop();
-                    validatePassenger(passengerNum);
+                    {% comment %} validatePassenger(passengerNum);   {% endcomment %}
                 }
             });
         });
