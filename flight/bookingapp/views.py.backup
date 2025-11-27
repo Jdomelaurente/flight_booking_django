@@ -1,22 +1,23 @@
-from django.shortcuts import render,redirect
+# bookingapp/views.py - at the top with other imports
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.urls import reverse
 from django.template import loader
 from datetime import datetime
-from flightapp.models import Schedule, Route,  Airport,Seat, PassengerInfo, Flight, Airline
-from flightapp.models import Booking, BookingDetail, Payment, PassengerInfo, Student,AddOn, SeatClass
+from flightapp.models import Schedule, Route, Airport, Seat, PassengerInfo, Flight, Airline
+from flightapp.models import Booking, BookingDetail, Payment, PassengerInfo, Student, AddOn, SeatClass
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
 from datetime import date
 from django.views.decorators.cache import never_cache
 from .utils import login_required, redirect_if_logged_in
-from instructorapp.models import Activity, ActivitySubmission, SectionEnrollment, PracticeBooking, ActivityAddOn
+from instructorapp.models import Section, SectionEnrollment, Activity, ActivitySubmission, PracticeBooking, ActivityAddOn  # ADD Section HERE
 from django.contrib import messages
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-
 from decimal import Decimal
+from django.db.models import Avg, Count, Sum, Q  # Add this for grade calculations
 
 
 
@@ -556,6 +557,7 @@ def student_activity_detail(request, activity_id):
     student_id = request.session.get('student_id')
     
     if not student_id:
+        messages.error(request, "Please log in to access this activity.")
         return redirect('bookingapp:login')
     
     try:
@@ -580,6 +582,23 @@ def student_activity_detail(request, activity_id):
         # Get pre-defined passengers for this activity
         passengers = activity.passengers.all()
         
+        # Handle code verification if form was submitted
+        code_error = None
+        if request.method == 'POST' and 'verify_code' in request.POST:
+            entered_code = request.POST.get('activity_code', '').strip().upper()
+            
+            # Validate code format
+            if not entered_code:
+                code_error = "Please enter an activity code."
+            elif len(entered_code) != 6:
+                code_error = "Activity code must be 6 characters long."
+            elif entered_code == activity.activity_code:
+                # Code is correct - redirect to main booking page with activity context
+                messages.success(request, "Activity code verified successfully! You can now start your booking.")
+                return redirect(f"{reverse('bookingapp:main')}?activity_id={activity.id}&activity_code={entered_code}")
+            else:
+                code_error = "Invalid activity code. Please check the code and try again."
+        
         template = loader.get_template('booking/student/activity_detail.html')
         context = {
             'activity': activity,
@@ -588,11 +607,18 @@ def student_activity_detail(request, activity_id):
             'passengers': passengers,
             'code_active': activity.is_code_active,
             'code_expired': activity.is_due_date_passed,
+            'code_error': code_error,
         }
         return HttpResponse(template.render(context, request))
         
     except Activity.DoesNotExist:
         messages.error(request, "Activity not found or not available.")
+        return redirect('bookingapp:student_home')
+    except Student.DoesNotExist:
+        messages.error(request, "Student information not found.")
+        return redirect('bookingapp:login')
+    except Exception as e:
+        messages.error(request, "An error occurred while loading the activity.")
         return redirect('bookingapp:student_home')
     
     
@@ -703,6 +729,7 @@ def student_activities(request):
             'student': student,
             'submitted_activities': submitted_activities,
             'enrolled_sections': enrolled_sections,
+            
         }
         return HttpResponse(template.render(context, request))
         
@@ -725,6 +752,119 @@ def get_instructor_full_name(instructor):
         name_parts.append(instructor.last_name)
     
     return " ".join(name_parts) if name_parts else instructor.user.username
+
+
+# Add this import at the top with other imports
+from django.db.models import Avg, Count, Sum, Q
+from decimal import Decimal
+
+# Add this function after the existing views, before the test views
+
+@login_required
+def student_section_grade_report(request, section_id, student_id):
+    """
+    Generate a comprehensive grade report for a specific student in a section
+    """
+    # Get section and student
+    section = get_object_or_404(Section, id=section_id)
+    student = get_object_or_404(Student, id=student_id)
+    
+    # Verify the requesting student can only view their own report
+    current_student_id = request.session.get('student_id')
+    if not current_student_id or int(current_student_id) != int(student_id):
+        messages.error(request, "You can only view your own grade reports.")
+        return redirect('bookingapp:student_home')
+    
+    # Verify enrollment
+    enrollment = get_object_or_404(
+        SectionEnrollment, 
+        section=section, 
+        student=student, 
+        is_active=True
+    )
+    
+    # Get all activities for this section
+    activities = Activity.objects.filter(section=section).prefetch_related(
+        'submissions__student',
+        'activity_addons'
+    ).order_by('due_date')
+    
+    # Get submissions for this student
+    submissions = ActivitySubmission.objects.filter(
+        activity__section=section,
+        student=student
+    ).select_related('activity')
+    
+    # Calculate statistics
+    total_activities = activities.count()
+    completed_activities = submissions.count()
+    
+    # Calculate completion percentage
+    completion_percentage = (completed_activities / total_activities * 100) if total_activities > 0 else 0
+    
+    # Calculate average score (only for graded submissions)
+    graded_submissions = submissions.exclude(score__isnull=True)
+    average_score = graded_submissions.aggregate(
+        avg_score=Avg('score')
+    )['avg_score'] or 0
+    
+    # Count late submissions
+    late_submissions = submissions.filter(status='late').count()
+    
+    # Calculate overall percentage (weighted average)
+    total_possible_points = sum(float(activity.total_points) for activity in activities)
+    total_earned_points = sum(
+        float(submission.total_score_with_addons) 
+        for submission in submissions 
+        if submission.score is not None
+    )
+    
+    overall_percentage = (total_earned_points / total_possible_points * 100) if total_possible_points > 0 else 0
+    
+    # Calculate letter grade
+    letter_grade = calculate_letter_grade(overall_percentage)
+    
+    # Prepare context for template
+    context = {
+        'section': section,
+        'student': student,
+        'enrollment': enrollment,
+        'activities': activities,
+        'submissions': submissions,
+        'total_activities': total_activities,
+        'completed_activities': completed_activities,
+        'completion_percentage': completion_percentage,
+        'average_score': average_score,
+        'late_submissions': late_submissions,
+        'overall_percentage': overall_percentage,
+        'letter_grade': letter_grade,
+        'total_earned_points': total_earned_points,
+        'total_possible_points': total_possible_points,
+    }
+    
+    return render(request, 'booking/student/section_grade_report.html', context)
+
+def calculate_letter_grade(percentage):
+    """Convert percentage to letter grade"""
+    if percentage >= 97: return 'A+'
+    elif percentage >= 93: return 'A'
+    elif percentage >= 90: return 'A-'
+    elif percentage >= 87: return 'B+'
+    elif percentage >= 83: return 'B'
+    elif percentage >= 80: return 'B-'
+    elif percentage >= 77: return 'C+'
+    elif percentage >= 73: return 'C'
+    elif percentage >= 70: return 'C-'
+    elif percentage >= 67: return 'D+'
+    elif percentage >= 63: return 'D'
+    elif percentage >= 60: return 'D-'
+    else: return 'F'
+
+
+
+
+
+
 
 @login_required
 def home(request):

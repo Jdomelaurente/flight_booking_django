@@ -360,49 +360,74 @@ class ActivitySubmission(models.Model):
         return (self.addon_score / self.max_addon_points) * 100
 
     def get_student_selected_addons(self):
-        """Get all add-ons selected by the student for this submission"""
-        if not self.booking:
-            return AddOn.objects.none()
+        """
+        Get all add-ons selected by student across all booking details
+        Returns a list of dictionaries with addon and quantity
+        """
+        student_addons = []
         
-        # Get all booking details for this booking
-        booking_details = self.booking.details.all()
+        # Use a dictionary to track quantities
+        addon_quantities = {}
         
-        # Get all add-ons from all booking details
-        selected_addons = AddOn.objects.none()
-        for detail in booking_details:
-            selected_addons = selected_addons.union(detail.addons.all())
+        for booking_detail in self.booking.details.all():
+            for addon in booking_detail.addons.all():
+                if addon.id in addon_quantities:
+                    addon_quantities[addon.id]['quantity'] += 1
+                else:
+                    addon_quantities[addon.id] = {
+                        'addon': addon,
+                        'quantity': 1
+                    }
         
-        return selected_addons
+        # Convert to list
+        for addon_data in addon_quantities.values():
+            student_addons.append(addon_data)
+        
+        return student_addons
 
     def calculate_addon_score(self):
         """
-        Calculate add-on score based on student's selected add-ons
-        This method should be called during grading
+        Calculate add-on score based on required add-ons for the activity
+        Returns: (earned_score, max_possible_score)
         """
         if not self.activity.addon_grading_enabled:
-            return 0, 0
-
-        total_points = 0
-        max_possible_points = 0
+            return Decimal('0.00'), Decimal('0.00')
         
-        # Get all activity add-on requirements
-        activity_addons = self.activity.activity_addons.all()
+        # Get all required add-ons for this activity
+        activity_required_addons = self.activity.activity_addons.filter(is_required=True)
         
-        # Get student's selected add-ons
-        student_addons = self.get_student_selected_addons()
+        if not activity_required_addons.exists():
+            return Decimal('0.00'), Decimal('0.00')
         
-        for activity_addon in activity_addons:
-            max_possible_points += activity_addon.points_value
-            
-            # Check if this add-on was selected by the student
-            student_has_addon = student_addons.filter(
-                id=activity_addon.addon.id
-            ).exists()
-            
-            if student_has_addon:
-                total_points += activity_addon.points_value
+        # Get ALL student-selected add-ons from ALL booking details
+        student_addons_list = []
+        for booking_detail in self.booking.details.all():
+            for addon in booking_detail.addons.all():
+                student_addons_list.append(addon.id)
         
-        return total_points, max_possible_points
+        # Convert to set for faster lookup
+        student_addon_ids = set(student_addons_list)
+        
+        # Count how many required add-ons the student has selected
+        matched_required = 0
+        total_required = activity_required_addons.count()
+        
+        for activity_addon in activity_required_addons:
+            if activity_addon.addon.id in student_addon_ids:
+                matched_required += 1
+        
+        # Calculate scores
+        max_addon_points = float(self.activity.total_points) * 0.10  # 10% of total points
+        
+        if total_required > 0:
+            if matched_required >= total_required:
+                earned_score = max_addon_points  # Full points
+            else:
+                earned_score = 0  # Zero points if missing any required
+        else:
+            earned_score = max_addon_points  # No required add-ons = full points
+        
+        return Decimal(str(earned_score)), Decimal(str(max_addon_points))
 
     def save(self, *args, **kwargs):
         """Automatically set status to late if submitted after due date"""

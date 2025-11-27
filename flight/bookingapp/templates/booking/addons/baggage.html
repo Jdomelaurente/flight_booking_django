@@ -168,21 +168,13 @@
                             {% endif %}
                         {% endfor %}
                         
-                        <!-- Total -->
-                        <div class="border-t border-gray-300 pt-3 mt-3">
-                            {% with total=0 %}
-                                {% for passenger in passengers %}
-                                    {% for addon in passenger.selected_addons %}
-                                        {% with total=total|add:addon.price %}
-                                        {% endwith %}
-                                    {% endfor %}
-                                {% endfor %}
-                                <div class="flex justify-between font-semibold text-lg">
-                                    <span>Total:</span>
-                                    <span class="text-[#093704]">₱{{ total }}</span>
-                                </div>
-                            {% endwith %}
+                    <!-- Total -->
+                    <div class="border-t border-gray-300 pt-3 mt-3">
+                        <div class="flex justify-between font-semibold text-lg">
+                            <span>Total:</span>
+                            <span class="text-[#093704]">₱{{ total_price }}</span>
                         </div>
+                    </div>
                     {% else %}
                         <div class="text-center py-6">
                             <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

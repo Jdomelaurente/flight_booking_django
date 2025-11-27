@@ -10,6 +10,12 @@ urlpatterns = [
     path('student/activity/<int:activity_id>/', views.student_activity_detail, name='student_activity_detail'),
     path('student/work/<int:submission_id>/', views.student_work_detail, name='student_work_detail'),
     path('student/activities/', views.student_activities, name='student_activities'),
+    path('section/<int:section_id>/student/<int:student_id>/grade-report/', 
+         views.student_section_grade_report, 
+         name='student_section_grade_report'),
+
+
+    
 
     # Main Booking Flow - REORDERED URLs
     path('', views.home, name="main"),

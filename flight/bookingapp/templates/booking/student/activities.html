@@ -35,10 +35,18 @@
 <div class="flex-1 flex flex-col mx-35 mt-10">
     <!-- Navigation Tabs -->
     <div class="flex items-center justify-between">
-        <div class="text-xs  space-x-10 font-medium">
-            <a href="{% url 'bookingapp:student_home' %}" class="text-gray-600 ">Active Activities</a>
-            <a href="{% url 'bookingapp:student_activities' %}" class="text-[#093704] border-b-2  border-[#093704] pb-1 hover:text-[#093704]">All Activities</a>
-            <a href="{% url 'bookingapp:practice_home' %}" class="text-gray-600 hover:text-[#093704]">Practice Booking</a>
+        <div class="text-xs  space-x-10 font-medium ">
+            <a href="{% url 'studentapp:student_home' %}" class="text-gray-600 ">Active Activities</a>
+            <a href="{% url 'studentapp:student_activities' %}" class="text-[#093704] border-b-2  border-[#093704] pb-1 hover:text-[#093704]">All Activities</a>
+            <a href="{% url 'studentapp:practice_home' %}" class="text-gray-600 hover:text-[#093704]">Practice Booking</a>
+            {% if enrolled_sections %}
+                {% with first_section=enrolled_sections.0.section %}
+                <a href="{% url 'studentapp:student_section_grade_report' first_section.id student.id %}" 
+                class="text-gray-600 hover:text-[#093704]">
+                📊 Grade Report
+                </a>
+                {% endwith %}
+            {% endif %}
         </div> 
         <!-- Enrolled Sections -->
         {% if enrolled_sections %}
@@ -73,7 +81,7 @@
     <div class="flex-1 flex flex-col px-20 py-13 space-y-5">
         {% for activity in all_activities %}
         <div class="border border-gray-400 bg-white rounded-md p-10 space-y-3 hover:bg-gray-1000 cursor-pointer transition-colors"
-             onclick="window.location='{% url 'bookingapp:student_activity_detail' activity.id %}'">
+             onclick="window.location='{% url 'studentapp:student_activity_detail' activity.id %}'">
             <div class="flex justify-between">
                 <div class="flex gap-10">
                     <div class="w-10 h-10 rounded-full bg-[#093704] flex items-center justify-center">
@@ -139,7 +147,7 @@
             </div>
             <h3 class="text-lg font-medium text-gray-600 mb-2">No activities found</h3>
             <p class="text-sm text-gray-500 mb-4">You don't have any activities in your enrolled sections.</p>
-            <a href="{% url 'bookingapp:main' %}" class="bg-[#093704] hover:bg-[#093704]/80 text-white px-4 py-2 rounded-md text-sm">
+            <a href="{% url 'studentapp:main' %}" class="bg-[#093704] hover:bg-[#093704]/80 text-white px-4 py-2 rounded-md text-sm">
                 Start Regular Booking
             </a>
         </div>

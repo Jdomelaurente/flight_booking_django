@@ -872,17 +872,63 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Add this right after the Total Score Summary section -->
+<div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+    <h3 class="text-lg font-semibold text-yellow-800 mb-4 flex items-center gap-2">
+        <i class="fas fa-bug"></i>
+        Debug: Score Breakdown Data
+    </h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <div>
+            <strong>Base Points:</strong><br>
+            {{ comparison.score_breakdown.base_points|default:"Not set" }}
+        </div>
+        <div>
+            <strong>Passenger Info:</strong><br>
+            {{ comparison.score_breakdown.passenger_info_points|default:"Not set" }}
+        </div>
+        <div>
+            <strong>Flight Route:</strong><br>
+            {{ comparison.score_breakdown.flight_route_points|default:"Not set" }}
+        </div>
+        <div>
+            <strong>Trip Type:</strong><br>
+            {{ comparison.score_breakdown.trip_type_points|default:"Not set" }}
+        </div>
+        <div>
+            <strong>Travel Class:</strong><br>
+            {{ comparison.score_breakdown.travel_class_points|default:"Not set" }}
+        </div>
+        <div>
+            <strong>Passenger Points:</strong><br>
+            {{ comparison.score_breakdown.passenger_points|default:"Not set" }}
+        </div>
+        <div>
+            <strong>Add-on Points:</strong><br>
+            {{ comparison.score_breakdown.addon_points|default:"Not set" }}
+        </div>
+        <div>
+            <strong>Total Earned:</strong><br>
+            {{ comparison.score_breakdown.total_earned|default:"Not set" }}
+        </div>
+    </div>
+    <div class="mt-4 p-3 bg-white rounded border">
+        <strong>Raw score_breakdown object:</strong><br>
+        <pre class="text-xs overflow-auto">{{ comparison.score_breakdown|pprint }}</pre>
+    </div>
+</div>
         </div>
     </div>
 
     <!-- Action Buttons -->
     <div class="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-        <a href="{% url 'bookingapp:student_activities' %}" 
+        <a href="{% url 'studentapp:student_activities' %}" 
            class="inline-flex items-center px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200 shadow-sm">
             <i class="fas fa-list mr-2"></i>
             Back to Activities
         </a>
-        <a href="{% url 'bookingapp:student_home' %}" 
+        <a href="{% url 'studentapp:student_home' %}" 
            class="inline-flex items-center px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200 shadow-sm">
             <i class="fas fa-home mr-2"></i>
             Back to Dashboard

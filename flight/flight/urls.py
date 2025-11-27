@@ -18,15 +18,15 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('flightapp.urls')),
     path('instructor/h/', include('instructorapp.urls')),
 
-
-    # crissaunt
-    path('booking_app/', include('bookingapp.urls')),
-
+    # Separated booking app URLs
+    path('booking/h/', include('bookingapp.urls_booking', namespace='bookingapp')), 
+    path('student/h/', include('bookingapp.urls_student', namespace='studentapp')), 
 ]
 
 if settings.DEBUG:

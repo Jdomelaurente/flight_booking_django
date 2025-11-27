@@ -132,3 +132,38 @@ def filter_incomplete_passengers(passengers):
     if not passengers:
         return []
     return [p for p in passengers if not p|is_passenger_complete]    
+
+
+@register.filter
+def percentage(value):
+    """Convert decimal to percentage (e.g., 0.20 -> 20%)"""
+    try:
+        return f"{float(value) * 100:.0f}%"
+    except (ValueError, TypeError):
+        return "0%"
+
+@register.filter
+def percentage_one_decimal(value):
+    """Convert decimal to percentage with one decimal (e.g., 0.205 -> 20.5%)"""
+    try:
+        return f"{float(value) * 100:.1f}%"
+    except (ValueError, TypeError):
+        return "0.0%"
+
+@register.filter
+def floatvalue(value):
+    """Convert to float for calculations"""
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return 0.0
+
+@register.filter
+def calculate_category_percentage(earned, possible):
+    """Calculate percentage for a specific category"""
+    try:
+        if possible == 0:
+            return 0.0
+        return (float(earned) / float(possible)) * 100
+    except (ValueError, TypeError):
+        return 0.0
