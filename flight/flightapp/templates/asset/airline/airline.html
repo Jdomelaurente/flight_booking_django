@@ -9,13 +9,12 @@
     </a>
 
     <!-- Import Excel Form -->
-    <form method="post" action="{% url 'import_airlines' %}" enctype="multipart/form-data"  class="inline-flex items-center space-x-2 ml-4 poppins">
+    <form method="post" action="{% url 'import_airlines' %}" enctype="multipart/form-data" class="inline-flex items-center space-x-2 poppins ml-4">
         {% csrf_token %}
         <input type="file" name="file" accept=".xlsx,.xls" 
-               class="border border-gray-300 px-2 py-2">
+               class="border border-gray-300 rounded px-2 py-1">
         <button type="submit" 
-                class="bg-[#FFC83D]  text-black py-2 px-4 poppins">
-                <i class="ph ph-upload mr-1"></i>
+                class="bg-blue-700 hover:bg-blue-800 text-white py-2 px-4 rounded poppins">
             Import Excel
         </button>
     </form>

@@ -35,7 +35,7 @@ from .models import CheckInDetail
 from .models import Student
 from .models import PassengerInfo
 from .models import  TrackLog
-from .models import AddOn, AddOnType
+from .models import AddOn
 from .models import Instructor
 
 # ------------------------------------ Users ----------------------------------------------------------
@@ -158,7 +158,6 @@ def login_view(request):
 
     return render(request, "login.html")
 
-
 # ---------------------------
 # LOGOUT
 # ---------------------------
@@ -169,11 +168,16 @@ def logout_view(request):
 # ------------------------------------Dashboard ----------------------------------------------------------
 
 def dashboard(request):
-    if "user_id" not in request.session:
+    user_id = request.session.get("user_id")
+    if not user_id:
         return redirect("login")
 
-    return redirect("admin_dashboard")
-
+    user = User.objects.get(id=user_id)
+    if user.role == "admin":
+        return redirect("admin_dashboard")
+    elif user.role == "instructor":
+        return redirect("instructor_dashboard")
+    return redirect("login")
 
 from django.shortcuts import render
 from django.utils import timezone
@@ -390,59 +394,19 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .models import AddOn
 
-def add_addon_type(request):
-    if request.method == 'POST':
-        name = request.POST['name']
-        if name:
-            AddOnType.objects.create(name=name)
-            messages.success(request, 'Add-On Type added successfully!')
-            return redirect('add_addon')  # redirect back to Add-On form
-    return render(request, 'asset/addon/add_addon_type.html')
-
 def addon_view(request):
     addons = AddOn.objects.all()
     return render(request, 'asset/addon/addons.html', {'addons': addons})
 
 def add_addon(request):
-    airlines = Airline.objects.all()
-    seat_classes = SeatClass.objects.all()
-    addon_types = AddOnType.objects.all()
-
     if request.method == 'POST':
-        # Get form values
-        airline_id = request.POST.get('airline')
-        seat_class_id = request.POST.get('seat_class')
-        type_id = request.POST.get('type')
-        name = request.POST.get('name')
+        name = request.POST['name']
         description = request.POST.get('description', '')
-        price = request.POST.get('price')
-        included = request.POST.get('included') == 'on'  # Checkbox
-
-        # Fetch related objects (can be None)
-        airline = Airline.objects.get(id=airline_id) if airline_id else None
-        seat_class = SeatClass.objects.get(id=seat_class_id) if seat_class_id else None
-        addon_type = AddOnType.objects.get(id=type_id) if type_id else None
-
-        # Create AddOn object
-        AddOn.objects.create(
-            airline=airline,
-            seat_class=seat_class,
-            type=addon_type,
-            name=name,
-            description=description,
-            price=price,
-            included=included
-        )
-
+        price = request.POST['price']
+        AddOn.objects.create(name=name, description=description, price=price)
         messages.success(request, 'Add-On added successfully!')
-        return redirect('addon')  # Adjust to your add-ons list URL name
-
-    context = {
-        'airlines': airlines,
-        'seat_classes': seat_classes,
-        'addon_types': addon_types
-    }
-    return render(request, 'asset/addon/add_addon.html', context)
+        return redirect('addon')
+    return render(request, 'asset/addon/add_addon.html')
 
 def update_addon(request, id):
     addon = get_object_or_404(AddOn, id=id)
@@ -466,6 +430,7 @@ from django.contrib import messages
 from .models import AddOn
 import openpyxl
 
+# 📥 Import Add-Ons from Excel
 def import_addons(request):
     if request.method == "POST" and request.FILES.get("file"):
         file = request.FILES["file"]
@@ -476,81 +441,48 @@ def import_addons(request):
 
             duplicates_in_file = set()
             new_addons = []
+            already_in_db = set(AddOn.objects.values_list("name", flat=True))
 
-            existing_names = set(AddOn.objects.values_list("name", flat=True))
-            seen_names = set()
+            seen_names_in_pass2 = set()
 
             for row in sheet.iter_rows(min_row=2, values_only=True):
-                # Pad the row to 7 columns to avoid unpacking errors
-                row = list(row) + [None] * (7 - len(row))
-                name, airline_code, seat_class_name, type_name, description, price_raw, included_raw = row[:7]
-
-                # Skip empty name rows
-                if not name or str(name).strip() in ["", "-","—"]:
+                name, description, price = row
+                if not name:
                     continue
-
                 clean_name = str(name).strip()
 
-                # Duplicate inside Excel
-                if clean_name in seen_names:
+                # Detect duplicates inside the Excel file
+                if clean_name in seen_names_in_pass2:
                     duplicates_in_file.add(clean_name)
                     continue
-                seen_names.add(clean_name)
+                seen_names_in_pass2.add(clean_name)
 
-                # Duplicate in DB
-                if clean_name in existing_names:
+                # Skip if already exists in DB
+                if clean_name in already_in_db:
                     continue
 
-                # Lookup airline
-                airline = None
-                if airline_code and str(airline_code).strip() not in ["-", "—", ""]:
-                    airline = Airline.objects.filter(code=str(airline_code).strip()).first()
-
-                # Lookup seat class
-                seat_class = None
-                if seat_class_name and str(seat_class_name).strip() not in ["-", "—", ""]:
-                    seat_class = SeatClass.objects.filter(name=str(seat_class_name).strip()).first()
-
-                # Lookup add-on type
-                addon_type = None
-                if type_name:
-                    addon_type = AddOnType.objects.filter(name=str(type_name).strip()).first()
-
-                # Convert price
-                price = 0.00
-                if price_raw:
-                    try:
-                        price_str = str(price_raw).replace("₱", "").replace(",", "").strip()
-                        price = float(price_str)
-                    except:
-                        price = 0.00
-
-                # Convert included
-                included = False
-                if included_raw:
-                    included = str(included_raw).lower().strip() in ["yes", "true", "1", "✔", "✔️"]
-
-                # Create add-on
+                # Create new Add-On
                 AddOn.objects.create(
                     name=clean_name,
-                    airline=airline,
-                    seat_class=seat_class,
-                    type=addon_type,
                     description=description or "",
-                    price=price,
-                    included=included
+                    price=price or 0.00
                 )
-
                 new_addons.append(clean_name)
 
-            # Messages
+            # ✅ Display user-friendly messages
             if duplicates_in_file:
-                messages.warning(request, f"Duplicates skipped: {', '.join(duplicates_in_file)}")
+                messages.warning(
+                    request,
+                    f"Duplicate add-on names found in the file (skipped): {', '.join(duplicates_in_file)}"
+                )
 
             if new_addons:
-                messages.success(request, f"Added: {', '.join(new_addons)}")
+                messages.success(
+                    request,
+                    f"Successfully added: {', '.join(new_addons)}"
+                )
             elif not duplicates_in_file:
-                messages.info(request, "No new add-ons found.")
+                messages.info(request, "No new add-ons to add.")
 
         except Exception as e:
             messages.error(request, f"Error importing add-ons: {e}")
@@ -559,7 +491,6 @@ def import_addons(request):
         messages.error(request, "No file uploaded.")
 
     return redirect("addon")
-
 
 # ---------------------------
 # Seat Class

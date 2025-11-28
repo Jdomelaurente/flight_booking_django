@@ -9,11 +9,11 @@
     </a>
 
     <form method="post" action="{% url 'import_addons' %}" enctype="multipart/form-data" class="inline-flex items-center space-x-2 ml-4 poppins">
+        {% csrf_token %}
         <input type="file" name="file" accept=".xlsx,.xls"
-               class="border border-gray-300 px-2 py-2">
+               class="border border-gray-300 rounded px-2 py-1">
         <button type="submit"
-                class="bg-[#FFC83D]  text-black py-2 px-4 poppins">
-                <i class="ph ph-upload mr-1"></i>
+                class="bg-blue-700 hover:bg-blue-800 text-white py-2 px-4 rounded poppins">
             Import Excel
         </button>
     </form>
@@ -36,12 +36,8 @@
     <thead>
         <tr class="bg-gray-200">
             <th class="border border-gray-400 px-4 py-2">Name</th>
-            <th class="border border-gray-400 px-4 py-2">Airline</th>
-            <th class="border border-gray-400 px-4 py-2">Seat Class</th>
-            <th class="border border-gray-400 px-4 py-2">Type</th>
             <th class="border border-gray-400 px-4 py-2">Description</th>
             <th class="border border-gray-400 px-4 py-2">Price (₱)</th>
-            <th class="border border-gray-400 px-4 py-2">Included?</th>
             <th class="border border-gray-400 px-4 py-2">Actions</th>
         </tr>
     </thead>
@@ -49,18 +45,8 @@
         {% for addon in addons %}
         <tr class="poppins-small">
             <td class="border border-gray-400 px-4 py-2">{{ addon.name }}</td>
-            <td class="border border-gray-400 px-4 py-2">{{ addon.airline.code }} - {{ addon.airline.name }}</td>
-            <td class="border border-gray-400 px-4 py-2">{{ addon.seat_class.name|default:"—" }}</td>
-            <td class="border border-gray-400 px-4 py-2">{{ addon.type.name|default:"—" }}</td>
             <td class="border border-gray-400 px-4 py-2">{{ addon.description|default:"—" }}</td>
             <td class="border border-gray-400 px-4 py-2">₱{{ addon.price }}</td>
-            <td class="border border-gray-400 px-4 py-2 text-center">
-                {% if addon.included %}
-                    ✅
-                {% else %}
-                    ❌
-                {% endif %}
-            </td>
             <td class="border border-gray-400 px-4 py-2 text-center space-x-2">
                 <a href="{% url 'update_addon' addon.id %}" 
                    class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded inline-flex items-center">
@@ -74,7 +60,7 @@
         </tr>
         {% empty %}
         <tr>
-            <td colspan="8" class="text-center py-4">No add-ons available</td>
+            <td colspan="4" class="text-center py-4">No add-ons available</td>
         </tr>
         {% endfor %}
     </tbody>
