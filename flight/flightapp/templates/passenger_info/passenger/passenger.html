@@ -13,13 +13,12 @@
     <thead>
         <tr class="bg-gray-200">
             <th class="border border-gray-400 py-2">ID</th>
+            <th class="border border-gray-400 py-2">Nationality</th>
             <th class="border border-gray-400 py-2">First Name</th>
             <th class="border border-gray-400 py-2">Middle Name</th>
             <th class="border border-gray-400 py-2">Last Name</th>
             <th class="border border-gray-400 py-2">Gender</th>
             <th class="border border-gray-400 py-2">Date of Birth</th>
-            <th class="border border-gray-400 py-2">Phone</th>
-            <th class="border border-gray-400 py-2">Email</th>
             <th class="border border-gray-400 py-2">Passport</th>
             <th class="border border-gray-400 py-2">Passenger Type</th> <!-- NEW -->
             <th class="border border-gray-400 py-2">Actions</th>
@@ -29,13 +28,12 @@
         {% for passenger in passengers %}
         <tr class="poppins-small">
             <td class="border border-gray-400 py-2">{{ passenger.id }}</td>
+            <td class="border border-gray-400 py-2">{{ passenger.nationality }}</td>
             <td class="border border-gray-400 py-2">{{ passenger.first_name }}</td>
             <td class="border border-gray-400 py-2">{{ passenger.middle_name|default:"-" }}</td>
             <td class="border border-gray-400 py-2">{{ passenger.last_name }}</td>
             <td class="border border-gray-400 py-2">{{ passenger.gender }}</td>
             <td class="border border-gray-400 py-2">{{ passenger.date_of_birth }}</td>
-            <td class="border border-gray-400 py-2">{{ passenger.phone|default:"-" }}</td>
-            <td class="border border-gray-400 py-2">{{ passenger.email|default:"-" }}</td>
             <td class="border border-gray-400 py-2">{{ passenger.passport_number|default:"-" }}</td>
             <td class="border border-gray-400 py-2">
                 {{ passenger.passenger_type|default:"-" }}

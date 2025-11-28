@@ -7,10 +7,10 @@
         <i class="ph ph-plus mr-2"></i> Add Schedule
     </a>
 
-        <form method="post" action="{% url 'import_schedules' %}" enctype="multipart/form-data" class="inline-flex items-center space-x-2 ml-4 poppins">
+        <form method="post" action="{% url 'import_schedules' %}" enctype="multipart/form-data" class="inline-flex items-center space-x-2 poppins">
         {% csrf_token %}
-        <input type="file" name="file" accept=".xlsx,.xls"  class="border border-gray-300 px-2 py-2">
-        <button type="submit"  class="bg-[#FFC83D]  text-black py-2 px-4 poppins">
+        <input type="file" name="file" accept=".xlsx,.xls" class="border border-gray-300 px-2 py-2">
+        <button type="submit" class="bg-[#FFC83D]  text-black py-2 px-4 poppins">
             <i class="ph ph-upload mr-1"></i>
             Import Excel
         </button>

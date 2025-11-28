@@ -128,8 +128,7 @@ def register_view(request):
         User.objects.create(
             username=username,
             email=email,
-            password=hash_password(password),
-            role="admin"
+            password=hash_password(password)
         )
         messages.success(request, "Admin account created. Please login.")
         return redirect("login")
@@ -146,22 +145,19 @@ def login_view(request):
 
         try:
             user = User.objects.get(username=username, password=password)
+
             request.session["user_id"] = user.id
             request.session["username"] = user.username
-            request.session["role"] = user.role
 
-            # Only Admin redirect (since Instructor removed)
-            if user.role == "admin":
-                return redirect("admin_dashboard")
-            else:
-                messages.error(request, "Access denied. Admins only.")
-                return redirect("login")
+            # No role checking needed (admin only)
+            return redirect("admin_dashboard")
 
         except User.DoesNotExist:
             messages.error(request, "Invalid username or password.")
             return redirect("login")
 
     return render(request, "login.html")
+
 
 # ---------------------------
 # LOGOUT
@@ -173,16 +169,11 @@ def logout_view(request):
 # ------------------------------------Dashboard ----------------------------------------------------------
 
 def dashboard(request):
-    user_id = request.session.get("user_id")
-    if not user_id:
+    if "user_id" not in request.session:
         return redirect("login")
 
-    user = User.objects.get(id=user_id)
-    if user.role == "admin":
-        return redirect("admin_dashboard")
-    elif user.role == "instructor":
-        return redirect("instructor_dashboard")
-    return redirect("login")
+    return redirect("admin_dashboard")
+
 
 from django.shortcuts import render
 from django.utils import timezone

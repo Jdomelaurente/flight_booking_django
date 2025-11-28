@@ -33,19 +33,15 @@ def create_seats_for_schedule(sender, instance, created, **kwargs):
 # User (Base Table)
 # ---------------------------
 class User(models.Model):
-    ROLE_CHOICES = [
-        ('admin', 'Admin'),
-    ]
-
     username = models.CharField(max_length=150, unique=True)
-    password = models.CharField(max_length=255,null=True)  # hashed in real use
+    password = models.CharField(max_length=255, null=True)  # hashed in real use
     email = models.EmailField(unique=True, null=True)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     last_login = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        return f"{self.username} ({self.role})"
+        return self.username
+
 
 
 # ---------------------------
@@ -178,15 +174,14 @@ class Seat(models.Model):
 # ---------------------------
 class PassengerInfo(models.Model):
     TYPE_CHOICES = [("Adult", "Adult"), ("Child", "Child"), ("Infant", "Infant")]
-
+    
     first_name = models.CharField(max_length=100)
     middle_name = models.CharField(max_length=100, blank=True, null=True)
     last_name = models.CharField(max_length=100)
     gender = models.CharField(max_length=10)
     date_of_birth = models.DateField()
-    phone = models.CharField(max_length=20, blank=True, null=True)
-    email = models.EmailField(blank=True, null=True)
     passport_number = models.CharField(max_length=50, blank=True, null=True)
+    nationality = models.CharField(max_length=100)
 
     passenger_type = models.CharField(
         max_length=10, choices=TYPE_CHOICES, default="Adult"
