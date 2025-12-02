@@ -1,4 +1,4 @@
-# bookingapp/views.py - at the top with other imports
+# bookingapp/views_booking.py - UPDATE THESE IMPORTS
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.urls import reverse
@@ -6,18 +6,21 @@ from django.template import loader
 from datetime import datetime
 from flightapp.models import Schedule, Route, Airport, Seat, PassengerInfo, Flight, Airline
 from flightapp.models import Booking, BookingDetail, Payment, PassengerInfo, Student, AddOn, SeatClass
+# ADD THESE TAX IMPORTS
+from flightapp.models import TaxType, AirlineTax, AirportFee, TravelTaxRate, BookingTax, InsurancePlan, BookingDetailInsurance
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
 from datetime import date
 from django.views.decorators.cache import never_cache
 from .utils import login_required, redirect_if_logged_in, calculate_activity_score
-from instructorapp.models import Section, SectionEnrollment, Activity, ActivitySubmission, PracticeBooking, ActivityAddOn  # ADD Section HERE
+from instructorapp.models import Section, SectionEnrollment, Activity, ActivitySubmission, PracticeBooking, ActivityAddOn
 from django.contrib import messages
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from decimal import Decimal
-from django.db.models import Avg, Count, Sum, Q  # Add this for grade calculations
+from django.db.models import Avg, Count, Sum, Q
+from django.db import transaction
 
 @login_required
 def home(request):
