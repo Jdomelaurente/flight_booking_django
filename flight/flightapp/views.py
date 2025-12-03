@@ -6,7 +6,7 @@ from datetime import datetime
 from django.utils import timezone
 from django.http import JsonResponse
 from django.shortcuts import render
-
+from django.contrib.auth.hashers import check_password
 import hashlib
 from .models import User
 from django.contrib import messages
@@ -18,7 +18,10 @@ from .models import Schedule
 from datetime import datetime
 from django.utils import timezone
 from datetime import datetime
-
+from django.contrib import messages
+from django.shortcuts import redirect, render
+from .models import User
+from django.contrib.auth.hashers import make_password
 
 from .models import Flight
 from .models import Route
@@ -124,12 +127,11 @@ def register_view(request):
             messages.error(request, "Email already exists.")
             return redirect("register")
 
-        # Create admin account only
+        # Create admin account
         User.objects.create(
             username=username,
             email=email,
-            password=hash_password(password),
-            role="admin"
+            password=make_password(password),  # hash password
         )
         messages.success(request, "Admin account created. Please login.")
         return redirect("login")
@@ -142,21 +144,18 @@ def register_view(request):
 def login_view(request):
     if request.method == "POST":
         username = request.POST.get("username")
-        password = hash_password(request.POST.get("password"))
+        password = request.POST.get("password")
 
         try:
-            user = User.objects.get(username=username, password=password)
-            request.session["user_id"] = user.id
-            request.session["username"] = user.username
-            request.session["role"] = user.role
-
-            # Only Admin redirect (since Instructor removed)
-            if user.role == "admin":
+            user = User.objects.get(username=username)
+            if check_password(password, user.password):
+                request.session["user_id"] = user.id
+                request.session["username"] = user.username
+                # No role field, all users in User table are admins
                 return redirect("admin_dashboard")
             else:
-                messages.error(request, "Access denied. Admins only.")
+                messages.error(request, "Invalid username or password.")
                 return redirect("login")
-
         except User.DoesNotExist:
             messages.error(request, "Invalid username or password.")
             return redirect("login")

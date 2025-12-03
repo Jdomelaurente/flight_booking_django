@@ -1,19 +1,21 @@
-# bookingapp/views_booking.py - UPDATE THESE IMPORTS
+# bookingapp/views_booking.py - UPDATED FOR DYNAMIC COVERAGES
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.urls import reverse
 from django.template import loader
 from datetime import datetime
-from flightapp.models import Schedule, Route, Airport, Seat, PassengerInfo, Flight, Airline
-from flightapp.models import Booking, BookingDetail, Payment, PassengerInfo, Student, AddOn, SeatClass
-# ADD THESE TAX IMPORTS
-from flightapp.models import TaxType, AirlineTax, AirportFee, TravelTaxRate, BookingTax, InsurancePlan, BookingDetailInsurance
+from flightapp.models import Schedule, Route, Airport, Seat, PassengerInfo, Flight, Airline, Country
+from flightapp.models import Booking, BookingDetail, Payment, Student, AddOn, SeatClass
+# UPDATED TAX IMPORTS
+from flightapp.models import TaxType, AirlineTax, AirportFee, TravelTaxRate, BookingTax
+# ADD NEW TRAVEL INSURANCE IMPORTS WITH COVERAGE MODELS
+from flightapp.models import InsuranceBenefit, TravelInsurancePlan, InsuranceCoverageType, PlanCoverage
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
 from datetime import date
 from django.views.decorators.cache import never_cache
-from .utils import login_required, redirect_if_logged_in, calculate_activity_score
+from .utils import login_required, redirect_if_logged_in, calculate_activity_score, require_booking_context
 from instructorapp.models import Section, SectionEnrollment, Activity, ActivitySubmission, PracticeBooking, ActivityAddOn
 from django.contrib import messages
 from django.shortcuts import get_object_or_404
@@ -21,8 +23,13 @@ from django.utils import timezone
 from decimal import Decimal
 from django.db.models import Avg, Count, Sum, Q
 from django.db import transaction
+from django.db.models import Q
+# Add these imports at the top
+from flightapp.models import calculate_taxes_for_booking_detail, get_total_tax_amount, get_insurance_amount
+
 
 @login_required
+@require_booking_context
 def home(request):
     from_airports = Airport.objects.all()
     to_airports = Airport.objects.all()
@@ -150,6 +157,7 @@ def home(request):
 
 
 @login_required
+@require_booking_context
 def search_flight(request):
     # Preserve activity_id if it exists
     activity_id = request.session.get('activity_id')
@@ -273,6 +281,7 @@ def search_flight(request):
 
 @never_cache
 @login_required
+@require_booking_context
 def flight_schedules(request):
     activity_id = request.session.get('activity_id')
     print(f"=== FLIGHT_SCHEDULES DEBUG ===")
@@ -342,6 +351,9 @@ def flight_schedules(request):
     for schedule in schedules:
         airline_ids.add(schedule.flight.airline.id)
     
+    # DEBUG: Print airline info
+    print(f"Found airlines: {airline_ids}")
+    
     # Fetch optional add-ons
     optional_addons_dict = {}
     if airline_ids:
@@ -354,28 +366,50 @@ def flight_schedules(request):
             if addon.airline_id not in optional_addons_dict:
                 optional_addons_dict[addon.airline_id] = []
             optional_addons_dict[addon.airline_id].append(addon)
-    
+        print(f"Optional add-ons by airline: {optional_addons_dict}")
+
     # Attach add-ons to schedules
     for schedule in schedules:
         airline_id = schedule.flight.airline.id
         
-        # For included add-ons, we need to check based on seat classes available
+        # Get available seat classes for this schedule
         schedule_seat_classes = SeatClass.objects.filter(
             seats__schedule=schedule,
             seats__is_available=True
         ).distinct()
         
-        # Get included add-ons for these seat classes
+        print(f"\n=== Schedule: {schedule.flight.flight_number} ===")
+        print(f"Airline ID: {airline_id}")
+        print(f"Available seat classes: {[sc.name for sc in schedule_seat_classes]}")
+        
+        # Get included add-ons for these seat classes AND this airline
         included_addons = AddOn.objects.filter(
             seat_class__in=schedule_seat_classes,
-            included=True
+            included=True,
+            airline_id=airline_id  # CRITICAL: Filter by airline
         ).select_related('type', 'seat_class')
+        
+        # Alternative approach if the above doesn't work:
+        if not included_addons.exists():
+            # Try getting by airline only (if add-ons are airline-wide, not seat-class specific)
+            included_addons = AddOn.objects.filter(
+                airline_id=airline_id,
+                included=True
+            ).select_related('type', 'seat_class')
+            print(f"No seat-class specific included add-ons, trying airline-wide...")
         
         schedule.included_addons = list(included_addons)
         schedule.optional_addons = optional_addons_dict.get(airline_id, [])
         
         # Get available seat classes for this schedule
         schedule.available_seat_classes = schedule_seat_classes
+        
+        # DEBUG: Print add-on info
+        print(f"Included add-ons found: {len(schedule.included_addons)}")
+        for addon in schedule.included_addons:
+            print(f"  - {addon.name} (Type: {addon.type.name if addon.type else 'None'}, Seat Class: {addon.seat_class.name if addon.seat_class else 'All'})")
+        
+        print(f"Optional add-ons found: {len(schedule.optional_addons)}")
 
     # Similarly for return schedules
     if return_schedules:
@@ -392,16 +426,25 @@ def flight_schedules(request):
         for schedule in return_schedules:
             airline_id = schedule.flight.airline.id
             
-            # Get included add-ons for available seat classes
+            # Get available seat classes
             schedule_seat_classes = SeatClass.objects.filter(
                 seats__schedule=schedule,
                 seats__is_available=True
             ).distinct()
             
+            # Get included add-ons for these seat classes AND this airline
             included_addons = AddOn.objects.filter(
                 seat_class__in=schedule_seat_classes,
-                included=True
+                included=True,
+                airline_id=airline_id
             ).select_related('type', 'seat_class')
+            
+            # Alternative approach if the above doesn't work:
+            if not included_addons.exists():
+                included_addons = AddOn.objects.filter(
+                    airline_id=airline_id,
+                    included=True
+                ).select_related('type', 'seat_class')
             
             schedule.included_addons = list(included_addons)
             schedule.optional_addons = optional_addons_dict.get(airline_id, [])
@@ -430,6 +473,7 @@ def flight_schedules(request):
     return HttpResponse(template.render(context, request))
 
 @login_required
+@require_booking_context
 def reset_selection(request):
     if request.method == "POST":
         request.session.pop('depart_schedule_id', None)
@@ -438,6 +482,7 @@ def reset_selection(request):
     return redirect('bookingapp:flight_schedules')
 
 @login_required
+@require_booking_context
 def cancel_selected_schedule(request):
     # remove selected schedules from session
     request.session.pop("depart_schedule_id", None)
@@ -448,6 +493,7 @@ def cancel_selected_schedule(request):
 
 @never_cache
 @login_required
+@require_booking_context
 def select_schedule(request):
     if request.method == 'POST':
         schedule_id = request.POST.get('schedule_id')
@@ -509,6 +555,7 @@ def select_schedule(request):
 
 @never_cache
 @login_required
+@require_booking_context
 def proceed_to_passengers(request):
     if request.method == 'POST':
         schedule_id = request.POST.get('schedule_id')
@@ -528,7 +575,8 @@ def proceed_to_passengers(request):
 """ review selected schedule  """
 @never_cache   
 @login_required
-def review_scheduled(request):
+@require_booking_context
+def review_selected_scheduled(request):
     depart_id = request.session.get('depart_schedule_id')
     return_id = request.session.get('return_schedule_id')
     
@@ -551,6 +599,7 @@ def review_scheduled(request):
     return HttpResponse(template.render(context, request))
 
 @login_required
+@require_booking_context
 def confirm_schedule(request):
     if request.method == 'POST':
         depart_id = request.POST.get('depart_schedule')
@@ -577,6 +626,7 @@ def confirm_schedule(request):
 
 
 @login_required
+@require_booking_context
 def passenger_information(request):
     activity_id = request.session.get('activity_id')
     print(f"=== PASSENGER_INFORMATION DEBUG ===")
@@ -607,6 +657,7 @@ def passenger_information(request):
     request.session['passenger_count'] = total_passengers
     request.session['passenger_list'] = passenger_list  # 🔹 Save here
 
+    countries = Country.objects.all().order_by('name')
     student = None
     student_id = request.session.get("student_id")
     if student_id:
@@ -615,10 +666,12 @@ def passenger_information(request):
     context = {
         'passenger_list': passenger_list,
         'student': student,
+        'countries': countries,  
     }
     return render(request, 'booking/passenger.html', context)
 
 @login_required
+@require_booking_context
 def save_passengers(request):
     if request.method != 'POST':
         return redirect('bookingapp:passenger_information')
@@ -686,6 +739,7 @@ def save_passengers(request):
     return render(request, 'booking/loading_passenger.html')
 
 @login_required
+@require_booking_context
 def add_ons(request):
     """Page where each passenger can select individual add-ons"""
     depart_schedule_id = request.session.get('confirm_depart_schedule')
@@ -722,8 +776,8 @@ def add_ons(request):
         # Get available add-ons for this airline (only optional ones, not included)
         available_addons = AddOn.objects.filter(
             airline=airline,
-            included=False  # Only show optional add-ons that passengers can choose
-        ).select_related('type').order_by('type__name', 'name')
+            included=False
+        ).select_related('type').order_by('price')
         
         print(f"Available add-ons: {available_addons.count()}")
         
@@ -739,13 +793,179 @@ def add_ons(request):
         selected_addons = request.session.get('selected_addons', {})
         print(f"Selected add-ons from session: {selected_addons}")
         
+        # =================== DYNAMIC TRAVEL INSURANCE DATA ===================
+        # Get all active insurance plans for this airline with their coverages
+        insurance_plans = TravelInsurancePlan.objects.filter(
+            airline=airline,
+            is_active=True
+        ).prefetch_related(
+            'benefits',
+            'plan_coverages__coverage_type'
+        ).order_by('display_order', 'price')
+        
+        # Get insurance add-ons
+        insurance_addons = AddOn.objects.filter(
+            airline=airline,
+            type__name__icontains='insurance',
+            included=False
+        ).select_related('insurance_plan').order_by('price')
+        
+        # Prepare coverage data for each plan
+        for plan in insurance_plans:
+            plan.coverages_list = []
+            for coverage in plan.coverages:
+                if coverage.amount > 0:
+                    plan.coverages_list.append({
+                        'name': coverage.coverage_type.name,
+                        'amount': coverage.amount,
+                        'unit': coverage.coverage_type.unit,
+                        'description': coverage.description or coverage.coverage_type.description,
+                        'icon_class': coverage.coverage_type.icon_class,
+                    })
+        
+        # Map insurance plans to their add-ons
+        insurance_plan_map = {}
+        for addon in insurance_addons:
+            if addon.insurance_plan:
+                insurance_plan_map[addon.insurance_plan.id] = addon.id
+        
+        # Calculate insurance statistics
+        passenger_insurance_count = 0
+        total_insurance_cost = Decimal('0.00')
+        selected_insurance_details = []
+        
+        # Check insurance status for each passenger
+        for passenger in passengers:
+            passenger_id = str(passenger['id'])
+            passenger_addons = selected_addons.get(passenger_id, [])
+            
+            # Check if passenger has insurance
+            for addon_id in passenger_addons:
+                try:
+                    addon = AddOn.objects.get(id=addon_id)
+                    if addon.is_insurance and addon.insurance_plan:
+                        passenger_insurance_count += 1
+                        total_insurance_cost += addon.price
+                        
+                        # Get coverages for this plan
+                        coverage_details = []
+                        for coverage in addon.insurance_plan.coverages:
+                            if coverage.amount > 0:
+                                unit_text = f" {coverage.coverage_type.unit}" if coverage.coverage_type.unit else ""
+                                coverage_details.append(f"{coverage.coverage_type.name}: ₱{coverage.amount:,.0f}{unit_text}")
+                        
+                        # Get benefits for this plan
+                        benefit_list = list(addon.insurance_plan.benefits.all())
+                        
+                        selected_insurance_details.append({
+                            'passenger_name': f"{passenger['first_name']} {passenger['last_name']}",
+                            'price': addon.price,
+                            'plan_name': addon.insurance_plan.name,
+                            'plan_type': addon.insurance_plan.plan_type,
+                            'benefits': benefit_list,
+                            'coverages': coverage_details,
+                            'best_for': addon.insurance_plan.best_for,
+                            'underwriter': addon.insurance_plan.underwriter,
+                        })
+                        break
+                except AddOn.DoesNotExist:
+                    continue
+        
+        # Prepare dynamic insurance data for template
+        insurance_data = {
+            'plans': insurance_plans,
+            'addons': insurance_addons,
+            'plan_map': insurance_plan_map,  # Maps plan_id to addon_id
+            'lowest_price': insurance_plans.first().price if insurance_plans.exists() else None,
+            'selected_count': passenger_insurance_count,
+            'total_cost': total_insurance_cost,
+            'selected_details': selected_insurance_details,
+        }
+        # =================== END DYNAMIC TRAVEL INSURANCE DATA ===================
+        
+        # Preprocess data for template to avoid filter issues
+        selected_addons_objects = {}
+        passenger_has_insurance = {}
+        
+        for passenger in passengers:
+            passenger_id = str(passenger['id'])
+            addon_ids = selected_addons.get(passenger_id, [])
+            
+            # Convert addon IDs to AddOn objects
+            addon_objects = []
+            has_insurance = False
+            for addon_id in addon_ids:
+                try:
+                    addon = AddOn.objects.get(id=addon_id)
+                    addon_objects.append(addon)
+                    if addon.is_insurance:
+                        has_insurance = True
+                except AddOn.DoesNotExist:
+                    continue
+            
+            selected_addons_objects[passenger_id] = addon_objects
+            passenger_has_insurance[passenger_id] = has_insurance
+        
+        # Format prices for display
+        for type_name, addons in addons_by_type.items():
+            for addon in addons:
+                addon.formatted_price = f"₱{addon.price:,.2f}"
+        
+        for addon in insurance_addons:
+            addon.formatted_price = f"₱{addon.price:,.2f}"
+        
+        # Handle insurance form submission
+        if request.method == 'POST' and 'insurance_selection' in request.POST:
+            try:
+                # Process insurance selections
+                new_selected_addons = selected_addons.copy()
+                
+                # First, remove any existing insurance add-ons for all passengers
+                insurance_addon_ids = set(insurance_addons.values_list('id', flat=True))
+                
+                for passenger in passengers:
+                    passenger_id = str(passenger['id'])
+                    
+                    if passenger_id in new_selected_addons:
+                        # Filter out existing insurance add-ons
+                        non_insurance_addons = [
+                            addon_id for addon_id in new_selected_addons[passenger_id] 
+                            if str(addon_id) not in insurance_addon_ids
+                        ]
+                        new_selected_addons[passenger_id] = non_insurance_addons
+                    
+                    # Get selected insurance for this passenger
+                    insurance_addon_id = request.POST.get(f'insurance_{passenger_id}')
+                    
+                    if insurance_addon_id and insurance_addon_id != 'none':
+                        if passenger_id not in new_selected_addons:
+                            new_selected_addons[passenger_id] = []
+                        new_selected_addons[passenger_id].append(insurance_addon_id)
+                
+                # Save to session
+                request.session['selected_addons'] = new_selected_addons
+                request.session.modified = True
+                
+                print(f"=== SAVED INSURANCE DEBUG ===")
+                print(f"Updated selected add-ons: {new_selected_addons}")
+                
+                messages.success(request, "Insurance selections updated successfully!")
+                return redirect('bookingapp:add_ons')
+                
+            except Exception as e:
+                print(f"Error saving insurance: {e}")
+                messages.error(request, "Error saving insurance selections.")
+        
         context = {
             'depart_schedule': depart_schedule,
             'return_schedule': return_schedule,
             'passengers': passengers,
             'addons_by_type': addons_by_type,
             'selected_addons': selected_addons,
+            'selected_addons_objects': selected_addons_objects,
+            'passenger_has_insurance': passenger_has_insurance,
             'airline': airline,
+            'insurance_data': insurance_data,
         }
         
         return render(request, 'booking/add_ons.html', context)
@@ -760,8 +980,64 @@ def add_ons(request):
         messages.error(request, "Error loading add-ons.")
         return redirect('bookingapp:passenger_information')
 
+# Make these helper functions standalone (not class methods)
+def extract_coverage_items(insurance_plans):
+    """Extract common coverage items from insurance plan descriptions"""
+    coverage_items = set()
+    
+    # Common insurance coverage keywords
+    common_coverages = [
+        'Medical expenses',
+        'Cancellation coverage',
+        'Loss/Damage of Luggage',
+        'Emergency Help',
+        'Flight Delay',
+        'Baggage Delay',
+        'Personal Accident',
+        'Trip Interruption',
+        'Emergency Medical Evacuation',
+        'Hospitalization',
+    ]
+    
+    # Check each insurance plan for coverage items
+    for plan in insurance_plans:
+        if plan.description:
+            description_lower = plan.description.lower()
+            for coverage in common_coverages:
+                coverage_lower = coverage.lower()
+                if coverage_lower in description_lower:
+                    coverage_items.add(coverage)
+    
+    # Return top 6 coverage items or default list
+    if coverage_items:
+        return list(coverage_items)[:6]
+    else:
+        return common_coverages[:6]
+
+def get_insurance_underwriter(insurance_plans):
+    """Extract insurance underwriter from plan descriptions"""
+    # Common underwriters
+    common_underwriters = [
+        'Alliedbankers Insurance Company',
+        'Pioneer Insurance',
+        'Malayan Insurance',
+        'AXA Philippines',
+        'Prudential Guarantee',
+    ]
+    
+    for plan in insurance_plans:
+        if plan.description:
+            description_lower = plan.description.lower()
+            for underwriter in common_underwriters:
+                if underwriter.lower() in description_lower:
+                    return underwriter
+    
+    # Default underwriter
+    return 'Alliedbankers Insurance Company'
+
 # Add these new views to your existing views.py file
 @login_required
+@require_booking_context
 def baggage_addon(request):
     """Page specifically for baggage add-ons"""
     print(f"=== BAGGAGE_ADDON DEBUG ===")
@@ -876,6 +1152,7 @@ def baggage_addon(request):
         return redirect('bookingapp:add_ons')
 
 @login_required
+@require_booking_context
 def meals_addon(request):
     """Page specifically for meal add-ons"""
     airline_id = request.GET.get('airline_id')
@@ -918,6 +1195,7 @@ def meals_addon(request):
         return redirect('bookingapp:add_ons')
 
 @login_required
+@require_booking_context
 def seat_selection_addon(request):
     """Redirect to main seat selection page"""
     airline_id = request.GET.get('airline_id')
@@ -931,6 +1209,7 @@ def seat_selection_addon(request):
     return redirect(redirect_url)
 
 @login_required
+@require_booking_context
 def lounge_addon(request):
     """Page specifically for lounge access add-ons"""
     airline_id = request.GET.get('airline_id')
@@ -973,6 +1252,7 @@ def lounge_addon(request):
         return redirect('bookingapp:add_ons')
 
 @login_required
+@require_booking_context
 def insurance_addon(request):
     """Page specifically for travel insurance"""
     airline_id = request.GET.get('airline_id')
@@ -1013,7 +1293,9 @@ def insurance_addon(request):
         print(f"Error loading insurance options: {e}")
         messages.error(request, "Error loading insurance options.")
         return redirect('bookingapp:add_ons')
+
 @login_required
+@require_booking_context
 def wheelchair_addon(request):
     """Page specifically for wheelchair service add-ons"""
     airline_id = request.GET.get('airline_id')
@@ -1056,6 +1338,7 @@ def wheelchair_addon(request):
         return redirect('bookingapp:add_ons')    
 
 @login_required
+@require_booking_context
 def quick_addons(request):
     """Quick selection page for all add-ons"""
     airline_id = request.GET.get('airline_id')
@@ -1103,6 +1386,7 @@ def quick_addons(request):
         return redirect('bookingapp:add_ons')
 
 @login_required
+@require_booking_context
 def save_single_addon(request):
     """Save add-on selections from individual add-on pages - handles both selection and deselection"""
     if request.method != 'POST':
@@ -1150,6 +1434,7 @@ def save_single_addon(request):
         return redirect('bookingapp:add_ons')
 
 @login_required
+@require_booking_context
 def remove_addon(request):
     """Remove a specific add-on from a passenger"""
     if request.method == 'POST':
@@ -1173,6 +1458,7 @@ def remove_addon(request):
     return redirect('bookingapp:add_ons')    
 
 @login_required
+@require_booking_context
 def save_add_ons(request):
     """Save add-on selections for each passenger"""
     if request.method != 'POST':
@@ -1208,6 +1494,7 @@ def save_add_ons(request):
         return redirect('bookingapp:add_ons')
 
 @login_required
+@require_booking_context
 def select_seat(request):
     depart_id = request.session.get('confirm_depart_schedule')
     return_id = request.session.get('confirm_return_schedule')
@@ -1253,6 +1540,7 @@ from django.http import JsonResponse
 
 # @csrf_exempt
 @login_required
+@require_booking_context
 def confirm_seat(request):
     if request.method != "POST":
         return JsonResponse({"success": False, "message": "Invalid request."})
@@ -1325,8 +1613,17 @@ def confirm_seat(request):
 
 
 from decimal import Decimal
+from django.shortcuts import render, redirect
+from django.http import HttpResponse
+from django.template import loader
+from django.utils import timezone
+from flightapp.models import (
+    Schedule, Seat, AddOn, Airport, SeatClass,
+    TaxType, AirlineTax, AirportFee, TravelTaxRate
+)
 
 @login_required
+@require_booking_context
 def booking_summary(request):
     print(f"=== SESSION DATA DEBUG ===")
     print(f"Session keys: {list(request.session.keys())}")
@@ -1340,6 +1637,7 @@ def booking_summary(request):
     return_schedule_id = request.session.get('confirm_return_schedule')
 
     if not depart_schedule_id and not return_schedule_id:
+        messages.error(request, "No flights selected. Please start over.")
         return redirect("bookingapp:main")
 
     depart_schedule = Schedule.objects.filter(id=depart_schedule_id).first() if depart_schedule_id else None
@@ -1352,26 +1650,37 @@ def booking_summary(request):
     selected_addons = request.session.get('selected_addons', {})
     addons_details = {}
     addons_total = Decimal('0.00')
+    insurance_plans_by_passenger = {}  # Track insurance plans per passenger
 
     print(f"=== ADD-ONS DEBUG IN BOOKING SUMMARY ===")
     print(f"Selected add-ons from session: {selected_addons}")
 
-    # Calculate add-ons cost - CORRECTED LOGIC
+    # Calculate add-ons cost and track insurance plans
     if selected_addons:
         for passenger_id, addon_ids in selected_addons.items():
-            if addon_ids:  # Only process if there are add-ons for this passenger
+            if addon_ids:
                 addons_details[passenger_id] = []
                 for addon_id in addon_ids:
                     try:
                         addon = AddOn.objects.get(id=addon_id)
-                        addons_details[passenger_id].append({
+                        addon_info = {
                             'id': addon.id,
                             'name': addon.name,
                             'description': addon.description,
                             'price': addon.price,
-                            'type': addon.type.name if addon.type else 'General'
-                        })
+                            'type': addon.type.name if addon.type else 'General',
+                            'is_insurance': addon.is_insurance,
+                            'insurance_plan': addon.insurance_plan if addon.is_insurance else None
+                        }
+                        addons_details[passenger_id].append(addon_info)
                         addons_total += addon.price
+                        
+                        # Track insurance plans
+                        if addon.is_insurance and addon.insurance_plan:
+                            if passenger_id not in insurance_plans_by_passenger:
+                                insurance_plans_by_passenger[passenger_id] = []
+                            insurance_plans_by_passenger[passenger_id].append(addon.insurance_plan)
+                            
                         print(f"✅ Added add-on: {addon.name} (ID: {addon_id}) - Price: {addon.price} for passenger {passenger_id}")
                     except AddOn.DoesNotExist:
                         print(f"❌ Add-on with ID {addon_id} not found - skipping")
@@ -1383,19 +1692,22 @@ def booking_summary(request):
     print(f"Add-ons details: {addons_details}")
     print("=========================================")
 
-    # Get included add-ons for both schedules based on seat classes
+    # Get included add-ons for both schedules
     depart_included_addons = []
     return_included_addons = []
-    
+
     if depart_schedule:
-        # Get unique seat classes from selected seats for departure
+        # Try multiple approaches to get included add-ons
+        airline = depart_schedule.flight.airline
+        
+        # Approach 1: Get by seat class
         depart_seat_classes = set()
         for passenger in passengers:
             pid = str(passenger.get("id"))
             seat_info = seats.get(pid, {})
             depart_seat_number = seat_info.get("depart")
             
-            if depart_seat_number and depart_schedule:
+            if depart_seat_number:
                 try:
                     seat_obj = Seat.objects.get(
                         schedule=depart_schedule, 
@@ -1404,24 +1716,38 @@ def booking_summary(request):
                     if seat_obj.seat_class:
                         depart_seat_classes.add(seat_obj.seat_class)
                 except Seat.DoesNotExist:
-                    pass
+                    continue
         
-        # Get included add-ons for these seat classes
+        # Query 1: By seat class AND airline (include add-ons with no specific seat class)
         if depart_seat_classes:
             depart_included_addons = AddOn.objects.filter(
-                seat_class__in=depart_seat_classes,
-                included=True  # This is the key filter for included add-ons
+                Q(seat_class__in=depart_seat_classes) | Q(seat_class__isnull=True),
+                included=True,
+                airline=airline
             ).select_related('type', 'seat_class', 'airline').distinct()
-    
+        
+        # Query 2: If still empty, try airline-wide (any seat class)
+        if not depart_included_addons:
+            depart_included_addons = AddOn.objects.filter(
+                airline=airline,
+                included=True
+            ).select_related('type', 'seat_class', 'airline').distinct()
+        
+        print(f"✅ Departure included add-ons found: {depart_included_addons.count()}")
+        for addon in depart_included_addons:
+            print(f"   - {addon.name} (Seat Class: {addon.seat_class.name if addon.seat_class else 'All'}, Airline: {addon.airline.code})")
+
     if return_schedule:
-        # Get unique seat classes from selected seats for return flight
+        # Similar logic for return schedule
+        airline = return_schedule.flight.airline
         return_seat_classes = set()
+        
         for passenger in passengers:
             pid = str(passenger.get("id"))
             seat_info = seats.get(pid, {})
             return_seat_number = seat_info.get("return")
             
-            if return_seat_number and return_schedule:
+            if return_seat_number:
                 try:
                     seat_obj = Seat.objects.get(
                         schedule=return_schedule, 
@@ -1430,25 +1756,40 @@ def booking_summary(request):
                     if seat_obj.seat_class:
                         return_seat_classes.add(seat_obj.seat_class)
                 except Seat.DoesNotExist:
-                    pass
+                    continue
         
-        # Get included add-ons for these seat classes
         if return_seat_classes:
             return_included_addons = AddOn.objects.filter(
-                seat_class__in=return_seat_classes,
-                included=True  # This is the key filter for included add-ons
+                Q(seat_class__in=return_seat_classes) | Q(seat_class__isnull=True),
+                included=True,
+                airline=airline
             ).select_related('type', 'seat_class', 'airline').distinct()
+        
+        if not return_included_addons:
+            return_included_addons = AddOn.objects.filter(
+                airline=airline,
+                included=True
+            ).select_related('type', 'seat_class', 'airline').distinct()
+        
+        print(f"✅ Return included add-ons found: {return_included_addons.count()}")
+        for addon in return_included_addons:
+            print(f"   - {addon.name} (Seat Class: {addon.seat_class.name if addon.seat_class else 'All'}, Airline: {addon.airline.code})")
 
-    # DEBUG PRINT START
     print("=== INCLUDED ADD-ONS DEBUG ===")
-    print("Departure seat classes:", [sc.name for sc in depart_seat_classes] if depart_schedule else "No departure schedule")
-    print("Departure included add-ons:", [f"{addon.name} ({addon.seat_class.name})" for addon in depart_included_addons])
-    print("Return seat classes:", [sc.name for sc in return_seat_classes] if return_schedule else "No return schedule")
-    print("Return included add-ons:", [f"{addon.name} ({addon.seat_class.name})" for addon in return_included_addons])
+    print(f"Departure airline: {depart_schedule.flight.airline.code if depart_schedule else 'None'}")
+    print(f"Departure seat classes: {[sc.name for sc in depart_seat_classes] if depart_schedule else []}")
+    print(f"Departure included add-ons count: {len(depart_included_addons)}")
+    print(f"Return airline: {return_schedule.flight.airline.code if return_schedule else 'None'}")
+    print(f"Return seat classes: {[sc.name for sc in return_seat_classes] if return_schedule else []}")
+    print(f"Return included add-ons count: {len(return_included_addons)}")
     print("=========================================")
-    # DEBUG PRINT END
 
     passenger_data = []
+    total_taxes = Decimal('0.00')
+    total_insurance = Decimal('0.00')
+    subtotal = Decimal('0.00')
+    
+    # Process each passenger for the booking summary
     for passenger in passengers:
         pid = str(passenger.get("id"))
         seat_info = seats.get(pid, {})  # fetch the seat info of this passenger
@@ -1486,23 +1827,115 @@ def booking_summary(request):
         # Get included add-ons specific to this passenger's seat classes
         passenger_depart_included = []
         passenger_return_included = []
-        
-        if depart_seat_class:
-            passenger_depart_included = AddOn.objects.filter(
-                seat_class=depart_seat_class,
-                included=True
-            ).select_related('type', 'seat_class', 'airline')
-        
-        if return_seat_class:
-            passenger_return_included = AddOn.objects.filter(
-                seat_class=return_seat_class,
-                included=True
-            ).select_related('type', 'seat_class', 'airline')
 
-        # DEBUG: Check what add-ons this passenger has
-        passenger_addons = addons_details.get(str(passenger['id']), [])
+        if depart_schedule:
+            airline = depart_schedule.flight.airline
+            passenger_depart_included = AddOn.objects.filter(
+                Q(seat_class=depart_seat_class) | Q(seat_class__isnull=True),
+                included=True,
+                airline=airline
+            ).select_related('type', 'seat_class', 'airline').distinct()
+            
+            print(f"Passenger {pid} ({passenger['first_name']}) - Depart included add-ons: {len(passenger_depart_included)}")
+
+        if return_schedule:
+            airline = return_schedule.flight.airline
+            passenger_return_included = AddOn.objects.filter(
+                Q(seat_class=return_seat_class) | Q(seat_class__isnull=True),
+                included=True,
+                airline=airline
+            ).select_related('type', 'seat_class', 'airline').distinct()
+            
+            print(f"Passenger {pid} ({passenger['first_name']}) - Return included add-ons: {len(passenger_return_included)}")
+
+        # Get passenger add-ons from session
+        passenger_addons = addons_details.get(pid, [])
         print(f"Passenger {pid} ({passenger['first_name']}) has {len(passenger_addons)} selected add-ons")
 
+        # Calculate fare for this passenger (infants are free)
+        passenger_fare = Decimal('0.00')
+        passenger_taxes = Decimal('0.00')
+        passenger_insurance = Decimal('0.00')
+        
+        if passenger["passenger_type"].lower() != "infant":
+            # Departure fare using dynamic calculation
+            if depart_schedule:
+                # Use the same calculation as in BookingDetail.save()
+                base_price = depart_schedule.flight.route.base_price
+                multiplier = depart_seat_class.price_multiplier if depart_seat_class else Decimal("1.0")
+                days_diff = (depart_schedule.departure_time.date() - timezone.now().date()).days
+                
+                if days_diff >= 30:
+                    factor = Decimal("0.8")
+                elif 7 <= days_diff <= 29:
+                    factor = Decimal("1.0")
+                else:
+                    factor = Decimal("1.5")
+                
+                passenger_fare += base_price * multiplier * factor
+            
+            # Return fare
+            if return_schedule:
+                base_price = return_schedule.flight.route.base_price
+                multiplier = return_seat_class.price_multiplier if return_seat_class else Decimal("1.0")
+                days_diff = (return_schedule.departure_time.date() - timezone.now().date()).days
+                
+                if days_diff >= 30:
+                    factor = Decimal("0.8")
+                elif 7 <= days_diff <= 29:
+                    factor = Decimal("1.0")
+                else:
+                    factor = Decimal("1.5")
+                
+                passenger_fare += base_price * multiplier * factor
+            
+            # Calculate taxes using dynamic tax system
+            # This is an ESTIMATE - actual taxes will be calculated when BookingDetail is created
+            if depart_schedule:
+                route = depart_schedule.flight.route
+                
+                # Base tax estimate
+                if route.is_international:
+                    passenger_taxes += Decimal('20.00')  # Base international tax
+                else:
+                    passenger_taxes += Decimal('10.00')  # Base domestic tax
+            
+            # Calculate insurance from add-ons
+            passenger_insurance = Decimal('0.00')
+            if pid in insurance_plans_by_passenger:
+                for plan in insurance_plans_by_passenger[pid]:
+                    passenger_insurance += plan.price
+        
+        # Add to totals
+        subtotal += passenger_fare
+        total_taxes += passenger_taxes
+        total_insurance += passenger_insurance
+        
+        # Prepare tax breakdown for display (estimate)
+        tax_breakdown = []
+        if passenger_taxes > 0:
+            if depart_schedule:
+                route = depart_schedule.flight.route
+                if route.is_international:
+                    tax_breakdown.append({
+                        'name': 'International Departure Tax',
+                        'amount': Decimal('20.00')
+                    })
+                    
+                    # Add Travel Tax if passenger is adult/child
+                    if passenger["passenger_type"] in ["Adult", "Child"]:
+                        travel_tax_amount = Decimal('1620.00') if passenger["passenger_type"] == "Adult" else Decimal('810.00')
+                        tax_breakdown.append({
+                            'name': f'Travel Tax ({passenger["passenger_type"]})',
+                            'amount': travel_tax_amount
+                        })
+                        passenger_taxes += travel_tax_amount
+                else:
+                    tax_breakdown.append({
+                        'name': 'Domestic Passenger Service Charge',
+                        'amount': Decimal('10.00')
+                    })
+        
         passenger_data.append({
             "full_name": f"{passenger['first_name']} {passenger.get('mi', '')} {passenger['last_name']}",
             "depart_seat": seat_info.get("depart", "Not selected"),
@@ -1515,18 +1948,19 @@ def booking_summary(request):
             "nationality": passenger.get('nationality', ''),
             'passenger_type': passenger.get('passenger_type', ''),
             'id': passenger['id'],
-            'selected_addons': passenger_addons,  # This should now have the correct data
+            'selected_addons': passenger_addons,
             'depart_included_addons': passenger_depart_included,
             'return_included_addons': passenger_return_included,
-            })
+            'fare': passenger_fare,
+            'tax_amount': passenger_taxes,
+            'insurance_amount': passenger_insurance,
+            'tax_breakdown': tax_breakdown,
+        })
 
     contact_info = request.session.get('contact_info', {})
 
-    # **CORRECT PRICE CALCULATION - INCLUDING ADD-ONS**
-    subtotal = Decimal('0.00')
+    # Calculate totals
     num_passengers = len(passengers)
-    
-    # Count passenger types
     adult_child_count = sum(1 for p in passengers if p.get('passenger_type', '').lower() in ['adult', 'child'])
     infant_count = sum(1 for p in passengers if p.get('passenger_type', '').lower() == 'infant')
     
@@ -1534,104 +1968,19 @@ def booking_summary(request):
     print(f"  - Total passengers: {num_passengers}")
     print(f"  - Adults/Children: {adult_child_count}")
     print(f"  - Infants: {infant_count}")
-    print(f"  - Add-ons Total: {addons_total}")  # DEBUG
+    print(f"  - Subtotal (fares): {subtotal}")
+    print(f"  - Total Taxes (estimate): {total_taxes}")
+    print(f"  - Total Insurance: {total_insurance}")
+    print(f"  - Add-ons Total: {addons_total}")
 
-
-    # Calculate price for each adult/child passenger using EXACT SAME LOGIC as BookingDetail.save()
-    for passenger in passengers:
-        passenger_type = passenger.get('passenger_type', '').lower()
-        
-        # Infants are FREE (PHP 0.00)
-        if passenger_type == 'infant':
-            continue
-            
-        passenger_price = Decimal('0.00')
-        pid = str(passenger.get("id"))
-        seat_info = seats.get(pid, {})
-        
-        # Departure flight price
-        if depart_schedule:
-            base_price = depart_schedule.flight.route.base_price
-            
-            # Get seat class multiplier for this passenger
-            depart_seat_number = seat_info.get("depart")
-            multiplier = Decimal('1.0')  # Default multiplier
-            
-            if depart_seat_number and depart_schedule:
-                try:
-                    seat_obj = Seat.objects.get(
-                        schedule=depart_schedule, 
-                        seat_number=depart_seat_number
-                    )
-                    if seat_obj.seat_class:
-                        multiplier = seat_obj.seat_class.price_multiplier
-                        print(f"  - {passenger['first_name']} depart seat class: {seat_obj.seat_class.name} (multiplier: {multiplier})")
-                except Seat.DoesNotExist:
-                    print(f"  - {passenger['first_name']} depart seat not found: {depart_seat_number}")
-                    pass
-            
-            # Calculate days difference factor (same as model logic)
-            days_diff = (depart_schedule.departure_time.date() - timezone.now().date()).days
-            if days_diff >= 30:
-                factor = Decimal("0.8")
-            elif 7 <= days_diff <= 29:
-                factor = Decimal("1.0")
-            else:
-                factor = Decimal("1.5")
-            
-            depart_price = base_price * multiplier * factor
-            passenger_price += depart_price
-            print(f"  - {passenger['first_name']} depart: {base_price} × {multiplier} × {factor} = {depart_price}")
-        
-        # Return flight price (if applicable)
-        if return_schedule:
-            return_base_price = return_schedule.flight.route.base_price
-            
-            # Get seat class multiplier for return flight
-            return_seat_number = seat_info.get("return")
-            return_multiplier = Decimal('1.0')  # Default multiplier
-            
-            if return_seat_number and return_schedule:
-                try:
-                    return_seat_obj = Seat.objects.get(
-                        schedule=return_schedule, 
-                        seat_number=return_seat_number
-                    )
-                    if return_seat_obj.seat_class:
-                        return_multiplier = return_seat_obj.seat_class.price_multiplier
-                        print(f"  - {passenger['first_name']} return seat class: {return_seat_obj.seat_class.name} (multiplier: {return_multiplier})")
-                except Seat.DoesNotExist:
-                    print(f"  - {passenger['first_name']} return seat not found: {return_seat_number}")
-                    pass
-            
-            # Calculate days difference factor for return flight
-            return_days_diff = (return_schedule.departure_time.date() - timezone.now().date()).days
-            if return_days_diff >= 30:
-                return_factor = Decimal("0.8")
-            elif 7 <= return_days_diff <= 29:
-                return_factor = Decimal("1.0")
-            else:
-                return_factor = Decimal("1.5")
-            
-            return_price = return_base_price * return_multiplier * return_factor
-            passenger_price += return_price
-            print(f"  - {passenger['first_name']} return: {return_base_price} × {return_multiplier} × {return_factor} = {return_price}")
-        
-        subtotal += passenger_price
-        print(f"  - {passenger['first_name']} total passenger price: {passenger_price}")
-    
-    # Taxes and insurance (ALL passengers pay these, including infants)
-    taxes = Decimal('20.00') * num_passengers  # PHP 20 per passenger
-    insurance = Decimal('515.00') * num_passengers  # PHP 515 per passenger
-    
-    # Calculate totals INCLUDING ADD-ONS
-    total_flight_price = subtotal + taxes + insurance
+    # Calculate final totals
+    total_flight_price = subtotal + total_taxes + total_insurance
     grand_total = total_flight_price + addons_total
 
     print(f"💰 Final Calculation:")
     print(f"  - Subtotal (flight fares): {subtotal}")
-    print(f"  - Taxes ({num_passengers} passengers × PHP 20): {taxes}")
-    print(f"  - Insurance ({num_passengers} passengers × PHP 515): {insurance}")
+    print(f"  - Taxes (estimate): {total_taxes}")
+    print(f"  - Insurance: {total_insurance}")
     print(f"  - Flight Total: {total_flight_price}")
     print(f"  - Add-ons Total: {addons_total}")
     print(f"  - Grand Total: {grand_total}")
@@ -1646,11 +1995,11 @@ def booking_summary(request):
         "adult_child_count": adult_child_count,
         "infant_count": infant_count,
         "subtotal": subtotal,
-        "taxes": taxes,
-        "insurance": insurance,
+        "taxes": total_taxes,
+        "insurance": total_insurance,
         "total_flight_price": total_flight_price,
         "selected_addons": selected_addons,
-        "addons_details": addons_details,  # This should now have the correct data
+        "addons_details": addons_details,
         "addons_total": addons_total,
         "grand_total": grand_total,
         "depart_included_addons": depart_included_addons,
@@ -1665,6 +2014,7 @@ from django.contrib import messages
 from datetime import date
 
 @login_required
+@require_booking_context
 @transaction.atomic
 def confirm_booking(request):
     if request.method != "POST":
@@ -1753,14 +2103,27 @@ def confirm_booking(request):
                 int(p['dob_day'])
             )
             
+            # Truncate passport number if too long (max 50 chars)
+            passport_number = p.get('passport', '')
+            if passport_number and len(passport_number) > 50:
+                passport_number = passport_number[:50]
+                print(f"⚠️ Truncated passport number for {p['first_name']} to 50 characters")
+            
+            # Truncate nationality if too long (max 100 chars)
+            nationality = p.get('nationality', '')
+            if nationality and len(nationality) > 100:
+                nationality = nationality[:100]
+                print(f"⚠️ Truncated nationality for {p['first_name']} to 100 characters")
+            
             # Create PassengerInfo
             passenger_obj = PassengerInfo.objects.create(
-                first_name=p['first_name'],
-                middle_name=p.get('mi', ''),
-                last_name=p['last_name'],
-                gender=p.get('gender', ''),
+                first_name=p['first_name'][:100],
+                middle_name=p.get('mi', '')[:100] if p.get('mi') else '',
+                last_name=p['last_name'][:100],
+                gender=p.get('gender', '')[:10],
                 date_of_birth=dob,
-                passport_number=p.get('passport', ''),
+                passport_number=passport_number,
+                nationality=nationality,
                 passenger_type=p.get('passenger_type', 'Adult')
             )
             
@@ -1768,14 +2131,10 @@ def confirm_booking(request):
             passenger_objects[pid] = passenger_obj
             print(f"✅ Created PassengerInfo: {passenger_obj}")
 
-        # Track which seats we've already processed to avoid double-booking
-        processed_seats = {
-            'depart': set(),
-            'return': set()
-        }
-
         # Store booking details for add-on linking
         booking_details_map = {}  # { passenger_id: { 'depart': booking_detail, 'return': booking_detail } }
+        total_addons_price = Decimal('0.00')
+        addon_items = {}  # Store add-on details for later reference
 
         # Second pass: Link infants to adults and create BookingDetails
         for p in passengers:
@@ -1800,95 +2159,204 @@ def confirm_booking(request):
 
             # Initialize booking details map for this passenger
             booking_details_map[pid] = {}
+            addon_items[pid] = []
 
             # Handle departure flight booking
             if depart_seat_number:
                 try:
-                    # Check if this seat has already been processed for this schedule
-                    seat_key = f"{depart_schedule.id}_{depart_seat_number}"
-                    if seat_key in processed_seats['depart']:
-                        print(f"ℹ️ Seat {depart_seat_number} already processed for depart schedule, reusing...")
-                        # Seat already processed, find the existing seat object
-                        outbound_seat_obj = Seat.objects.get(
-                            schedule=depart_schedule, 
-                            seat_number=depart_seat_number
-                        )
-                    else:
-                        # First time processing this seat, lock and mark as unavailable
-                        outbound_seat_obj = Seat.objects.select_for_update().get(
-                            schedule=depart_schedule, 
-                            seat_number=depart_seat_number,
-                            is_available=True
-                        )
-                        # Mark seat as unavailable immediately
-                        outbound_seat_obj.is_available = False
-                        outbound_seat_obj.save()
-                        processed_seats['depart'].add(seat_key)
-                        print(f"✅ Marked seat {depart_seat_number} as unavailable for depart")
+                    # Get the seat object
+                    outbound_seat_obj = Seat.objects.get(
+                        schedule=depart_schedule, 
+                        seat_number=depart_seat_number
+                    )
                     
-                    # Create booking detail for departure
-                    depart_booking_detail = BookingDetail.objects.create(
+                    # Check if seat is available
+                    if not outbound_seat_obj.is_available:
+                        messages.error(request, f"Seat {depart_seat_number} is no longer available. Please select different seats.")
+                        return redirect('bookingapp:booking_summary')
+                    
+                    # Mark seat as unavailable
+                    outbound_seat_obj.is_available = False
+                    outbound_seat_obj.save()
+                    
+                    # Create booking detail for departure WITHOUT saving yet
+                    depart_booking_detail = BookingDetail(
                         booking=booking,
                         passenger=passenger_obj,
                         schedule=depart_schedule,
                         seat=outbound_seat_obj,
                         seat_class=outbound_seat_obj.seat_class,
-                        price=0.00 if p.get('passenger_type', '').lower() == 'infant' else depart_schedule.price
                     )
-
+                    
+                    # Save to trigger price calculation
+                    depart_booking_detail.save()
+                    
+                    # MANUALLY CALCULATE TAXES if not calculated
+                    if depart_booking_detail.tax_amount == 0:
+                        print(f"⚠️ Taxes not calculated automatically for booking detail {depart_booking_detail.id}")
+                        print(f"   Route: {depart_schedule.flight.route}")
+                        print(f"   Is International: {depart_schedule.flight.route.is_international}")
+                        print(f"   Origin Country: {depart_schedule.flight.route.origin_airport.country}")
+                        print(f"   Destination Country: {depart_schedule.flight.route.destination_airport.country}")
+                        
+                        # Check if route is domestic or international
+                        route = depart_schedule.flight.route
+                        is_domestic = route.is_domestic
+                        is_international = route.is_international
+                        
+                        print(f"   Route Type - Domestic: {is_domestic}, International: {is_international}")
+                        
+                        # Apply minimum tax if none calculated
+                        if is_domestic:
+                            # Domestic tax
+                            tax_amount = Decimal('10.00')
+                            tax_type, created = TaxType.objects.get_or_create(
+                                code='DOMESTIC_TAX',
+                                defaults={
+                                    'name': 'Domestic Passenger Service Charge',
+                                    'description': 'Terminal fee for domestic flights',
+                                    'per_passenger': True,
+                                    'adult_only': False,
+                                    'applies_domestic': True,
+                                    'applies_international': False,
+                                    'base_amount': Decimal('10.00')
+                                }
+                            )
+                            BookingTax.objects.create(
+                                booking_detail=depart_booking_detail,
+                                tax_type=tax_type,
+                                amount=tax_amount,
+                                description="Domestic Passenger Service Charge"
+                            )
+                            print(f"   Applied domestic tax: ₱{tax_amount}")
+                        elif is_international:
+                            # International tax (higher)
+                            tax_amount = Decimal('20.00')
+                            tax_type, created = TaxType.objects.get_or_create(
+                                code='INTERNATIONAL_TAX',
+                                defaults={
+                                    'name': 'International Departure Tax',
+                                    'description': 'Terminal fee for international flights',
+                                    'per_passenger': True,
+                                    'adult_only': False,
+                                    'applies_domestic': False,
+                                    'applies_international': True,
+                                    'base_amount': Decimal('20.00')
+                                }
+                            )
+                            BookingTax.objects.create(
+                                booking_detail=depart_booking_detail,
+                                tax_type=tax_type,
+                                amount=tax_amount,
+                                description="International Departure Tax"
+                            )
+                            print(f"   Applied international tax: ₱{tax_amount}")
+                    
                     # Store for add-on linking
                     booking_details_map[pid]['depart'] = depart_booking_detail
 
-                    print(f"✅ Created depart booking for {p['first_name']} ({p.get('passenger_type')}) - Seat: {depart_seat_number}")        
+                    print(f"✅ Created depart booking for {p['first_name']} ({p.get('passenger_type')}) - Seat: {depart_seat_number}")
+                    print(f"   Calculated price: {depart_booking_detail.price}")
+                    print(f"   Taxes applied: {depart_booking_detail.tax_amount}")
 
                 except Seat.DoesNotExist:
-                    print(f"❌ Seat {depart_seat_number} not found or unavailable for depart schedule")
-                    messages.error(request, f"Seat {depart_seat_number} is no longer available. Please select different seats.")
+                    print(f"❌ Seat {depart_seat_number} not found for depart schedule")
+                    messages.error(request, f"Seat {depart_seat_number} not found. Please select different seats.")
                     return redirect('bookingapp:booking_summary')
 
             # Handle return flight booking
             if return_schedule and return_seat_number:
                 try:
-                    # Check if this seat has already been processed for this schedule
-                    seat_key = f"{return_schedule.id}_{return_seat_number}"
-                    if seat_key in processed_seats['return']:
-                        print(f"ℹ️ Seat {return_seat_number} already processed for return schedule, reusing...")
-                        # Seat already processed, find the existing seat object
-                        return_seat_obj = Seat.objects.get(
-                            schedule=return_schedule, 
-                            seat_number=return_seat_number
-                        )
-                    else:
-                        # First time processing this seat, lock and mark as unavailable
-                        return_seat_obj = Seat.objects.select_for_update().get(
-                            schedule=return_schedule, 
-                            seat_number=return_seat_number,
-                            is_available=True
-                        )
-                        # Mark seat as unavailable immediately
-                        return_seat_obj.is_available = False
-                        return_seat_obj.save()
-                        processed_seats['return'].add(seat_key)
-                        print(f"✅ Marked seat {return_seat_number} as unavailable for return")
+                    # Get the seat object
+                    return_seat_obj = Seat.objects.get(
+                        schedule=return_schedule, 
+                        seat_number=return_seat_number
+                    )
+                    
+                    # Check if seat is available
+                    if not return_seat_obj.is_available:
+                        messages.error(request, f"Return seat {return_seat_number} is no longer available. Please select different seats.")
+                        return redirect('bookingapp:booking_summary')
+                    
+                    # Mark seat as unavailable
+                    return_seat_obj.is_available = False
+                    return_seat_obj.save()
                     
                     # Create booking detail for return
-                    return_booking_detail = BookingDetail.objects.create(
+                    return_booking_detail = BookingDetail(
                         booking=booking,
                         passenger=passenger_obj,
                         schedule=return_schedule,
                         seat=return_seat_obj,
                         seat_class=return_seat_obj.seat_class,
-                        price=0.00 if p.get('passenger_type', '').lower() == 'infant' else return_schedule.price
                     )
+                    
+                    # Save to trigger price calculation
+                    return_booking_detail.save()
+                    
+                    # MANUALLY CALCULATE TAXES if not calculated
+                    if return_booking_detail.tax_amount == 0:
+                        print(f"⚠️ Taxes not calculated automatically for return booking detail {return_booking_detail.id}")
+                        
+                        # Check if route is domestic or international
+                        route = return_schedule.flight.route
+                        is_domestic = route.is_domestic
+                        is_international = route.is_international
+                        
+                        # Apply minimum tax if none calculated
+                        if is_domestic:
+                            tax_amount = Decimal('10.00')
+                            tax_type, created = TaxType.objects.get_or_create(
+                                code='DOMESTIC_TAX',
+                                defaults={
+                                    'name': 'Domestic Passenger Service Charge',
+                                    'description': 'Terminal fee for domestic flights',
+                                    'per_passenger': True,
+                                    'adult_only': False,
+                                    'applies_domestic': True,
+                                    'applies_international': False,
+                                    'base_amount': Decimal('10.00')
+                                }
+                            )
+                            BookingTax.objects.create(
+                                booking_detail=return_booking_detail,
+                                tax_type=tax_type,
+                                amount=tax_amount,
+                                description="Domestic Passenger Service Charge"
+                            )
+                            print(f"   Applied domestic tax for return: ₱{tax_amount}")
+                        elif is_international:
+                            tax_amount = Decimal('20.00')
+                            tax_type, created = TaxType.objects.get_or_create(
+                                code='INTERNATIONAL_TAX',
+                                defaults={
+                                    'name': 'International Departure Tax',
+                                    'description': 'Terminal fee for international flights',
+                                    'per_passenger': True,
+                                    'adult_only': False,
+                                    'applies_domestic': False,
+                                    'applies_international': True,
+                                    'base_amount': Decimal('20.00')
+                                }
+                            )
+                            BookingTax.objects.create(
+                                booking_detail=return_booking_detail,
+                                tax_type=tax_type,
+                                amount=tax_amount,
+                                description="International Departure Tax"
+                            )
+                            print(f"   Applied international tax for return: ₱{tax_amount}")
 
                     # Store for add-on linking
                     booking_details_map[pid]['return'] = return_booking_detail
 
                     print(f"✅ Created return booking for {p['first_name']} ({p.get('passenger_type')}) - Seat: {return_seat_number}")
+                    print(f"   Calculated price: {return_booking_detail.price}")
+                    print(f"   Taxes applied: {return_booking_detail.tax_amount}")
                     
                 except Seat.DoesNotExist:
-                    print(f"❌ Seat {return_seat_number} not found or unavailable for return schedule")
-                    messages.error(request, f"Seat {return_seat_number} is no longer available. Please select different seats.")
+                    print(f"❌ Seat {return_seat_number} not found for return schedule")
+                    messages.error(request, f"Return seat {return_seat_number} not found. Please select different seats.")
                     return redirect('bookingapp:booking_summary')
 
         # 🔥 PROCESS ADD-ONS FOR EACH PASSENGER
@@ -1905,9 +2373,22 @@ def confirm_booking(request):
                     try:
                         addon = AddOn.objects.get(id=addon_id)
                         
+                        # Add to total addons price
+                        total_addons_price += addon.price
+                        addon_items[passenger_id].append({
+                            'addon': addon,
+                            'price': addon.price
+                        })
+                        
                         # Link add-on to ALL booking details for this passenger
                         for flight_type, booking_detail in passenger_details.items():
                             booking_detail.addons.add(addon)
+                            
+                            # If this is an insurance add-on, also link the insurance plan
+                            if addon.is_insurance and addon.insurance_plan:
+                                booking_detail.insurance_plan = addon.insurance_plan
+                                booking_detail.save()
+                                print(f"✅ Linked insurance plan '{addon.insurance_plan.name}' to {flight_type} flight for passenger {passenger_id}")
                             
                             print(f"✅ Linked add-on '{addon.name}' ({addon.type}) to {flight_type} flight for passenger {passenger_id}")
                             addons_processed += 1
@@ -1917,21 +2398,44 @@ def confirm_booking(request):
                         continue
         
         print(f"✅ Successfully processed {addons_processed} add-on links")
+        print(f"💰 Total add-ons price: {total_addons_price}")
 
         # DEBUG: Count actual booking details created
         total_booking_details = booking.details.count()
         
+        # Refresh booking to get updated totals
+        booking.refresh_from_db()
+        
         print(f"📊 BOOKING CREATION SUMMARY:")
         print(f"  - Total BookingDetail objects created: {total_booking_details}")
         print(f"  - Expected passengers: {len(passengers)}")
+        print(f"  - Booking total_amount (flights only): {booking.total_amount}")
+        print(f"  - Booking tax_total: {booking.tax_total}")
+        print(f"  - Booking insurance_total: {booking.insurance_total}")
+        print(f"  - Total add-ons price: {total_addons_price}")
+        
+        # Store add-ons total in session for payment method
+        request.session['addons_total'] = str(total_addons_price)
+        request.session['addon_items'] = {
+            pid: [
+                {
+                    'id': item['addon'].id,
+                    'name': item['addon'].name,
+                    'price': str(item['price'])
+                }
+                for item in items
+            ]
+            for pid, items in addon_items.items()
+        }
         
         print("✅ Booking created successfully! ID:", booking.id)
         
-        # CRITICAL FIX: Save booking ID to session and ensure it persists
+        # Save booking ID to session
         request.session['current_booking_id'] = booking.id
-        request.session.modified = True  # Force session save
+        request.session.modified = True
         
         print(f"✅ Session updated - current_booking_id: {request.session.get('current_booking_id')}")
+        print(f"✅ Session addons_total: {request.session.get('addons_total')}")
 
         # Show success message
         messages.success(request, "Booking confirmed successfully! Proceeding to payment...")
@@ -1941,15 +2445,17 @@ def confirm_booking(request):
 
     except Exception as e:
         print(f"❌ Unexpected error in confirm_booking: {str(e)}")
-        messages.error(request, "An unexpected error occurred. Please try again.")
+        import traceback
+        traceback.print_exc()
+        messages.error(request, f"An unexpected error occurred: {str(e)}. Please try again.")
         return redirect('bookingapp:booking_summary')
 
 from decimal import Decimal
 from django.contrib import messages
 
 
-
 @login_required
+@require_booking_context
 def payment_method(request):
     booking_id = request.session.get('current_booking_id')
     activity_id = request.session.get('activity_id')
@@ -1963,130 +2469,99 @@ def payment_method(request):
         
         print(f"✅ Found booking: {booking.id}")
 
-        # **ENHANCED DETAILED CALCULATION INCLUDING ADD-ONS**
-        print("=== ENHANCED PRICE CALCULATION BREAKDOWN ===")
+        # Calculate using the Booking model's methods
+        subtotal = booking.total_amount  # Flight fares only
+        taxes = booking.tax_total
+        insurance_from_plans = booking.insurance_total  # Only insurance from insurance plans
         
-        # Initialize detailed breakdown
-        calculation_breakdown = {
-            'flight_fares': {
-                'departure': Decimal('0.00'),
-                'return': Decimal('0.00'),
-                'total': Decimal('0.00')
-            },
-            'passengers': {
-                'adults': 0,
-                'children': 0,
-                'infants': 0,
-                'total': 0
-            },
-            'taxes_per_passenger': Decimal('20.00'),
-            'insurance_per_passenger': Decimal('515.00'),
-            'totals': {
-                'subtotal': Decimal('0.00'),
-                'taxes': Decimal('0.00'),
-                'insurance': Decimal('0.00'),
-                'grand_total': Decimal('0.00')
-            }
-        }
+        # Get add-ons total from session (calculated in confirm_booking)
+        addons_total = Decimal(request.session.get('addons_total', '0.00'))
         
-        # FIX: Get UNIQUE passengers to avoid double counting
+        # Also calculate insurance from add-ons (insurance add-ons that aren't linked to insurance plans)
+        insurance_from_addons = Decimal('0.00')
+        selected_addons = request.session.get('selected_addons', {})
+        
+        for passenger_id, addon_ids in selected_addons.items():
+            for addon_id in addon_ids:
+                try:
+                    addon = AddOn.objects.get(id=addon_id)
+                    # Check if addon is insurance but not linked to an insurance plan
+                    if addon.is_insurance and not addon.insurance_plan:
+                        insurance_from_addons += addon.price
+                except AddOn.DoesNotExist:
+                    continue
+        
+        # Total insurance = insurance from plans + insurance from add-ons
+        total_insurance = insurance_from_plans + insurance_from_addons
+        
+        # Grand total includes everything
+        grand_total = subtotal + taxes + total_insurance + addons_total
+        
+        print(f"💰 PAYMENT CALCULATION:")
+        print(f"  - Subtotal (flight fares): {subtotal}")
+        print(f"  - Taxes: {taxes}")
+        print(f"  - Insurance from plans: {insurance_from_plans}")
+        print(f"  - Insurance from add-ons: {insurance_from_addons}")
+        print(f"  - Total Insurance: {total_insurance}")
+        print(f"  - Other Add-ons: {addons_total - insurance_from_addons}")
+        print(f"  - Add-ons Total: {addons_total}")
+        print(f"  - Grand Total: {grand_total}")
+        
+        # Count passengers from booking details
         unique_passengers = set()
-        passenger_types = {
-            'adults': 0,
-            'children': 0, 
-            'infants': 0
-        }
+        passenger_types = {'adults': 0, 'children': 0, 'infants': 0}
         
-        # Calculate flight fares for each booking detail
         for detail in booking.details.all():
             passenger = detail.passenger
-            passenger_type = passenger.passenger_type.lower()
+            passenger_id = passenger.id
             
-            # Count UNIQUE passengers only once
-            if passenger.id not in unique_passengers:
-                unique_passengers.add(passenger.id)
+            if passenger_id not in unique_passengers:
+                unique_passengers.add(passenger_id)
+                passenger_type = passenger.passenger_type.lower()
                 
-                # Count passenger types
                 if passenger_type == 'adult':
                     passenger_types['adults'] += 1
                 elif passenger_type == 'child':
                     passenger_types['children'] += 1
                 elif passenger_type == 'infant':
                     passenger_types['infants'] += 1
-            
-            # Add to flight fares (infants are free)
-            if passenger_type != 'infant':
-                calculation_breakdown['flight_fares']['total'] += detail.price
-                
-                # Determine if this is departure or return flight
-                # Simple heuristic: first occurrence is departure, subsequent are return
-                if calculation_breakdown['flight_fares']['departure'] == Decimal('0.00'):
-                    calculation_breakdown['flight_fares']['departure'] += detail.price
-                else:
-                    calculation_breakdown['flight_fares']['return'] += detail.price
         
-        # Update passenger counts with unique values
-        calculation_breakdown['passengers']['adults'] = passenger_types['adults']
-        calculation_breakdown['passengers']['children'] = passenger_types['children']
-        calculation_breakdown['passengers']['infants'] = passenger_types['infants']
-        calculation_breakdown['passengers']['total'] = len(unique_passengers)
+        num_passengers = len(unique_passengers)
         
-        print(f"📊 PASSENGER COUNT DEBUG:")
-        print(f"  - Unique passengers: {len(unique_passengers)}")
-        print(f"  - Adults: {passenger_types['adults']}")
-        print(f"  - Children: {passenger_types['children']}")
-        print(f"  - Infants: {passenger_types['infants']}")
-        
-        # Calculate taxes and insurance (ALL passengers pay these)
-        calculation_breakdown['totals']['taxes'] = (
-            calculation_breakdown['taxes_per_passenger'] * calculation_breakdown['passengers']['total']
-        )
-        calculation_breakdown['totals']['insurance'] = (
-            calculation_breakdown['insurance_per_passenger'] * calculation_breakdown['passengers']['total']
-        )
-        
-        # Calculate subtotal and grand total
-        calculation_breakdown['totals']['subtotal'] = calculation_breakdown['flight_fares']['total']
-        
-        # **ADD ADD-ONS TO THE CALCULATION**
-        selected_addons = request.session.get('selected_addons', {})
-        addons_total = Decimal('0.00')
-        
-        for passenger_id, addon_ids in selected_addons.items():
-            for addon_id in addon_ids:
-                try:
-                    addon = AddOn.objects.get(id=addon_id)
-                    addons_total += addon.price
-                except AddOn.DoesNotExist:
-                    continue
-        
-        # Use the calculated totals INCLUDING ADD-ONS
-        calculation_breakdown['totals']['addons'] = addons_total
-        calculation_breakdown['totals']['grand_total'] = (
-            calculation_breakdown['totals']['subtotal'] + 
-            calculation_breakdown['totals']['taxes'] + 
-            calculation_breakdown['totals']['insurance'] +
-            calculation_breakdown['totals']['addons']
-        )
-
-        total_amount = calculation_breakdown['totals']['grand_total']
-
-        print(f"💰 FINAL PAYMENT CALCULATION:")
-        print(f"  - Flight fares: {calculation_breakdown['flight_fares']['total']}")
-        print(f"  - Taxes ({calculation_breakdown['passengers']['total']} passengers): {calculation_breakdown['totals']['taxes']}")
-        print(f"  - Insurance ({calculation_breakdown['passengers']['total']} passengers): {calculation_breakdown['totals']['insurance']}")
-        print(f"  - Add-ons: {addons_total}")
-        print(f"  - Grand Total: {total_amount}")
+        # Build calculation breakdown
+        calculation_breakdown = {
+            'flight_fares': {
+                'departure': subtotal / 2 if booking.trip_type == 'round_trip' else subtotal,
+                'return': subtotal / 2 if booking.trip_type == 'round_trip' else Decimal('0.00'),
+                'total': subtotal
+            },
+            'passengers': {
+                'adults': passenger_types['adults'],
+                'children': passenger_types['children'],
+                'infants': passenger_types['infants'],
+                'total': num_passengers
+            },
+            'taxes_per_passenger': taxes / num_passengers if num_passengers > 0 else Decimal('0.00'),
+            'insurance_per_passenger': total_insurance / num_passengers if num_passengers > 0 else Decimal('0.00'),
+            'addons_per_passenger': addons_total / num_passengers if num_passengers > 0 else Decimal('0.00'),
+            'totals': {
+                'subtotal': subtotal,
+                'taxes': taxes,
+                'insurance': total_insurance,
+                'addons': addons_total,
+                'grand_total': grand_total
+            }
+        }
 
         if request.method == "POST":
             method = request.POST.get("payment_method")
             if method:
                 try:
                     with transaction.atomic():
-                        # Create Payment
+                        # Create Payment with the CORRECT total that includes add-ons
                         payment = Payment.objects.create(
                             booking=booking,
-                            amount=total_amount,
+                            amount=grand_total,  # Make sure this includes add-ons
                             method=method,
                             status="Completed",
                             transaction_id=f"MOCK{booking.id:05d}"
@@ -2096,61 +2571,63 @@ def payment_method(request):
                         booking.status = "Paid"
                         booking.save()
 
-                        # FIX: Get unique seat IDs and verify they're properly reserved
-                        seat_ids = list(booking.details
-                                       .filter(seat__isnull=False)
-                                       .values_list('seat_id', flat=True)
-                                       .distinct())
+                        print(f"✅ Payment completed. Amount: {grand_total}")
+                        print(f"✅ Payment ID: {payment.id}, Transaction ID: {payment.transaction_id}")
+                        print(f"✅ Booking status updated to: {booking.status}")
                         
-                        if seat_ids:
-                            # Just verify seats are properly marked as unavailable
-                            unavailable_seats = Seat.objects.filter(
-                                id__in=seat_ids, 
-                                is_available=True
-                            )
-                            if unavailable_seats.exists():
-                                unavailable_seats.update(is_available=False)
-                                print(f"⚠️ Fixed {unavailable_seats.count()} seats that were not properly reserved")
-
-                        # IMPORTANT: Don't clear current_booking_id and activity_id yet!
+                        # Clear specific session data but KEEP booking_id and practice flags
                         keys_to_clear = [
                             "passengers", "selected_seats", "confirm_depart_schedule",
                             "confirm_return_schedule", "trip_type",
                             "origin", "destination", "departure_date", "return_date",
                             "passenger_count", "contact_info", "adults", "children", "infants",
-                            "selected_addons"  # Clear add-ons too
+                            "selected_addons", "addons_total", "addon_items"
                         ]
                         
+                        # Keep these important items
                         student_id = request.session.get('student_id')
+                        is_practice_booking = request.session.get('is_practice_booking', False)
+                        activity_id = request.session.get('activity_id')
+                        
                         for key in keys_to_clear:
                             request.session.pop(key, None)
                         
-                        # Keep these for payment_success
+                        # Re-set the important session data
                         request.session['student_id'] = student_id
-                        # current_booking_id and activity_id remain in session
+                        request.session['current_booking_id'] = booking_id  # KEEP THIS!
+                        if is_practice_booking:
+                            request.session['is_practice_booking'] = is_practice_booking
+                        if activity_id:
+                            request.session['activity_id'] = activity_id
                         request.session.modified = True
 
-                        print(f"✅ Payment completed. Keeping booking_id ({booking_id}) and activity_id for payment_success")
+                        print(f"✅ Session cleaned, kept booking_id: {booking_id}")
+                        print(f"✅ is_practice_booking: {is_practice_booking}")
+                        print(f"✅ activity_id: {activity_id}")
+
                         messages.success(request, "Payment completed successfully!")
 
+                        # DIRECT REDIRECT to payment_success - don't chain redirects
                         return redirect("bookingapp:payment_success")
 
                 except Exception as e:
                     print(f"❌ Payment error: {str(e)}")
+                    import traceback
+                    traceback.print_exc()
                     messages.error(request, f"Payment failed: {str(e)}")
                     return redirect("bookingapp:payment_method")
         
-        # Render payment page with enhanced breakdown data INCLUDING ADD-ONS
+        # Render payment page WITH add-ons data
         return render(request, "booking/payment.html", {
             "booking": booking,
             "payment_methods": Payment.PAYMENT_METHODS,
-            "total_amount": total_amount,
-            "calculation_breakdown": calculation_breakdown,  # Pass breakdown to template
-            "subtotal": calculation_breakdown['totals']['subtotal'],
-            "taxes": calculation_breakdown['totals']['taxes'],
-            "insurance": calculation_breakdown['totals']['insurance'],
+            "total_amount": grand_total,  # This should be the grand total WITH add-ons
+            "calculation_breakdown": calculation_breakdown,
+            "subtotal": subtotal,
+            "taxes": taxes,
+            "insurance": total_insurance,
             "addons_total": addons_total,
-            "num_passengers": calculation_breakdown['passengers']['total'],  # Pass correct passenger count
+            "num_passengers": num_passengers,
         })
 
     except Booking.DoesNotExist:
@@ -2158,8 +2635,9 @@ def payment_method(request):
         return redirect("bookingapp:main")
 
 
-
+  
 @login_required
+@require_booking_context
 def payment_success(request):
     booking_id = request.session.get('current_booking_id')
     activity_id = request.session.get('activity_id')
@@ -2170,242 +2648,103 @@ def payment_success(request):
     print(f"Activity ID from session: {activity_id}")
     print(f"Is Practice Booking: {is_practice_booking}")
 
-    # Check if this is a practice booking
-    if is_practice_booking:
-        print("🎯 This is a practice booking - saving practice record")
-        return save_practice_booking(request)
-    
     if not booking_id:
-        print("❌ No booking_id in session")
+        print("❌ No booking ID in session")
         messages.error(request, "No booking found. Please start over.")
         return redirect('studentapp:student_home')
     
-    # Handle regular booking without activity (practice or regular booking)
-    if not activity_id:
-        print("🎯 Regular booking without activity - showing success page")
-        try:
-            booking = Booking.objects.get(id=booking_id)
-            student = Student.objects.get(id=request.session.get('student_id'))
+    try:
+        booking = Booking.objects.get(id=booking_id)
+        student = Student.objects.get(id=request.session.get('student_id'))
+        
+        # Handle practice booking
+        if is_practice_booking:
+            print("🎯 Handling practice booking...")
             
-            print(f"✅ Found booking: {booking.id} for student: {student.first_name}")
+            # Get practice details
+            practice_type = 'guided_practice' if request.session.get('is_guided_practice') else 'free_practice'
+            requirements = request.session.get('practice_requirements')
             
-            # Save as practice booking if it was marked as practice
-            if request.session.get('is_practice_booking'):
-                print("💾 Saving as practice booking")
+            # Create practice booking record
+            try:
                 practice_booking = PracticeBooking.objects.create(
                     student=student,
                     booking=booking,
-                    practice_type='free_practice',
-                    scenario_description='Free practice booking',
+                    practice_type=practice_type,
+                    scenario_description=requirements.get('description') if requirements else 'Free practice booking',
+                    practice_requirements=requirements,
                     is_completed=True
                 )
                 print(f"✅ Practice booking saved: {practice_booking.id}")
+            except Exception as e:
+                print(f"⚠️ Could not save practice booking: {e}")
+                practice_booking = None
             
-            # Clear session data but keep student login
-            keys_to_clear = [
-                "passengers", "selected_seats", "confirm_depart_schedule",
-                "confirm_return_schedule", "current_booking_id", "trip_type",
-                "origin", "destination", "departure_date", "return_date",
-                "passenger_count", "contact_info", "adults", "children", "infants",
-                "selected_addons", "is_practice_booking", "is_guided_practice", 
-                "practice_requirements"
-            ]
-            
-            student_id = request.session.get('student_id')
-            for key in keys_to_clear:
-                request.session.pop(key, None)
-            
-            request.session['student_id'] = student_id
+            # Clear practice flags but keep booking for display
+            request.session['is_practice_booking'] = False
+            request.session.pop('is_guided_practice', None)
+            request.session.pop('practice_requirements', None)
             request.session.modified = True
             
-            print("🧹 Cleared booking session data")
+            messages.success(request, "Practice booking completed successfully!")
             
-            # Render success page for regular/practice booking
-            messages.success(request, "Booking completed successfully!")
+            # Render success page for practice
             return render(request, "booking/payment_success.html", {
                 'booking': booking,
                 'student': student,
-                'is_practice_booking': True,
-                'practice_booking': practice_booking if request.session.get('is_practice_booking') else None
+                'practice_booking': practice_booking,
+                'is_practice_booking': True
+            })
+        
+        # Handle activity submission
+        elif activity_id:
+            print("🎯 Handling activity submission...")
+            # ... your existing activity code ...
+            
+        # Handle regular booking
+        else:
+            print("🎯 Handling regular booking...")
+            
+            # Clear booking session data
+            keys_to_clear = [
+                "current_booking_id", "passengers", "selected_seats", 
+                "confirm_depart_schedule", "confirm_return_schedule"
+            ]
+            
+            for key in keys_to_clear:
+                request.session.pop(key, None)
+            
+            request.session.modified = True
+            
+            messages.success(request, "Booking completed successfully!")
+            
+            # Render success page for regular booking
+            return render(request, "booking/payment_success.html", {
+                'booking': booking,
+                'student': student,
+                'is_regular_booking': True
             })
             
-        except Booking.DoesNotExist:
-            print(f"❌ Booking {booking_id} not found")
-            messages.error(request, "Booking not found.")
-            return redirect('studentapp:student_home')
-        except Student.DoesNotExist:
-            print(f"❌ Student not found")
-            messages.error(request, "Student not found.")
-            return redirect('bookingapp:login')
-        except Exception as e:
-            print(f"❌ Unexpected error: {e}")
-            messages.error(request, "Error processing booking.")
-            return redirect('studentapp:student_home')
-    
-    # Handle activity submission (existing code)
-    try:
-        booking = Booking.objects.get(id=booking_id)
-        activity = Activity.objects.get(id=activity_id)
-        student = Student.objects.get(id=request.session.get('student_id'))
-        
-        print(f"✅ Found objects - Booking: {booking.id}, Activity: {activity.title}, Student: {student.first_name}")
-        
-        # ... rest of your existing activity submission code ...
-        # Get origin and destination airports from the booking
-        origin_airport = None
-        destination_airport = None
-        
-        # Get the first booking detail to extract route information
-        first_booking_detail = booking.details.first()
-        if first_booking_detail:
-            route = first_booking_detail.schedule.flight.route
-            origin_airport = route.origin_airport
-            destination_airport = route.destination_airport
-            print(f"🌍 Airport info - Origin: {origin_airport.code}, Destination: {destination_airport.code}")
-        
-        # Check if submission already exists
-        existing_submission = ActivitySubmission.objects.filter(
-            activity=activity, 
-            student=student
-        ).first()
-        
-        if existing_submission:
-            print(f"⚠️ Submission already exists: {existing_submission.id}")
-            messages.info(request, f"You have already submitted this activity.")
-        else:
-            print("🆕 No existing submission found - creating new submission")
-            
-            try:
-                # Calculate score before creating submission
-                score = calculate_activity_score(booking, activity)
-                print(f"📊 Calculated score: {score}/{activity.total_points}")
-                
-                # Create activity submission WITH airport data
-                submission_data = {
-                    'activity': activity,
-                    'student': student,
-                    'booking': booking,
-                    'status': 'submitted',
-                    'required_trip_type': activity.required_trip_type,
-                    'required_travel_class': activity.required_travel_class,
-                    'required_passengers': activity.required_passengers,
-                    'required_children': activity.required_children,
-                    'required_infants': activity.required_infants,
-                    'require_passenger_details': activity.require_passenger_details,
-                    'score': score,
-                    'submitted_at': timezone.now()
-                }
-                
-                # ADD AIRPORT DATA if available - FIXED: Use Airport objects, not strings
-                if hasattr(activity, 'required_origin') and activity.required_origin:
-                    try:
-                        origin_airport = Airport.objects.get(code=activity.required_origin)
-                        submission_data['required_origin_airport'] = origin_airport
-                        print(f"✅ Set origin airport: {origin_airport.code}")
-                    except Airport.DoesNotExist:
-                        print(f"❌ Origin airport not found: {activity.required_origin}")
-                
-                if hasattr(activity, 'required_destination') and activity.required_destination:
-                    try:
-                        destination_airport = Airport.objects.get(code=activity.required_destination)
-                        submission_data['required_destination_airport'] = destination_airport
-                        print(f"✅ Set destination airport: {destination_airport.code}")
-                    except Airport.DoesNotExist:
-                        print(f"❌ Destination airport not found: {activity.required_destination}")
-                
-                # Create the submission
-                submission = ActivitySubmission.objects.create(**submission_data)
-                
-                # Calculate add-on scores
-                addon_score, max_addon_points = submission.calculate_addon_score()
-                submission.addon_score = addon_score
-                submission.max_addon_points = max_addon_points
-                submission.save()
-                
-                print(f"✅ SUCCESS: Created submission: {submission.id}")
-                print(f"   Submission details - Activity: {submission.activity.title}, Student: {submission.student.first_name}, Booking: {submission.booking.id}, Score: {submission.score}")
-                print(f"   Add-on Score: {submission.addon_score}/{submission.max_addon_points}")
-                print(f"   Origin Airport: {submission.required_origin_airport.code if submission.required_origin_airport else 'None'}")
-                print(f"   Destination Airport: {submission.required_destination_airport.code if submission.required_destination_airport else 'None'}")
-                
-                messages.success(request, f"Activity '{activity.title}' submitted successfully! Score: {score}/{activity.total_points}")
-                
-            except Exception as create_error:
-                print(f"❌ ERROR creating submission: {create_error}")
-                import traceback
-                traceback.print_exc()
-                
-                # Create minimal submission without score if creation fails
-                minimal_submission_data = {
-                    'activity': activity,
-                    'student': student,
-                    'booking': booking,
-                    'status': 'submitted',
-                    'required_trip_type': activity.required_trip_type,
-                    'required_travel_class': activity.required_travel_class,
-                    'required_passengers': activity.required_passengers,
-                    'required_children': activity.required_children,
-                    'required_infants': activity.required_infants,
-                    'require_passenger_details': activity.require_passenger_details,
-                    'score': Decimal('0.0'),
-                    'submitted_at': timezone.now()
-                }
-                
-                # Add airport data to minimal submission too
-                if hasattr(activity, 'required_origin') and activity.required_origin:
-                    try:
-                        origin_airport = Airport.objects.get(code=activity.required_origin)
-                        minimal_submission_data['required_origin_airport'] = origin_airport
-                    except Airport.DoesNotExist:
-                        pass
-                
-                if hasattr(activity, 'required_destination') and activity.required_destination:
-                    try:
-                        destination_airport = Airport.objects.get(code=activity.required_destination)
-                        minimal_submission_data['required_destination_airport'] = destination_airport
-                    except Airport.DoesNotExist:
-                        pass
-                
-                submission = ActivitySubmission.objects.create(**minimal_submission_data)
-                messages.warning(request, f"Activity submitted but scoring failed. Please contact instructor.")
-        
-        # NOW clear the session data after successful submission creation
-        request.session.pop('activity_id', None)
-        request.session.pop('activity_requirements', None)
-        request.session.pop('current_booking_id', None)
-        request.session.modified = True
-        print("🧹 Cleared activity and booking data from session")
-        
-        # Render success page for activity submission
-        return render(request, "booking/payment_success.html", {
-            'booking': booking,
-            'student': student,
-            'activity': activity,
-            'submission': submission if 'submission' in locals() else existing_submission,
-            'is_activity_submission': True
-        })
-        
     except Booking.DoesNotExist:
         print(f"❌ Booking {booking_id} not found")
         messages.error(request, "Booking not found.")
-        return redirect('studentapp:student_home')
-    except Activity.DoesNotExist:
-        print(f"❌ Activity {activity_id} not found")  
-        messages.error(request, "Activity not found.")
         return redirect('studentapp:student_home')
     except Student.DoesNotExist:
         print(f"❌ Student not found")
         messages.error(request, "Student not found.")
         return redirect('bookingapp:login')
     except Exception as e:
-        print(f"❌ Unexpected error in payment_success: {e}")
+        print(f"❌ Unexpected error: {e}")
         import traceback
         traceback.print_exc()
-        messages.error(request, "Error processing submission. Please contact support.")
+        messages.error(request, "Error processing booking.")
         return redirect('studentapp:student_home')
 
 
+
+
 @login_required
+@require_booking_context
 def book_again(request):
     # Clear all booking-related session data but keep student login
     keys_to_clear = [
@@ -2436,6 +2775,7 @@ def book_again(request):
 
 
 @login_required
+@require_booking_context
 def print_booking_info(request):
     # Get selected schedule
     schedule_id = request.session.get('confirm_schedule')
@@ -2583,6 +2923,7 @@ def logout_view(request):
 
 # Add to bookingapp/views.py
 @login_required
+@require_booking_context
 def debug_student_activities(request):
     """Debug view to check student's available activities"""
     student_id = request.session.get('student_id')
@@ -2703,6 +3044,7 @@ def get_booking_details(booking):
 
 
 @login_required
+@require_booking_context
 def save_practice_booking(request):
     """Save a completed practice booking and show success page"""
     booking_id = request.session.get('current_booking_id')
@@ -2761,3 +3103,51 @@ def save_practice_booking(request):
         print(f"Error saving practice booking: {e}")
         messages.error(request, "Error saving practice booking.")
         return redirect('bookingapp:payment_success')
+    
+
+
+# Add to views_booking.py
+def debug_template_tags(request):
+    """Debug view to check template tags"""
+    import os
+    import sys
+    
+    # Check current directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    templatetags_path = os.path.join(current_dir, 'templatetags')
+    
+    info = []
+    info.append(f"Current directory: {current_dir}")
+    info.append(f"Templatetags path: {templatetags_path}")
+    info.append(f"Templatetags exists: {os.path.exists(templatetags_path)}")
+    
+    if os.path.exists(templatetags_path):
+        files = os.listdir(templatetags_path)
+        info.append(f"Files in templatetags: {files}")
+        
+        # Check __init__.py
+        init_path = os.path.join(templatetags_path, '__init__.py')
+        info.append(f"__init__.py exists: {os.path.exists(init_path)}")
+        
+        # Check custom_filters.py
+        filters_path = os.path.join(templatetags_path, 'custom_filters.py')
+        info.append(f"custom_filters.py exists: {os.path.exists(filters_path)}")
+        
+        if os.path.exists(filters_path):
+            with open(filters_path, 'r') as f:
+                content = f.read()
+                info.append(f"custom_filters.py content (first 500 chars):\n{content[:500]}")
+    
+    # Check installed apps
+    from django.conf import settings
+    info.append(f"\nInstalled apps: {settings.INSTALLED_APPS}")
+    
+    # Try to import the template tag
+    try:
+        from bookingapp.templatetags import custom_filters
+        info.append(f"\nSUCCESS: Imported custom_filters module")
+        info.append(f"Available filters: {[f for f in dir(custom_filters) if not f.startswith('_')]}")
+    except ImportError as e:
+        info.append(f"\nERROR importing custom_filters: {e}")
+    
+    return HttpResponse("<pre>" + "\n".join(info) + "</pre>")    

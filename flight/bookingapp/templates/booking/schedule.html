@@ -431,9 +431,9 @@ document.addEventListener('DOMContentLoaded', function() {
             <div>
                 <h1 class="font-medium text-gray-400">Select your departing flight</h1>
                 <div class="flex text-3xl gap-5">
-                    <h1 class="font-semibold">{{ origin.code }} - {{ origin.location }}</h1>
+                    <h1 class="font-semibold">{{ origin.code }} - {{ origin.city }}</h1>
                     <div>-</div>
-                    <h1 class="font-semibold">{{ destination.code }} - {{ destination.location }}</h1>
+                    <h1 class="font-semibold">{{ destination.code }} - {{ destination.city }}</h1>
                 </div>
             </div>
             {% if request.session.depart_schedule_id %}

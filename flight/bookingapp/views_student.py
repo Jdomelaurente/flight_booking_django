@@ -231,38 +231,31 @@ def evaluate_flight_route_compliance(booking, activity):
     
     return max(score, 0.0)  # Ensure score doesn't go below 0
 
-def get_instructor_display_name(instructor_user):
-    """Safely get instructor display name from User object"""
-    if not instructor_user:
+
+def get_instructor_display_name(instructor):
+    """Safely get instructor display name from Instructor object"""
+    if not instructor:
         return "Not assigned"
     
     try:
-        # Check if there's an instructor profile linked
-        if hasattr(instructor_user, 'instructor_profile') and instructor_user.instructor_profile:
-            instructor_profile = instructor_user.instructor_profile
-            
-            # Build the name from Instructor model fields
-            name_parts = []
-            if instructor_profile.first_name:
-                name_parts.append(instructor_profile.first_name)
-            if instructor_profile.middle_initial:
-                name_parts.append(f"{instructor_profile.middle_initial}.")
-            if instructor_profile.last_name:
-                name_parts.append(instructor_profile.last_name)
-            
-            if name_parts:
-                return " ".join(name_parts)
+        # Build the name from Instructor model fields
+        name_parts = []
+        if instructor.first_name:
+            name_parts.append(instructor.first_name)
+        if instructor.middle_initial:
+            name_parts.append(f"{instructor.middle_initial}.")
+        if instructor.last_name:
+            name_parts.append(instructor.last_name)
         
-        # Fall back to User model fields
-        if instructor_user.first_name and instructor_user.last_name:
-            return f"{instructor_user.first_name} {instructor_user.last_name}"
+        if name_parts:
+            return " ".join(name_parts)
         
-        # Final fallback to username
-        return instructor_user.username
+        # Fall back to instructor ID
+        return instructor.instructor_id if instructor.instructor_id else "Instructor"
         
     except Exception as e:
         print(f"Error getting instructor display name: {e}")
-        return instructor_user.username if instructor_user else "Not assigned"
+        return "Instructor"
 
 @login_required
 def student_home(request):
@@ -280,16 +273,15 @@ def student_home(request):
             is_active=True
         ).select_related(
             'section', 
-            'section__instructor',  # This gets the Instructor instance
-            'section__instructor__user'  # This gets the User instance linked to Instructor
+            'section__instructor'  # This gets the Instructor instance directly
         )
 
-        # Rest of your view code remains the same...
+        # Get activities
         activities = Activity.objects.filter(
             section__in=[enrollment.section for enrollment in enrolled_sections],
             is_code_active=True,
             status='published'
-        ).select_related('section', 'section__instructor', 'section__instructor__user')
+        ).select_related('section', 'section__instructor')
         
         submitted_activities = ActivitySubmission.objects.filter(
             student=student,
@@ -479,30 +471,17 @@ def student_activities(request):
         enrolled_sections = SectionEnrollment.objects.filter(
             student=student, 
             is_active=True
-        ).select_related('section', 'section__instructor', 'section__instructor__user')
+        ).select_related('section', 'section__instructor')
         
         # Get all activities from enrolled sections
         all_activities = Activity.objects.filter(
             section__in=[enrollment.section for enrollment in enrolled_sections]
-        ).select_related('section', 'section__instructor', 'section__instructor__user')
+        ).select_related('section', 'section__instructor')
         
         # Get submitted activities
         submitted_activities = ActivitySubmission.objects.filter(
             student=student
         ).select_related('activity', 'booking')
-        
-        # DEBUG PRINT
-        print(f"=== STUDENT ACTIVITIES DEBUG ===")
-        print(f"Student: {student.first_name} {student.last_name}")
-        print(f"Total activities: {all_activities.count()}")
-        print(f"Submitted activities: {submitted_activities.count()}")
-        
-        for submission in submitted_activities:
-            print(f"Submission: {submission.id} - Activity: {submission.activity.title} - Activity ID: {submission.activity.id}")
-        
-        for activity in all_activities:
-            has_submission = submitted_activities.filter(activity=activity).exists()
-            print(f"Activity: {activity.title} (ID: {activity.id}) - Has submission: {has_submission}")
         
         template = loader.get_template('booking/student/activities.html')
         context = {
@@ -510,7 +489,6 @@ def student_activities(request):
             'student': student,
             'submitted_activities': submitted_activities,
             'enrolled_sections': enrolled_sections,
-            
         }
         return HttpResponse(template.render(context, request))
         
@@ -519,6 +497,7 @@ def student_activities(request):
         return redirect('bookingapp:login')
 
 # Add this helper function to get instructor name properly
+# And update the get_instructor_full_name function:
 def get_instructor_full_name(instructor):
     """Get full name from Instructor instance"""
     if not instructor:
@@ -532,7 +511,7 @@ def get_instructor_full_name(instructor):
     if instructor.last_name:
         name_parts.append(instructor.last_name)
     
-    return " ".join(name_parts) if name_parts else instructor.user.username
+    return " ".join(name_parts) if name_parts else f"Instructor {instructor.id}"
 
 
 # Add this import at the top with other imports

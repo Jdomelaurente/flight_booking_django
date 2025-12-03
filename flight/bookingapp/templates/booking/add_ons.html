@@ -1,5 +1,7 @@
 {% extends 'ui_test/base.html' %}
 {% load static %}
+{% load custom_filters %}
+{% load humanize %}
 
 {% block title %}Add-ons{% endblock %}
 
@@ -168,20 +170,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Quick Selection Option -->
-            {% comment %} <div class="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-sm">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="font-semibold text-blue-800">Quick Selection</h3>
-                        <p class="text-xs text-blue-600">Select all add-ons on one page</p>
-                    </div>
-                    <a href="{% url 'bookingapp:quick_addons' %}?airline_id={{ depart_schedule.flight.airline.id }}&schedule_id={{ depart_schedule.id }}&return_schedule_id={{ return_schedule.id|default:'' }}"
-                       class="bg-blue-600 hover:bg-blue-700 cursor-pointer py-2 px-6 text-sm rounded-full text-white transition-colors">
-                        Quick Select
-                    </a>
-                </div>
-            </div> {% endcomment %}
         </div>
 
         <!-- right -->
@@ -190,89 +178,459 @@
             <div class="flex-1 flex-col px-5 py-4 bg-white space-y-3 border-gray-300 rounded-sm flex border">
                 <div class="flex justify-between items-end">
                     <h1 class="text-xl font-semibold">Travel Insurance</h1>
+                    {% if insurance_data.selected_count > 0 %}
+                    <p class="text-xs text-green-500">
+                        {{ insurance_data.selected_count }}/{{ passengers|length }} passenger{% if passengers|length != 1 %}s{% endif %} protected
+                    </p>
+                    {% else %}
                     <p class="text-xs text-red-500">Your trip is not protected</p>
-                </div>
-                <!-- details -->
-                <div class="border w-full bg-[#FFFCF5] flex justify-between px-6 py-4 text-xs gap-8">
-                    <ul class="list-disc space-y-3 ml-4">
-                        <li class="font-medium">Medical expenses</li>
-                        <li class="font-medium">Cancellation expenses</li>
-                        <li class="font-medium">Loss/Damage of Luggage</li>
-                        <li class="font-medium">24/7 Emergency Help</li>
-                        <li class="font-medium">Flight & baggage Delay</li>
-                        <li class="font-medium">Personal Accident</li>
-                    </ul>
-                </div>
-
-                <div class="w-full flex justify-between items-center my-2">
-                    <h1 class="text-2xl font-semibold">₱ 922.00</h1>
-                    <a href="{% url 'bookingapp:insurance_addon' %}?airline_id={{ depart_schedule.flight.airline.id }}&schedule_id={{ depart_schedule.id }}&return_schedule_id={{ return_schedule.id|default:'' }}"
-                       class="py-2 text-sm px-6 bg-[#FFC83D] hover:bg-[#FFC83D]/80 cursor-pointer font-medium text-[#093704] rounded-full transition-colors">
-                        Protect My Trip
-                    </a>
+                    {% endif %}
                 </div>
                 
-                <div class="border-t border-gray-400 pt-2">
-                    <p class="text-gray-400 text-xs text-center">Travel Insurance is underwritten by Alliedbankers Insurance Company</p>
+                <!-- Insurance Selection Form -->
+                <form method="post" action="{% url 'bookingapp:add_ons' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="insurance_selection" value="true">
+                    
+                    <!-- Dynamic Insurance Details -->
+                    <div class="border w-full bg-[#FFFCF5] p-4">
+                        <!-- Insurance Plan Comparison Table with DYNAMIC COVERAGES -->
+                        {% if insurance_data.addons.exists %}
+                        <div class="mb-4">
+                            <h3 class="text-sm font-semibold mb-3">Compare Insurance Plans:</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-xs border-collapse">
+                                    <thead>
+                                        <tr class="bg-gray-100">
+                                            <th class="border p-2 text-left">Plan</th>
+                                            <th class="border p-2 text-left">Price</th>
+                                            <th class="border p-2 text-left">Key Coverages</th>
+                                            <th class="border p-2 text-left">Benefits</th>
+                                            <th class="border p-2 text-left">Best For</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for insurance in insurance_data.addons %}
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="border p-2 font-medium">
+                                                {{ insurance.name }}<br>
+                                                <span class="text-xs text-gray-500">{{ insurance.insurance_plan.plan_type|title }}</span>
+                                            </td>
+                                            <td class="border p-2 font-bold">₱{{ insurance.price|intcomma }}</td>
+                                            <td class="border p-2">
+                                                {% if insurance.insurance_plan.coverages_list %}
+                                                <ul class="space-y-1">
+                                                    {% for coverage in insurance.insurance_plan.coverages_list|slice:":3" %}
+                                                    <li class="flex items-start">
+                                                        {% if coverage.icon_class %}
+                                                        <i class="{{ coverage.icon_class }} text-gray-500 mr-1 mt-0.5 text-xs"></i>
+                                                        {% endif %}
+                                                        <span class="text-xs">
+                                                            <strong>{{ coverage.name }}:</strong>
+                                                            {% if coverage.unit %}
+                                                                ₱{{ coverage.amount|intcomma }} {{ coverage.unit }}
+                                                            {% else %}
+                                                                ₱{{ coverage.amount|intcomma }}
+                                                            {% endif %}
+                                                        </span>
+                                                    </li>
+                                                    {% endfor %}
+                                                    {% if insurance.insurance_plan.coverages_list|length > 3 %}
+                                                    <li class="text-xs text-blue-600">+ {{ insurance.insurance_plan.coverages_list|length|add:"-3" }} more coverages</li>
+                                                    {% endif %}
+                                                </ul>
+                                                {% else %}
+                                                <span class="text-xs text-gray-500">No coverages defined</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="border p-2">
+                                                {% if insurance.insurance_plan.benefits.all %}
+                                                <ul class="list-disc pl-4 space-y-1 text-xs">
+                                                    {% for benefit in insurance.insurance_plan.benefits.all|slice:":3" %}
+                                                    <li>{{ benefit.name }}</li>
+                                                    {% endfor %}
+                                                </ul>
+                                                {% endif %}
+                                            </td>
+                                            <td class="border p-2 text-xs">
+                                                {{ insurance.insurance_plan.best_for|default:"All travelers" }}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Why Get Travel Insurance? -->
+                        <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
+                            <h4 class="text-sm font-semibold text-blue-800 mb-2">Why Get Travel Insurance?</h4>
+                            <div class="text-xs text-blue-700 space-y-1">
+                                <div class="flex items-start">
+                                    <svg class="w-4 h-4 text-blue-600 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span><strong>Medical Emergencies:</strong> Covers hospitalization and medical treatment abroad</span>
+                                </div>
+                                <div class="flex items-start">
+                                    <svg class="w-4 h-4 text-blue-600 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span><strong>Trip Cancellation:</strong> Get refund if you need to cancel due to illness or emergency</span>
+                                </div>
+                                <div class="flex items-start">
+                                    <svg class="w-4 h-4 text-blue-600 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span><strong>Baggage Protection:</strong> Covers lost, stolen, or delayed luggage</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Insurance Selection for Each Passenger with DYNAMIC COVERAGES -->
+                        {% if insurance_data.addons.exists %}
+                        <div class="mt-4 pt-4 border-t border-gray-300">
+                            <h3 class="text-sm font-semibold mb-3">Select Insurance for Each Passenger:</h3>
+                            <div class="space-y-4">
+                                {% for passenger in passengers %}
+                                <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <div>
+                                            <span class="font-medium">{{ passenger.first_name }} {{ passenger.last_name }}</span>
+                                            <span class="text-xs text-gray-500 ml-2">({{ passenger.passenger_type }})</span>
+                                        </div>
+                                        {% with passenger_id=passenger.id|stringformat:"s" %}
+                                            {% if passenger_has_insurance.passenger_id %}
+                                                <span class="text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full font-medium">
+                                                    Insured
+                                                </span>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </div>
+                                    
+                                    <div class="space-y-3">
+                                        <!-- No Insurance Option -->
+                                        <div class="flex items-center p-3 border rounded hover:bg-gray-50 transition-colors">
+                                            {% with passenger_id=passenger.id|stringformat:"s" %}
+                                                {% with passenger_addons=selected_addons|get_item:passenger_id %}
+                                                    {% with has_insurance=False %}
+                                                        {% if passenger_addons %}
+                                                            {% for addon_id in passenger_addons %}
+                                                                {% for insurance in insurance_data.addons %}
+                                                                    {% if insurance.id == addon_id or insurance.id|stringformat:"s" == addon_id|stringformat:"s" %}
+                                                                        {% with has_insurance=True %}{% endwith %}
+                                                                    {% endif %}
+                                                                {% endfor %}
+                                                            {% endfor %}
+                                                        {% endif %}
+                                                        <input type="radio" 
+                                                               id="insurance_none_{{ passenger.id }}"
+                                                               name="insurance_{{ passenger.id }}"
+                                                               value="none"
+                                                               class="h-5 w-5 text-blue-600"
+                                                               {% if not has_insurance %}checked{% endif %}>
+                                                    {% endwith %}
+                                                {% endwith %}
+                                            {% endwith %}
+                                            <div class="ml-3">
+                                                <label for="insurance_none_{{ passenger.id }}" class="font-medium text-sm cursor-pointer">
+                                                    No Insurance
+                                                </label>
+                                                <p class="text-xs text-gray-500 mt-0.5">₱0.00 (No coverage protection)</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Dynamic Insurance Options with Coverages -->
+                                        {% for insurance in insurance_data.addons %}
+                                        <div class="p-4 border rounded-lg hover:border-blue-400 transition-colors">
+                                            <div class="flex items-start">
+                                                <div class="flex items-center h-5 mt-1">
+                                                    {% with passenger_id=passenger.id|stringformat:"s" %}
+                                                        {% with passenger_addons=selected_addons|get_item:passenger_id %}
+                                                            {% with is_checked=False %}
+                                                                {% if passenger_addons %}
+                                                                    {% for addon_id in passenger_addons %}
+                                                                        {% if insurance.id == addon_id or insurance.id|stringformat:"s" == addon_id|stringformat:"s" %}
+                                                                            {% with is_checked=True %}{% endwith %}
+                                                                        {% endif %}
+                                                                    {% endfor %}
+                                                                {% endif %}
+                                                                <input type="radio" 
+                                                                       id="insurance_{{ passenger.id }}_{{ insurance.id }}"
+                                                                       name="insurance_{{ passenger.id }}"
+                                                                       value="{{ insurance.id }}"
+                                                                       class="h-5 w-5 text-blue-600"
+                                                                       {% if is_checked %}checked{% endif %}>
+                                                            {% endwith %}
+                                                        {% endwith %}
+                                                    {% endwith %}
+                                                </div>
+                                                <div class="ml-3 flex-1">
+                                                    <div class="flex justify-between items-start">
+                                                        <div class="flex-1">
+                                                            <label for="insurance_{{ passenger.id }}_{{ insurance.id }}" class="font-medium text-sm cursor-pointer">
+                                                                {{ insurance.name }} 
+                                                                <span class="text-blue-600 text-xs ml-1">({{ insurance.insurance_plan.plan_type|title }})</span>
+                                                            </label>
+                                                            {% if insurance.insurance_plan.description %}
+                                                            <p class="text-xs text-gray-600 mt-1">{{ insurance.insurance_plan.description }}</p>
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="text-right ml-4">
+                                                            <span class="font-bold text-lg">₱{{ insurance.price|intcomma }}</span><br>
+                                                            <span class="text-xs text-gray-500">per passenger</span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Dynamic Coverages Grid -->
+                                                    {% if insurance.insurance_plan.coverages_list %}
+                                                    <div class="mt-3">
+                                                        <p class="text-xs font-medium text-gray-700 mb-2">Coverage Includes:</p>
+                                                        <div class="grid grid-cols-2 gap-2">
+                                                            {% for coverage in insurance.insurance_plan.coverages_list %}
+                                                            <div class="flex items-center p-2 bg-gray-50 rounded border border-gray-200">
+                                                                {% if coverage.icon_class %}
+                                                                <i class="{{ coverage.icon_class }} text-gray-500 mr-2 text-sm"></i>
+                                                                {% endif %}
+                                                                <div class="flex-1">
+                                                                    <div class="font-medium text-xs">{{ coverage.name }}</div>
+                                                                    <div class="text-blue-600 font-bold text-xs">
+                                                                        {% if coverage.unit %}
+                                                                            ₱{{ coverage.amount|intcomma }} {{ coverage.unit }}
+                                                                        {% else %}
+                                                                            ₱{{ coverage.amount|intcomma }}
+                                                                        {% endif %}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    {% endif %}
+                                                    
+                                                    <!-- Plan Benefits -->
+                                                    {% if insurance.insurance_plan.benefits.all %}
+                                                    <div class="mt-3">
+                                                        <p class="text-xs font-medium text-gray-700 mb-1">Additional Benefits:</p>
+                                                        <div class="flex flex-wrap gap-1">
+                                                            {% for benefit in insurance.insurance_plan.benefits.all %}
+                                                            <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                                                {{ benefit.name }}
+                                                            </span>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    {% endif %}
+                                                    
+                                                    <!-- Plan Details -->
+                                                    <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
+                                                        {% if insurance.insurance_plan.best_for %}
+                                                        <div>
+                                                            <span class="font-medium">Best for:</span>
+                                                            <span class="text-gray-600 ml-1">{{ insurance.insurance_plan.best_for }}</span>
+                                                        </div>
+                                                        {% endif %}
+                                                        
+                                                        {% if insurance.insurance_plan.underwriter %}
+                                                        <div>
+                                                            <span class="font-medium">Underwriter:</span>
+                                                            <span class="text-gray-600 ml-1">{{ insurance.insurance_plan.underwriter }}</span>
+                                                        </div>
+                                                        {% endif %}
+                                                        
+                                                        {% if insurance.insurance_plan.coverage_duration_days %}
+                                                        <div class="col-span-2">
+                                                            <span class="font-medium">Coverage Duration:</span>
+                                                            <span class="text-gray-600 ml-1">{{ insurance.insurance_plan.coverage_duration_days }} days</span>
+                                                        </div>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="mt-6 flex justify-end">
+                                <button type="submit" 
+                                        class="px-6 py-2.5 bg-[#093704] text-white text-sm font-medium rounded-full hover:bg-[#093704]/90 transition-colors shadow-sm">
+                                    Update Insurance Selections
+                                </button>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </form>
+
+                <!-- Insurance Summary -->
+                <div class="w-full flex justify-between items-center my-4">
+                    <div>
+                        <h1 class="text-2xl font-semibold">
+                            {% if insurance_data and insurance_data.lowest_price %}
+                                From ₱{{ insurance_data.lowest_price|intcomma }}
+                            {% else %}
+                                ₱500.00
+                            {% endif %}
+                        </h1>
+                        <p class="text-xs text-gray-500">per passenger</p>
+                    </div>
+                    
+                    {% if insurance_data and insurance_data.total_cost > 0 %}
+                    <div class="text-right">
+                        <p class="text-sm font-medium text-gray-700">Currently selected:</p>
+                        <p class="text-xl font-bold text-green-600">₱{{ insurance_data.total_cost|intcomma }}</p>
+                        <p class="text-xs text-gray-500">
+                            {{ insurance_data.selected_count }} passenger{% if insurance_data.selected_count != 1 %}s{% endif %} protected
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Selected Insurance Details -->
+                {% if insurance_data and insurance_data.selected_details %}
+                <div class="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <h3 class="text-sm font-semibold text-green-800 mb-3 flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        Selected Insurance Plans
+                    </h3>
+                    <div class="space-y-3">
+                        {% for detail in insurance_data.selected_details %}
+                        <div class="bg-white p-3 rounded border border-green-100">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-medium text-sm">{{ detail.passenger_name }}</p>
+                                    <p class="text-xs text-gray-600">{{ detail.plan_name }} ({{ detail.plan_type|title }})</p>
+                                </div>
+                                <span class="font-bold text-green-700">₱{{ detail.price|intcomma }}</span>
+                            </div>
+                            {% if detail.coverages %}
+                            <div class="mt-2">
+                                <p class="text-xs font-medium text-gray-700">Coverages:</p>
+                                <div class="flex flex-wrap gap-1 mt-1">
+                                    {% for coverage in detail.coverages|slice:":3" %}
+                                    <span class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100">
+                                        {{ coverage }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Value Proposition -->
+                <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p class="text-xs text-yellow-800 text-center font-medium">
+                        ✈️ Peace of Mind: For less than the cost of a meal, protect your entire trip from unexpected emergencies.
+                    </p>
+                </div>
+                
+                <!-- Underwriter Info -->
+                <div class="border-t border-gray-300 pt-3">
+                    <p class="text-gray-500 text-xs text-center">
+                        {% if insurance_data.addons.first.insurance_plan.underwriter %}
+                            Travel Insurance is underwritten by {{ insurance_data.addons.first.insurance_plan.underwriter }}
+                        {% else %}
+                            Travel Insurance is underwritten by Alliedbankers Insurance Company
+                        {% endif %}
+                    </p>
                 </div>
             </div>
 
             <!-- Selected Add-ons Summary -->
             {% if selected_addons %}
-            <div class="bg-green-50 border border-green-200 rounded-sm p-4">
-                <h3 class="font-semibold text-green-800 mb-2">Selected Add-ons</h3>
-                <div class="text-sm text-green-700 space-y-1">
-                    {% for passenger_id, addon_list in selected_addons.items %}
-                    {% if addon_list %}
-                    <div class="flex justify-between">
-                        <span>Passenger {{ forloop.counter }}:</span>
-                        <span>{{ addon_list|length }} add-on(s)</span>
-                    </div>
-                    {% endif %}
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h3 class="font-semibold text-green-800 mb-3 flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                    Selected Add-ons
+                </h3>
+                <div class="text-sm text-green-700 space-y-2">
+                    {% for passenger in passengers %}
+                        {% with passenger_id=passenger.id|stringformat:"s" %}
+                            {% with addon_list=selected_addons|get_item:passenger_id %}
+                                {% if addon_list %}
+                                <div class="flex justify-between items-center bg-white p-2 rounded border border-green-100">
+                                    <div>
+                                        <span class="font-medium">{{ passenger.first_name }} {{ passenger.last_name }}</span>
+                                        <span class="text-xs text-gray-500 ml-2">({{ passenger.passenger_type }})</span>
+                                    </div>
+                                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                                        {{ addon_list|length }} add-on{% if addon_list|length != 1 %}s{% endif %}
+                                    </span>
+                                </div>
+                                {% endif %}
+                            {% endwith %}
+                        {% endwith %}
                     {% endfor %}
                 </div>
             </div>
             {% endif %}
 
             <!-- Flight Information -->
-            <div class="bg-gray-50 border border-gray-200 rounded-sm p-4">
-                <h3 class="font-semibold text-gray-800 mb-2">Flight Details</h3>
-                <div class="text-sm text-gray-600 space-y-1">
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-800 mb-3 flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 4h3a3 3 0 006 0h3a2 2 0 012 2v9a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm2.5 7a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm2.45 4a2.5 2.5 0 10-4.9 0h4.9zM12 9a1 1 0 100 2h3a1 1 0 100-2h-3zm-1 4a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    Flight Details
+                </h3>
+                <div class="text-sm text-gray-600 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span>Departure Flight:</span>
+                        <span class="font-medium">{{ depart_schedule.flight.flight_number }}</span>
+                    </div>
                     <div class="flex justify-between">
-                        <span>Departure:</span>
+                        <span>Route:</span>
                         <span class="font-medium">{{ depart_schedule.flight.route.origin_airport.code }} → {{ depart_schedule.flight.route.destination_airport.code }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span>Date:</span>
-                        <span>{{ depart_schedule.departure_time|date:"M d, Y" }}</span>
+                        <span>Departure:</span>
+                        <span>{{ depart_schedule.departure_time|date:"M d, Y H:i" }}</span>
                     </div>
                     {% if return_schedule %}
-                    <div class="flex justify-between">
-                        <span>Return:</span>
-                        <span class="font-medium">{{ return_schedule.flight.route.origin_airport.code }} → {{ return_schedule.flight.route.destination_airport.code }}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>Date:</span>
-                        <span>{{ return_schedule.departure_time|date:"M d, Y" }}</span>
+                    <div class="border-t border-gray-300 pt-2 mt-2">
+                        <div class="flex justify-between items-center">
+                            <span>Return Flight:</span>
+                            <span class="font-medium">{{ return_schedule.flight.flight_number }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Route:</span>
+                            <span class="font-medium">{{ return_schedule.flight.route.origin_airport.code }} → {{ return_schedule.flight.route.destination_airport.code }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Departure:</span>
+                            <span>{{ return_schedule.departure_time|date:"M d, Y H:i" }}</span>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
             </div>
 
             <!-- Navigation Buttons -->
-            <div class="w-full flex gap-3 mt-4">
+            <div class="w-full flex gap-3 mt-6">
                 <a href="{% url 'bookingapp:passenger_information' %}"
-                class="flex-1 py-3 bg-white hover:bg-gray-100 cursor-pointer rounded-sm border border-gray-500 text-center font-medium transition-colors">
+                class="flex-1 py-3 bg-white hover:bg-gray-100 cursor-pointer rounded-lg border border-gray-400 text-center font-medium transition-colors">
                     Back
                 </a>
                 <a href="{% url 'bookingapp:select_seat' %}?skip_addons=true"
-                class="flex-1 py-3 bg-gray-500 hover:bg-gray-600 cursor-pointer rounded-sm text-white text-center font-medium transition-colors">
+                class="flex-1 py-3 bg-gray-600 hover:bg-gray-700 cursor-pointer rounded-lg text-white text-center font-medium transition-colors">
                     Skip Add-ons
                 </a>
-                <button type="submit"
-                        class="flex-1 py-3 rounded-sm bg-[#093704] hover:bg-[#093704]/80 cursor-pointer text-[#FFC83D] text-center font-medium transition-colors">
+                <a href="{% url 'bookingapp:select_seat' %}" 
+                   class="flex-1 py-3 rounded-lg bg-[#093704] hover:bg-[#093704]/90 cursor-pointer text-[#FFC83D] text-center font-medium transition-colors shadow-sm">
                     Save Add-ons & Continue
-                </button>
+                </a>
             </div>
         </div>
     </div>

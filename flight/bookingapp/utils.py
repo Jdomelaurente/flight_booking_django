@@ -3,6 +3,7 @@ from functools import wraps
 from decimal import Decimal
 from django.utils import timezone
 from flightapp.models import Airport
+from django.contrib import messages
 
 def login_required(view_func):
     @wraps(view_func)
@@ -20,6 +21,19 @@ def redirect_if_logged_in(view_func):
         return view_func(request, *args, **kwargs)
     return wrapper
 
+def require_booking_context(view_func):
+    """Decorator to require activity or practice context for booking"""
+    def wrapper(request, *args, **kwargs):
+        # Check if user has booking context
+        has_activity = 'activity_id' in request.session
+        has_practice = request.session.get('is_practice_booking', False)
+        
+        if not (has_activity or has_practice):
+            messages.error(request, "Please start an activity or visit practice booking.")
+            return redirect('studentapp:student_home')
+        
+        return view_func(request, *args, **kwargs)
+    return wrapper
 
 def calculate_activity_score(booking, activity):
     """

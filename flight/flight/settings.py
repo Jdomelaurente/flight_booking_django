@@ -1,6 +1,9 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+# Add to settings.py
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -25,8 +28,12 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880 
+
 # Application definition
 INSTALLED_APPS = [
+    'django.contrib.humanize',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -87,6 +94,8 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+
+
 # Internationalization
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Asia/Manila"
@@ -100,5 +109,5 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 STATICFILES_DIRS = [
-    BASE_DIR / "static",   # <--- this is your project-level static folder
+    BASE_DIR / "static",  
 ]

@@ -1,5 +1,6 @@
 {% extends 'instructorapp/base.html' %}
-{% load dict_filters %}
+{% load dict_filters %}  <!-- Remove this if it doesn't exist -->
+{% load custom_filters %}  <!-- ADD THIS LINE -->
 {% block title %}Edit Activity - {{ activity.title }}{% endblock %}
 
 {% block content %}
