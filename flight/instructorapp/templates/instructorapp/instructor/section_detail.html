@@ -1,0 +1,977 @@
+{% extends 'instructorapp/base.html' %}
+{% block title %}{{ section.section_name }}{% endblock %}
+
+{% block content %}
+
+
+
+
+<div class="flex flex-1 h-[80vh]  py-10 flex-col">
+    <div class="flex-1 max-h-[138px] mx-30 rounded-lg flex items-start flex-col justify-center bg-[#093704] h-[140px] py-10 p-5">
+        <h1 class="text-4xl text-[#FFC83D] font-semibold">{{ section.section_name }}</h1>
+        <p class="text-[#FFC83D] text-lg">{{ section.section_code }} • {{ section.semester }} Semester • {{ section.academic_year }}</p>
+        {% if section.schedule %}
+        <p class="text-[#FFC83D] text-sm mt-1">{{ section.schedule }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Display Messages -->
+    {% if messages %}
+    <div class="mx-30 mt-4 space-y-2">
+        {% for message in messages %}
+        <div class="p-3 text-sm rounded-md {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="flex-1 flex flex-col mx-35 mt-10">
+        <div class="flex justify-between items-center">
+            <div class="text-xs  space-x-10 font-medium">
+                <a href="#" class="text-[#093704] border-b-2 border-[#093704] pb-1">Activity</a>
+                <a href="{% url 'item_analysis'  %}" class="text-gray-600 hover:text-[#093704]">
+                    Item Analysis
+                </a>
+                <a href="#" class="text-gray-600 hover:text-[#093704]">People</a>
+                <a href="#" class="text-gray-600 hover:text-[#093704]">Settings</a>
+            </div>
+            <div class="flex gap-5">
+                <button onclick="openStudentModal()" class="text-sm bg-[#FFC83D] hover:bg-[#FFC83D]/80 px-5 py-2 cursor-pointer rounded-sm text-gray-800">Add Student</button>
+                <button onclick="openActivityModal()" class="text-sm bg-[#093704] hover:bg-[#093704]/80 px-5 py-2 cursor-pointer rounded-sm text-white">Add Task</button>
+            </div>
+        </div>
+
+        <!-- Section Description -->
+        {% if section.description %}
+        <div class="mx-10 mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <h3 class="text-sm font-semibold text-gray-700 mb-2">Description</h3>
+            <p class="text-sm text-gray-600">{{ section.description }}</p>
+        </div>
+        {% endif %}
+        
+        <!-- Activities Section -->
+        <div class="flex-1 flex flex-col px-20 py-13 space-y-5">
+            {% if activities %}
+                {% for activity in activities %}
+                <!-- Activity Card -->
+                <div class="border border-gray-400 rounded-md p-10 space-y-3 hover:bg-gray-200 cursor-pointer transition-colors">
+                    <div class="flex justify-between">
+                        <div class="flex gap-10">
+                            <div class="w-10 h-10 rounded-full bg-[#093704] flex items-center justify-center">
+                                <span class="text-white text-xs font-semibold">
+                                    {{ activity.activity_type|slice:":1"|upper }}
+                                </span>
+                            </div>
+                            <div class="flex flex-col">
+                                <h1 class="text-lg font-semibold text-gray-800">{{ activity.title }}</h1>
+                                <p class="text-xs text-gray-700">Due: {{ activity.due_date|date:"F j, Y" }}</p>
+                                <div class="flex gap-2 mt-1">
+                                    <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                                        {{ activity.activity_type }}
+                                    </span>
+                                    {% if activity.is_code_active %}
+                                    <span class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">Active</span>
+                                    {% else %}
+                                    <span class="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded-full">Draft</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Three dots menu -->
+                        <div class="flex flex-col gap-1" onclick="toggleActivityMenu('menu-{{ activity.id }}', event)">
+
+                            <p class="w-[7px] h-[7px] rounded-full bg-[#093704]"></p>
+                            <p class="w-[7px] h-[7px] rounded-full bg-[#093704]"></p>
+                            <p class="w-[7px] h-[7px] rounded-full bg-[#093704]"></p>
+                        </div>
+
+                        <!-- Activity Dropdown Menu -->
+                        <div id="menu-{{ activity.id }}" class="hidden absolute right-20 mt-8 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                            <div class="py-1">
+                                <a href="{% url 'activity_detail' activity.id %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">View Activity</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Item Analysis</a>
+                                {% if not activity.is_code_active %}
+                                <form method="POST" action="{% url 'activate_activity' activity.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Activate Code</button>
+                                </form>
+                                {% else %}
+                                <a href="{% url 'activity_submissions' activity.id %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">View Submissions</a>
+                                {% endif %}
+                                <a href="{% url 'edit_activity' activity.id %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Edit Activity</a>
+                                <a href="#" data-activity-id="{{ activity.id }}" class="delete-activity block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="w-full border border-gray-300"></div>
+
+                    <!-- Updated activity details display -->
+                    <div class="space-y-2">
+                        <p class="text-sm tracking-wide text-justify">{{ activity.instructions|truncatewords:30 }}</p>
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>Points: {{ activity.total_points }}</span>
+                            <span>Trip Type: {{ activity.required_trip_type|title }}</span>
+                            <span>Class: {{ activity.required_travel_class|title }}</span>
+                        </div>
+                        {% if activity.get_total_passengers > 0 %}
+                        <div class="text-xs text-gray-500">
+                            Passengers: {{ activity.required_passengers }} Adult(s), 
+                            {{ activity.required_children }} Child(ren), 
+                            {{ activity.required_infants }} Infant(s)
+                        </div>
+                        {% endif %}
+                        {% if activity.require_passenger_details %}
+                        <div class="text-xs text-blue-600">
+                            ✓ Passenger details required (Name, Gender, DOB, Nationality)
+                            {% if activity.require_passport %}
+                            <span class="text-red-600">• Passport required for all passengers</span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        {% if activity.required_max_price %}
+                        <div class="text-xs text-gray-500">
+                            Maximum Price: ${{ activity.required_max_price }}
+                        </div>
+                        {% endif %}
+                        <!-- Display add-on requirements if any -->
+                        {% if activity.required_addons.exists %}
+                        <div class="text-xs text-purple-600">
+                            ✓ Add-ons required: 
+                            {% for addon_req in activity.required_addons.all %}
+                                {{ addon_req.addon.name }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
+                <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#093704" viewBox="0 0 24 24">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium text-gray-600 mb-2">No activities yet</h3>
+                <p class="text-sm text-gray-500 mb-4">Create your first activity to get started with this section</p>
+                <button onclick="openActivityModal()" class="bg-[#093704] hover:bg-[#093704]/80 text-white px-4 py-2 rounded-md text-sm">Create First Activity</button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add Student Modal -->
+<div id="studentModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+        <div class="bg-[#093704] rounded-t-lg px-6 py-4 flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-[#FFC83D]">Enroll Student</h2>
+            <button onclick="closeStudentModal()" class="text-[#FFC83D] hover:text-yellow-300 text-2xl">
+                &times;
+            </button>
+        </div>
+        
+        <div class="p-6">
+            <form method="POST">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Student Number *</label>
+                        <input type="text" name="student_number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]" placeholder="Enter student number" required>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-200">
+                    <button type="button" onclick="closeStudentModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" name="enroll_student" class="bg-[#093704] hover:bg-[#093704]/80 text-white px-6 py-2 rounded-md transition-colors">
+                        Enroll Student
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Activity Modal -->
+<div id="activityModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="bg-[#093704] rounded-t-lg px-6 py-4 flex justify-between items-center sticky top-0">
+            <h2 class="text-xl font-semibold text-[#FFC83D]">Create New Activity for {{ section.section_code }}</h2>
+            <button onclick="closeActivityModal()" class="text-[#FFC83D] hover:text-yellow-300 text-2xl">
+                &times;
+            </button>
+        </div>
+        
+        <div class="p-6">
+            <form method="POST" action="{% url 'create_activity' section.id %}">
+                {% csrf_token %}
+                <div class="space-y-6">
+                    <!-- Basic Activity Information -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Activity Title *</label>
+                            <input type="text" name="title" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Activity Type *</label>
+                            <input type="text" name="activity_type" value="Flight Booking" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]"
+                                placeholder="e.g., Flight Booking, Seat Selection, Payment Processing">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Instructions *</label>
+                            <textarea name="instructions" required rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Due Date *</label>
+                            <input type="datetime-local" name="due_date" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Total Points</label>
+                            <input type="number" name="total_points" value="100" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                        </div>
+                    </div>
+
+                    <!-- Flight Requirements Section -->
+                    <div class="border-t border-gray-200 pt-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Flight Requirements</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Trip Type *</label>
+                                <select name="required_trip_type" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                    <option value="one_way">One Way</option>
+                                    <option value="round_trip">Round Trip</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Travel Class *</label>
+                                <select name="required_travel_class" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                    <option value="economy">Economy</option>
+                                    <option value="premium_economy">Premium Economy</option>
+                                    <option value="business">Business</option>
+                                    <option value="first">First Class</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Origin Airport *</label>
+                                <select name="required_origin" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                    <option value="">Select Origin Airport</option>
+                                    {% for airport in airports %}
+                                    <option value="{{ airport.code }}">{{ airport.code }} - {{ airport.name }} ({{ airport.location }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Destination Airport *</label>
+                                <select name="required_destination" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                    <option value="">Select Destination Airport</option>
+                                    {% for airport in airports %}
+                                    <option value="{{ airport.code }}">{{ airport.code }} - {{ airport.name }} ({{ airport.location }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Departure Date</label>
+                                <input type="date" name="required_departure_date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                            </div>
+                            <div id="return-date-field" class="hidden">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Return Date</label>
+                                <input type="date" name="required_return_date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Max Price ($)</label>
+                                <input type="number" name="required_max_price" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Time Limit (minutes)</label>
+                                <input type="number" name="time_limit_minutes" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]" placeholder="Optional time limit">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Passenger Requirements Section -->
+                    <div class="border-t border-gray-200 pt-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Passenger Requirements</h3>
+                        
+                        <!-- Passenger Counts -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Adults (12+ years) *</label>
+                                <input type="number" name="required_passengers" id="adultsCount" value="1" min="1" max="9" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]" onchange="updatePassengerForms()">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Children (2-11 years)</label>
+                                <input type="number" name="required_children" id="childrenCount" value="0" min="0" max="8" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]" onchange="updatePassengerForms()">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Infants (Under 2 years)</label>
+                                <input type="number" name="required_infants" id="infantsCount" value="0" min="0" max="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]" onchange="updatePassengerForms()">
+                                <p class="text-xs text-gray-500 mt-1">Note: Infants must be accompanied by adults</p>
+                            </div>
+                        </div>
+
+                        <!-- NEW: Passport Requirement Checkbox -->
+                        <div class="mb-4">
+                            <div class="flex items-center">
+                                <input type="checkbox" name="require_passport" id="requirePassport" 
+                                       class="mr-2 rounded border-gray-300 text-[#093704] focus:ring-[#093704]">
+                                <label class="text-md font-semibold text-gray-700">Require Passport Information for ALL Passengers</label>
+                            </div>
+                            <p class="text-sm text-gray-600 ml-6 mt-1">
+                                Students must provide passport numbers for every passenger in the booking
+                            </p>
+                        </div>
+
+                        <!-- Passenger Details Requirements - DYNAMIC FORMS -->
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <div class="flex items-center mb-3">
+                                <input type="checkbox" name="require_passenger_details" id="requirePassengerDetails" checked class="mr-2 rounded border-gray-300 text-[#093704] focus:ring-[#093704]" onchange="togglePassengerForms()">
+                                <label class="text-md font-semibold text-gray-700">Require Passenger Details</label>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-4">Students must provide the following details for each passenger:</p>
+                            
+                            <!-- Passenger Information Input Fields -->
+                            <div id="passengerFields" class="space-y-4">
+                                <!-- Forms will be generated dynamically here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add Add-ons Section -->
+                    <div class="border-t border-gray-200 pt-4">
+                        <div class="mb-6">
+                            <div class="flex items-center mb-4">
+                                <input type="checkbox" name="require_addons" id="require_addons" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                <label for="require_addons" class="ml-2 block text-sm font-medium text-gray-700">
+                                    Enable Add-ons for Passengers
+                                </label>
+                            </div>
+
+                            <!-- Add-ons Selection (initially hidden) -->
+                            <div id="addons-section" class="hidden mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                <h4 class="text-sm font-medium text-gray-900 mb-3">Passenger Add-ons</h4>
+                                
+                                <!-- Info message -->
+                                <div class="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
+                                    <p class="text-sm text-blue-700">
+                                        <strong>How it works:</strong> When you enable passenger details and add-ons, each passenger will get their own add-on section below. 
+                                        You can select different add-ons for each passenger individually.
+                                    </p>
+                                </div>
+                                
+                                <!-- Hidden template for add-ons -->
+                                <div id="original-addons-list" class="hidden">
+                                    {% for addon in addons %}
+                                    <div class="flex items-start p-3 bg-white rounded border border-gray-200">
+                                        <input type="checkbox" name="selected_addons[]" value="{{ addon.id }}" 
+                                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1">
+                                        
+                                        <div class="ml-3 flex-1">
+                                            <div class="flex justify-between items-start">
+                                                <div>
+                                                    <label class="text-sm font-medium text-gray-700">
+                                                        {{ addon.name }}
+                                                        {% if addon.airline %}
+                                                        <span class="text-xs text-gray-500">({{ addon.airline.code }})</span>
+                                                        {% endif %}
+                                                    </label>
+                                                    {% if addon.type %}
+                                                    <p class="text-xs text-gray-500">{{ addon.type.name }}</p>
+                                                    {% endif %}
+                                                    <p class="text-xs text-gray-600">{{ addon.description|default:"" }}</p>
+                                                </div>
+                                                <span class="text-sm font-semibold text-green-600">₱{{ addon.price }}</span>
+                                            </div>
+                                            
+                                            <!-- Add-on requirements (shown when selected) -->
+                                            <div class="mt-2 space-y-2 addon-requirements hidden">
+                                                <div class="flex items-center space-x-4">
+                                                    <div class="flex items-center">
+                                                        <input type="checkbox" name="addon_required_{{ addon.id }}" 
+                                                               class="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                                        <label class="ml-1 text-xs text-gray-600">
+                                                            Required for this passenger
+                                                        </label>
+                                                    </div>
+                                                    
+                                                    <div class="flex items-center">
+                                                        <label class="text-xs text-gray-600 mr-2">Quantity:</label>
+                                                        <input type="number" name="addon_quantity_{{ addon.id }}" 
+                                                               value="1" min="1" max="10"
+                                                               class="w-16 px-2 py-1 text-xs border border-gray-300 rounded">
+                                                    </div>
+                                                </div>
+                                                
+                                                <div>
+                                                    <label class="text-xs text-gray-600 block mb-1">Notes (optional):</label>
+                                                    <textarea name="addon_notes_{{ addon.id }}" 
+                                                              rows="2"
+                                                              class="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                                              placeholder="Special instructions for this add-on..."></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <!-- Passenger-specific add-on sections will be dynamically inserted here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Details -->
+                    <div class="border-t border-gray-200 pt-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Activity Description (Optional)</label>
+                            <textarea name="description" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]" placeholder="Additional details about the activity..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-200">
+                    <button type="button" onclick="closeActivityModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-[#093704] hover:bg-[#093704]/80 text-white px-6 py-2 rounded-md transition-colors">
+                        Create Activity
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Activity Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+        <div class="bg-red-500 rounded-t-lg px-6 py-4 flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-white">Delete Activity</h2>
+            <button onclick="closeDeleteModal()" class="text-white hover:text-gray-200 text-2xl">
+                &times;
+            </button>
+        </div>
+        
+        <div class="p-6">
+            <div class="flex items-center justify-center mb-4">
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-red-600 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="text-center mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Are you sure you want to delete this activity?</h3>
+                <p class="text-gray-600 mb-4">This action cannot be undone.</p>
+                
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-left">
+                    <h4 class="font-semibold text-yellow-800 mb-2">Activity Details:</h4>
+                    <p class="text-sm text-yellow-700"><strong>Title:</strong> <span id="deleteActivityTitle"></span></p>
+                    <p class="text-sm text-yellow-700"><strong>Section:</strong> <span id="deleteActivitySection"></span></p>
+                    <p class="text-sm text-yellow-700"><strong>Type:</strong> <span id="deleteActivityType"></span></p>
+                    <p class="text-sm text-yellow-700"><strong>Due Date:</strong> <span id="deleteActivityDueDate"></span></p>
+                    <div id="deleteActivityWarning" class="hidden">
+                        <p class="text-sm text-red-600 font-semibold mt-2">
+                            ⚠️ This activity has <span id="deleteSubmissionsCount"></span> submission(s) that will also be deleted.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <form id="deleteActivityForm" method="POST">
+                {% csrf_token %}
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeDeleteModal()" 
+                        class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 cursor-pointer transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                        class="bg-red-500 hover:bg-red-700 cursor-pointer text-white px-6 py-2 rounded-md transition-colors">
+                        Delete Activity
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openStudentModal() {
+        document.getElementById('studentModal').classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeStudentModal() {
+        document.getElementById('studentModal').classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    function openActivityModal() {
+        document.getElementById('activityModal').classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+        
+        // Initialize passenger forms
+        updatePassengerForms();
+        
+        // Initialize passport requirement listener
+        const requirePassportCheckbox = document.getElementById('requirePassport');
+        if (requirePassportCheckbox) {
+            requirePassportCheckbox.addEventListener('change', togglePassportRequirement);
+        }
+        
+        // Initialize add-ons with a slight delay to ensure DOM is ready
+        setTimeout(() => {
+            initializeAddons();
+            generatePassengerAddonSections();
+        }, 100);
+    }
+
+    function closeActivityModal() {
+        document.getElementById('activityModal').classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    function toggleActivityMenu(menuId, event) {
+        if (event) {
+            event.stopPropagation();
+        }
+        const menu = document.getElementById(menuId);
+        menu.classList.toggle('hidden');
+    }
+
+    // Close modals when clicking outside
+    document.getElementById('studentModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeStudentModal();
+        }
+    });
+
+    document.getElementById('activityModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeActivityModal();
+        }
+    });
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeStudentModal();
+            closeActivityModal();
+            closeDeleteModal();
+        }
+    });
+
+    // Close dropdown menus when clicking elsewhere
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.flex.flex-col.gap-1')) {
+            document.querySelectorAll('[id^="menu-"]').forEach(menu => {
+                menu.classList.add('hidden');
+            });
+        }
+    });
+
+    // Show/hide return date based on trip type
+    document.addEventListener('DOMContentLoaded', function() {
+        const tripTypeSelect = document.querySelector('select[name="required_trip_type"]');
+        const returnDateField = document.getElementById('return-date-field');
+        
+        if (tripTypeSelect && returnDateField) {
+            tripTypeSelect.addEventListener('change', function() {
+                if (this.value === 'round_trip') {
+                    returnDateField.classList.remove('hidden');
+                } else {
+                    returnDateField.classList.add('hidden');
+                }
+            });
+        }
+    });
+
+    let currentActivityId = null;
+
+    function openDeleteModal(activityId) {
+        currentActivityId = activityId;
+        
+        // Fetch activity details
+        fetch(`/instructor/activity/${activityId}/delete/`)
+            .then(response => response.json())
+            .then(data => {
+                // Populate modal with activity data
+                document.getElementById('deleteActivityTitle').textContent = data.title;
+                document.getElementById('deleteActivitySection').textContent = data.section_code;
+                document.getElementById('deleteActivityType').textContent = data.activity_type;
+                document.getElementById('deleteActivityDueDate').textContent = data.due_date;
+                
+                // Show warning if there are submissions
+                if (data.submissions_count > 0) {
+                    document.getElementById('deleteSubmissionsCount').textContent = data.submissions_count;
+                    document.getElementById('deleteActivityWarning').classList.remove('hidden');
+                } else {
+                    document.getElementById('deleteActivityWarning').classList.add('hidden');
+                }
+                
+                // Set form action
+                document.getElementById('deleteActivityForm').action = `/instructor/activity/${activityId}/delete/`;
+                
+                // Show modal
+                document.getElementById('deleteModal').classList.remove('hidden');
+                document.body.classList.add('overflow-hidden');
+            })
+            .catch(error => {
+                console.error('Error fetching activity details:', error);
+                alert('Error loading activity details. Please try again.');
+            });
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+        currentActivityId = null;
+    }
+
+    // Close delete modal when clicking outside
+    document.getElementById('deleteModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeDeleteModal();
+        }
+    });
+
+    // NEW: Function to toggle passport requirement
+    function togglePassportRequirement() {
+        const requirePassport = document.getElementById('requirePassport').checked;
+        const passportInputs = document.querySelectorAll('.passport-input');
+        const passportIndicators = document.querySelectorAll('.passport-required-indicator');
+        const passportHelpTexts = document.querySelectorAll('.passport-help-text');
+        
+        passportInputs.forEach(input => {
+            input.required = requirePassport;
+            if (requirePassport) {
+                input.placeholder = "Enter passport number *";
+            } else {
+                input.placeholder = "Enter passport number";
+            }
+        });
+        
+        passportIndicators.forEach(indicator => {
+            indicator.classList.toggle('hidden', !requirePassport);
+        });
+        
+        passportHelpTexts.forEach(helpText => {
+            helpText.classList.toggle('hidden', !requirePassport);
+        });
+    }
+
+    // Passenger field management
+    function togglePassengerForms() {
+        const requirePassengerDetails = document.getElementById('requirePassengerDetails').checked;
+        const passengerFields = document.getElementById('passengerFields');
+        
+        if (requirePassengerDetails) {
+            passengerFields.classList.remove('hidden');
+            updatePassengerForms();
+        } else {
+            passengerFields.classList.add('hidden');
+        }
+        
+        // Update add-on sections when passenger forms change
+        generatePassengerAddonSections();
+    }
+
+    function updatePassengerForms() {
+        const requirePassengerDetails = document.getElementById('requirePassengerDetails');
+        if (!requirePassengerDetails || !requirePassengerDetails.checked) return;
+
+        const adults = parseInt(document.getElementById('adultsCount').value) || 0;
+        const children = parseInt(document.getElementById('childrenCount').value) || 0;
+        const infants = parseInt(document.getElementById('infantsCount').value) || 0;
+        
+        const passengerFields = document.getElementById('passengerFields');
+        passengerFields.innerHTML = '';
+
+        let passengerNumber = 1;
+
+        // Generate Adult forms
+        for (let i = 1; i <= adults; i++) {
+            const passengerForm = createPassengerForm(passengerNumber, 'Adult', i === 1);
+            passengerFields.appendChild(passengerForm);
+            passengerNumber++;
+        }
+
+        // Generate Child forms
+        for (let i = 1; i <= children; i++) {
+            const passengerForm = createPassengerForm(passengerNumber, 'Child', false);
+            passengerFields.appendChild(passengerForm);
+            passengerNumber++;
+        }
+
+        // Generate Infant forms
+        for (let i = 1; i <= infants; i++) {
+            const passengerForm = createPassengerForm(passengerNumber, 'Infant', false);
+            passengerFields.appendChild(passengerForm);
+            passengerNumber++;
+        }
+
+        // Show message if no passengers
+        if (passengerNumber === 1) {
+            passengerFields.innerHTML = '<p class="text-sm text-gray-500 text-center">No passengers added. Increase passenger counts above.</p>';
+        }
+        
+        // Apply passport requirement to newly created fields
+        togglePassportRequirement();
+        
+        // Update add-on sections
+        generatePassengerAddonSections();
+    }
+
+    function createPassengerForm(number, type, isPrimary) {
+        const passengerDiv = document.createElement('div');
+        passengerDiv.className = 'passenger-group border border-gray-200 rounded-lg p-4 bg-white';
+        
+        const typeColor = {
+            'Adult': 'bg-blue-100 text-blue-800',
+            'Child': 'bg-green-100 text-green-800',
+            'Infant': 'bg-purple-100 text-purple-800'
+        }[type];
+
+        passengerDiv.innerHTML = `
+            <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center gap-2">
+                    <h4 class="text-sm font-semibold text-gray-700">Passenger ${number} - ${type}</h4>
+                    ${isPrimary ? '<span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">Primary</span>' : ''}
+                </div>
+                <span class="text-xs ${typeColor} px-2 py-1 rounded-full">${type}</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">First Name *</label>
+                    <input type="text" name="passenger_first_name[]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704] text-sm" placeholder="Enter first name" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Middle Name</label>
+                    <input type="text" name="passenger_middle_name[]" maxlength="1" pattern="[A-Za-z]?" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704] text-sm" placeholder="Enter middle name">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Last Name *</label>
+                    <input type="text" name="passenger_last_name[]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704] text-sm" placeholder="Enter last name" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Gender *</label>
+                    <select name="passenger_gender[]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704] text-sm" required>
+                        <option value="">Select Gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Date of Birth *</label>
+                    <input type="date" name="passenger_dob[]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704] text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Nationality *</label>
+                    <input type="text" name="passenger_nationality[]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704] text-sm" placeholder="Enter nationality" required>
+                </div>
+                <!-- NEW: Passport Number Field -->
+                <div class="passport-field">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">
+                        Passport Number 
+                        <span class="text-red-500 passport-required-indicator hidden">*</span>
+                    </label>
+                    <input type="text" name="passenger_passport[]" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704] text-sm passport-input" 
+                           placeholder="Enter passport number">
+                    <p class="text-xs text-gray-500 mt-1 passport-help-text hidden">
+                        Required for all passengers
+                    </p>
+                </div>
+            </div>
+            <input type="hidden" name="passenger_type[]" value="${type.toLowerCase()}">
+            ${isPrimary ? '<input type="hidden" name="passenger_is_primary[]" value="true">' : ''}
+        `;
+        
+        return passengerDiv;
+    }
+
+    // Add-ons functionality
+    function initializeAddons() {
+        const requireAddonsCheckbox = document.getElementById('require_addons');
+        const addonsSection = document.getElementById('addons-section');
+        
+        if (requireAddonsCheckbox && addonsSection) {
+            // Set initial state
+            addonsSection.classList.toggle('hidden', !requireAddonsCheckbox.checked);
+            
+            requireAddonsCheckbox.addEventListener('change', function() {
+                addonsSection.classList.toggle('hidden', !this.checked);
+                if (this.checked) {
+                    generatePassengerAddonSections();
+                } else {
+                    document.querySelectorAll('.passenger-addon-section').forEach(section => section.remove());
+                }
+            });
+        }
+    }
+
+    // Function to generate per-passenger add-on sections for EVERY passenger
+    function generatePassengerAddonSections() {
+        const requirePassengerDetails = document.getElementById('requirePassengerDetails');
+        const requireAddonsCheckbox = document.getElementById('require_addons');
+        
+        // Only show add-ons if both passenger details and add-ons are enabled
+        if (!requirePassengerDetails || !requirePassengerDetails.checked || !requireAddonsCheckbox || !requireAddonsCheckbox.checked) {
+            document.querySelectorAll('.passenger-addon-section').forEach(section => section.remove());
+            return;
+        }
+        
+        const adults = parseInt(document.getElementById('adultsCount').value) || 0;
+        const children = parseInt(document.getElementById('childrenCount').value) || 0;
+        const infants = parseInt(document.getElementById('infantsCount').value) || 0;
+        const totalPassengers = adults + children + infants;
+        
+        const addonsSection = document.getElementById('addons-section');
+        if (!addonsSection) return;
+        
+        // Remove existing passenger-specific add-on sections
+        document.querySelectorAll('.passenger-addon-section').forEach(section => section.remove());
+        
+        // If no passengers, return
+        if (totalPassengers === 0) return;
+        
+        // Get the original addons list template
+        const originalAddonsContainer = document.getElementById('original-addons-list');
+        if (!originalAddonsContainer) return;
+        
+        const originalAddons = originalAddonsContainer.querySelectorAll('.bg-white');
+        
+        // Create add-on section for EACH passenger
+        for (let i = 0; i < totalPassengers; i++) {
+            const passengerAddonSection = document.createElement('div');
+            passengerAddonSection.className = 'passenger-addon-section mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200';
+            
+            // Determine passenger type and number
+            let passengerType = 'Adult';
+            let passengerNumber = i + 1;
+            
+            if (i < adults) {
+                passengerType = 'Adult';
+            } else if (i < adults + children) {
+                passengerType = 'Child';
+            } else {
+                passengerType = 'Infant';
+            }
+            
+            passengerAddonSection.innerHTML = `
+                <h4 class="text-md font-semibold text-blue-800 mb-3">
+                    Add-ons for Passenger ${passengerNumber} (${passengerType})
+                </h4>
+                <p class="text-sm text-blue-600 mb-3">Select which add-ons this passenger should have:</p>
+                <div class="space-y-3" id="passenger-${i}-addons">
+                    <!-- Add-on checkboxes for this passenger will be inserted here -->
+                </div>
+            `;
+            
+            addonsSection.appendChild(passengerAddonSection);
+            
+            // Create add-on options for this passenger
+            const passengerAddonsContainer = document.getElementById(`passenger-${i}-addons`);
+            
+            originalAddons.forEach((originalAddon) => {
+                const addonClone = originalAddon.cloneNode(true);
+                
+                // Update checkbox name for this specific passenger
+                const checkbox = addonClone.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    checkbox.name = `selected_addons_passenger_${i}[]`;
+                    checkbox.value = checkbox.value; // Keep the original value (addon ID)
+                    checkbox.checked = false;
+                    
+                    // Update requirement fields for this passenger
+                    const requirementInputs = addonClone.querySelectorAll('input, textarea');
+                    requirementInputs.forEach(input => {
+                        if (input.name.includes('addon_required_')) {
+                            const addonId = input.name.split('_')[2];
+                            input.name = `addon_required_${addonId}_passenger_${i}`;
+                            input.checked = false;
+                        } else if (input.name.includes('addon_quantity_')) {
+                            const addonId = input.name.split('_')[2];
+                            input.name = `addon_quantity_${addonId}_passenger_${i}`;
+                            input.value = '1';
+                        } else if (input.name.includes('addon_notes_')) {
+                            const addonId = input.name.split('_')[2];
+                            input.name = `addon_notes_${addonId}_passenger_${i}`;
+                            input.value = '';
+                        }
+                    });
+                    
+                    // Add event listener for showing requirements
+                    checkbox.addEventListener('change', function() {
+                        const requirementsDiv = this.closest('.bg-white').querySelector('.addon-requirements');
+                        if (requirementsDiv) {
+                            requirementsDiv.classList.toggle('hidden', !this.checked);
+                        }
+                    });
+                }
+                
+                passengerAddonsContainer.appendChild(addonClone);
+            });
+        }
+        
+        // Add instructional note
+        const existingNote = addonsSection.querySelector('.per-passenger-note');
+        if (!existingNote) {
+            const noteDiv = document.createElement('div');
+            noteDiv.className = 'per-passenger-note bg-green-50 border border-green-200 rounded-md p-3 mt-4';
+            noteDiv.innerHTML = `
+                <p class="text-sm text-green-700">
+                    <strong>✓ Per-Passenger Add-ons Enabled:</strong> Each passenger has their own add-on section. 
+                    You can select different add-ons for each passenger and mark them as required individually.
+                </p>
+            `;
+            addonsSection.appendChild(noteDiv);
+        }
+    }
+
+    // Initialize passenger forms when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listeners to passenger count inputs
+            document.getElementById('adultsCount').addEventListener('change', updatePassengerForms);
+            document.getElementById('childrenCount').addEventListener('change', updatePassengerForms);
+            document.getElementById('infantsCount').addEventListener('change', updatePassengerForms);
+            document.getElementById('requirePassengerDetails').addEventListener('change', togglePassengerForms);
+            
+            // NEW: Add event listener for passport requirement
+            const requirePassportCheckbox = document.getElementById('requirePassport');
+            if (requirePassportCheckbox) {
+                requirePassportCheckbox.addEventListener('change', togglePassportRequirement);
+            }
+            
+            // Also update add-ons when passenger counts change
+            const passengerInputs = ['adultsCount', 'childrenCount', 'infantsCount'];
+            passengerInputs.forEach(inputId => {
+                const input = document.getElementById(inputId);
+                if (input) {
+                    input.addEventListener('change', function() {
+                        setTimeout(generatePassengerAddonSections, 100);
+                    });
+                }
+            });
+    
+            // Attach click handlers to delete links using data attributes to avoid inline template JS parsing issues
+            document.querySelectorAll('.delete-activity').forEach(el => {
+                el.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const activityId = this.dataset.activityId;
+                    if (activityId) {
+                        openDeleteModal(activityId);
+                    }
+                });
+            });
+        });
+</script>
+{% endblock %}

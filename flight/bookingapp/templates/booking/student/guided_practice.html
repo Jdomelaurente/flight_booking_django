@@ -1,0 +1,116 @@
+{% extends 'booking/student/base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-2xl">
+    <h1 class="text-3xl font-bold mb-6">Guided Practice</h1>
+    
+    <form method="POST" class="bg-white rounded-lg shadow-md p-6">
+        {% csrf_token %}
+        
+        <!-- Pre-defined Scenarios -->
+        <div class="mb-6">
+            <h2 class="text-xl font-semibold mb-4">Choose a Practice Scenario</h2>
+            
+            <div class="space-y-3">
+                <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="radio" name="scenario_type" value="business_trip" class="mr-3" checked>
+                    <div>
+                        <span class="font-medium">Business Trip</span>
+                        <p class="text-sm text-gray-600">Round trip for one executive in business class, budget: $2000</p>
+                    </div>
+                </label>
+                
+                <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="radio" name="scenario_type" value="family_vacation" class="mr-3">
+                    <div>
+                        <span class="font-medium">Family Vacation</span>
+                        <p class="text-sm text-gray-600">Round trip for 2 adults + 2 children in economy, budget: $1500</p>
+                    </div>
+                </label>
+                
+                <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="radio" name="scenario_type" value="budget_travel" class="mr-3">
+                    <div>
+                        <span class="font-medium">Budget Travel</span>
+                        <p class="text-sm text-gray-600">One-way trip for one person in economy, budget: $300</p>
+                    </div>
+                </label>
+                
+                <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="radio" name="scenario_type" value="custom" class="mr-3">
+                    <div>
+                        <span class="font-medium">Custom Scenario</span>
+                        <p class="text-sm text-gray-600">Create your own practice requirements</p>
+                    </div>
+                </label>
+            </div>
+        </div>
+        
+        <!-- Custom Requirements (shown when custom is selected) -->
+        <div id="custom-requirements" class="mb-6 hidden">
+            <h2 class="text-xl font-semibold mb-4">Custom Requirements</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Trip Type</label>
+                    <select name="trip_type" class="w-full border rounded px-3 py-2">
+                        <option value="one_way">One Way</option>
+                        <option value="round_trip">Round Trip</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-1">Travel Class</label>
+                    <select name="travel_class" class="w-full border rounded px-3 py-2">
+                        <option value="economy">Economy</option>
+                        <option value="premium_economy">Premium Economy</option>
+                        <option value="business">Business</option>
+                        <option value="first">First Class</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-1">Adults</label>
+                    <input type="number" name="passengers" value="1" min="1" class="w-full border rounded px-3 py-2">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-1">Children</label>
+                    <input type="number" name="children" value="0" min="0" class="w-full border rounded px-3 py-2">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-1">Max Budget ($)</label>
+                    <input type="number" name="max_price" min="0" class="w-full border rounded px-3 py-2" placeholder="Optional">
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <label class="block text-sm font-medium mb-1">Scenario Description</label>
+                <textarea name="description" class="w-full border rounded px-3 py-2" placeholder="Describe your practice scenario..."></textarea>
+            </div>
+        </div>
+        
+        <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded font-semibold">
+            Start Guided Practice
+        </button>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const customSection = document.getElementById('custom-requirements');
+    const scenarioRadios = document.querySelectorAll('input[name="scenario_type"]');
+    
+    scenarioRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                customSection.classList.remove('hidden');
+            } else {
+                customSection.classList.add('hidden');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

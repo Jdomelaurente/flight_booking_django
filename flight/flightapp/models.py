@@ -1,17 +1,52 @@
 from django.db import models
 from django.utils import timezone
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 # ---------------------------
-# Custom User (optional)
+# Signal inside models.py
 # ---------------------------
-class MyUser(models.Model):
+
+@receiver(post_save, sender="flightapp.Schedule")  # ⚠ replace "flightapp" with your Django app name
+def create_seats_for_schedule(sender, instance, created, **kwargs):
+    if created:
+        aircraft = instance.flight.aircraft
+        default_class = SeatClass.objects.first()
+
+        if not default_class:
+            return  # no SeatClass exists yet
+
+        seats = [
+            Seat(
+                schedule=instance,
+                seat_class=default_class,
+                seat_number=f"{i:02d}",  # seat numbering 01, 02, 03...
+                is_available=True
+            )
+            for i in range(1, aircraft.capacity + 1)
+        ]
+        Seat.objects.bulk_create(seats)
+
+
+# ---------------------------
+# User (Base Table)
+# ---------------------------
+# flightapp/models.py
+class User(models.Model):
+    ROLE_CHOICES = [
+        ('admin', 'Admin'),
+        ('instructor', 'Instructor'),  # Add this
+        # ('student', 'Student'),
+    ]
+
     username = models.CharField(max_length=150, unique=True)
-    password = models.CharField(max_length=255)  # store hashed password
-    created_at = models.DateTimeField(auto_now_add=True)
+    password = models.CharField(max_length=255, null=True)
+    email = models.EmailField(unique=True, null=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)  # Make sure this includes 'instructor'
+    last_login = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
 
-    def __str__(self):
-        return self.username
 
 # ---------------------------
 # Flight & Seat Core
@@ -19,9 +54,14 @@ class MyUser(models.Model):
 class SeatClass(models.Model):
     name = models.CharField(max_length=50)
     price_multiplier = models.DecimalField(max_digits=5, decimal_places=2)
+    airline = models.ForeignKey("Airline", on_delete=models.CASCADE, related_name="seat_classes", null=True)
+    description = models.TextField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ("airline", "name")
 
     def __str__(self):
-        return f"{self.name} (x{self.price_multiplier})"
+        return f"{self.name} (x{self.price_multiplier}) - {self.airline.code if self.airline else 'No Airline'}"
 
 
 class Airline(models.Model):
@@ -35,25 +75,37 @@ class Airline(models.Model):
 class Aircraft(models.Model):
     model = models.CharField(max_length=100)
     capacity = models.PositiveIntegerField()
-    airline = models.ForeignKey(Airline, on_delete=models.CASCADE, related_name="aircrafts")
+    airline = models.ForeignKey("Airline", on_delete=models.CASCADE, related_name="aircrafts")
 
     def __str__(self):
         return f"{self.model} ({self.airline.code})"
 
-
 class Airport(models.Model):
+    AIRPORT_TYPE_CHOICES = [
+        ('domestic', 'Domestic'),
+        ('international', 'International'),
+        ('unknown', 'Unknown'),
+    ]
+
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=10, unique=True)
-    location = models.CharField(max_length=150, null=True,)
+    location = models.CharField(max_length=150, null=True, blank=True)
+    airport_type = models.CharField(
+        max_length=20,
+        choices=AIRPORT_TYPE_CHOICES,
+        default='unknown',
+        verbose_name="Airport Type"
+    )
 
     def __str__(self):
-        return f"{self.code} - {self.name}"
+        return f"{self.code} - {self.name} ({self.get_airport_type_display()})"
 
 
 class Route(models.Model):
     origin_airport = models.ForeignKey(Airport, on_delete=models.CASCADE, related_name="departures")
     destination_airport = models.ForeignKey(Airport, on_delete=models.CASCADE, related_name="arrivals")
-
+    base_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  
+    
     def __str__(self):
         return f"{self.origin_airport.code} → {self.destination_airport.code}"
 
@@ -69,11 +121,19 @@ class Flight(models.Model):
 
 
 class Schedule(models.Model):
+    STATUS_CHOICES = [
+        ('Open', 'Open for Booking'),
+        ('Closed', 'Closed'),
+        ('On Flight', 'On Flight'),
+        ('Arrived', 'Arrived'),
+    ]
+
     flight = models.ForeignKey("Flight", on_delete=models.CASCADE, related_name="schedules")
     departure_time = models.DateTimeField()
     arrival_time = models.DateTimeField()
-    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # NEW
-    
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Open')
+
     def __str__(self):
         return f"{self.flight.flight_number} ({self.departure_time} - {self.arrival_time})"
 
@@ -85,6 +145,22 @@ class Schedule(models.Model):
         if days > 0:
             return f"{hours}h {minutes}m (+{days}d)"
         return f"{hours}h {minutes}m" if minutes else f"{hours}h"
+
+    def update_status(self):
+        now = timezone.now()
+        if now < self.departure_time - timezone.timedelta(hours=1):
+            self.status = 'Open'
+        elif self.departure_time - timezone.timedelta(hours=1) <= now < self.departure_time:
+            self.status = 'Closed'
+        elif self.departure_time <= now < self.arrival_time:
+            self.status = 'On Flight'
+        else:
+            self.status = 'Arrived'
+        self.save()
+
+    @property
+    def is_open(self):
+        return self.status == "Open"
 
 
 class Seat(models.Model):
@@ -101,55 +177,175 @@ class Seat(models.Model):
 # Passenger & Booking
 # ---------------------------
 class PassengerInfo(models.Model):
+    TYPE_CHOICES = [("Adult", "Adult"), ("Child", "Child"), ("Infant", "Infant")]
+
     first_name = models.CharField(max_length=100)
+    middle_name = models.CharField(max_length=100, blank=True, null=True)
     last_name = models.CharField(max_length=100)
-    middle_name = models.CharField(max_length=100, null=True, blank=True)
-    gender = models.CharField(max_length=10, choices=[("Male", "Male"), ("Female", "Female")])
+    gender = models.CharField(max_length=10)
     date_of_birth = models.DateField()
-    phone = models.CharField(max_length=20, null=True, blank=True)
-    email = models.EmailField(null=True, blank=True)
-    passport_number = models.CharField(max_length=50, null=True, blank=True)
+    passport_number = models.CharField(max_length=50, blank=True, null=True)
+    nationality = models.CharField(max_length=100, null=True, blank=True)
+    passenger_type = models.CharField(
+        max_length=10, choices=TYPE_CHOICES, default="Adult"
+    )
+
+    # NEW: link infants to an adult passenger
+    linked_adult = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="infants",
+        help_text="For infants on lap, assign to the adult passenger"
+    )
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+        return f"{self.first_name} {self.last_name} ({self.passenger_type})"
+
 
 
 class Student(models.Model):
     first_name = models.CharField(max_length=100)
+    middle_initial = models.CharField(max_length=5, null=True, blank=True)  # optional
     last_name = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
-    password = models.CharField(max_length=255)  # hashed password
+    email = models.EmailField(unique=True, null=True)
+    password = models.CharField(max_length=255, null=True)  # hashed password
     phone = models.CharField(max_length=20, null=True, blank=True)
     student_number = models.CharField(max_length=50, unique=True)
 
     def __str__(self):
+        if self.middle_initial:
+            return f"{self.student_number} - {self.first_name} {self.middle_initial}. {self.last_name}"
         return f"{self.student_number} - {self.first_name} {self.last_name}"
 
 
+class Instructor(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='instructor_profile', null=True)
+    first_name = models.CharField(max_length=100)
+    middle_initial = models.CharField(max_length=5, null=True, blank=True)
+    last_name = models.CharField(max_length=100)
+    email = models.EmailField(unique=True, null=True)
+    password = models.CharField(max_length=255, null=True)  # hashed password
+    phone = models.CharField(max_length=20, null=True, blank=True)
+    instructor_id = models.CharField(max_length=50, unique=True, null=True)
+
+    def get_full_name(self):
+        """Return full name of instructor"""
+        name_parts = []
+        if self.first_name:
+            name_parts.append(self.first_name)
+        if self.middle_initial:
+            name_parts.append(f"{self.middle_initial}.")
+        if self.last_name:
+            name_parts.append(self.last_name)
+        return " ".join(name_parts) if name_parts else self.user.username
+    
+    def __str__(self):
+        return self.get_full_name()
+
+
+
+    
+from django.db import models
+from django.utils import timezone
+from decimal import Decimal
+
 class Booking(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="bookings")
-    schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE, related_name="bookings")
-    seat = models.ForeignKey(Seat, on_delete=models.SET_NULL, null=True, blank=True, related_name="bookings")
-    status = models.CharField(max_length=20, choices=[
-        ("Pending", "Pending"),
-        ("Confirmed", "Confirmed"),
-        ("Cancelled", "Cancelled"),
-    ], default="Pending")
-    created_at = models.DateTimeField(default=timezone.now)
+    student = models.ForeignKey("Student", on_delete=models.CASCADE)  # The booker
+    trip_type = models.CharField(
+        max_length=20,
+        choices=[("one_way", "One Way"), ("round_trip", "Round Trip"), ("multi_city", "Multi City")]
+    )
+    
+    status = models.CharField(max_length=20, default="Pending")
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Booking {self.id} - {self.student.first_name} {self.student.last_name}"
 
+    @property
+    def payment(self):
+        return self.payment_set.last()
 
-class BookingDetail(models.Model):
-    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="details")
-    flight = models.ForeignKey(Flight, on_delete=models.CASCADE)
-    seat = models.ForeignKey(Seat, on_delete=models.SET_NULL, null=True, blank=True)
-    seat_class = models.ForeignKey(SeatClass, on_delete=models.SET_NULL, null=True, blank=True)
-    booking_date = models.DateTimeField(default=timezone.now)
+    @property
+    def total_amount(self):
+        total = Decimal("0.00")
+        for detail in self.details.all():
+            total += detail.price
+        return total
+    
+    
+class AddOnType(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.booking.id} - {self.flight.flight_number}"
+        return self.name
+
+class AddOn(models.Model):
+    airline = models.ForeignKey(
+        "Airline",
+        on_delete=models.CASCADE,
+        related_name="addons",
+        null=True
+    )
+
+    seat_class = models.ForeignKey(
+        "SeatClass",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="addons",
+        help_text="If included=True, this add-on is automatically included in this seat class."
+    )
+
+    type = models.ForeignKey(
+        "AddOnType",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="addons"
+    )
+
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    included = models.BooleanField(
+        default=False,
+        help_text="If true, this add-on is automatically included with the seat class."
+    )
+
+    def __str__(self):
+        status = "Included" if self.included else "Optional"
+        cls = f" ({self.seat_class.name})" if self.seat_class else ""
+        return f"{self.name}{cls} - {self.airline.code} - ₱{self.price} [{status}]"
+
+    
+class BookingDetail(models.Model):
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="details")
+    passenger = models.ForeignKey(PassengerInfo, on_delete=models.CASCADE)
+    schedule = models.ForeignKey("Schedule", on_delete=models.CASCADE)
+    seat = models.ForeignKey("Seat", on_delete=models.SET_NULL, null=True, blank=True)
+    seat_class = models.ForeignKey("SeatClass", on_delete=models.SET_NULL, null=True, blank=True)
+    booking_date = models.DateTimeField(default=timezone.now)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    addons = models.ManyToManyField(AddOn, blank=True, related_name='booking_details')
+
+    def save(self, *args, **kwargs):
+        if self.seat:
+            base_price = self.schedule.flight.route.base_price
+            multiplier = self.seat.seat_class.price_multiplier if self.seat.seat_class else Decimal("1.0")
+            days_diff = (self.schedule.departure_time.date() - timezone.now().date()).days
+            if days_diff >= 30:
+                factor = Decimal("0.8")
+            elif 7 <= days_diff <= 29:
+                factor = Decimal("1.0")
+            else:
+                factor = Decimal("1.5")
+            self.price = base_price * multiplier * factor
+        super().save(*args, **kwargs)
 
 
 class Payment(models.Model):

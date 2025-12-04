@@ -1,0 +1,793 @@
+{% extends 'instructorapp/base.html' %}
+{% load dict_filters %}
+{% block title %}Edit Activity - {{ activity.title }}{% endblock %}
+
+{% block content %}
+<div class="flex flex-1 min-h-screen py-8">
+    <div class="flex-1 flex flex-col mx-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Edit Activity</h1>
+                <p class="text-gray-600">{{ activity.section.section_code }} - {{ activity.section.section_name }}</p>
+            </div>
+            <a href="{% url 'section_detail' activity.section.id %}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm">
+                Back to Section
+            </a>
+        </div>
+
+        <!-- Display Messages -->
+        {% if messages %}
+        <div class="mb-6 space-y-2">
+            {% for message in messages %}
+            <div class="p-3 text-sm rounded-md {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Edit Activity Form -->
+        <div class="bg-white rounded-lg shadow-lg border border-gray-200">
+            <div class="bg-[#093704] rounded-t-lg px-6 py-4">
+                <h2 class="text-xl font-semibold text-[#FFC83D]">Edit Activity: {{ activity.title }}</h2>
+            </div>
+            
+            <div class="p-6">
+                <form method="POST" id="editActivityForm">
+                    {% csrf_token %}
+                    <div class="space-y-6">
+                        <!-- Basic Activity Information -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Activity Title *</label>
+                                <input type="text" name="title" value="{{ activity.title }}" required 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Activity Type *</label>
+                                <input type="text" name="activity_type" value="{{ activity.activity_type }}" required 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]"
+                                    placeholder="e.g., Flight Booking, Seat Selection, Payment Processing">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Instructions *</label>
+                                <textarea name="instructions" required rows="4" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">{{ activity.instructions }}</textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Due Date *</label>
+                                <input type="datetime-local" name="due_date" value="{{ activity.due_date|date:'Y-m-d\TH:i' }}" required 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Total Points</label>
+                                <input type="number" name="total_points" value="{{ activity.total_points }}" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                            </div>
+                        </div>
+
+                        <!-- Flight Requirements Section -->
+                        <div class="border-t border-gray-200 pt-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Flight Requirements</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Trip Type *</label>
+                                    <select name="required_trip_type" required 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                        <option value="one_way" {% if activity.required_trip_type == 'one_way' %}selected{% endif %}>One Way</option>
+                                        <option value="round_trip" {% if activity.required_trip_type == 'round_trip' %}selected{% endif %}>Round Trip</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Travel Class *</label>
+                                    <select name="required_travel_class" required 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                        <option value="economy" {% if activity.required_travel_class == 'economy' %}selected{% endif %}>Economy</option>
+                                        <option value="premium_economy" {% if activity.required_travel_class == 'premium_economy' %}selected{% endif %}>Premium Economy</option>
+                                        <option value="business" {% if activity.required_travel_class == 'business' %}selected{% endif %}>Business</option>
+                                        <option value="first" {% if activity.required_travel_class == 'first' %}selected{% endif %}>First Class</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Origin Airport *</label>
+                                    <select name="required_origin" required 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                        <option value="">Select Origin Airport</option>
+                                        {% for airport in airports %}
+                                        <option value="{{ airport.code }}" {% if activity.required_origin == airport.code %}selected{% endif %}>
+                                            {{ airport.code }} - {{ airport.name }} ({{ airport.location }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Destination Airport *</label>
+                                    <select name="required_destination" required 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                        <option value="">Select Destination Airport</option>
+                                        {% for airport in airports %}
+                                        <option value="{{ airport.code }}" {% if activity.required_destination == airport.code %}selected{% endif %}>
+                                            {{ airport.code }} - {{ airport.name }} ({{ airport.location }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Departure Date</label>
+                                    <input type="date" name="required_departure_date" 
+                                        value="{{ activity.required_departure_date|date:'Y-m-d' }}"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                </div>
+                                <div id="return-date-field" {% if activity.required_trip_type != 'round_trip' %}class="hidden"{% endif %}>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Return Date</label>
+                                    <input type="date" name="required_return_date" 
+                                        value="{{ activity.required_return_date|date:'Y-m-d' }}"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Max Price ($)</label>
+                                    <input type="number" name="required_max_price" step="0.01" 
+                                        value="{{ activity.required_max_price }}"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Time Limit (minutes)</label>
+                                    <input type="number" name="time_limit_minutes" 
+                                        value="{{ activity.time_limit_minutes }}"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]" 
+                                        placeholder="Optional time limit">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Passenger Requirements Section -->
+                        <div class="border-t border-gray-200 pt-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Passenger Requirements</h3>
+                            
+                            <!-- Passenger Counts -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Adults (12+ years) *</label>
+                                    <input type="number" name="required_passengers" value="{{ activity.required_passengers }}" min="1" max="9" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Children (2-11 years)</label>
+                                    <input type="number" name="required_children" value="{{ activity.required_children }}" min="0" max="8" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Infants (Under 2 years)</label>
+                                    <input type="number" name="required_infants" value="{{ activity.required_infants }}" min="0" max="4" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                    <p class="text-xs text-gray-500 mt-1">Note: Infants must be accompanied by adults</p>
+                                </div>
+                            </div>
+
+                            <!-- NEW: Passport Requirement Checkbox -->
+                            <div class="mb-4">
+                                <div class="flex items-center">
+                                    <input type="checkbox" name="require_passport" id="requirePassport"
+                                        {% if activity.require_passport %}checked{% endif %}
+                                        class="mr-2 rounded border-gray-300 text-[#093704] focus:ring-[#093704]">
+                                    <label class="text-md font-semibold text-gray-700">Require Passport Information for ALL Passengers</label>
+                                </div>
+                                <p class="text-sm text-gray-600 ml-6 mt-1">
+                                    Students must provide passport numbers for every passenger in the booking
+                                </p>
+                            </div>
+
+                            <!-- Passenger Details Requirements -->
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6">
+                                <div class="flex items-center mb-3">
+                                    <input type="checkbox" name="require_passenger_details" id="require_passenger_details"
+                                        {% if activity.require_passenger_details %}checked{% endif %}
+                                        class="mr-2 rounded border-gray-300 text-[#093704] focus:ring-[#093704]">
+                                    <label class="text-md font-semibold text-gray-700">Require Passenger Details</label>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-4">Students must provide the following details for each passenger:</p>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-700">
+                                    <div class="flex items-center">
+                                        <div class="w-2 h-2 bg-[#093704] rounded-full mr-2"></div>
+                                        <span>First Name</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-2 h-2 bg-[#093704] rounded-full mr-2"></div>
+                                        <span>Middle Name</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-2 h-2 bg-[#093704] rounded-full mr-2"></div>
+                                        <span>Last Name</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-2 h-2 bg-[#093704] rounded-full mr-2"></div>
+                                        <span>Gender</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-2 h-2 bg-[#093704] rounded-full mr-2"></div>
+                                        <span>Date of Birth</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-2 h-2 bg-[#093704] rounded-full mr-2"></div>
+                                        <span>Nationality</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-2 h-2 bg-[#093704] rounded-full mr-2"></div>
+                                        <span>Passport Number</span>
+                                        <span class="text-red-500 ml-1 passport-required-text {% if not activity.require_passport %}hidden{% endif %}">*</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Passenger Information Section -->
+                            <div id="passenger-information-section" class="{% if not activity.require_passenger_details %}hidden{% endif %}">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h4 class="text-md font-semibold text-gray-800">Passenger Information</h4>
+                                    <button type="button" id="add-passenger-btn" class="bg-[#093704] hover:bg-[#093704]/80 text-white px-3 py-1 rounded-md text-sm">
+                                        Add Passenger
+                                    </button>
+                                </div>
+                                
+                                <div id="passengers-container">
+                                    {% if activity.passengers.exists %}
+                                        {% for passenger in activity.passengers.all %}
+                                        <div class="passenger-card bg-white border border-gray-200 rounded-lg p-4 mb-4" data-passenger-id="{{ passenger.id }}">
+                                            <div class="flex justify-between items-center mb-3">
+                                                <h5 class="font-medium text-gray-700">Passenger {{ forloop.counter }}</h5>
+                                                <button type="button" class="remove-passenger text-red-600 hover:text-red-800 text-sm">
+                                                    Remove
+                                                </button>
+                                            </div>
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                                                    <input type="text" name="passenger_first_name[]" value="{{ passenger.first_name }}" required
+                                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
+                                                    <input type="text" name="passenger_middle_name[]" value="{{ passenger.middle_name|default:'' }}"
+                                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                                                    <input type="text" name="passenger_last_name[]" value="{{ passenger.last_name }}" required
+                                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                                </div>
+                                                
+                                                <!-- NEW: Passenger Type Field -->
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Passenger Type *</label>
+                                                    <select name="passenger_type[]" required
+                                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                                        <option value="adult" {% if passenger.passenger_type == 'adult' %}selected{% endif %}>Adult (12+ years)</option>
+                                                        <option value="child" {% if passenger.passenger_type == 'child' %}selected{% endif %}>Child (2-11 years)</option>
+                                                        <option value="infant" {% if passenger.passenger_type == 'infant' %}selected{% endif %}>Infant (Under 2 years)</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
+                                                    <select name="passenger_gender[]" required
+                                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                                        <option value="male" {% if passenger.gender == 'male' %}selected{% endif %}>Male</option>
+                                                        <option value="female" {% if passenger.gender == 'female' %}selected{% endif %}>Female</option>
+                                                        <option value="other" {% if passenger.gender == 'other' %}selected{% endif %}>Other</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth *</label>
+                                                    <input type="date" name="passenger_dob[]" value="{{ passenger.date_of_birth|date:'Y-m-d' }}" required
+                                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nationality *</label>
+                                                    <input type="text" name="passenger_nationality[]" value="{{ passenger.nationality }}" required
+                                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                                </div>
+                                                <!-- NEW: Passport Number Field -->
+                                                <div class="passport-field">
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                                        Passport Number 
+                                                        <span class="text-red-500 passport-required-indicator {% if not activity.require_passport %}hidden{% endif %}">*</span>
+                                                    </label>
+                                                    <input type="text" name="passenger_passport[]" value="{{ passenger.passport_number|default:'' }}"
+                                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704] text-sm passport-input" 
+                                                           placeholder="{% if activity.require_passport %}Enter passport number *{% else %}Enter passport number{% endif %}"
+                                                           {% if activity.require_passport %}required{% endif %}>
+                                                    <p class="text-xs text-gray-500 mt-1 passport-help-text {% if not activity.require_passport %}hidden{% endif %}">
+                                                        Required for all passengers
+                                                    </p>
+                                                </div>
+                                                <div class="md:col-span-2">
+                                                    <div class="flex items-center">
+                                                        <input type="checkbox" name="passenger_is_primary[]" value="{{ forloop.counter0 }}" 
+                                                            {% if passenger.is_primary %}checked{% endif %}
+                                                            class="mr-2 rounded border-gray-300 text-[#093704] focus:ring-[#093704]">
+                                                        <label class="text-sm text-gray-700">Primary Passenger</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <!-- Default passenger card when no existing passengers -->
+                                        <div class="passenger-card bg-white border border-gray-200 rounded-lg p-4 mb-4">
+                                            <div class="flex justify-between items-center mb-3">
+                                                <h5 class="font-medium text-gray-700">Passenger 1</h5>
+                                                <button type="button" class="remove-passenger text-red-600 hover:text-red-800 text-sm">
+                                                    Remove
+                                                </button>
+                                            </div>
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                                                    <input type="text" name="passenger_first_name[]" required
+                                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
+                                                    <input type="text" name="passenger_middle_name[]"
+                                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                                                    <input type="text" name="passenger_last_name[]" required
+                                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                                </div>
+                                                
+                                                <!-- NEW: Passenger Type Field -->
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Passenger Type *</label>
+                                                    <select name="passenger_type[]" required
+                                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                                        <option value="adult">Adult (12+ years)</option>
+                                                        <option value="child">Child (2-11 years)</option>
+                                                        <option value="infant">Infant (Under 2 years)</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
+                                                    <select name="passenger_gender[]" required
+                                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                                        <option value="male">Male</option>
+                                                        <option value="female">Female</option>
+                                                        <option value="other">Other</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth *</label>
+                                                    <input type="date" name="passenger_dob[]" required
+                                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nationality *</label>
+                                                    <input type="text" name="passenger_nationality[]" required
+                                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                                </div>
+                                                <!-- NEW: Passport Number Field -->
+                                                <div class="passport-field">
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                                        Passport Number 
+                                                        <span class="text-red-500 passport-required-indicator {% if not activity.require_passport %}hidden{% endif %}">*</span>
+                                                    </label>
+                                                    <input type="text" name="passenger_passport[]"
+                                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704] text-sm passport-input" 
+                                                           placeholder="{% if activity.require_passport %}Enter passport number *{% else %}Enter passport number{% endif %}"
+                                                           {% if activity.require_passport %}required{% endif %}>
+                                                    <p class="text-xs text-gray-500 mt-1 passport-help-text {% if not activity.require_passport %}hidden{% endif %}">
+                                                        Required for all passengers
+                                                    </p>
+                                                </div>
+                                                <div class="md:col-span-2">
+                                                    <div class="flex items-center">
+                                                        <input type="checkbox" name="passenger_is_primary[]" value="0" checked
+                                                            class="mr-2 rounded border-gray-300 text-[#093704] focus:ring-[#093704]">
+                                                        <label class="text-sm text-gray-700">Primary Passenger</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Add Add-ons Section -->
+                        <div class="border-t border-gray-200 pt-4">
+                            <div class="mb-6">
+                                <div class="flex items-center mb-4">
+                                    <input type="checkbox" name="require_addons" id="require_addons" 
+                                        {% if activity.activity_addons.exists %}checked{% endif %}
+                                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <label for="require_addons" class="ml-2 block text-sm font-medium text-gray-700">
+                                        Enable Add-ons for Passengers
+                                    </label>
+                                </div>
+
+                                <!-- Add-ons Selection (initially hidden) -->
+                                <div id="addons-section" class="{% if not activity.activity_addons.exists %}hidden{% endif %} mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                    <h4 class="text-sm font-medium text-gray-900 mb-3">Passenger Add-ons</h4>
+                                    
+                                    <!-- Info message -->
+                                    <div class="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
+                                        <p class="text-sm text-blue-700">
+                                            <strong>How it works:</strong> When you enable passenger details and add-ons, each passenger will get their own add-on section below. 
+                                            You can select different add-ons for each passenger individually.
+                                        </p>
+                                    </div>
+                                    
+                                    <!-- Passenger-specific add-on sections will be displayed here -->
+                                    <div id="passenger-addons-container">
+                                        {% if activity.passengers.exists and activity.activity_addons.exists %}
+                                            {% for passenger in activity.passengers.all %}
+                                            <div class="passenger-addon-section mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200" data-passenger-index="{{ forloop.counter0 }}">
+                                                <h4 class="text-md font-semibold text-blue-800 mb-3">
+                                                    Add-ons for Passenger {{ forloop.counter }}
+                                                </h4>
+                                                <p class="text-sm text-blue-600 mb-3">Select which add-ons this passenger should have:</p>
+                                                <div class="space-y-3" id="passenger-{{ forloop.counter0 }}-addons">
+                                                    {% for addon in addons %}
+                                                    {% with passenger_addons=existing_addon_data|get_item:passenger.id %}
+                                                    <div class="flex items-start p-3 bg-white rounded border border-gray-200">
+                                                        <input type="checkbox" name="selected_addons_passenger_{{ forloop.parentloop.counter0 }}[]" value="{{ addon.id }}" 
+                                                               {% if existing_addon %}checked{% endif %}
+                                                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1">
+                                                        
+                                                        <div class="ml-3 flex-1">
+                                                            <div class="flex justify-between items-start">
+                                                                <div>
+                                                                    <label class="text-sm font-medium text-gray-700">
+                                                                        {{ addon.name }}
+                                                                        {% if addon.airline %}
+                                                                        <span class="text-xs text-gray-500">({{ addon.airline.code }})</span>
+                                                                        {% endif %}
+                                                                    </label>
+                                                                    {% if addon.type %}
+                                                                    <p class="text-xs text-gray-500">{{ addon.type.name }}</p>
+                                                                    {% endif %}
+                                                                    <p class="text-xs text-gray-600">{{ addon.description|default:"" }}</p>
+                                                                </div>
+                                                                <span class="text-sm font-semibold text-green-600">₱{{ addon.price }}</span>
+                                                            </div>
+                                                            
+                                                            <!-- Add-on requirements (shown when selected) -->
+                                                            <div class="mt-2 space-y-2 addon-requirements {% if existing_addon %}{% else %}hidden{% endif %}">
+                                                                <div class="flex items-center space-x-4">
+                                                                    <div class="flex items-center">
+                                                                        <input type="checkbox" name="addon_required_{{ addon.id }}_passenger_{{ forloop.parentloop.counter0 }}" 
+                                                                               {% if existing_addon.is_required %}checked{% endif %}
+                                                                               class="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                                                        <label class="ml-1 text-xs text-gray-600">
+                                                                            Required for this passenger
+                                                                        </label>
+                                                                    </div>
+                                                                    
+                                                                    <div class="flex items-center">
+                                                                        <label class="text-xs text-gray-600 mr-2">Quantity:</label>
+                                                                        <input type="number" name="addon_quantity_{{ addon.id }}_passenger_{{ forloop.parentloop.counter0 }}" 
+                                                                               value="{% if existing_addon %}{{ existing_addon.quantity }}{% else %}1{% endif %}" min="1" max="10"
+                                                                               class="w-16 px-2 py-1 text-xs border border-gray-300 rounded">
+                                                                    </div>
+                                                                </div>
+                                                                
+                                                                <div>
+                                                                    <label class="text-xs text-gray-600 block mb-1">Notes (optional):</label>
+                                                                    <textarea name="addon_notes_{{ addon.id }}_passenger_{{ forloop.parentloop.counter0 }}" 
+                                                                              rows="2"
+                                                                              class="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                                                              placeholder="Special instructions for this add-on...">{% if existing_addon %}{{ existing_addon.notes }}{% endif %}</textarea>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {% endwith %}
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Details -->
+                        <div class="border-t border-gray-200 pt-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Activity Description (Optional)</label>
+                                <textarea name="description" rows="3" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]" 
+                                    placeholder="Additional details about the activity...">{{ activity.description }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-200">
+                        <a href="{% url 'section_detail' activity.section.id %}" 
+                            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </a>
+                        <button type="submit" 
+                            class="bg-[#093704] hover:bg-[#093704]/80 text-white px-6 py-2 rounded-md transition-colors">
+                            Update Activity
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Show/hide return date based on trip type
+        const tripTypeSelect = document.querySelector('select[name="required_trip_type"]');
+        const returnDateField = document.getElementById('return-date-field');
+        
+        if (tripTypeSelect && returnDateField) {
+            tripTypeSelect.addEventListener('change', function() {
+                if (this.value === 'round_trip') {
+                    returnDateField.classList.remove('hidden');
+                } else {
+                    returnDateField.classList.add('hidden');
+                }
+            });
+        }
+
+        // Show/hide passenger information based on checkbox
+        const requirePassengerDetails = document.getElementById('require_passenger_details');
+        const passengerInfoSection = document.getElementById('passenger-information-section');
+        
+        if (requirePassengerDetails && passengerInfoSection) {
+            requirePassengerDetails.addEventListener('change', function() {
+                if (this.checked) {
+                    passengerInfoSection.classList.remove('hidden');
+                } else {
+                    passengerInfoSection.classList.add('hidden');
+                }
+            });
+        }
+
+        // Show/hide add-ons section based on checkbox
+        const requireAddonsCheckbox = document.getElementById('require_addons');
+        const addonsSection = document.getElementById('addons-section');
+        
+        if (requireAddonsCheckbox && addonsSection) {
+            requireAddonsCheckbox.addEventListener('change', function() {
+                addonsSection.classList.toggle('hidden', !this.checked);
+            });
+        }
+
+        // NEW: Toggle passport requirement for ALL passengers
+        const requirePassportCheckbox = document.getElementById('requirePassport');
+        
+        function togglePassportRequirement() {
+            const requirePassport = requirePassportCheckbox.checked;
+            const passportInputs = document.querySelectorAll('.passport-input');
+            const passportIndicators = document.querySelectorAll('.passport-required-indicator');
+            const passportHelpTexts = document.querySelectorAll('.passport-help-text');
+            const passportRequiredTexts = document.querySelectorAll('.passport-required-text');
+            
+            passportInputs.forEach(input => {
+                input.required = requirePassport;
+                if (requirePassport) {
+                    input.placeholder = "Enter passport number *";
+                } else {
+                    input.placeholder = "Enter passport number";
+                }
+            });
+            
+            passportIndicators.forEach(indicator => {
+                indicator.classList.toggle('hidden', !requirePassport);
+            });
+            
+            passportHelpTexts.forEach(helpText => {
+                helpText.classList.toggle('hidden', !requirePassport);
+            });
+            
+            passportRequiredTexts.forEach(text => {
+                text.classList.toggle('hidden', !requirePassport);
+            });
+        }
+
+        // Initialize passport requirement
+        if (requirePassportCheckbox) {
+            requirePassportCheckbox.addEventListener('change', togglePassportRequirement);
+            // Apply initial state
+            togglePassportRequirement();
+        }
+
+        // Add event listeners for showing/hiding add-on requirements
+        document.addEventListener('change', function(e) {
+            if (e.target && e.target.type === 'checkbox' && e.target.name.includes('selected_addons_passenger_')) {
+                const checkbox = e.target;
+                const addonDiv = checkbox.closest('.bg-white');
+                const requirementsDiv = addonDiv.querySelector('.addon-requirements');
+                
+                if (requirementsDiv) {
+                    requirementsDiv.classList.toggle('hidden', !checkbox.checked);
+                }
+            }
+        });
+
+        // Add passenger functionality
+        const addPassengerBtn = document.getElementById('add-passenger-btn');
+        const passengersContainer = document.getElementById('passengers-container');
+        
+        if (addPassengerBtn && passengersContainer) {
+            addPassengerBtn.addEventListener('click', function() {
+                const passengerCount = document.querySelectorAll('.passenger-card').length;
+                const newPassengerCard = document.createElement('div');
+                newPassengerCard.className = 'passenger-card bg-white border border-gray-200 rounded-lg p-4 mb-4';
+                newPassengerCard.innerHTML = `
+                    <div class="flex justify-between items-center mb-3">
+                        <h5 class="font-medium text-gray-700">Passenger ${passengerCount + 1}</h5>
+                        <button type="button" class="remove-passenger text-red-600 hover:text-red-800 text-sm">
+                            Remove
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                            <input type="text" name="passenger_first_name[]" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
+                            <input type="text" name="passenger_middle_name[]"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                            <input type="text" name="passenger_last_name[]" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                        </div>
+                        
+                        <!-- NEW: Passenger Type Field -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Passenger Type *</label>
+                            <select name="passenger_type[]" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                <option value="adult">Adult (12+ years)</option>
+                                <option value="child">Child (2-11 years)</option>
+                                <option value="infant">Infant (Under 2 years)</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
+                            <select name="passenger_gender[]" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth *</label>
+                            <input type="date" name="passenger_dob[]" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nationality *</label>
+                            <input type="text" name="passenger_nationality[]" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704]">
+                        </div>
+                        <!-- NEW: Passport Number Field -->
+                        <div class="passport-field">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Passport Number 
+                                <span class="text-red-500 passport-required-indicator {% if not activity.require_passport %}hidden{% endif %}">*</span>
+                            </label>
+                            <input type="text" name="passenger_passport[]"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093704] text-sm passport-input" 
+                                   placeholder="{% if activity.require_passport %}Enter passport number *{% else %}Enter passport number{% endif %}"
+                                   {% if activity.require_passport %}required{% endif %}>
+                            <p class="text-xs text-gray-500 mt-1 passport-help-text {% if not activity.require_passport %}hidden{% endif %}">
+                                Required for all passengers
+                            </p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <div class="flex items-center">
+                                <input type="checkbox" name="passenger_is_primary[]" value="${passengerCount}"
+                                    class="mr-2 rounded border-gray-300 text-[#093704] focus:ring-[#093704]">
+                                <label class="text-sm text-gray-700">Primary Passenger</label>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                passengersContainer.appendChild(newPassengerCard);
+                
+                // Add event listener to the new remove button
+                const removeBtn = newPassengerCard.querySelector('.remove-passenger');
+                removeBtn.addEventListener('click', function() {
+                    if (document.querySelectorAll('.passenger-card').length > 1) {
+                        newPassengerCard.remove();
+                        updatePassengerNumbers();
+                    } else {
+                        alert('At least one passenger is required.');
+                    }
+                });
+
+                updatePassengerNumbers();
+            });
+        }
+
+        // Remove passenger functionality
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-passenger')) {
+                if (document.querySelectorAll('.passenger-card').length > 1) {
+                    e.target.closest('.passenger-card').remove();
+                    updatePassengerNumbers();
+                } else {
+                    alert('At least one passenger is required.');
+                }
+            }
+        });
+
+        // Update passenger numbers
+        function updatePassengerNumbers() {
+            const passengerCards = document.querySelectorAll('.passenger-card');
+            passengerCards.forEach((card, index) => {
+                const title = card.querySelector('h5');
+                if (title) {
+                    title.textContent = `Passenger ${index + 1}`;
+                }
+                
+                // Update primary passenger checkbox value
+                const primaryCheckbox = card.querySelector('input[name="passenger_is_primary[]"]');
+                if (primaryCheckbox) {
+                    primaryCheckbox.value = index;
+                }
+            });
+        }
+
+        // Form validation
+        const form = document.getElementById('editActivityForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const requirePassengerDetails = document.getElementById('require_passenger_details');
+                const requirePassport = document.getElementById('requirePassport');
+                const passengerCards = document.querySelectorAll('.passenger-card');
+                
+                if (requirePassengerDetails && requirePassengerDetails.checked) {
+                    let hasValidPassengers = false;
+                    
+                    passengerCards.forEach(card => {
+                        const firstName = card.querySelector('input[name="passenger_first_name[]"]');
+                        const lastName = card.querySelector('input[name="passenger_last_name[]"]');
+                        const passengerType = card.querySelector('select[name="passenger_type[]"]'); // NEW: Check passenger type
+                        const gender = card.querySelector('select[name="passenger_gender[]"]');
+                        const dob = card.querySelector('input[name="passenger_dob[]"]');
+                        const nationality = card.querySelector('input[name="passenger_nationality[]"]');
+                        const passport = card.querySelector('.passport-input');
+                        
+                        let isValid = firstName.value.trim() && lastName.value.trim() && passengerType.value && gender.value && dob.value && nationality.value.trim();
+                        
+                        // Check passport if required
+                        if (requirePassport && requirePassport.checked) {
+                            isValid = isValid && passport.value.trim();
+                        }
+                        
+                        if (isValid) {
+                            hasValidPassengers = true;
+                        }
+                    });
+                    
+                    if (!hasValidPassengers) {
+                        e.preventDefault();
+                        alert('Please fill in all required passenger details for at least one passenger.' + 
+                              (requirePassport && requirePassport.checked ? ' Passport numbers are required for all passengers.' : ''));
+                        return false;
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import (
-    MyUser,
+    User,
     Airline,
     Aircraft,
     Airport,
@@ -16,10 +16,13 @@ from .models import (
     PassengerInfo,
     Student,
     TrackLog,
+    AddOn,
+    
+    AddOnType,
 )
 
 # Register models
-admin.site.register(MyUser)
+admin.site.register(User)
 admin.site.register(Airline)
 admin.site.register(Aircraft)
 admin.site.register(Airport)
@@ -35,3 +38,5 @@ admin.site.register(CheckInDetail)
 admin.site.register(PassengerInfo)
 admin.site.register(Student)
 admin.site.register(TrackLog)
+admin.site.register(AddOn)
+admin.site.register(AddOnType)

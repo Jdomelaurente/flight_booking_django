@@ -1,0 +1,1429 @@
+{% load static %}
+{% block content %}
+<div class="p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+  <!-- Header Section -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">Activity Submissions</h1>
+    <p class="text-gray-600">Review and evaluate student flight booking submissions</p>
+  </div>
+
+  <!-- Enhanced Control Panel -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+    <div class="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+      <input
+          id="searchInput"
+          placeholder="Search by Student Name, or any field..."
+          class="w-full h-12 border border-gray-400 rounded-lg 
+         outline-none focus:outline-none 
+         focus:ring-0 focus:border-gray-400"
+        >
+        <svg
+          fill="#6B7280"
+          viewBox="0 0 30 30"
+          height="50"
+          width="50"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M 13 3 C 7.4889971 3 3 7.4889971 3 13 C 3 18.511003 7.4889971 23 13 23 C 15.396508 23 17.597385 22.148986 19.322266 20.736328 L 25.292969 26.707031 A 1.0001 1.0001 0 1 0 26.707031 25.292969 L 20.736328 19.322266 C 22.148986 17.597385 23 15.396508 23 13 C 23 7.4889971 18.511003 3 13 3 z M 13 5 C 17.430123 5 21 8.5698774 21 13 C 21 17.430123 17.430123 21 13 21 C 8.5698774 21 5 17.430123 5 13 C 5 8.5698774 8.5698774 5 13 5 z"
+          ></path>
+        </svg>
+
+      <!-- Enhanced Filter and Sort Group -->
+      <div class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
+        
+        <!-- Status Filter with Badge -->
+        <div class="relative group">
+          <div class="flex items-center gap-2">
+            <select id="filterResult" title="Filter submissions by status"
+              class=" appearance-none w-full px-4 py-3 pr-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 focus:bg-white transition-all duration-200 cursor-pointer">
+              <option value="">All Statuses</option>
+              <option value="excellent">Excellent (90-100%)</option>
+              <option value="good">Good (80-89%)</option>
+              <option value="needs-work">Needs Work (60-79%)</option>
+              <option value="poor">Poor (<60%)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Sort with Icon -->
+        <div class="relative group">
+          <div class="flex items-center gap-2">
+            <select id="sortBy" title="Sort submissions" aria-label="Sort submissions"
+              class="appearance-none w-full px-4 py-3 pr-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 focus:bg-white transition-all duration-200 cursor-pointer">
+              <option value="date-desc">Newest First</option>
+              <option value="date-asc">Oldest First</option>
+              <option value="name-asc">Name A-Z</option>
+              <option value="name-desc">Name Z-A</option>
+              <option value="score-desc">Highest Score</option>
+              <option value="score-asc">Lowest Score</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Reset Filters -->
+        <button id="resetFilters" class="px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-all duration-200 flex items-center gap-2 text-gray-600">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          Reset
+        </button>
+      </div>
+    </div>
+
+    <!-- Active Filters Display -->
+    <div id="activeFilters" class="flex flex-wrap gap-2 mt-4 hidden">
+      <!-- Active filters will appear here -->
+    </div>
+
+    <!-- Results Summary -->
+    <div id="resultsSummary" class="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+      <div class="text-sm text-gray-600">
+        <span id="resultsCount">0</span> submissions found
+      </div>
+      <div class="flex items-center gap-4 text-sm text-gray-500">
+        <div class="flex items-center gap-1">
+          <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+          <span id="passedCount">0</span> Passed
+        </div>
+        <div class="flex items-center gap-1">
+          <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+          <span id="failedCount">0</span> Needs Work
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Container -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm text-left text-gray-700" id="submissionTable">
+        <thead class="bg-gray-50 text-xs uppercase font-semibold text-gray-600 border-b border-gray-200">
+          <tr>
+            <th rowspan="2" class="px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors" data-sort="name">
+              <div class="flex items-center gap-1">
+                Name
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                </svg>
+              </div>
+            </th>
+            <th rowspan="2" class="px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors" data-sort="date">
+              <div class="flex items-center gap-1">
+                Submitted
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                </svg>
+              </div>
+            </th>
+            <th rowspan="2" class="px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors" data-sort="score">
+              <div class="flex items-center gap-1">
+                Score
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                </svg>
+              </div>
+            </th>
+            <th colspan="8" class="px-6 py-4 text-center bg-blue-50 text-blue-800 border-b border-blue-100">Flight & Passenger Requirements</th>
+            <th rowspan="2" class="px-6 py-4">Actions</th>
+          </tr>
+          <tr>
+            <th class="px-4 py-3 text-center">Trip Type</th>
+            <th class="px-4 py-3 text-center">Class</th>
+            <th class="px-4 py-3 text-center">Adult</th>
+            <th class="px-4 py-3 text-center">Children</th>
+            <th class="px-4 py-3 text-center">Infants</th>
+            <th class="px-4 py-3 text-center">Origin</th>
+            <th class="px-4 py-3 text-center">Destination</th>
+            <th class="px-4 py-3 text-center">Passenger</th>
+          </tr>
+        </thead>
+        <tbody id="submissionBody" class="divide-y divide-gray-200">
+          <!-- Content will be populated by JavaScript -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Cards View (Hidden by Default) -->
+  <div id="cardsView" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Cards will be populated by JavaScript -->
+  </div>
+
+  <!-- Loading State -->
+  <div id="loadingState" class="text-center py-12">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+    <p class="text-gray-600">Loading submissions...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div id="emptyState" class="hidden text-center py-12">
+    <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+    </div>
+    <h3 class="text-lg font-medium text-gray-900 mb-2">No submissions found</h3>
+    <p class="text-gray-500 mb-4">Try adjusting your search criteria or filters</p>
+    <button id="resetAll" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+      Reset all filters
+    </button>
+  </div>
+</div>
+
+<!-- Passenger Modal -->
+<div id="passengerModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm transition-all duration-300">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-[1200px] max-h-[680px] overflow-hidden">
+      <!-- Header -->
+      <div class="flex items-center justify-between p-5 border-b border-gray-200">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-lg font-semibold text-gray-900">Passenger Details</h2>
+            <p class="text-sm text-gray-500" id="passengerModalSubtitle"></p>
+          </div>
+        </div>
+        <button type="button" onclick="closePassengerModal()" title="Close passenger modal" aria-label="Close passenger modal"
+          class="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded-full shadow-sm text-gray-600 hover:text-red-600 hover:border-red-500 transition-all duration-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+       <div id="passengerTabs" class="flex gap-2 mb-4"></div>
+      <!-- Content -->
+      <div id="passengerContent" class="p-5 overflow-y-auto max-h-[calc(680px-100px)] custom-scroll">
+        <!-- Passenger details content -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Evaluation Modal (same size as passenger modal) -->
+<div id="evaluationModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm transition-all duration-300">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-[1200px] max-h-[680px] overflow-hidden">
+      <!-- Header -->
+      <div class="flex items-center justify-between p-5 border-b border-green-200 bg-green-900">
+        <div class="flex items-center gap-3 background-color-green">
+          <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-lg font-semibold text-white">Detailed Evaluation</h2>
+            <p class="text-sm text-white" id="evaluationModalSubtitle"></p>
+          </div>
+        </div>
+        <button type="button" title="Close evaluation modal" onclick="closeEvaluationModal()"
+          class="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded-full shadow-sm text-gray-600 hover:text-red-600 hover:border-red-500 transition-all duration-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div id="evaluationContent" class="p-5 overflow-y-auto max-h-[calc(680px-140px)] custom-scroll">
+        <!-- Evaluation content -->
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex items-center justify-center gap-2 p-4 border-t border-gray-200">
+        <button id="prevEvaluationPage" onclick="changeEvaluationPage(-1)"
+          class="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          Prev
+        </button>
+
+        <div class="flex items-center gap-1" id="evaluationPageNumbers"></div>
+
+        <button id="nextEvaluationPage" onclick="changeEvaluationPage(1)"
+          class="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
+          Next
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+
+</div>
+
+<style>
+/* Enhanced Control Panel Styles */
+.quick-filter-btn {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  border-radius: 0.5rem;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #d1d5db;
+  background-color: #ffffff;
+  color: #4b5563;
+  transition: all 200ms ease;
+  cursor: pointer;
+}
+.quick-filter-btn:hover {
+  background-color: #f9fafb;
+}
+
+.quick-filter-btn.active {
+  background-color: #3b82f6;
+  color: #ffffff;
+  border-color: #3b82f6;
+}
+
+.view-toggle-btn {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: all 200ms ease;
+  cursor: pointer;
+}
+
+.view-toggle-btn.active {
+  background-color: #ffffff;
+  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+  color: #2563eb;
+}
+
+.filter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background-color: #dbeafe;
+  color: #1e3a8a;
+  font-size: 0.75rem;
+  border-radius: 0.5rem;
+}
+
+/* Enhanced table styles */
+th[data-sort]:hover {
+  background-color: #f3f4f6;
+}
+
+/* Score indicators */
+.score-excellent { color: #16a34a; }
+.score-good { color: #2563eb; }
+.score-needs-work { color: #d97706; }
+.score-poor { color: #dc2626; }
+
+/* Card view styles */
+.submission-card {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #e5e7eb;
+  padding: 1.25rem;
+  transition: all 200ms ease;
+}
+.submission-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+}
+.status-passed { background-color: #10b981; }
+.status-failed { background-color: #ef4444; }
+.status-pending { background-color: #f59e0b; }
+
+/* Pagination styles */
+.page-btn {
+  min-width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  background-color: white;
+  color: #374151;
+  font-size: 0.875rem;
+  transition: all 200ms ease;
+  cursor: pointer;
+}
+
+.page-btn:hover:not(.active):not(:disabled) {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.page-btn.active {
+  background-color: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Hover effects for table rows */
+.table-row-hover:hover {
+  background-color: #f9fafb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+}
+
+/* Score indicator */
+.score-indicator {
+  position: relative;
+  width: 60px;
+  height: 60px;
+}
+
+.score-circle {
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+.score-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+/* Custom scrollbar */
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 20px;
+}
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+.custom-scroll::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 20px;
+}
+</style>
+
+<script>
+const activityId = "{{ activity.id|default:''|escapejs }}";
+let submissions = [];
+let currentView = 'table';
+let activeFilters = {
+  search: '',
+  status: '',
+  quick: 'all',
+  sort: 'date-desc'
+};
+
+let currentEvaluationModal = { 
+  submissionId: null, 
+  currentPage: 1,
+  totalPages: 1,
+  pages: [] // This will store the content for each page
+};
+
+// DOM Elements
+const elements = {
+  tableBody: document.getElementById('submissionBody'),
+  cardsView: document.getElementById('cardsView'),
+  loadingState: document.getElementById('loadingState'),
+  emptyState: document.getElementById('emptyState'),
+  resultsSummary: document.getElementById('resultsSummary'),
+  resultsCount: document.getElementById('resultsCount'),
+  passedCount: document.getElementById('passedCount'),
+  failedCount: document.getElementById('failedCount'),
+  activeFilters: document.getElementById('activeFilters')
+};
+
+/* -----------------------------
+   Utility Functions
+------------------------------ */
+function matchBadge(isMatch, labelIfTrue = "Correct", labelIfFalse = "Incorrect") {
+  if (isMatch === true || isMatch === "true") {
+    return `
+      <div class="flex items-center justify-center gap-1">
+        <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+        </svg>
+        <span class="text-xs font-medium text-green-700">${labelIfTrue}</span>
+      </div>
+    `;
+  }
+  return `
+    <div class="flex items-center justify-center gap-1">
+      <svg class="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+      </svg>
+      <span class="text-xs font-medium text-red-700">${labelIfFalse}</span>
+    </div>
+  `;
+}
+
+function createScoreIndicator(percentage) {
+  const radius = 22;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percentage / 100) * circumference;
+  
+  const color = percentage >= 80 ? '#10b981' : percentage >= 60 ? '#f59e0b' : '#ef4444';
+  
+  return `
+    <div class="score-indicator">
+      <svg class="w-full h-full" viewBox="0 0 60 60">
+        <circle cx="30" cy="30" r="${radius}" stroke="#e5e7eb" stroke-width="4" fill="none"/>
+        <circle cx="30" cy="30" r="${radius}" stroke="${color}" stroke-width="4" fill="none" 
+                stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" 
+                class="score-circle transition-all duration-1000 ease-out"/>
+      </svg>
+      <div class="score-text" style="color: ${color}">${Math.round(percentage)}%</div>
+    </div>
+  `;
+}
+
+/* -----------------------------
+   Enhanced Search and Filter Logic
+------------------------------ */
+function performSearch() {
+  const searchTerm = activeFilters.search.toLowerCase();
+  const statusFilter = activeFilters.status;
+  const quickFilter = activeFilters.quick;
+  
+  let filtered = submissions.filter(submission => {
+    // Text search
+    const matchesSearch = !searchTerm ||
+    (submission.student_name && submission.student_name.toLowerCase().startsWith(searchTerm)) ||
+    (submission.student_id && submission.student_id.toString().toLowerCase().startsWith(searchTerm)) ||
+    (submission.passenger_details &&
+      submission.passenger_details.some(passenger => 
+        JSON.stringify(passenger).toLowerCase().startsWith(searchTerm)
+      ));
+
+    // Status filter
+    const score = submission.compliance_percentage ?? 0;
+    let matchesStatus = true;
+    if (statusFilter) {
+      switch(statusFilter) {
+        case 'excellent': matchesStatus = score >= 90; break;
+        case 'good': matchesStatus = score >= 80 && score < 90; break;
+        case 'needs-work': matchesStatus = score >= 60 && score < 80; break;
+        case 'poor': matchesStatus = score < 60; break;
+      }
+    }
+
+    // Quick filters
+    let matchesQuick = true;
+    if (quickFilter) {
+      switch(quickFilter) {
+        case 'high-score': matchesQuick = score >= 80; break;
+        case 'low-score': matchesQuick = score < 80; break;
+        case 'recent': 
+          const submissionDate = new Date(submission.submitted_at || 0);
+          const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+          matchesQuick = submissionDate > weekAgo;
+          break;
+        case 'no-passengers': 
+          matchesQuick = !submission.passenger_details || submission.passenger_details.length === 0;
+          break;
+      }
+    }
+
+    return matchesSearch && matchesStatus && matchesQuick;
+  });
+
+  // Apply sorting
+  filtered = applySorting(filtered, activeFilters.sort);
+  
+  return filtered;
+}
+
+function applySorting(data, sortBy) {
+  const sorted = [...data];
+  switch(sortBy) {
+    case 'date-desc':
+      return sorted.sort((a, b) => new Date(b.submitted_at || 0) - new Date(a.submitted_at || 0));
+    case 'date-asc':
+      return sorted.sort((a, b) => new Date(a.submitted_at || 0) - new Date(b.submitted_at || 0));
+    case 'name-asc':
+      return sorted.sort((a, b) => (a.student_name || '').localeCompare(b.student_name || ''));
+    case 'name-desc':
+      return sorted.sort((a, b) => (b.student_name || '').localeCompare(a.student_name || ''));
+    case 'score-desc':
+      return sorted.sort((a, b) => (b.compliance_percentage ?? 0) - (a.compliance_percentage ?? 0));
+    case 'score-asc':
+      return sorted.sort((a, b) => (a.compliance_percentage ?? 0) - (b.compliance_percentage ?? 0));
+    case 'id-asc':
+      return sorted.sort((a, b) => (a.student_id || '').localeCompare(b.student_id || ''));
+    case 'id-desc':
+      return sorted.sort((a, b) => (b.student_id || '').localeCompare(a.student_id || ''));
+    default:
+      return sorted;
+  }
+}
+
+function updateResultsSummary(filteredData) {
+  const total = filteredData.length;
+  const passed = filteredData.filter(s => (s.compliance_percentage ?? 0) >= 80).length;
+  const failed = total - passed;
+
+  elements.resultsCount.textContent = total;
+  elements.passedCount.textContent = passed;
+  elements.failedCount.textContent = failed;
+
+  // Show/hide summary
+  if (total === 0) {
+    elements.resultsSummary.classList.add('hidden');
+  } else {
+    elements.resultsSummary.classList.remove('hidden');
+  }
+}
+
+function updateActiveFiltersDisplay() {
+  const activeFiltersContainer = elements.activeFilters;
+  activeFiltersContainer.innerHTML = '';
+
+  const filters = [];
+  
+  if (activeFilters.search) {
+    filters.push(`
+      <div class="filter-tag">
+        Search: "${activeFilters.search}"
+        <button onclick="removeSearchFilter()" class="hover:text-blue-600">×</button>
+      </div>
+    `);
+  }
+
+  if (activeFilters.status) {
+    const statusLabels = {
+      'excellent': 'Excellent (90-100%)',
+      'good': 'Good (80-89%)',
+      'needs-work': 'Needs Work (60-79%)',
+      'poor': 'Poor (<60%)'
+    };
+    filters.push(`
+      <div class="filter-tag">
+        Status: ${statusLabels[activeFilters.status]}
+        <button onclick="removeStatusFilter()" class="hover:text-blue-600">×</button>
+      </div>
+    `);
+  }
+
+  if (activeFilters.quick && activeFilters.quick !== 'all') {
+    const quickLabels = {
+      'high-score': 'High Scores',
+      'low-score': 'Needs Review',
+      'recent': 'Recent',
+      'no-passengers': 'No Passengers'
+    };
+    filters.push(`
+      <div class="filter-tag">
+        ${quickLabels[activeFilters.quick]}
+        <button onclick="removeQuickFilter()" class="hover:text-blue-600">×</button>
+      </div>
+    `);
+  }
+
+  if (filters.length > 0) {
+    activeFiltersContainer.innerHTML = filters.join('');
+    activeFiltersContainer.classList.remove('hidden');
+  } else {
+    activeFiltersContainer.classList.add('hidden');
+  }
+}
+
+/* -----------------------------
+   Enhanced Rendering Functions
+------------------------------ */
+function renderResults(filteredData) {
+  updateResultsSummary(filteredData);
+  
+  if (filteredData.length === 0) {
+    elements.loadingState.classList.add('hidden');
+    elements.emptyState.classList.remove('hidden');
+    elements.tableBody.innerHTML = '';
+    elements.cardsView.innerHTML = '';
+    return;
+  }
+
+  elements.emptyState.classList.add('hidden');
+  elements.loadingState.classList.add('hidden');
+
+  if (currentView === 'table') {
+    renderTableView(filteredData);
+    document.getElementById('submissionTable').classList.remove('hidden');
+    elements.cardsView.classList.add('hidden');
+  } else {
+    renderCardsView(filteredData);
+    document.getElementById('submissionTable').classList.add('hidden');
+    elements.cardsView.classList.remove('hidden');
+  }
+}
+
+function renderTableView(data) {
+  elements.tableBody.innerHTML = data.map(submission => {
+    const fc = submission.comparison?.flight_comparison || {};
+    const pc = submission.comparison?.passenger_comparison || {};
+    const passengers = submission.passenger_details || [];
+
+    const adultHtml = `<div class="text-sm"><div class="mt-1">${matchBadge(pc.adults_match)}</div></div>`;
+    const childHtml = `<div class="text-sm"><div class="mt-1">${matchBadge(pc.children_match)}</div></div>`;
+    const infantHtml = `<div class="text-sm"><div class="mt-1">${matchBadge(pc.infants_match)}</div></div>`;
+    const originHtml = `<div class="text-sm"><div class="mt-1">${matchBadge(fc.origin_match)}</div></div>`;
+    const destHtml = `<div class="text-sm"><div class="mt-1">${matchBadge(fc.destination_match)}</div></div>`;
+
+    // Passenger modal button
+    const passengerHtml = passengers.length
+      ? `<button onclick="openPassengerModal(${submission.submission_id})" 
+          class="px-3 py-1 bg-blue-800 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 text-sm font-medium">
+          View ${passengers.length} Passenger${passengers.length > 1 ? 's' : ''}
+        </button>`
+      : "-";
+
+    // Evaluation modal button
+    const correctnessSummaryHtml = `
+      <button onclick="openEvaluationModal(${submission.submission_id})"
+        class="px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center gap-2 shadow-sm text-sm font-medium">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        Summary
+      </button>`;
+
+    return `
+      <tr class="border-b border-gray-200 table-row-hover transition-all duration-200">
+        <td class="px-6 py-4">
+          <div class="font-medium text-gray-900">${submission.student_name || "-"}</div>
+        </td>
+        <td class="px-6 py-4 text-gray-700">
+          ${submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : "-"}
+        </td>
+        <td class="px-6 py-4">${createScoreIndicator(submission.compliance_percentage ?? 0)}</td>
+        <td class="px-4 py-4 text-center">${matchBadge(fc.trip_type_match ?? (fc.submitted_trip_type === fc.required_trip_type))}</td>
+        <td class="px-4 py-4 text-center">${matchBadge(fc.has_correct_class ?? fc.travel_class_match)}</td>
+        <td class="px-4 py-4 text-center">${adultHtml}</td>
+        <td class="px-4 py-4 text-center">${childHtml}</td>
+        <td class="px-4 py-4 text-center">${infantHtml}</td>
+        <td class="px-4 py-4 text-center">${originHtml}</td>
+        <td class="px-4 py-4 text-center">${destHtml}</td>
+        <td class="px-6 py-4 text-center">${passengerHtml}</td>
+        <td class="px-6 py-4 text-center">${correctnessSummaryHtml}</td>
+      </tr>`;
+  }).join("");
+}
+
+function renderCardsView(data) {
+  elements.cardsView.innerHTML = data.map(submission => {
+    const score = submission.compliance_percentage ?? 0;
+    const scoreClass = score >= 90 ? 'score-excellent' : 
+                      score >= 80 ? 'score-good' : 
+                      score >= 60 ? 'score-needs-work' : 'score-poor';
+    
+    return `
+      <div class="submission-card">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <h3 class="font-semibold text-gray-900">${submission.student_name || 'Unknown'}</h3>
+            <p class="text-sm text-gray-500">${submission.student_id || 'No ID'}</p>
+          </div>
+          <div class="text-right">
+            <div class="text-2xl font-bold ${scoreClass}">${Math.round(score)}%</div>
+            <div class="text-xs text-gray-500">Score</div>
+          </div>
+        </div>
+        
+        <div class="space-y-3 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-600">Submitted:</span>
+            <span class="text-gray-900">${submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString() : 'N/A'}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">Passengers:</span>
+            <span class="text-gray-900">${submission.passenger_details?.length || 0}</span>
+          </div>
+        </div>
+
+        <div class="flex gap-2 mt-4 pt-4 border-t border-gray-200">
+          <button onclick="openPassengerModal(${submission.submission_id})" 
+            class="flex-1 px-3 py-2 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600 transition-colors">
+            Passengers
+          </button>
+          <button onclick="openEvaluationModal(${submission.submission_id})"
+            class="flex-1 px-3 py-2 bg-green-500 text-white text-xs rounded-lg hover:bg-green-600 transition-colors">
+            Details
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* -----------------------------
+   Passenger Modal Functions (without slider)
+------------------------------ */
+function openPassengerModal(submissionId) {
+  const submission = submissions.find(s => s.submission_id === submissionId);
+  if (!submission || !submission.passenger_details) return;
+
+  const passengers = submission.passenger_details;
+  const correctDetails = submission.correct_passenger_details || [];
+
+  // Render field helper
+  const renderField = (passenger, correctData, fieldKey, label) => {
+    const correctField = correctData[fieldKey];
+    const value = passenger[fieldKey] || '-';
+    if (!correctField) {
+      return `
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">${label}</label>
+          <p class="text-lg font-semibold text-gray-900">${value}</p>
+        </div>
+      `;
+    }
+
+    const isCorrect = correctField.is_correct;
+    const correctValue = correctField.correct || '-';
+
+    return `
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">${label}</label>
+        <p class="text-lg font-semibold ${isCorrect ? 'text-gray-900' : 'text-red-600'}">${value}</p>
+        ${!isCorrect && value !== correctValue ? `<p class="text-sm text-red-600 font-medium">❌ Correct: <span class="text-green-600">${correctValue}</span></p>` : ''}
+      </div>
+    `;
+  };
+
+  // Render tab buttons
+  let tabs = '';
+  passengers.forEach((p, index) => {
+    tabs += `<button class="passenger-tab px-4 py-2 font-medium text-gray-700 hover:bg-gray-100 rounded-t ${index === 0 ? 'bg-white border-b-0' : 'bg-gray-200'}" data-index="${index}">Passenger ${index + 1}</button>`;
+  });
+
+  // Render passenger contents
+  let passengerContents = '';
+  passengers.forEach((passenger, index) => {
+    const correctData = correctDetails[index]?.fields || {};
+
+    passengerContents += `
+      <div class="passenger-panel ${index === 0 ? '' : 'hidden'}">
+        ${(passenger.flights?.length) ? `
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Flight Details</label>
+            <div class="space-y-3">
+              ${passenger.flights.map(flight => `
+                <div class="p-4 border border-gray-200 rounded-lg">
+                  <div class="font-medium text-gray-900">${flight.route || 'Unknown Route'}</div>
+                  <div class="text-sm text-gray-600 mt-1">${flight.date || 'No date'}</div>
+                  <div class="text-sm text-gray-500">Class: ${flight.seat_class?.name || '—'}</div>
+                  <div class="text-sm text-gray-500">Seat: ${flight.seat_number || 'Not assigned'}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-4">
+            ${renderField(passenger, correctData, 'full_name', 'Full Name')}
+            ${renderField(passenger, correctData, 'type', 'Passenger Type')}
+            ${renderField(passenger, correctData, 'date_of_birth', 'Date of Birth')}
+          </div>
+
+          <div class="space-y-4">
+            ${renderField(passenger, correctData, 'passport', 'Passport Number')}
+            ${renderField(passenger, correctData, 'nationality', 'Nationality')}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  // Inject content into modal
+  document.getElementById('passengerTabs').innerHTML = tabs;
+  document.getElementById('passengerContent').innerHTML = passengerContents;
+  document.getElementById('passengerModalSubtitle').textContent =
+    `${submission.student_name || 'Unknown Student'} - ${passengers.length} Passenger${passengers.length !== 1 ? 's' : ''}`;
+
+  document.getElementById('passengerModal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+
+  // Tab click functionality
+  const tabButtons = document.querySelectorAll('.passenger-tab');
+  const panels = document.querySelectorAll('.passenger-panel');
+  tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const index = button.getAttribute('data-index');
+      panels.forEach((p, i) => p.classList.toggle('hidden', i != index));
+      tabButtons.forEach(b => b.classList.remove('bg-white', 'border-b-0'));
+      button.classList.add('bg-white', 'border-b-0');
+    });
+  });
+}
+
+
+function closePassengerModal() {
+  document.getElementById('passengerModal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+/* -----------------------------
+   Evaluation Modal with Pagination Functions
+------------------------------ */
+function openEvaluationModal(submissionId) {
+    const submission = submissions.find(s => s.submission_id === submissionId);
+    if (!submission) return;
+
+    const comparison = submission.comparison || {};
+    const flight = comparison.flight_comparison || {};
+    const passengerSummary = comparison.passenger_comparison || {};
+    const scoreBreakdown = comparison.score_breakdown || {};
+    const correctPassengers = submission.correct_passenger_details || [];
+
+    // Create pages
+    const pages = [];
+    
+    // Page 1: Overview
+    pages.push(`
+    <div class="max-w-5xl mx-auto p-4">
+
+      <!-- Main Container -->
+      <div class="flex flex-col md:flex-row gap-4 items-start">
+
+      <!-- Left Side: Details - Made more compact -->
+        <div class="flex-1 space-y-4">
+
+          <!-- Route Info - More compact -->
+          <div class="flex rounded-lg bg-gray-50 border border-gray-200 overflow-hidden min-h-[85px]">
+            <div class="flex-1 text-center p-3 flex flex-col justify-center border-r border-gray-200">
+              <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Origin</div>
+              <div class="font-semibold text-gray-900 text-base">${flight.booked_origin || 'N/A'}</div>
+              ${matchBadge(flight.origin_match, 'Correct', 'Incorrect')}
+            </div>
+            <div class="flex-1 text-center p-3 flex flex-col justify-center">
+              <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Destination</div>
+              <div class="font-semibold text-gray-900 text-base">${flight.booked_destination || 'N/A'}</div>
+              ${matchBadge(flight.destination_match, 'Correct', 'Incorrect')}
+            </div>
+          </div>
+          
+          <!-- Trip Info - Reduced height -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="p-3 rounded-lg bg-gray-50 border border-gray-200 flex flex-col items-center min-h-[90px]">
+              <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Trip Type</div>
+              <div class="font-bold text-gray-900 text-lg mb-1">${flight.submitted_trip_type || 'N/A'}</div>
+              ${matchBadge(flight.trip_type_match, 'Correct', 'Incorrect')}
+            </div>
+            <div class="p-3 rounded-lg bg-gray-50 border border-gray-200 flex flex-col items-center min-h-[90px]">
+              <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Travel Class</div>
+              <div class="font-bold text-gray-900 text-lg mb-1">${flight.actual_travel_classes || 'N/A'}</div>
+              ${matchBadge(flight.has_correct_class, 'Correct', 'Incorrect')}
+            </div>
+          </div>
+
+          <!-- Passenger Counts - Made more compact -->
+          <div class="grid grid-cols-3 gap-3">
+            <div class="p-3 rounded-lg bg-gray-50 border border-gray-200 flex flex-col items-center min-h-[100px]">
+              <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Adults</div>
+              <div class="text-xl font-bold text-gray-900">${passengerSummary.submitted_adults ?? 0}</div>
+              <div class="text-xs text-gray-500 mb-1">Required: ${passengerSummary.required_adults ?? 0}</div>
+              ${matchBadge(passengerSummary.adults_match, 'Correct', 'Incorrect')}
+            </div>
+            <div class="p-3 rounded-lg bg-gray-50 border border-gray-200 flex flex-col items-center min-h-[100px]">
+              <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Children</div>
+              <div class="text-xl font-bold text-gray-900">${passengerSummary.submitted_children ?? 0}</div>
+              <div class="text-xs text-gray-500 mb-1">Required: ${passengerSummary.required_children ?? 0}</div>
+              ${matchBadge(passengerSummary.children_match, 'Correct', 'Incorrect')}
+            </div>
+            <div class="p-3 rounded-lg bg-gray-50 border border-gray-200 flex flex-col items-center min-h-[100px]">
+              <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Infants</div>
+              <div class="text-xl font-bold text-gray-900">${passengerSummary.submitted_infants ?? 0}</div>
+              <div class="text-xs text-gray-500 mb-1">Required: ${passengerSummary.required_infants ?? 0}</div>
+              ${matchBadge(passengerSummary.infants_match, 'Correct', 'Incorrect')}
+            </div>
+          </div>
+          </div>
+      </div>
+    </div>
+`);
+      // Pages for Passenger Details (one page per passenger)
+      if (correctPassengers && correctPassengers.length > 0) {
+        correctPassengers.sort((a, b) => (a.original_index ?? 0) - (b.original_index ?? 0));
+      }
+      let passengerTabsHtml = "";
+      let passengerPagesHtml = "";  
+      let activePassenger = 0; // default first passenger
+
+      if (correctPassengers.length > 1) {
+        passengerTabsHtml = `
+          <div class="flex space-x-2 mb-4">
+            ${correctPassengers.map((p, i) => `
+              <button 
+                class="passenger-tab px-3 py-1 rounded-lg border text-sm 
+                ${i === 0 ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-100 text-gray-700 border-gray-300'}"
+                onclick="showPassengerPage(${i})"
+                updateEvaluationPagination();
+              >
+                ${i + 1}
+              </button>
+            `).join("")}
+          </div>
+        `;
+      }
+
+    correctPassengers.forEach((passenger, index) => {
+      const filteredFields = Object.entries(passenger.fields || {}).filter(
+        ([key, _]) => !["first_name", "middle_name", "last_name"].includes(key)
+      );
+
+      const fieldsHtml = filteredFields.map(([fieldName, fr]) => `
+        <div class="p-3 border ${fr.is_correct ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'} rounded-lg">
+          <div class="flex justify-between items-start">
+            <div>
+              <div class="font-medium text-gray-900 text-sm">
+                ${fieldName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+              </div>
+              <div class="text-xs text-gray-700 mt-1">Student: ${fr.student ?? '-'}</div>
+              <div class="text-xs text-gray-500">Expected: ${fr.correct ?? '-'}</div>
+            </div>
+            <div class="text-right">
+              <div class="${fr.is_correct ? 'text-green-600' : 'text-red-600'} font-semibold">
+                ${fr.is_correct ? '✓ Correct' : '✗ Incorrect'}
+              </div>
+              <div class="text-xs text-gray-500">+${fr.points ?? 0}</div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+    passengerPagesHtml += `
+      <div class="passenger-page ${index === 0 ? '' : 'hidden'}" data-index="${index}">
+        <div class="space-y-6">
+          <div class="flex justify-between items-center">
+            <div class="text-lg font-semibold text-gray-900">Passenger ${index + 1}</div>
+            <div class="text-sm text-gray-700 bg-gray-100 px-3 py-1 rounded-full">
+              Score: <span class="font-semibold">${passenger.score}/${passenger.possible}</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">${fieldsHtml}</div>
+        </div>
+      </div>
+    `;
+  });
+
+    // Append to modal pages array
+  pages.push(`
+    <div>
+      ${passengerTabsHtml}
+      ${passengerPagesHtml}
+    </div>
+  `);
+      // Final Page: Score Breakdown
+  pages.push(`
+  <div class="space-y-4">
+
+    <div class="text-center mb-3">
+      <div class="text-xl font-semibold text-gray-900">Score Breakdown</div>
+    </div>
+
+    <div class="flex flex-row items-start justify-center gap-10 mx-auto">
+
+      <!-- DONUT CHART -->
+      <div class="relative w-60 h-60">
+        <svg viewBox="0 0 36 36" class="w-full h-full">
+
+          ${(() => {
+            const colors = [
+              "#004b6b", // Base Points
+              "#0073a8", // Passenger Info
+              "#2ba7f3", // Flight Route
+              "#8fd7ff", // Trip Type
+              "#e5e7eb", // Travel Class
+              "#acd7ff", // Passenger Count
+              "#9dc6ff"  // Add-ons
+            ];
+
+            const data = {
+              'Base Points': scoreBreakdown.base_points,
+              'Passenger Info': scoreBreakdown.passenger_info_points,
+              'Flight Route': scoreBreakdown.flight_route_points,
+              'Trip Type': scoreBreakdown.trip_type_points,
+              'Travel Class': scoreBreakdown.travel_class_points,
+              'Passenger Count': scoreBreakdown.passenger_points,
+              'Add-ons': scoreBreakdown.addon_points
+            };
+
+            const total = Object.values(data).reduce((a, b) => a + (b || 0), 0);
+            let cumulative = 0;
+
+            return Object.entries(data).map(([label, value], index) => {
+              const val = value || 0;
+              const percentage = total ? val / total : 0;
+              const start = cumulative * 100;
+              const arc = percentage * 100;
+              cumulative += percentage;
+
+              return `
+                <circle 
+                  r="14" cx="18" cy="18"
+                  fill="transparent"
+                  stroke="${colors[index % colors.length]}"
+                  stroke-width="5"
+                  stroke-dasharray="${arc} ${100 - arc}"
+                  stroke-dashoffset="${-start}"
+                  class="transition-all duration-500"
+                ></circle>
+              `;
+            }).join('');
+
+          })()}
+
+        </svg>
+
+        <!-- INNER WHITE CIRCLE (Perfect Match) -->
+        <div class="absolute inset-0 flex items-center justify-center">
+          <div>
+            <div class="text-3xl font-bold text-gray-900">
+              ${(scoreBreakdown.total_earned ?? 0).toFixed(1)}
+            </div>
+            <div class="text-xs text-gray-500 -mt-1">Total Score</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LEGEND -->
+      <div class="flex flex-col gap-6 text-sm">
+
+        ${(() => {
+          const colors = [
+            "#004b6b",
+            "#0073a8",
+            "#2ba7f3",
+            "#8fd7ff",
+            "#e5e7eb",
+            "#acd7ff",
+            "#9dc6ff"
+          ];
+
+          const labels = {
+            'Base Points': scoreBreakdown.base_points,
+            'Passenger Info': scoreBreakdown.passenger_info_points,
+            'Flight Route': scoreBreakdown.flight_route_points,
+            'Trip Type': scoreBreakdown.trip_type_points,
+            'Travel Class': scoreBreakdown.travel_class_points,
+            'Passenger Count': scoreBreakdown.passenger_points,
+            'Add-ons': scoreBreakdown.addon_points
+          };
+
+          const total = Object.values(labels).reduce((a, b) => a + (b || 0), 0);
+
+          return Object.entries(labels).map(([label, value], index) => {
+            const percentage = total ? ((value || 0) / total) * 100 : 0;
+
+            return `
+              <div class="flex items-center justify-between w-full gap-6">
+
+                <!-- COLOR + LABEL -->
+                <div class="flex items-center gap-3">
+                  <div class="w-4 h-4 rounded" style="background:${colors[index]}"></div>
+                  <span class="text-gray-700">
+                    ${percentage.toFixed(1)}% ${label}
+                  </span>
+                </div>
+
+                <!-- CLEAN VALUE -->
+                <span class="text-gray-900 font-semibold">
+                  ${(value || 0).toFixed(0)}
+                </span>
+
+              </div>
+            `;
+          }).join('');
+        })()}
+
+      </div>
+    </div>
+  </div>
+`);
+
+
+
+  currentEvaluationModal = {
+    submissionId,
+    currentPage: 1,
+    totalPages: pages.length,
+    pages: pages
+  };
+
+  // Update subtitle
+  document.getElementById('evaluationModalSubtitle').textContent = 
+    `${submission.student_name || 'Unknown Student'} - Page 1 of ${pages.length}`;
+  
+  // Show content
+  document.getElementById('evaluationContent').innerHTML = pages[0];
+  
+  // Update pagination buttons
+  updateEvaluationPagination();
+  
+  // Show modal
+  document.getElementById('evaluationModal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function showPassengerPage(index) {
+  document.querySelectorAll(".passenger-page").forEach(page => {
+    page.classList.add("hidden");
+  });
+  document.querySelector(`.passenger-page[data-index="${index}"]`).classList.remove("hidden");
+
+  document.querySelectorAll(".passenger-tab").forEach((btn, i) => {
+    if (i === index) {
+      btn.classList.add("bg-blue-600", "text-white", "border-blue-600");
+      btn.classList.remove("bg-gray-100", "text-gray-700", "border-gray-300");
+    } else {
+      btn.classList.remove("bg-blue-600", "text-white", "border-blue-600");
+      btn.classList.add("bg-gray-100", "text-gray-700", "border-gray-300");
+    }
+  });
+}
+
+
+function updateEvaluationPagination() {
+  const pageNumbers = document.getElementById('evaluationPageNumbers');
+  const prevBtn = document.getElementById('prevEvaluationPage');
+  const nextBtn = document.getElementById('nextEvaluationPage');
+  const subtitle = document.getElementById('evaluationModalSubtitle');
+  
+  const { currentPage, totalPages, pages } = currentEvaluationModal;
+  const submission = submissions.find(s => s.submission_id === currentEvaluationModal.submissionId);
+  
+  // Update subtitle
+  subtitle.textContent = `${submission.student_name || 'Unknown Student'} - Page ${currentPage} of ${totalPages}`;
+  
+  // Update content
+  document.getElementById('evaluationContent').innerHTML = pages[currentPage - 1];
+  
+  // Update pagination buttons
+  prevBtn.disabled = currentPage === 1;
+  nextBtn.disabled = currentPage === totalPages;
+  
+  // Generate page numbers
+  pageNumbers.innerHTML = '';
+  
+  // Always show first page
+  pageNumbers.appendChild(createPageNumberButton(1));
+  
+  // Show ellipsis if needed
+  if (currentPage > 3) {
+    const ellipsis = document.createElement('span');
+    ellipsis.className = 'px-2 text-gray-500';
+    ellipsis.textContent = '...';
+    pageNumbers.appendChild(ellipsis);
+  }
+  
+  // Show pages around current page
+  const startPage = Math.max(2, currentPage - 1);
+  const endPage = Math.min(totalPages - 1, currentPage + 1);
+  
+  for (let i = startPage; i <= endPage; i++) {
+    pageNumbers.appendChild(createPageNumberButton(i));
+  }
+  
+  // Show ellipsis if needed
+  if (currentPage < totalPages - 2) {
+    const ellipsis = document.createElement('span');
+    ellipsis.className = 'px-2 text-gray-500';
+    ellipsis.textContent = '...';
+    pageNumbers.appendChild(ellipsis);
+  }
+  
+  // Always show last page if there's more than one page
+  if (totalPages > 1) {
+    pageNumbers.appendChild(createPageNumberButton(totalPages));
+  }
+}
+
+function createPageNumberButton(pageNumber) {
+  const button = document.createElement('button');
+  button.className = `page-btn ${pageNumber === currentEvaluationModal.currentPage ? 'active' : ''}`;
+  button.textContent = pageNumber;
+  button.addEventListener('click', () => {
+    currentEvaluationModal.currentPage = pageNumber;
+    updateEvaluationPagination();
+  });
+  return button;
+}
+
+function changeEvaluationPage(direction) {
+  const newPage = currentEvaluationModal.currentPage + direction;
+  if (newPage >= 1 && newPage <= currentEvaluationModal.totalPages) {
+    currentEvaluationModal.currentPage = newPage;
+    updateEvaluationPagination();
+  }
+}
+
+function closeEvaluationModal() {
+  document.getElementById('evaluationModal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+/* -----------------------------
+   Event Handlers
+------------------------------ */
+function setupEventListeners() {
+  // Search with debounce
+  let searchTimeout;
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      activeFilters.search = e.target.value;
+      updateActiveFiltersDisplay();
+      const results = performSearch();
+      renderResults(results);
+    }, 300);
+  });
+
+  // Status filter
+  document.getElementById('filterResult').addEventListener('change', (e) => {
+    activeFilters.status = e.target.value;
+    updateActiveFiltersDisplay();
+    const results = performSearch();
+    renderResults(results);
+  });
+
+  // Sort
+  document.getElementById('sortBy').addEventListener('change', (e) => {
+    activeFilters.sort = e.target.value;
+    const results = performSearch();
+    renderResults(results);
+  });
+
+  // Quick filters
+  document.querySelectorAll('.quick-filter-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.quick-filter-btn').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      activeFilters.quick = e.target.dataset.filter;
+      updateActiveFiltersDisplay();
+      const results = performSearch();
+      renderResults(results);
+    });
+  });
+
+  // View toggle
+  document.querySelectorAll('.view-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      currentView = e.target.dataset.view;
+      const results = performSearch();
+      renderResults(results);
+    });
+  });
+
+  // Reset filters
+  document.getElementById('resetFilters').addEventListener('click', resetAllFilters);
+  document.getElementById('resetAll').addEventListener('click', resetAllFilters);
+}
+
+function resetAllFilters() {
+  activeFilters = {
+    search: '',
+    status: '',
+    quick: 'all',
+    sort: 'date-desc'
+  };
+  
+  document.getElementById('searchInput').value = '';
+  document.getElementById('filterResult').value = '';
+  document.getElementById('sortBy').value = 'date-desc';
+  
+  document.querySelectorAll('.quick-filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === 'all');
+  });
+  
+  updateActiveFiltersDisplay();
+  const results = performSearch();
+  renderResults(results);
+}
+
+function removeSearchFilter() {
+  activeFilters.search = '';
+  document.getElementById('searchInput').value = '';
+  updateActiveFiltersDisplay();
+  const results = performSearch();
+  renderResults(results);
+}
+
+function removeStatusFilter() {
+  activeFilters.status = '';
+  document.getElementById('filterResult').value = '';
+  updateActiveFiltersDisplay();
+  const results = performSearch();
+  renderResults(results);
+}
+
+function removeQuickFilter() {
+  activeFilters.quick = 'all';
+  document.querySelectorAll('.quick-filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === 'all');
+  });
+  updateActiveFiltersDisplay();
+  const results = performSearch();
+  renderResults(results);
+}
+
+/* -----------------------------
+   Initialization
+------------------------------ */
+async function fetchSubmissions() {
+  try {
+    elements.loadingState.classList.remove('hidden');
+    
+    const res = await fetch(`/instructor/h/api/grade/${activityId}`);
+    const data = await res.json();
+    submissions = data.submissions || [];
+    
+    setupEventListeners();
+    const results = performSearch();
+    renderResults(results);
+    
+  } catch (err) {
+    console.error("Fetch error:", err);
+    elements.loadingState.innerHTML = `
+      <div class="text-center text-red-500">
+        <div class="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <p class="text-lg font-medium text-gray-700">Failed to load submissions</p>
+        <p class="text-gray-500 mt-1">Please try refreshing the page</p>
+      </div>
+    `;
+  }
+}
+
+// Initialize the application
+document.addEventListener('DOMContentLoaded', () => {
+  fetchSubmissions();
+});
+</script>
+{% endblock content %}

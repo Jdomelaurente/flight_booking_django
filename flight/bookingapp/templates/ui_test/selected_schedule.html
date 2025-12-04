@@ -1,0 +1,113 @@
+{% extends 'ui_test/base.html' %}
+{% load static %}
+
+{% block title %}Schedule{% endblock %}
+
+{% block content %}
+
+<div class=" w-full  px-30">
+
+    <div class="w-full border rounded-xl h-[679px] bg-[#FFFCF5] py-5 px-7 space-y-3 border-gray-500">
+        <div class="flex justify-between items-end">
+            <h1 class="text-2xl font-semibold text-gray-700">Flight Details</h1>
+            <p class="text-sm text-gray-400">Check you selected flight</p>
+        </div>
+
+        <!-- depart -->
+         <div class="w-full shadow-md/20 bg-white  rounded-sm">
+            <div class="w-full bg-[#093704] py-3 px-4 text-[#FFC83D]">
+                <h1 >Manila to  Cebu - Wednesday, 22 October 2025</h1>
+            </div>
+
+            <div class="flex gap-2  py-5 px-10 ">
+                <div class="flex-1 flex justify-around my-5">
+                    <div class="flex flex-col text-sm leading-none">
+                        <p class="text-base leading-none">08:00</p>
+                        <p>MNL</p>
+                        <p class="text-[9px] text-gray-500">Ninoy Aquino International</p>
+                        <p class="text-[9px] text-gray-500">Terminal 2</p>
+                    </div>
+                    <div class="text-sm">==Non-stop==</div>
+                    <div class="flex flex-col text-sm leading-none">
+                        <p class="text-base leading-none">08:00</p>
+                        <p>MNL</p>
+                        <p class="text-[9px] text-gray-500">Ninoy Aquino International</p>
+                        <p class="text-[9px] text-gray-500">Terminal 2</p>
+                    </div>
+                    
+                </div>
+                <div class="flex justify-around px-10 gap-4 items-center w-full max-w-[400px] border-l border-l-gray-400  ">
+                    <button class="bg-[#093704] hover:bg-[#093704]/80 cursor-pointer rounded-xs w-full py-2 text-[#FFC83D] text-sm">Flight Details</button>
+                    <button class="bg-[#093704] hover:bg-[#093704]/80 cursor-pointer rounded-xs w-full py-2 text-[#FFC83D] text-sm">Bundle</button>
+                </div>
+            </div>    
+
+         </div>
+
+
+
+        <!-- return -->
+         <div class="w-full shadow-md/20 bg-white  rounded-sm">
+            <div class="w-full bg-[#093704] py-3 px-4 text-[#FFC83D]">
+                <h1 >Manila to  Cebu - Wednesday, 22 October 2025</h1>
+            </div>
+
+            <div class="flex gap-2  py-5 px-10 ">
+                <div class="flex-1 flex justify-around my-5">
+                    <div class="flex flex-col text-sm leading-none">
+                        <p class="text-base leading-none">08:00</p>
+                        <p>MNL</p>
+                        <p class="text-[9px] text-gray-500">Ninoy Aquino International</p>
+                        <p class="text-[9px] text-gray-500">Terminal 2</p>
+                    </div>
+                    <div class="text-sm">==Non-stop==</div>
+                    <div class="flex flex-col text-sm leading-none">
+                        <p class="text-base leading-none">08:00</p>
+                        <p>MNL</p>
+                        <p class="text-[9px] text-gray-500">Ninoy Aquino International</p>
+                        <p class="text-[9px] text-gray-500">Terminal 2</p>
+                    </div>
+                    
+                </div>
+                <div class="flex justify-around px-10 gap-4 items-center w-full max-w-[400px] border-l border-l-gray-400  ">
+                    <button class="bg-[#093704] hover:bg-[#093704]/80 cursor-pointer rounded-xs w-full py-2 text-[#FFC83D] text-sm">Flight Details</button>
+                    <button class="bg-[#093704] hover:bg-[#093704]/80 cursor-pointer rounded-xs w-full py-2 text-[#FFC83D] text-sm">Bundle</button>
+                </div>
+            </div>    
+
+         </div>
+
+
+
+         <div class="w-full flex justify-between mt-15">
+            <!-- left -->
+            <div class="flex flex-col gap-2 text-xs  text-green-700">
+                <a href="#" class="underline">Fare Rules, Cancellation and Refuind policy</a>
+                <a href="#" class="underline">Dangerous goods policy</a>
+                <a href="#" class="underline">Detailed baggage policy</a>
+
+                
+            </div>
+            <!-- right -->
+            <div class="flex flex-col gap-2 text-xs items-end">
+                <div class="flex text-2xl items-end gap-2">
+                    <p class="text-base text-gray-400">Total price:</p> <strong>PHP 15,622</strong>
+                </div>
+                <p>(including taxes, fees and discounts)</p>
+                <a href="#" class="underline text-green-700">See price details</a>
+
+            </div>
+
+         </div>
+
+        <div class="w-full flex justify-between text-xs  ">
+            <button class="px-10 py-3 cursor-pointer rounded-xs text-black hover:bg-gray-100  bg-white border"> Back</button>
+            <button class="py-3 px-5 cursor-pointer rounded-xs bg-[#FFC83D] hover:bg-[#FFC83D]/80 ">Fill passengers details </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

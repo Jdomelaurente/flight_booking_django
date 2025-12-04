@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work Details - {{ activity.title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .requirement-met { background-color: #d4edda; border-left: 4px solid #28a745; }
+        .requirement-not-met { background-color: #f8d7da; border-left: 4px solid #dc3545; }
+        .requirement-info { background-color: #e2e3e5; border-left: 4px solid #6c757d; }
+        .score-breakdown { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h1 class="h3 mb-0">Work Details: {{ activity.title }}</h1>
+                    <a href="{% url 'bookingapp:student_activities' %}" class="btn btn-outline-secondary">
+                        ← Back to Activities
+                    </a>
+                </div>
+                <p class="text-muted mb-0">Student: {{ student.first_name }} {{ student.last_name }}</p>
+                <p class="text-muted">Submission Date: {{ submission.submitted_at|date:"F j, Y g:i A" }}</p>
+            </div>
+        </div>
+
+        <!-- Score Card -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="card">
+                    <!-- In the passenger details section -->
+                    <div class="card-body">
+                        <h6 class="card-title">{{ passenger.name }} <span class="badge bg-secondary">{{ passenger.type }}</span></h6>
+                        <p class="mb-1"><small>Date of Birth: {{ passenger.date_of_birth }}</small></p>
+                        {% if passenger.gender %}
+                        <p class="mb-1"><small>Gender: {{ passenger.gender }}</small></p>
+                        {% endif %}
+                        {% if passenger.passport %}
+                        <p class="mb-1"><small>Passport: {{ passenger.passport }}</small></p>
+                        {% endif %}
+                        {% if passenger.email %}
+                        <p class="mb-1"><small>Email: {{ passenger.email }}</small></p>
+                        {% endif %}
+                        {% if passenger.phone %}
+                        <p class="mb-1"><small>Phone: {{ passenger.phone }}</small></p>
+                        {% endif %}
+                        
+                        <div class="mt-2">
+                            <strong>Flights:</strong>
+                            {% for flight in passenger.flights %}
+                           <div class="mt-1">
+                                <small>{{ flight.route }} - {{ flight.seat_class }} (Seat {{ flight.seat_number }}) - ${{ flight.price }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card score-breakdown text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Score Breakdown</h5>
+                        <div class="mb-2">
+                            <small>Completion: {{ comparison.score_breakdown.base_points|floatformat:1 }} pts</small>
+                            <div class="progress" style="height: 5px;">
+                                <div class="progress-bar bg-info" style="width: 100%"></div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <small>Passengers: {{ comparison.score_breakdown.passenger_points|floatformat:1 }} pts</small>
+                            <div class="progress" style="height: 5px;">
+                                <div class="progress-bar bg-success" 
+                                     style="width: {% widthratio comparison.score_breakdown.passenger_points comparison.score_breakdown.total_possible 100 %}%"></div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <small>Budget: {{ comparison.score_breakdown.price_points|floatformat:1 }} pts</small>
+                            <div class="progress" style="height: 5px;">
+                                <div class="progress-bar bg-warning" 
+                                     style="width: {% widthratio comparison.score_breakdown.price_points comparison.score_breakdown.total_possible 100 %}%"></div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <small>Compliance: {{ comparison.score_breakdown.compliance_points|floatformat:1 }} pts</small>
+                            <div class="progress" style="height: 5px;">
+                                <div class="progress-bar bg-primary" 
+                                     style="width: {% widthratio comparison.score_breakdown.compliance_points comparison.score_breakdown.total_possible 100 %}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Requirements Comparison -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="card-title mb-0">Requirements vs Your Work</h4>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="15%">Category</th>
+                                        <th width="35%">Activity Requirement</th>
+                                        <th width="35%">Your Work</th>
+                                        <th width="15%">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for req in comparison.requirements %}
+                                    <tr class="{% if req.met %}requirement-met{% else %}requirement-not-met{% endif %} {% if req.optional %}requirement-info{% endif %}">
+                                        <td>
+                                            <strong>{{ req.category }}</strong>
+                                            {% if req.weight and req.weight != 'Info' %}
+                                            <br><small class="text-muted">({{ req.weight }} priority)</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ req.requirement }}</td>
+                                        <td>
+                                            {{ req.student_work }}
+                                            {% if req.overage and req.overage > 0 %}
+                                            <br><small class="text-danger">(${{ req.overage|floatformat:2 }} over budget)</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge {% if req.met %}bg-success{% else %}bg-danger{% endif %}">
+                                                {{ req.icon }} {% if req.met %}Met{% else %}Not Met{% endif %}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Passenger Details -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Passenger Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for passenger in booking_details.passengers %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ passenger.name }} <span class="badge bg-secondary">{{ passenger.type }}</span></h6>
+                                        <p class="mb-1"><small>Date of Birth: {{ passenger.date_of_birth }}</small></p>
+                                        <p class="mb-1"><small>Gender: {{ passenger.gender }}</small></p>
+                                        {% if passenger.passport %}
+                                        <p class="mb-1"><small>Passport: {{ passenger.passport }}</small></p>
+                                        {% endif %}
+                                        {% comment %} {% if passenger.nationality %}
+                                        <p class="mb-1"><small>Nationality: {{ passenger.nationality }}</small></p>
+                                        {% endif %} {% endcomment %}
+                                        
+                                        <div class="mt-2">
+                                            <strong>Flights:</strong>
+                                            {% for flight in passenger.flights %}
+                                            <div class="mt-1">
+                                                <small>{{ flight.route }} - {{ flight.seat_class }} (Seat {{ flight.seat_number }}) - ${{ flight.price }}</small>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -24,6 +24,17 @@
                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
         </div>
 
+        <div>
+            <label class="block font-semibold mb-1">Airport Type:</label>
+            <select name="airport_type" 
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500">
+                <option value="domestic" {% if airport.airport_type == 'domestic' %}selected{% endif %}>Domestic</option>
+                <option value="international" {% if airport.airport_type == 'international' %}selected{% endif %}>International</option>
+                <option value="unknown" {% if airport.airport_type == 'unknown' %}selected{% endif %}>Unknown</option>
+            </select>
+        </div>
+
+
         <div class="flex justify-between mt-6">
             <button type="submit" 
                     class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
