@@ -1,0 +1,157 @@
+<!-- booking/student/activities.html -->
+{% extends 'booking/student/base.html' %}
+
+{% block content %}
+<h1 class="text-4xl inria-serif-bold ">Student Dashboard</h1>
+<!-- Header Banner -->
+<div class="flex-1 max-h-[138px] mx-30 rounded-lg flex items-start flex-col justify-center bg-[#093704] h-[134px] mt-10 p-7">
+    <p class="text-[#FFC83D] text-4xl inria-serif-regular">CT 112 FLIGHT BOOKING SIMULATOR!</p>
+        {% if enrolled_sections %}
+        <p class="text-[#FFC83D] text-sm mt-1">
+            {% for enrollment in enrolled_sections %}
+                Instructor: 
+                {% if enrollment.section.instructor %}
+                    {{ enrollment.section.instructor.first_name }} {{ enrollment.section.instructor.last_name }}
+                {% else %}
+                    Not assigned
+                {% endif %}
+                {% if not forloop.last %} | {% endif %}
+            {% endfor %}
+    {% endif %}
+    </p>
+</div>
+
+<!-- Messages -->
+{% if messages %}
+<div class="mx-30 mt-4 space-y-2">
+    {% for message in messages %}
+    <div class="p-3 text-sm rounded-md {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="flex-1 flex flex-col mx-35 mt-10">
+    <!-- Navigation Tabs -->
+    <div class="flex items-center justify-between">
+        <div class="text-xs  space-x-10 font-medium ">
+            <a href="{% url 'studentapp:student_home' %}" class="text-gray-600 ">Active Activities</a>
+            <a href="{% url 'studentapp:student_activities' %}" class="text-[#093704] border-b-2  border-[#093704] pb-1 hover:text-[#093704]">All Activities</a>
+            <a href="{% url 'studentapp:practice_home' %}" class="text-gray-600 hover:text-[#093704]">Practice Booking</a>
+            {% if enrolled_sections %}
+                {% with first_section=enrolled_sections.0.section %}
+                <a href="{% url 'studentapp:student_section_grade_report' first_section.id student.id %}" 
+                class="text-gray-600 hover:text-[#093704]">
+                📊 Grade Report
+                </a>
+                {% endwith %}
+            {% endif %}
+        </div> 
+        <!-- Enrolled Sections -->
+        {% if enrolled_sections %}
+        <div class="  flex items-end justify-end  ">
+            <div class="flex flex-wrap gap-2">
+                {% for enrollment in enrolled_sections %}
+                <span class=" text-bkack font-medium text-base ">
+                    {{ enrollment.section.section_code }} - {{ enrollment.section.section_name }}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+
+     <!-- Show descriptions for all enrolled sections -->
+    {% if enrolled_sections %}
+        {% for enrollment in enrolled_sections %}
+            {% if enrollment.section.description %}
+            <div class="mx-10 mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                <h3 class="text-sm font-semibold text-gray-700 mb-2">
+                    Description
+                </h3>
+                <p class="text-sm text-gray-600">{{ enrollment.section.description }}</p>
+            </div>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+
+    <!-- Activities Section -->
+    <div class="flex-1 flex flex-col px-20 py-13 space-y-5">
+        {% for activity in all_activities %}
+        <div class="border border-gray-400 bg-white rounded-md p-10 space-y-3 hover:bg-gray-1000 cursor-pointer transition-colors"
+             onclick="window.location='{% url 'studentapp:student_activity_detail' activity.id %}'">
+            <div class="flex justify-between">
+                <div class="flex gap-10">
+                    <div class="w-10 h-10 rounded-full bg-[#093704] flex items-center justify-center">
+                        <span class="text-white text-xs font-semibold">
+                            {{ activity.activity_type|slice:":1"|upper }}
+                        </span>
+                    </div>
+                    <div class="flex flex-col">
+                        <h1 class="text-lg font-semibold text-gray-800">{{ activity.title }}</h1>
+                       
+                        <p class="text-xs text-gray-700">Due: {{ activity.due_date|date:"F j, Y" }}</p>
+                        <div class="flex gap-2 mt-1">
+                            <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                                {{ activity.activity_type }}
+                            </span>
+                            {% if activity.is_code_active and activity.status == 'published' %}
+                            <span class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">Active</span>
+                            {% else %}
+                            <span class="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded-full">Inactive</span>
+                            {% endif %}
+                            
+                            <!-- Check if activity is submitted -->
+                            {% for submission in submitted_activities %}
+                                {% if submission.activity.id == activity.id %}
+                                <span class="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">Submitted</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="w-full border border-gray-300"></div>
+
+            <div class="space-y-2">
+                <p class="text-sm tracking-wide text-justify">{{ activity.instructions|truncatewords:30 }}</p>
+                <div class="flex justify-between text-xs text-gray-500">
+                    <span>Points: {{ activity.total_points }}</span>
+                    <span>Trip Type: {{ activity.get_required_trip_type_display }}</span>
+                    <span>Class: {{ activity.get_required_travel_class_display }}</span>
+                </div>
+                <div class="text-xs text-gray-500">
+                    Passengers: {{ activity.required_passengers }} Adult(s), 
+                    {{ activity.required_children }} Child(ren), 
+                    {{ activity.required_infants }} Infant(s)
+                </div>
+                {% if activity.require_passenger_details %}
+                <div class="text-xs text-blue-600">
+                    ✓ Passenger details required
+                </div>
+                {% endif %}
+                
+                <!-- Action Buttons -->
+            
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
+            <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#093704" viewBox="0 0 24 24">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-medium text-gray-600 mb-2">No activities found</h3>
+            <p class="text-sm text-gray-500 mb-4">You don't have any activities in your enrolled sections.</p>
+            <a href="{% url 'studentapp:student_home' %}" class="bg-[#093704] hover:bg-[#093704]/80 text-white px-4 py-2 rounded-md text-sm">
+                Start Regular Booking
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

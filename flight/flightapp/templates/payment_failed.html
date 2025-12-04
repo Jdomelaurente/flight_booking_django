@@ -1,0 +1,8 @@
+{% extends "master.html" %}
+{% block content %}
+<div class="max-w-lg mx-auto bg-red-100 p-6 rounded shadow">
+    <h2 class="text-2xl font-bold mb-4 text-red-700">Payment Failed ❌</h2>
+    <p>We couldn’t process your payment for booking <strong>#{{ booking.id }}</strong>.</p>
+    <a href="{% url 'booking' %}" class="mt-4 inline-block bg-gray-600 text-white px-4 py-2 rounded">Back to Bookings</a>
+</div>
+{% endblock %}

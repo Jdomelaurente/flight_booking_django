@@ -1,0 +1,74 @@
+{% extends 'ui_test/base.html' %}
+{% load static %}
+
+{% block title %}Saving Passenger Information{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 flex flex-col justify-center items-center">
+    <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full mx-4">
+        <!-- Loading Animation -->
+        <div class="flex justify-center mb-6">
+            <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-[#093704]"></div>
+        </div>
+        
+        <!-- Loading Message -->
+        <div class="text-center">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Saving Passenger Information</h2>
+            <p class="text-gray-600 mb-6">Please wait while we save your passenger details...</p>
+            
+            <!-- Progress Bar -->
+            <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+                <div class="bg-[#093704] h-2 rounded-full animate-pulse"></div>
+            </div>
+            
+            <!-- Status Messages -->
+            <div id="status-messages" class="text-sm text-gray-500 space-y-2">
+                <div class="flex items-center justify-center">
+                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-[#093704]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing passenger information...
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Auto-redirect script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Redirect to add-ons after a brief delay
+            setTimeout(function() {
+                window.location.href = "{% url 'bookingapp:add_ons' %}";
+            }, 2000); // 2 second delay to show loading animation
+            
+            // Update status messages
+            const statusMessages = document.getElementById('status-messages');
+            const messages = [
+                "Processing passenger information...",
+                "Saving contact details...",
+                "Finalizing your booking...",
+                "Almost ready..."
+            ];
+            
+            let currentMessage = 0;
+            const messageInterval = setInterval(function() {
+                if (currentMessage < messages.length) {
+                    statusMessages.innerHTML = `
+                        <div class="flex items-center justify-center">
+                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-[#093704]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            ${messages[currentMessage]}
+                        </div>
+                    `;
+                    currentMessage++;
+                } else {
+                    clearInterval(messageInterval);
+                }
+            }, 500);
+        });
+    </script>
+</div>
+{% endblock %}

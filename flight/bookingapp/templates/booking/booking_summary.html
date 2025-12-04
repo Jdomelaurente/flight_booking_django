@@ -1,123 +1,358 @@
 {% extends 'booking/base.html' %}
-{% block title %} Booking Sumarry
-{% endblock  %}
+{% block title %} Booking Summary {% endblock %}
 
 {% block content %}
-<div class="w-full flex flex-col  items-center space-y-4">
-    <div class="flex flex-col w-full">
-        <h1 class="text-2xl font-bold">Booking Summary</h1>
-        <p class="text-xs">Review your booking before proceeding to payment</p>
+{% load static %}
+{% load custom_filters %}
+
+<main class="mx-auto flex flex-col justify-center space-y-8 py-6">
+
+    <!-- Step Indicator (Same style as your existing design) -->
+    <div class="bg-[#F4EB08] mx-auto h-[100px] w-[1100px] shadow-md/50 rounded-[20px] flex flex-col">
+        <!-- arrow  -->
+        <div class="flex justify-between items-center flex-1 mx-20">
+            <!-- Your existing step indicator code -->
+            <div class="rounded-full p-1 border border-[#2975F7]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" class="bg-[#2975F7] p-1 rounded-full" fill="white" viewBox="0 0 24 24">
+                    <path d="m17.54,3.64l-2.9,2.9-9.88-1.16c-.15-.02-.3.03-.41.14l-.59.59c-.24.24-.17.66.14.8l7.01,3.36-3.25,3.25-3.27-.65c-.16-.03-.33.02-.45.14l-.7.7c-.25.25-.17.67.16.81l4.27,1.83,1.83,4.27c.14.33.56.41.81.16l.7-.7c.12-.12.17-.29.14-.45l-.65-3.27,3.31-3.31,3.31,7.06c.15.31.56.39.81.14l.66-.66c.11-.11.16-.26.14-.41l-1.16-9.88,2.75-2.75c.7-.7.88-1.84.29-2.65-.74-1.03-2.19-1.12-3.05-.26Z"></path>
+                </svg>
+            </div>
+            <!-- ... rest of your step indicators ... -->
+        </div>
     </div>
 
-    <div class="w-[800px] h-[462px] bg-white flex flex-col flex gap-3 shadow-2xl rounded-xl">
-        <div class="flex  bg-green-950 h-[54px] w-full justify-center items-center">
-            <h1 class="font-semibold text-white text-2xl">Review Booking Summary</h1>
-        </div>
-
-        <!-- details  -->
-        <div class=" flex justify-between mt-5">
-
-            <div class="flex flex-col leading-none mx-[30px]">
-                <h1 class="text-2xl font-semibold">Juan Delata</h1>
-                <div class="flex gap-2 text-green-500">
-                    <p>MNL</p>
-                    <p>to</p>
-                    <p>BXU</p>
-                </div>
-                <p class="text-sm ">Manila-Butuan, 08 May 2025</p>
-            </div>
-
-            <div class="flex gap-2 my-2 mx-5" >
-                <div class="border-2 mx-5 border-gray-400"></div>
-                <div class="flex flex-col space-y-5">
-
-                    <button class="h-[35px]  bg-green-950 text-white w-full">Show Flight Details</button>
-
-                    <div class="flex items-end justify-center gap-1">
-                        <p class="text-xs text-gree-400">subtotal:</p>
-                        <h1 class="text-2xl font-semibold">PHP 9,000</h1>
+    <div class="flex w-[1100px] mx-auto flex-1 gap-5">
+        <div class="flex flex-1 flex-col space-y-5">
+            <div class="flex-1 border border-gray-300 rounded-md bg-white px-10 py-7 space-y-3">
+                <div class="flex flex-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="#NaNNaNNaN" viewBox="0 0 24 24">
+                        <path d="m19,2H5c-.55,0-1,.45-1,1v4h-2v2h2v2h-2v2h2v2h-2v2h2v4c0,.55.45,1,1,1h14c1.1,0,2-.9,2-2V4c0-1.1-.9-2-2-2Zm0,18H6V4h13v16Z"></path>
+                        <path d="M12.5 7A2.5 2.5 0 1 0 12.5 12 2.5 2.5 0 1 0 12.5 7z"></path>
+                        <path d="m17,16c0-1.66-1.34-3-3-3h-3c-1.66,0-3,1.34-3,3v1h9v-1Z"></path>
+                    </svg>
+                    <div>
+                        <h1 class="text-xl font-semibold flex leading-none">Booking Summary</h1>
+                        <p class="text-[11px] text-gray-500">Review your booking before proceeding to payment</p>
                     </div>
                 </div>
-            </div>
-            
-        </div>
 
-        <div class="border-2 mx-5 border-gray-400"></div>
-
-        <div class=" flex justify-between ">
-
-            <div class="flex flex-col leading-none mx-[30px]">
-                <h1 class="text-2xl font-semibold">Juan Delata</h1>
-                <div class="flex gap-2 text-green-500">
-                    <p>MNL</p>
-                    <p>to</p>
-                    <p>BXU</p>
-                </div>
-                <p class="text-sm ">Manila-Butuan, 08 May 2025</p>
-            </div>
-
-            <div class="flex gap-2 my-2 mx-5" >
-                <div class="border-2 mx-5 border-gray-400"></div>
-                <div class="flex flex-col space-y-5">
-
-                    <button class="h-[35px]  bg-green-950 text-white w-full">Show Flight Details</button>
-
-                    <div class="flex items-end justify-center gap-1">
-                        <p class="text-xs text-gree-400">subtotal:</p>
-                        <h1 class="text-2xl font-semibold">PHP 9,000</h1>
+                <div class="flex justify-between">
+                    <h1 class="font-semibold font-sm">Flight Information</h1>
+                    <div class="flex items-end gap-1">
+                        <span class="text-[11px]">Trip Type: </span>
+                        <p class="text-sm font-medium">{% if return_schedule %} Round-Trip {% elif depart_schedule %} One-way {% endif %}</p>
                     </div>
                 </div>
-            </div>
-            
-        </div>
 
-        <div class="border-2 mx-5 border-gray-400"></div>
+                <div class="flex-1 border border-gray-400 rounded-sm p-3 px-5">
+                    {% if depart_schedule %}
+                    <div class="flex-1 flex justify-between mb-3">
+                        <p class="font-semibold">Departure</p>
+                        <div class="flex items-end gap-1">
+                            <span class="text-[11px]">Flight: </span>
+                            <p class="text-sm font-medium">{{ depart_schedule.flight }}</p>
+                        </div>
+                    </div>
 
-        <div class=" flex justify-between ">
+                    <div class="flex flex-col gap-1">
+                        <p class="text-[11px]">From: <span class="text-sm font-medium"> {{ depart_schedule.flight.route.origin_airport }}</span></p>
+                        <p class="text-[11px]">To: <span class="text-sm font-medium">{{ depart_schedule.flight.route.destination_airport }}</span></p>
+                        <p class="text-[11px]">Depart on: <span class="text-sm font-medium">{{ depart_schedule.departure_time|date:"d M Y, h:i A" }}</span></p>
+                    </div>
 
-            <div class="flex flex-col leading-none mx-[30px]">
-                <h1 class="text-2xl font-semibold">Juan Delata</h1>
-                <div class="flex gap-2 text-green-500">
-                    <p>MNL</p>
-                    <p>to</p>
-                    <p>BXU</p>
+                    <div class="w-full flex justify-end items-end gap-1">
+                        <span class="text-[11px]">Base price: </span>
+                        <p class="text-sm font-semibold">PHP {{ depart_schedule.flight.route.base_price|floatformat:2 }}</p>
+                    </div>
+                    {% endif %}
                 </div>
-                <p class="text-sm ">Manila-Butuan, 08 May 2025</p>
-            </div>
 
-            <div class="flex gap-2 my-2 mx-5" >
-                <div class="border-2 mx-5 border-gray-400"></div>
-                <div class="flex flex-col space-y-5">
+                {% if return_schedule %}
+                <div class="flex-1 border border-gray-400 rounded-sm p-3 px-5">
+                    <div class="flex-1 flex justify-between mb-3">
+                        <p class="font-semibold">Return</p>
+                        <div class="flex items-end gap-1">
+                            <span class="text-[11px]">Flight: </span>
+                            <p class="text-sm font-medium">{{ return_schedule.flight }}</p>
+                        </div>
+                    </div>
 
-                    <button class="h-[35px]  bg-green-950 text-white w-full">Show Flight Details</button>
+                    <div class="flex flex-col gap-1">
+                        <p class="text-[11px]">From: <span class="text-sm font-medium">{{ return_schedule.flight.route.origin_airport }}</span></p>
+                        <p class="text-[11px]">To: <span class="text-sm font-medium">{{ return_schedule.flight.route.destination_airport }}</span></p>
+                        <p class="text-[11px]">Depart on: <span class="text-sm font-medium"> {{ return_schedule.departure_time|date:"d M Y, h:i A" }}</span></p>
+                    </div>
 
-                    <div class="flex items-end justify-center gap-1">
-                        <p class="text-xs text-gree-400">subtotal:</p>
-                        <h1 class="text-2xl font-semibold">PHP 9,000</h1>
+                    <div class="w-full flex justify-end items-end gap-1">
+                        <span class="text-[11px]">Base price: </span>
+                        <p class="text-sm font-semibold">PHP {{ return_schedule.flight.route.base_price|floatformat:2 }}</p>
                     </div>
                 </div>
+                {% endif %}
+
+                <!-- Included Add-ons Section -->
+                <div class="mt-6">
+                    <h2 class="font-semibold text-lg mb-3 text-green-600">Included Add-ons</h2>
+                    
+                    {% if depart_included_addons or return_included_addons %}
+                        <div class="space-y-4">
+                            <!-- Departure Flight Included Add-ons -->
+                            {% if depart_included_addons %}
+                            <div class="border border-green-200 rounded-md p-4 bg-green-50">
+                                <h3 class="font-medium text-sm mb-3 text-green-700">Departure Flight Included</h3>
+                                <div class="space-y-2">
+                                    {% for addon in depart_included_addons %}
+                                    <div class="flex justify-between items-center py-2 border-b border-green-200 last:border-b-0">
+                                        <div class="flex-1">
+                                            <p class="text-sm font-medium">{{ addon.name }}</p>
+                                            {% if addon.description %}
+                                            <p class="text-xs text-gray-600">{{ addon.description }}</p>
+                                            {% endif %}
+                                            {% if addon.type %}
+                                            <p class="text-xs text-green-600">Type: {{ addon.type.name }}</p>
+                                            {% endif %}
+                                            {% if addon.seat_class %}
+                                            <p class="text-xs text-green-500">For: {{ addon.seat_class.name }} Class</p>
+                                            {% endif %}
+                                        </div>
+                                        <span class="font-semibold text-green-700">FREE</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Return Flight Included Add-ons -->
+                            {% if return_included_addons %}
+                            <div class="border border-green-200 rounded-md p-4 bg-green-50">
+                                <h3 class="font-medium text-sm mb-3 text-green-700">Return Flight Included</h3>
+                                <div class="space-y-2">
+                                    {% for addon in return_included_addons %}
+                                    <div class="flex justify-between items-center py-2 border-b border-green-200 last:border-b-0">
+                                        <div class="flex-1">
+                                            <p class="text-sm font-medium">{{ addon.name }}</p>
+                                            {% if addon.description %}
+                                            <p class="text-xs text-gray-600">{{ addon.description }}</p>
+                                            {% endif %}
+                                            {% if addon.type %}
+                                            <p class="text-xs text-green-600">Type: {{ addon.type.name }}</p>
+                                            {% endif %}
+                                            {% if addon.seat_class %}
+                                            <p class="text-xs text-green-500">For: {{ addon.seat_class.name }} Class</p>
+                                            {% endif %}
+                                        </div>
+                                        <span class="font-semibold text-green-700">FREE</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4 border border-gray-300 rounded-md bg-gray-50">
+                            <p class="text-gray-500 text-sm">No included add-ons for selected seat classes</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Optional Add-ons Section -->
+               
+                    <div class="mt-6">
+                        <h2 class="font-semibold text-lg mb-3 text-blue-600">Selected Optional Add-ons</h2>
+                        
+                        {% if addons_total > 0 %}
+                            <div class="space-y-4">
+                                {% for passenger in passengers %}
+                                    {% if passenger.selected_addons %}
+                                    <div class="border border-blue-200 rounded-md p-4 bg-blue-50">
+                                        <h3 class="font-medium text-sm mb-3 text-blue-700">{{ passenger.full_name }} ({{ passenger.passenger_type }})</h3>
+                                        <div class="space-y-2">
+                                            {% for addon in passenger.selected_addons %}
+                                            <div class="flex justify-between items-center py-2 border-b border-blue-200 last:border-b-0">
+                                                <div class="flex-1">
+                                                    <p class="text-sm font-medium">{{ addon.name }}</p>
+                                                    {% if addon.description %}
+                                                    <p class="text-xs text-gray-600">{{ addon.description }}</p>
+                                                    {% endif %}
+                                                    {% if addon.type %}
+                                                    <p class="text-xs text-blue-600">Type: {{ addon.type.name }}</p>
+                                                    {% endif %}
+                                                </div>
+                                                <span class="font-semibold text-blue-700">PHP {{ addon.price|floatformat:2 }}</span>
+                                            </div>
+                                            {% endfor %}
+                                            <!-- Passenger subtotal -->
+                                            <div class="flex justify-between items-center pt-2 mt-2 border-t border-blue-300">
+                                                <span class="text-sm font-medium">Subtotal:</span>
+                                                <span class="font-semibold text-blue-800">
+                                                    PHP {% widthratio passenger.selected_addons.0.price 1 passenger.selected_addons|length %}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                <!-- Total Optional Add-ons Summary -->
+                                <div class="border-t border-blue-300 pt-3 mt-4">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-semibold text-sm">Total Optional Add-ons:</span>
+                                        <span class="font-bold text-lg text-blue-700">PHP {{ addons_total|floatformat:2 }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4 border border-gray-300 rounded-md bg-gray-50">
+                                <p class="text-gray-500 text-sm">No optional add-ons selected</p>
+                            </div>
+                        {% endif %}
+                    </div>
             </div>
-            
+
+            <!-- Passenger List Section -->
+            <div class="flex-1 border border-gray-300 rounded-md bg-white px-10 py-7 space-y-3">
+                <h1 class="text-lg font-semibold mb-4">Passenger List</h1>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-300">
+                                <th class="text-left py-3 px-4 font-medium text-[11px]">No.</th>
+                                <th class="text-left py-3 px-4 font-medium text-[11px]">Passenger Name</th>
+                                <th class="text-left py-3 px-4 font-medium text-[11px]">Type</th>
+                                <th class="text-left py-3 px-4 font-medium text-[11px]">Seat Number</th>
+                                <th class="text-left py-3 px-4 font-medium text-[11px]">Seat Class</th>
+                                <th class="text-left py-3 px-4 font-medium text-[11px]">Included Add-ons</th>
+                                <th class="text-left py-3 px-4 font-medium text-[11px]">Optional Add-ons</th>
+                                <th class="text-left py-3 px-4 font-medium text-[11px]">Declaration / Request</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm">
+                            {% for p in passengers %}
+                            <tr class="border-b border-gray-200">
+                                <td class="py-3 px-4">{{ forloop.counter }}</td>
+                                <td class="py-3 px-4">{{ p.full_name }}</td>
+                                <td class="py-3 px-4">{{ p.passenger_type }}</td>
+                                <td class="py-3 px-4">
+                                    Depart: {{ p.depart_seat|default:"Not selected" }}<br>
+                                    {% if return_schedule %}Return: {{ p.return_seat|default:"Not selected" }}{% endif %}
+                                </td>
+                                <td class="py-3 px-4">
+                                    {% if p.depart_seat_class %}
+                                        Depart: {{ p.depart_seat_class.name }}<br>
+                                    {% endif %}
+                                    {% if p.return_seat_class %}
+                                        Return: {{ p.return_seat_class.name }}
+                                    {% endif %}
+                                    {% if not p.depart_seat_class and not p.return_seat_class %}
+                                        Not assigned
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 px-4 text-green-600">
+                                    {% if p.depart_included_addons or p.return_included_addons %}
+                                        {% if p.depart_included_addons %}{{ p.depart_included_addons|length }} depart{% endif %}
+                                        {% if p.depart_included_addons and p.return_included_addons %}/{% endif %}
+                                        {% if p.return_included_addons %}{{ p.return_included_addons|length }} return{% endif %}
+                                    {% else %}
+                                        None
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 px-4 text-blue-600">
+                                    {% if p.selected_addons %}
+                                        {{ p.selected_addons|length }} add-on(s)
+                                    {% else %}
+                                        None
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 px-4">✓</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
+        <!-- Price Summary Section -->
+        <div class="flex-1 max-w-[400px] h-auto space-y-5">
+            <div class="flex-1 rounded-md border p-7 px-10 bg-white border-gray-300 space-y-5">
+                <h1 class="font-semibold text-lg mb-7">Price Summary</h1>
+                
+                <div class="flex justify-between items-end">
+                    <p class="text-[11px] text-gray-400">Number of passengers:</p>
+                    <p class="font-medium">{{ num_passengers }}</p>
+                </div>
+                <div class="w-full border border-gray-100"></div>
+                
+                <div class="flex justify-between items-end">
+                    <p class="text-[11px] text-gray-400">Subtotal (Flights):</p>
+                    <p class="font-medium"><span class="text-[11px] font-light">PHP</span> {{ subtotal|floatformat:2 }}</p>
+                </div>
+                
+                <!-- Optional Add-ons in Price Summary -->
+                {% if addons_total > 0 %}
+                <div class="w-full border border-gray-100"></div>
+                <div class="flex justify-between items-end">
+                    <p class="text-[11px] text-gray-400">Optional Add-ons:</p>
+                    <p class="font-medium"><span class="text-[11px] font-light">PHP</span> {{ addons_total|floatformat:2 }}</p>
+                </div>
+                {% endif %}
+                
+                <div class="w-full border border-gray-100"></div>
+                <div class="flex justify-between items-end">
+                    <button class="px-3 py-1 text-[11px] text-white bg-[#2975F7] hover:bg-[#2975F7]/80 cursor-pointer">Taxes/Fees</button>
+                    <p class="font-medium"><span class="text-[11px] font-light">PHP</span> {{ taxes|floatformat:2 }}</p>
+                </div>
+                
+                <div class="w-full border border-gray-100"></div>
+                <div class="flex justify-between items-end">
+                    <button class="px-3 py-1 text-[11px] text-white bg-[#2975F7] hover:bg-[#2975F7]/80 cursor-pointer">Insurance</button>
+                    <p class="font-medium"><span class="text-[11px] font-light">PHP</span> {{ insurance|floatformat:2 }}</p>
+                </div>
+                
+                <!-- Included Add-ons Note -->
+                <div class="w-full border border-gray-100"></div>
+                <div class="bg-green-50 border border-green-200 rounded-md p-3">
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        <p class="text-xs text-green-700">Included add-ons: <span class="font-semibold">FREE</span></p>
+                    </div>
+                </div>
+                
+                <div class="w-full border border-gray-200"></div>
+                <div class="flex justify-between items-end">
+                    <p class="text-[11px] text-gray-800 font-semibold">Flight Total:</p>
+                    <p class="font-medium"><span class="text-[11px] font-light">PHP</span> {{ total_flight_price|floatformat:2 }}</p>
+                </div>
+                
+                <!-- Grand Total (including optional add-ons) -->
+                <div class="w-full border border-gray-200"></div>
+                <div class="flex justify-between items-end">
+                    <p class="text-[11px] text-gray-800 font-semibold">Grand Total:</p>
+                    <p class="font-semibold text-xl text-blue-700"><span class="text-[11px] font-light">PHP</span> {{ grand_total|floatformat:2 }}</p>
+                </div>
+            </div>
+
+            <div class="flex justify-between gap-3">
+                <a href="{% url 'bookingapp:select_seat' %}" class="flex-1 text-center cursor-pointer text-gray-400 hover:shadow-sm/30 hover:text-gray-700 px-5 py-3 rounded-sm shadow-sm/10 font-semibold text-sm">Back</a>
+                <form action="{% url 'bookingapp:confirm_booking' %}" method="POST">
+                    {% csrf_token %}
+                    <button class="flex-1 bg-[#2975F7] hover:bg-[#2975F7]/90 cursor-pointer text-white px-5 py-3 rounded-sm font-medium text-sm">
+                        Proceed to Payment 
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
+</main>
 
-    <div class="w-[800px] bg-white h-[115px] flex shadow-md/20 justify-center items-center gap-3 rounded-xl">
-        <input type="checkbox">
-        <label for="" class="text-xs">By clicking ‘Continue’ I confirm that i have read, understood, and accept the <strong>Condition of Carriage</strong></label>
-    </div>
-
-    <div class="w-[800px]  h-[115px] flex text-white justify-end shadow-md/20   gap-3">
-        <button class="w-[235px] h-[35px] bg-green-950 hover:bg-green-950/80 cursor-pointer">Continue</button>
-    </div>
-
-
-
-
-
-    
+<!-- Debug Section -->
+<div class="bg-yellow-100 border border-yellow-400 p-4 mb-4">
+    <h3 class="font-bold">Debug Info:</h3>
+    <p>Selected Add-ons: {{ selected_addons }}</p>
+    <p>Add-ons Details: {{ addons_details }}</p>
+    <p>Add-ons Total: {{ addons_total }}</p>
+    <p>Grand Total: {{ grand_total }}</p>
 </div>
-
-
-
-{% endblock  %}
+{% endblock %}

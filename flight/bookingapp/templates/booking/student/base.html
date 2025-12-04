@@ -1,0 +1,332 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="{% static '/src/output.css' %}" rel="stylesheet">
+      <link rel="icon" type="image/x-icon" href="{% static 'bookingapp/asset/site-logo.svg' %}">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inria+Sans:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Inria+Serif:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=La+Belle+Aurore&family=Medula+One&family=Odor+Mean+Chey&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Racing+Sans+One&family=Roboto:ital,wght@0,100..900;1,100..900&family=Sora:wght@100..800&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+ 
+    
+    <title>{% block title %}  {% endblock %}</title>
+
+    <style>
+        .poppins-thin {
+        font-family: "Poppins", sans-serif;
+        font-weight: 100;
+        font-style: normal;
+        }
+
+.poppins-extralight {
+  font-family: "Poppins", sans-serif;
+  font-weight: 200;
+  font-style: normal;
+}
+
+.poppins-light {
+  font-family: "Poppins", sans-serif;
+  font-weight: 300;
+  font-style: normal;
+}
+
+.poppins-regular {
+  font-family: "Poppins", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.poppins-medium {
+  font-family: "Poppins", sans-serif;
+  font-weight: 500;
+  font-style: normal;
+}
+
+.poppins-semibold {
+  font-family: "Poppins", sans-serif;
+  font-weight: 600;
+  font-style: normal;
+}
+
+.poppins-bold {
+  font-family: "Poppins", sans-serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.poppins-extrabold {
+  font-family: "Poppins", sans-serif;
+  font-weight: 800;
+  font-style: normal;
+}
+
+.poppins-black {
+  font-family: "Poppins", sans-serif;
+  font-weight: 900;
+  font-style: normal;
+}
+
+.poppins-thin-italic {
+  font-family: "Poppins", sans-serif;
+  font-weight: 100;
+  font-style: italic;
+}
+
+.poppins-extralight-italic {
+  font-family: "Poppins", sans-serif;
+  font-weight: 200;
+  font-style: italic;
+}
+
+.poppins-light-italic {
+  font-family: "Poppins", sans-serif;
+  font-weight: 300;
+  font-style: italic;
+}
+
+.poppins-regular-italic {
+  font-family: "Poppins", sans-serif;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.poppins-medium-italic {
+  font-family: "Poppins", sans-serif;
+  font-weight: 500;
+  font-style: italic;
+}
+
+.poppins-semibold-italic {
+  font-family: "Poppins", sans-serif;
+  font-weight: 600;
+  font-style: italic;
+}
+
+.poppins-bold-italic {
+  font-family: "Poppins", sans-serif;
+  font-weight: 700;
+  font-style: italic;
+}
+
+.poppins-extrabold-italic {
+  font-family: "Poppins", sans-serif;
+  font-weight: 800;
+  font-style: italic;
+}
+
+.poppins-black-italic {
+  font-family: "Poppins", sans-serif;
+  font-weight: 900;
+  font-style: italic;
+}
+
+.inria-sans-light {
+  font-family: "Inria Sans", sans-serif;
+  font-weight: 300;
+  font-style: normal;
+}
+
+.inria-sans-regular {
+  font-family: "Inria Sans", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.inria-sans-bold {
+  font-family: "Inria Sans", sans-serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.inria-sans-light-italic {
+  font-family: "Inria Sans", sans-serif;
+  font-weight: 300;
+  font-style: italic;
+}
+
+.inria-sans-regular-italic {
+  font-family: "Inria Sans", sans-serif;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.inria-sans-bold-italic {
+  font-family: "Inria Sans", sans-serif;
+  font-weight: 700;
+  font-style: italic;
+}
+
+.medula-one-regular {
+  font-family: "Medula One", system-ui;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.racing-sans-one-regular {
+  font-family: "Racing Sans One", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+.bg-image {
+  background-image: url('./images/bg.svg');
+  background-size: cover;   /* makes it fill the whole area */
+  background-position: center; /* centers the image */
+  background-repeat: no-repeat; /* avoids repeating */
+  width: 100%;
+  height: 100vh; /* full screen height */
+}
+
+.glow {
+    box-shadow: 0 0 2px white, 0 0 2px white, 0 0 2px white;
+}
+
+.syncopate-regular {
+  font-family: "Syncopate", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.syncopate-bold {
+  font-family: "Syncopate", sans-serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
+
+.inria-serif-regular {
+  font-family: "Inria Serif", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.inria-serif-bold {
+  font-family: "Inria Serif", serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
+/* Dropdown Styles */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background-color: white;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1000;
+    border-radius: 8px;
+    margin-top: 8px;
+}
+
+.dropdown-content a {
+    color: #333;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    border-bottom: 1px solid #f1f1f1;
+    transition: background-color 0.3s;
+}
+
+.dropdown-content a:hover {
+    background-color: #f1f1f1;
+}
+
+.dropdown-content a:last-child {
+    border-bottom: none;
+    color: #dc2626;
+}
+
+.dropdown-content a:last-child:hover {
+    background-color: #fee2e2;
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+    </style>
+</head>
+<body class="bg-[#FFFCF5] inria-sans-regular ease-in-out flex flex-col items-center">
+        <header class=" w-full bg-[#093704] h-[79px] flex items-center ">
+        <div class=" max-w-screen-2xl w-full mx-auto">
+            <div class="flex justify-between w-full  items-center px-10">
+                <img src="{% static 'bookingapp/images/logo-csucc.svg' %}" alt="" class=" h-auto">
+                <div class="flex gap-5">
+                    <!-- Profile Dropdown -->
+                    <div class="dropdown relative">
+                        <div class="w-12 h-12 rounded-full border-4 border-[#FEB938] bg-gray-200 cursor-pointer hover:border-[#FFD166] transition-colors"></div>
+                        <div class="dropdown-content">
+                            <a href="#" class="hover:bg-gray-100">Profile</a>
+                            <a href="#" class="hover:bg-gray-100">Settings</a>
+                            <a href="{% url 'bookingapp:logout' %}" class="text-red-600 hover:bg-red-50 font-medium">Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </header>
+    
+    <main class="flex-1 mt-10 flex flex-col w-full  max-w-screen-2xl  mx-auto">
+    {% block content %}
+    {% endblock %}
+    </main>
+
+
+    <!-- <footer class="w-full bg-[#045946] text-white text-center py-4 mt-10">
+      <p class="text-sm">&copy;  All rights reserved.</p>
+    </footer> -->
+    <script>
+    window.addEventListener('pageshow', function(event) {
+        // Reload if page was loaded from cache
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
+
+    function goBack() {
+        // Try to go back in browser history
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            // If no history, redirect to student activities page as fallback
+            window.location.href = "{% url 'studentapp:student_activities' %}";
+        }
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdowns = document.querySelectorAll('.dropdown');
+        dropdowns.forEach(dropdown => {
+            if (!dropdown.contains(event.target)) {
+                const dropdownContent = dropdown.querySelector('.dropdown-content');
+                if (dropdownContent) {
+                    dropdownContent.style.display = 'none';
+                }
+            }
+        });
+    });
+
+    // Toggle dropdown on profile click
+    document.querySelectorAll('.dropdown').forEach(dropdown => {
+        const profile = dropdown.querySelector('div[class*="rounded-full"]');
+        const dropdownContent = dropdown.querySelector('.dropdown-content');
+        
+        if (profile && dropdownContent) {
+            profile.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const isVisible = dropdownContent.style.display === 'block';
+                dropdownContent.style.display = isVisible ? 'none' : 'block';
+            });
+        }
+    });
+
+    </script>
+
+</body>
+</html>

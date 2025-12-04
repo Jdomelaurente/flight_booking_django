@@ -1,0 +1,264 @@
+{% extends 'ui_test/base.html' %}
+{% load static %}
+
+{% block title %}Seat Selection - Flight Booking{% endblock %}
+
+{% block content %}
+
+<!-- seat selection page -->
+<div class="mt-5 w-full px-15 py-5 flex flex-col">
+    <div class="w-full flex justify-between gap-5">
+        <!-- left -->
+        <div class="flex-1 border px-8 py-5 bg-[#FFFCF5] border-gray-400 space-y-2">
+            <div class="flex flex-col mb-6">
+                <h1 class="text-2xl font-semibold">Seat Selection</h1>
+                <p class="text-xs text-gray-400">Choose your preferred seat location for maximum comfort</p>
+                
+                <!-- Success Message -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="mt-2 p-3 rounded-sm {% if message.tags == 'success' %}bg-green-100 border border-green-400 text-green-700{% else %}bg-red-100 border border-red-400 text-red-700{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <!-- Flight Information -->
+            <div class="bg-white border border-gray-300 rounded-sm p-4 mb-6">
+                <h3 class="font-semibold text-gray-800 mb-3">Flight Details</h3>
+                <div class="text-sm text-gray-600 space-y-2">
+                    <div class="flex justify-between">
+                        <span>Departure:</span>
+                        <span class="font-medium">{{ depart_schedule.flight.route.origin_airport.code }} → {{ depart_schedule.flight.route.destination_airport.code }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Date:</span>
+                        <span>{{ depart_schedule.departure_time|date:"M d, Y" }}</span>
+                    </div>
+                    {% if return_schedule %}
+                    <div class="flex justify-between">
+                        <span>Return:</span>
+                        <span class="font-medium">{{ return_schedule.flight.route.origin_airport.code }} → {{ return_schedule.flight.route.destination_airport.code }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Date:</span>
+                        <span>{{ return_schedule.departure_time|date:"M d, Y" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Seat Selection Options -->
+            <form method="POST" action="{% url 'bookingapp:save_single_addon' %}">
+                {% csrf_token %}
+                
+                <!-- Hidden fields for navigation -->
+                <input type="hidden" name="airline_id" value="{{ airline.id }}">
+                <input type="hidden" name="schedule_id" value="{{ depart_schedule.id }}">
+                {% if return_schedule %}
+                <input type="hidden" name="return_schedule_id" value="{{ return_schedule.id }}">
+                {% endif %}
+
+                {% for passenger in passengers %}
+                <div class="bg-white border border-gray-300 rounded-sm p-4 mb-4">
+                    <h4 class="font-semibold text-lg mb-3">Passenger {{ forloop.counter }}: {{ passenger.first_name }} {{ passenger.last_name }}</h4>
+                    <p class="text-sm text-gray-500 mb-4">{{ passenger.passenger_type }}</p>
+                    
+                    <div class="grid grid-cols-1 gap-4">
+                        {% for addon in addons %}
+                        <div class="border border-gray-300 rounded-sm p-4 hover:border-[#093704] transition-colors {% for selected_addon in passenger.selected_addons %}{% if selected_addon.id == addon.id %}border-[#093704] bg-green-50{% endif %}{% endfor %}">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <input class="form-check-input h-5 w-5 text-[#093704] border-gray-300 rounded focus:ring-[#093704]" 
+                                           type="checkbox" 
+                                           name="addons_{{ passenger.id }}" 
+                                           value="{{ addon.id }}" 
+                                           id="addon_{{ passenger.id }}_{{ addon.id }}"
+                                           {% for selected_addon in passenger.selected_addons %}
+                                               {% if selected_addon.id == addon.id %}checked{% endif %}
+                                           {% endfor %}>
+                                    <div>
+                                        <label class="form-check-label font-medium text-gray-900 cursor-pointer" for="addon_{{ passenger.id }}_{{ addon.id }}">
+                                            {{ addon.name }}
+                                            {% for selected_addon in passenger.selected_addons %}
+                                                {% if selected_addon.id == addon.id %}
+                                                <span class="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Selected</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </label>
+                                        <p class="text-sm text-gray-500 mt-1">{{ addon.description }}</p>
+                                    </div>
+                                </div>
+                                <span class="text-lg font-semibold text-[#093704]">₱{{ addon.price }}</span>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-8">
+                            <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                            </svg>
+                            <p class="text-gray-500">No seat selection options available for this airline.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+
+                <div class="flex gap-3 mt-6">
+                    <button type="submit" class="flex-1 py-3 rounded-sm bg-[#093704] hover:bg-[#093704]/80 cursor-pointer text-[#FFC83D] text-center font-medium transition-colors">
+                        Save Seat Selections
+                    </button>
+                    <a href="{% url 'bookingapp:add_ons' %}" class="flex-1 py-3 bg-white hover:bg-gray-100 cursor-pointer rounded-sm border border-gray-500 text-center font-medium transition-colors">
+                        Back to Add-ons
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- right -->
+        <div class="flex-1 max-w-[500px] space-y-4">
+            <!-- Selected Add-ons Summary -->
+            <div class="bg-white border border-gray-300 rounded-sm p-4">
+                <h3 class="font-semibold text-gray-800 mb-3">Your Selections</h3>
+                <div class="space-y-3">
+                    {% if selected_addons %}
+                        {% for passenger in passengers %}
+                            {% if passenger.selected_addons %}
+                            <div class="border border-green-200 bg-green-50 rounded-sm p-3">
+                                <h4 class="font-medium text-green-800 mb-2">{{ passenger.first_name }} {{ passenger.last_name }}</h4>
+                                <ul class="space-y-1">
+                                    {% for addon in passenger.selected_addons %}
+                                    <li class="flex justify-between items-center text-sm">
+                                        <span class="text-green-700">✓ {{ addon.name }}</span>
+                                        <span class="font-semibold text-green-800">₱{{ addon.price }}</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                <div class="border-t border-green-200 mt-2 pt-2">
+                                    <div class="flex justify-between text-sm font-semibold">
+                                        <span>Subtotal:</span>
+                                        <span>₱{% widthratio passenger.selected_addons.0.price 1 passenger.selected_addons|length %}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="border border-gray-200 bg-gray-50 rounded-sm p-3">
+                                <h4 class="font-medium text-gray-600 mb-2">{{ passenger.first_name }} {{ passenger.last_name }}</h4>
+                                <p class="text-sm text-gray-500">No seat selected</p>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <!-- Total -->
+                        <div class="border-t border-gray-300 pt-3 mt-3">
+                            {% with total=0 %}
+                                {% for passenger in passengers %}
+                                    {% for addon in passenger.selected_addons %}
+                                        {% with total=total|add:addon.price %}
+                                        {% endwith %}
+                                    {% endfor %}
+                                {% endfor %}
+                                <div class="flex justify-between font-semibold text-lg">
+                                    <span>Total:</span>
+                                    <span class="text-[#093704]">₱{{ total }}</span>
+                                </div>
+                            {% endwith %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-6">
+                            <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                            </svg>
+                            <p class="text-gray-500">No seats selected yet</p>
+                            <p class="text-sm text-gray-400 mt-1">Select seat options for each passenger</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Seat Selection Tips -->
+            <div class="bg-blue-50 border border-blue-200 rounded-sm p-4">
+                <h3 class="font-semibold text-blue-800 mb-2">Seat Selection Tips</h3>
+                <ul class="text-sm text-blue-700 space-y-2">
+                    <li class="flex items-start space-x-2">
+                        <span class="text-blue-500">•</span>
+                        <span>Exit rows offer more legroom but have specific requirements</span>
+                    </li>
+                    <li class="flex items-start space-x-2">
+                        <span class="text-blue-500">•</span>
+                        <span>Front seats allow for quicker boarding and deplaning</span>
+                    </li>
+                    <li class="flex items-start space-x-2">
+                        <span class="text-blue-500">•</span>
+                        <span>Window seats are great for views and resting against</span>
+                    </li>
+                    <li class="flex items-start space-x-2">
+                        <span class="text-blue-500">•</span>
+                        <span>Aisle seats provide easier access to move around</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Aircraft Layout -->
+            <div class="bg-white border border-gray-300 rounded-sm p-4">
+                <h3 class="font-semibold text-gray-800 mb-3">Aircraft Information</h3>
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                        <span class="font-semibold text-gray-700">{{ airline.code }}</span>
+                    </div>
+                    <div>
+                        <h4 class="font-medium">{{ airline.name }}</h4>
+                        <p class="text-sm text-gray-500">{{ depart_schedule.flight.aircraft.model }}</p>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-600 space-y-1">
+                    <div class="flex justify-between">
+                        <span>Configuration:</span>
+                        <span>{{ depart_schedule.flight.aircraft.capacity }} seats</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Seat Rows:</span>
+                        <span>1-30</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Seat Layout:</span>
+                        <span>3-3 (Economy)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="w-full flex gap-3 mt-4">
+                <a href="{% url 'bookingapp:select_seat' %}"
+                   class="flex-1 py-3 bg-gray-500 hover:bg-gray-600 cursor-pointer rounded-sm text-white text-center font-medium transition-colors">
+                    Skip to Seats
+                </a>
+                <a href="{% url 'bookingapp:add_ons' %}"
+                   class="flex-1 py-3 rounded-sm bg-[#FFC83D] hover:bg-[#FFC83D]/80 cursor-pointer text-[#093704] text-center font-medium transition-colors">
+                    Continue
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Add some JavaScript for better UX
+document.addEventListener('DOMContentLoaded', function() {
+    // Add visual feedback when checkboxes are changed
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const card = this.closest('.border');
+            if (this.checked) {
+                card.classList.add('border-[#093704]', 'bg-green-50');
+            } else {
+                card.classList.remove('border-[#093704]', 'bg-green-50');
+            }
+        });
+    });
+});
+</script>
+
+{% endblock %}

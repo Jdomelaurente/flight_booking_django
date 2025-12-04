@@ -2,32 +2,43 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.main, name="main"),
 
+    path('', views.main, name="main"),
+    
+    #user
+    path("administrator/dashboard/", views.admin_dashboard, name="admin_dashboard"),
+    
     #login
-    path("profile/", views.profile_view, name="profile"),
-    path("register/", views.register_view, name="register"),
-    path("login/", views.login_view, name="login"),
-    path("dashboard/", views.dashboard_view, name="dashboard"),
-    path("logout/", views.logout_view, name="logout"),
+    path("dashboard/", views.dashboard, name="dashboard"),
+    path("administrator/profile/", views.profile_view, name="profile"),
+    path("administrator/register/", views.register_view, name="register"),
+    path("administrator/login/", views.login_view, name="login"),
+    path("administrator/logout/", views.logout_view, name="logout"),
 
     # flight
     path('flight/', views.flight_view, name='flight'),
     path('flights/add/', views.add_flight, name='add_flight'),
     path('flights/update/<int:flight_id>/', views.update_flight, name='update_flight'),
     path('flights/delete/<int:flight_id>/', views.delete_flight, name='delete_flight'),
+    path("load-aircrafts/", views.load_aircrafts, name="load_aircrafts"),
+    path("flights/import/", views.import_flights, name="import_flights"),
+
 
     # route
     path('route/', views.route_view, name='route'),
     path('routes/add/', views.add_route, name='add_route'),
     path('routes/update/<int:route_id>/', views.update_route, name='update_route'),
     path('routes/delete/<int:route_id>/', views.delete_route, name='delete_route'),
+    path("routes/import/", views.import_routes, name="import_routes"),
+
 
     #schedule 
     path('schedule/', views.schedule_view, name='schedule'),
     path('schedules/add/', views.add_schedule, name='add_schedule'),
     path('schedules/update/<int:schedule_id>/', views.update_schedule, name='update_schedule'),
     path('schedules/delete/<int:schedule_id>/', views.delete_schedule, name='delete_schedule'),
+    path("schedules/import/", views.import_schedules, name="import_schedules"),
+
 
     #seats
     path('seat/', views.seat_view, name='seat'),
@@ -40,6 +51,9 @@ urlpatterns = [
     path("airports/add/", views.add_airport, name="add_airport"),
     path("airports/update/<int:airport_id>/", views.update_airport, name="update_airport"),
     path("airports/delete/<int:airport_id>/", views.delete_airport, name="delete_airport"),
+    path("airports/import/", views.import_airports, name="import_airports"),
+
+
 
     #airline
     path('airline/', views.airline_view, name='airline'),
@@ -47,24 +61,38 @@ urlpatterns = [
     path("airlines/update/<int:airline_id>/", views.update_airline, name="update_airline"),
     path("airlines/delete/<int:airline_id>/", views.delete_airline, name="delete_airline"),
     path("ajax/load-aircrafts/", views.load_aircrafts, name="ajax_load_aircrafts"),
+    path("airlines/import/", views.import_airlines, name="import_airlines"),
+
 
     # aircraft
     path('aircraft/', views.aircraft_view, name='aircraft'),
     path("aircrafts/add/", views.add_aircraft, name="add_aircraft"),
     path("aircrafts/update/<int:aircraft_id>/", views.update_aircraft, name="update_aircraft"),
     path("aircrafts/delete/<int:aircraft_id>/", views.delete_aircraft, name="delete_aircraft"),
+    path("aircrafts/import/", views.import_aircrafts, name="import_aircrafts"),
+
 
     # seatclass
     path('seat_class/', views.seat_class_view, name='seat_class'),
     path("seat-classes/add/", views.add_seat_class, name="add_seat_class"),
     path("seat-classes/update/<int:seat_class_id>/", views.update_seat_class, name="update_seat_class"),
     path("seat-classes/delete/<int:seat_class_id>/", views.delete_seat_class, name="delete_seat_class"),
+    path("seat-classes/import/", views.import_seat_classes, name="import_seat_classes"),
+
+    # add-ons
+    path('addons/', views.addon_view, name='addon'),
+    path('addons/add/', views.add_addon, name='add_addon'),
+    path('addons/edit/<int:id>/', views.update_addon, name='update_addon'),
+    path('addons/delete/<int:id>/', views.delete_addon, name='delete_addon'),
+    path('addons/import/', views.import_addons, name='import_addons'),
+
 
     # booking
     path('booking/', views.booking_view, name='booking'),
     path("booking/add/", views.add_booking, name="add_booking"),
     path("booking/update/<int:booking_id>/", views.update_booking, name="update_booking"),
     path("booking/delete/<int:booking_id>/", views.delete_booking, name="delete_booking"),
+    path("booking/seats/<int:schedule_id>/", views.get_seats_for_schedule, name="get_seats_for_schedule"),
 
     # booking_detail
     path('booking_detail/', views.booking_detail_view, name='booking_detail'),
@@ -77,6 +105,9 @@ urlpatterns = [
     path("payments/add/", views.add_payment, name="add_payment"),
     path("payments/update/<int:payment_id>/", views.update_payment, name="update_payment"),
     path("payments/delete/<int:payment_id>/", views.delete_payment, name="delete_payment"),
+    path('booking/return_schedules/<int:outbound_id>/', views.get_return_schedules, name='return_schedules'),
+    
+
 
     #check_in
     path('check_in/', views.check_in_view, name='check_in'),
@@ -89,6 +120,16 @@ urlpatterns = [
     path("students/add/", views.add_student, name="add_student"),
     path("students/update/<int:student_id>/", views.update_student, name="update_student"),
     path("students/delete/<int:student_id>/", views.delete_student, name="delete_student"),
+    path("students/import/", views.import_students, name="import_students"),
+
+    # instructor
+    path('instructor/', views.instructor_view, name='instructor'),
+    path('instructors/add/', views.add_instructor, name='add_instructor'),
+    path('instructors/update/<int:instructor_id>/', views.update_instructor, name='update_instructor'),
+    path('instructors/delete/<int:instructor_id>/', views.delete_instructor, name='delete_instructor'),
+    path("instructors/import/", views.import_instructors, name="import_instructors"),
+
+
 
     # passenger
     path('passenger/', views.passenger_view, name='passenger'),
@@ -101,4 +142,11 @@ urlpatterns = [
     path("tracklogs/add/", views.add_tracklog, name="add_tracklog"),
     path("tracklogs/update/<int:tracklog_id>/", views.update_tracklog, name="update_tracklog"),
     path("tracklogs/delete/<int:tracklog_id>/", views.delete_tracklog, name="delete_tracklog"),
+
+    path("payment/checkout/<int:booking_id>/", views.create_checkout, name="create_checkout"),
+    path("payment/success/<int:booking_id>/", views.payment_success, name="payment_success"),
+    path("payment/cancel/<int:booking_id>/", views.payment_cancel, name="payment_cancel"),
+
+
+
 ]
