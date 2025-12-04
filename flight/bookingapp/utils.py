@@ -18,26 +18,21 @@ def login_required(view_func):
     return wrapper
 
 def redirect_if_logged_in(view_func):
+    from functools import wraps
+    
     @wraps(view_func)
-    def wrapper(request, *args, **kwargs):
-        if request.user.is_authenticated:
-            messages.info(request, "You are already logged in.")
-            # Redirect based on user role
-            if request.user.role == 'student':
-                return redirect('studentapp:student_home')
-            elif request.user.role == 'instructor':
-                return redirect('instructor_home')
-            elif request.user.role == 'admin':
-                return redirect('admin_dashboard')
+    def _wrapped_view(request, *args, **kwargs):
+        # Check if student is logged in by checking session
+        if 'student_id' in request.session:
             return redirect('studentapp:student_home')
         return view_func(request, *args, **kwargs)
-    return wrapper
+    return _wrapped_view
 
 def get_current_student(request):
-    """Get current student profile from authenticated user"""
-    if request.user.is_authenticated and request.user.role == 'student':
+    """Helper function to get current student from session"""
+    if 'student_id' in request.session:
         try:
-            return request.user.student_profile
+            return Student.objects.get(id=request.session['student_id'])
         except Student.DoesNotExist:
             return None
     return None

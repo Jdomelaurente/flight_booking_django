@@ -29,6 +29,7 @@ from flightapp.models import calculate_taxes_for_booking_detail, get_total_tax_a
 from django.contrib.auth.hashers import make_password, check_password
 from flightapp.models import User, Student
 from django.contrib.auth import login as auth_login
+from django.contrib.auth.hashers import make_password, check_password
 
 
 
@@ -2830,6 +2831,7 @@ from django.contrib.auth.hashers import make_password
 def register_view(request):
     if request.method == "POST":
         first_name = request.POST.get('first_name', '').strip()
+        middle_initial = request.POST.get('middle_initial', '').strip()[:1]  # Get first char only
         last_name = request.POST.get('last_name', '').strip()
         email = request.POST.get('email', '').strip()
         phone = request.POST.get('phone', '').strip()
@@ -2838,7 +2840,7 @@ def register_view(request):
 
         # Required fields
         if not all([first_name, last_name, email, password, confirm_password]):
-            messages.error(request, "All fields are required.")
+            messages.error(request, "First name, last name, email, and password are required.")
             return redirect('bookingapp:register')
 
         # Password validation
@@ -2850,52 +2852,46 @@ def register_view(request):
             messages.error(request, "Passwords do not match.")
             return redirect('bookingapp:register')
 
-        # Check email uniqueness in User model
-        if User.objects.filter(email=email).exists():
-            messages.error(request, "Email already exists. Please use a different email.")
+        # Check email uniqueness
+        if Student.objects.filter(email=email).exists():
+            messages.error(request, "Email already registered. Please use a different email.")
             return redirect('bookingapp:register')
 
-        # Check if username should be generated from email
-        username = email  # Or generate a username from email
-
         try:
-            # Create User account
-            user = User.objects.create_user(
-                username=username,
-                email=email,
-                password=password,
-                first_name=first_name,
-                last_name=last_name,
-                role='student',
-                phone=phone if phone else None
-            )
-
             # Generate student number
             student_count = Student.objects.count()
             student_number = f"STU{student_count + 1:04d}"
+            
+            # Check if student number already exists (unlikely but possible)
+            while Student.objects.filter(student_number=student_number).exists():
+                student_count += 1
+                student_number = f"STU{student_count + 1:04d}"
 
-            # Create Student profile linked to User
+            # Create Student with HASHED password
             student = Student.objects.create(
-                user=user,
                 first_name=first_name,
+                middle_initial=middle_initial if middle_initial else None,
                 last_name=last_name,
+                email=email,
+                password=make_password(password),  # Hash the password
                 phone=phone if phone else None,
                 student_number=student_number
             )
 
-            # Log the user in immediately after registration
-            auth_login(request, user)
-
-            # Set additional session variables if needed
+            # Manual session-based login
             request.session['student_id'] = student.id
+            request.session['student_email'] = student.email
             request.session['student_number'] = student.student_number
+            request.session['full_name'] = f"{student.first_name} {student.last_name}"
             request.session['last_activity'] = str(timezone.now())
+            request.session.set_expiry(86400)  # 24 hours
 
-            messages.success(request, f"Registration successful! Welcome {first_name}!")
+            messages.success(request, f"Registration successful! Welcome {first_name} {last_name}!")
             return redirect('studentapp:student_home')
 
         except Exception as e:
-            messages.error(request, f"An error occurred during registration. Please try again. Error: {str(e)}")
+            messages.error(request, f"An error occurred during registration. Please try again.")
+            print(f"Registration error: {e}")
     
     template = loader.get_template("booking/auth/register.html")
     context = {}
@@ -2914,51 +2910,61 @@ def login_view(request):
             messages.error(request, "Email and password are required.")
             return redirect('bookingapp:login')
 
-        # Try to find user by email
+        # Try to find student by email
         try:
-            user = User.objects.get(email=email)
+            student = Student.objects.get(email=email)
             
-            # Authenticate using Django's authenticate
-            auth_user = authenticate(request, username=user.username, password=password)
-            
-            if auth_user is not None:
-                if auth_user.role == 'student':
-                    # Log the user in
-                    auth_login(request, auth_user)
-                    
-                    # Set additional session variables
-                    try:
-                        student = auth_user.student_profile
-                        request.session['student_id'] = student.id
-                        request.session['student_number'] = student.student_number
-                    except Student.DoesNotExist:
-                        pass  # Handle case where student profile doesn't exist
-                    
+            # Check if password is hashed (starts with common hash patterns)
+            if student.password.startswith(('pbkdf2_sha256$', 'bcrypt$', 'argon2')):
+                # Use check_password for hashed passwords
+                if check_password(password, student.password):
+                    # Manual session-based login
+                    request.session['student_id'] = student.id
+                    request.session['student_email'] = student.email
+                    request.session['student_number'] = student.student_number
+                    request.session['full_name'] = f"{student.first_name} {student.last_name}"
                     request.session['last_activity'] = str(timezone.now())
+                    request.session.set_expiry(86400)  # 24 hours
                     
-                    messages.success(request, f"Welcome back {auth_user.first_name}!")
+                    messages.success(request, f"Welcome back {student.first_name}!")
                     return redirect('studentapp:student_home')
                 else:
-                    messages.error(request, "This account is not a student account.")
+                    messages.error(request, "Invalid email or password.")
             else:
-                messages.error(request, "Invalid email or password.")
+                # Legacy password check (plain text)
+                if student.password == password:
+                    # Upgrade to hashed password
+                    student.password = make_password(password)
+                    student.save()
+                    
+                    # Manual session-based login
+                    request.session['student_id'] = student.id
+                    request.session['student_email'] = student.email
+                    request.session['student_number'] = student.student_number
+                    request.session['full_name'] = f"{student.first_name} {student.last_name}"
+                    request.session['last_activity'] = str(timezone.now())
+                    request.session.set_expiry(86400)  # 24 hours
+                    
+                    messages.success(request, f"Welcome back {student.first_name}!")
+                    return redirect('studentapp:student_home')
+                else:
+                    messages.error(request, "Invalid email or password.")
                 
-        except User.DoesNotExist:
+        except Student.DoesNotExist:
             messages.error(request, "Email not registered.")
         except Exception as e:
             messages.error(request, "An error occurred during login. Please try again.")
-            print(f"Login error: {e}")    
+            print(f"Login error: {e}")
 
+    # For GET requests, just render the template
     template = loader.get_template("booking/auth/login.html")
     context = {}
     return HttpResponse(template.render(context, request))
 
+
 def logout_view(request):
     # Clear all session data
     request.session.flush()
-    
-    # Logout using Django's logout
-    auth_logout(request)
     
     messages.success(request, "You have been logged out.")
     return redirect('bookingapp:login')
