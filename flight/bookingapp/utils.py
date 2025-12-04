@@ -1,14 +1,18 @@
+# utils.py - Update authentication utilities
+
 from django.shortcuts import redirect
 from functools import wraps
 from decimal import Decimal
 from django.utils import timezone
-from flightapp.models import Airport
+from flightapp.models import Airport, Student, User
 from django.contrib import messages
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 
 def login_required(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
-        if not request.session.get('student_id'):  # check if logged in
+        if not request.user.is_authenticated:
+            messages.error(request, "Please log in to access this page.")
             return redirect('bookingapp:login')
         return view_func(request, *args, **kwargs)
     return wrapper
@@ -16,10 +20,44 @@ def login_required(view_func):
 def redirect_if_logged_in(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
-        if request.session.get('student_id'):  # already logged in
-            return redirect('studentapp:student_home')  # send them to home
+        if request.user.is_authenticated:
+            messages.info(request, "You are already logged in.")
+            # Redirect based on user role
+            if request.user.role == 'student':
+                return redirect('studentapp:student_home')
+            elif request.user.role == 'instructor':
+                return redirect('instructor_home')
+            elif request.user.role == 'admin':
+                return redirect('admin_dashboard')
+            return redirect('studentapp:student_home')
         return view_func(request, *args, **kwargs)
     return wrapper
+
+def get_current_student(request):
+    """Get current student profile from authenticated user"""
+    if request.user.is_authenticated and request.user.role == 'student':
+        try:
+            return request.user.student_profile
+        except Student.DoesNotExist:
+            return None
+    return None
+
+def require_student_role(view_func):
+    """Decorator to require student role"""
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, "Please log in to access this page.")
+            return redirect('bookingapp:login')
+        
+        if request.user.role != 'student':
+            messages.error(request, "This page is for students only.")
+            return redirect('bookingapp:login')
+        
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
 
 def require_booking_context(view_func):
     """Decorator to require activity or practice context for booking"""

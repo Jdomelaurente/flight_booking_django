@@ -391,13 +391,13 @@ BookingDetailAdmin.inlines = [BookingTaxInline]
 AirlineAdmin.inlines = [AddOnInline, TravelInsurancePlanInline]
 
 
-print("✅ FlightApp Admin registered successfully!")
-print("📋 Available models in admin:")
-print("   - Airlines, Aircraft, Airports, Routes")
-print("   - Flights, Schedules, Seats")
-print("   - Bookings, Payments, Passengers")
-print("   - Students, Instructors, Track Logs")
-print("   - Add-ons and Add-on Types")
-print("   - Travel Insurance: Insurance Benefits, Travel Insurance Plans")
-print("   - Tax System: Tax Types, Airline Taxes, Airport Fees")
-print("   - Travel Tax Rates, Booking Taxes")
+# print("✅ FlightApp Admin registered successfully!")
+# print("📋 Available models in admin:")
+# print("   - Airlines, Aircraft, Airports, Routes")
+# print("   - Flights, Schedules, Seats")
+# print("   - Bookings, Payments, Passengers")
+# print("   - Students, Instructors, Track Logs")
+# print("   - Add-ons and Add-on Types")
+# print("   - Travel Insurance: Insurance Benefits, Travel Insurance Plans")
+# print("   - Tax System: Tax Types, Airline Taxes, Airport Fees")
+# print("   - Travel Tax Rates, Booking Taxes")

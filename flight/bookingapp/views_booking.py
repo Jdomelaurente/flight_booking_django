@@ -1,4 +1,4 @@
-# bookingapp/views_booking.py - UPDATED FOR DYNAMIC COVERAGES
+# bookingapp/views_booking.py
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.urls import reverse
@@ -26,6 +26,10 @@ from django.db import transaction
 from django.db.models import Q
 # Add these imports at the top
 from flightapp.models import calculate_taxes_for_booking_detail, get_total_tax_amount, get_insurance_amount
+from django.contrib.auth.hashers import make_password, check_password
+from flightapp.models import User, Student
+from django.contrib.auth import login as auth_login
+
 
 
 @login_required
@@ -2837,47 +2841,64 @@ def register_view(request):
             messages.error(request, "All fields are required.")
             return redirect('bookingapp:register')
 
-        # Password match
+        # Password validation
+        if len(password) < 8:
+            messages.error(request, "Password must be at least 8 characters long.")
+            return redirect('bookingapp:register')
+        
         if password != confirm_password:
             messages.error(request, "Passwords do not match.")
             return redirect('bookingapp:register')
 
-        # Check email uniqueness
-        if Student.objects.filter(email=email).exists():
+        # Check email uniqueness in User model
+        if User.objects.filter(email=email).exists():
             messages.error(request, "Email already exists. Please use a different email.")
             return redirect('bookingapp:register')
 
+        # Check if username should be generated from email
+        username = email  # Or generate a username from email
+
         try:
+            # Create User account
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
+                role='student',
+                phone=phone if phone else None
+            )
+
             # Generate student number
             student_count = Student.objects.count()
             student_number = f"STU{student_count + 1:04d}"
 
-            # Create student with hashed password
+            # Create Student profile linked to User
             student = Student.objects.create(
+                user=user,
                 first_name=first_name,
                 last_name=last_name,
-                email=email,
-                phone=phone if phone else None,  # Handle optional phone
-                password=make_password(password),  # Hash the password
+                phone=phone if phone else None,
                 student_number=student_number
             )
 
-            messages.success(request, "Registration successful! Please login.")
-            return redirect('bookingapp:login')
+            # Log the user in immediately after registration
+            auth_login(request, user)
+
+            # Set additional session variables if needed
+            request.session['student_id'] = student.id
+            request.session['student_number'] = student.student_number
+            request.session['last_activity'] = str(timezone.now())
+
+            messages.success(request, f"Registration successful! Welcome {first_name}!")
+            return redirect('studentapp:student_home')
 
         except Exception as e:
-            messages.error(request, "An error occurred during registration. Please try again.")
-            print(f"Registration error: {e}")
-
-        messages.success(request, "Registration successful! Please login.")
-        return redirect('bookingapp:login')
+            messages.error(request, f"An error occurred during registration. Please try again. Error: {str(e)}")
     
     template = loader.get_template("booking/auth/register.html")
-
-    context = {
-
-    }
-
+    context = {}
     return HttpResponse(template.render(context, request))
 
 from django.contrib.auth.hashers import check_password
@@ -2885,7 +2906,7 @@ from django.contrib.auth.hashers import check_password
 @redirect_if_logged_in
 def login_view(request):
     if request.method == "POST":
-        email = request.POST.get('email').strip()
+        email = request.POST.get('email', '').strip()
         password = request.POST.get('password')
 
         # Basic validation
@@ -2893,16 +2914,36 @@ def login_view(request):
             messages.error(request, "Email and password are required.")
             return redirect('bookingapp:login')
 
+        # Try to find user by email
         try:
-            student = Student.objects.get(email=email)
-            if check_password(password, student.password):
-                request.session['student_id'] = student.id
-                messages.success(request, f"Welcome {student.first_name}!")
-                # Redirect to student dashboard
-                return redirect('studentapp:student_home')
+            user = User.objects.get(email=email)
+            
+            # Authenticate using Django's authenticate
+            auth_user = authenticate(request, username=user.username, password=password)
+            
+            if auth_user is not None:
+                if auth_user.role == 'student':
+                    # Log the user in
+                    auth_login(request, auth_user)
+                    
+                    # Set additional session variables
+                    try:
+                        student = auth_user.student_profile
+                        request.session['student_id'] = student.id
+                        request.session['student_number'] = student.student_number
+                    except Student.DoesNotExist:
+                        pass  # Handle case where student profile doesn't exist
+                    
+                    request.session['last_activity'] = str(timezone.now())
+                    
+                    messages.success(request, f"Welcome back {auth_user.first_name}!")
+                    return redirect('studentapp:student_home')
+                else:
+                    messages.error(request, "This account is not a student account.")
             else:
-                messages.error(request, "Incorrect password.")
-        except Student.DoesNotExist:
+                messages.error(request, "Invalid email or password.")
+                
+        except User.DoesNotExist:
             messages.error(request, "Email not registered.")
         except Exception as e:
             messages.error(request, "An error occurred during login. Please try again.")
@@ -2912,9 +2953,13 @@ def login_view(request):
     context = {}
     return HttpResponse(template.render(context, request))
 
-
 def logout_view(request):
+    # Clear all session data
     request.session.flush()
+    
+    # Logout using Django's logout
+    auth_logout(request)
+    
     messages.success(request, "You have been logged out.")
     return redirect('bookingapp:login')
 
@@ -3144,9 +3189,9 @@ def debug_template_tags(request):
     
     # Try to import the template tag
     try:
-        from bookingapp.templatetags import custom_filters
+        from flight.bookingapp.templatetags import student_custom_filters
         info.append(f"\nSUCCESS: Imported custom_filters module")
-        info.append(f"Available filters: {[f for f in dir(custom_filters) if not f.startswith('_')]}")
+        info.append(f"Available filters: {[f for f in dir(student_custom_filters) if not f.startswith('_')]}")
     except ImportError as e:
         info.append(f"\nERROR importing custom_filters: {e}")
     
