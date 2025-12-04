@@ -1,0 +1,277 @@
+# def calculate_detailed_score_breakdown(activity, booking, booking_details, seat_class_names):
+#     """Calculate detailed score breakdown for display with CORRECT weights"""
+#     total_points = float(activity.total_points)
+    
+#     # CORRECTED WEIGHTS (matching calculate_activity_score):
+#     # Base: 25%, Passengers: 25%, Price: 20%, Compliance: 15%, Add-ons: 15%
+    
+#     # Count passenger types
+#     adult_count = len([p for p in booking_details['passengers'] if p['type'].lower() == 'adult'])
+#     child_count = len([p for p in booking_details['passengers'] if p['type'].lower() == 'child'])
+#     infant_count = len([p for p in booking_details['passengers'] if p['type'].lower() == 'infant'])
+    
+#     # Base completion points (25%)
+#     base_points = total_points * 0.25
+    
+#     # Passenger points (25%)
+#     passenger_match = 0
+#     if adult_count == activity.required_passengers:
+#         passenger_match += 0.5  # 50% weight for adults
+#     if child_count == activity.required_children:
+#         passenger_match += 0.3  # 30% weight for children  
+#     if infant_count == activity.required_infants:
+#         passenger_match += 0.2  # 20% weight for infants
+    
+#     passenger_points = (total_points * 0.25) * passenger_match
+    
+#     # Price points (20%)
+#     total_price = booking_details['total_cost']
+#     price_points = total_points * 0.20
+#     if activity.required_max_price and total_price > float(activity.required_max_price):
+#         overage_percentage = min((total_price - float(activity.required_max_price)) / float(activity.required_max_price), 1.0)
+#         price_points *= (1 - overage_percentage)
+    
+#     # Compliance points (15%)
+#     compliance_match = 0
+#     if booking.trip_type == activity.required_trip_type:
+#         compliance_match += 0.5  # 50% weight for trip type
+    
+#     has_correct_class = any(
+#         seat_class_name == activity.required_travel_class.lower() 
+#         for seat_class_name in seat_class_names
+#     )
+#     if has_correct_class:
+#         compliance_match += 0.5  # 50% weight for travel class
+    
+#     compliance_points = (total_points * 0.15) * compliance_match
+    
+#     # Add-on points (15%) - This should come from the actual submission
+#     addon_points = total_points * 0.15  # Default full points if no specific add-on grading
+    
+#     return {
+#         'base_points': base_points,  # 25 pts
+#         'passenger_points': passenger_points,  # Up to 25 pts
+#         'price_points': price_points,  # Up to 20 pts  
+#         'compliance_points': compliance_points,  # Up to 15 pts
+#         'addon_points': addon_points,  # Up to 15 pts
+#         'total_earned': base_points + passenger_points + price_points + compliance_points + addon_points,
+#         'total_possible': total_points,
+#     }
+
+
+
+# def calculate_detailed_score_breakdown(activity, booking, booking_details, seat_class_names):
+#     """Calculate detailed score breakdown for display with correct percentages"""
+#     total_points = float(activity.total_points)
+    
+#     # Base completion points (25%)
+#     base_points = total_points * 0.25
+    
+#     # Passenger points (25%)
+#     adult_count = len([p for p in booking_details['passengers'] if p['type'].lower() == 'adult'])
+#     child_count = len([p for p in booking_details['passengers'] if p['type'].lower() == 'child'])
+#     infant_count = len([p for p in booking_details['passengers'] if p['type'].lower() == 'infant'])
+    
+#     passenger_match = 0
+#     if adult_count == activity.required_passengers:
+#         passenger_match += 0.5  # 50% weight for adults
+#     if child_count == activity.required_children:
+#         passenger_match += 0.3  # 30% weight for children  
+#     if infant_count == activity.required_infants:
+#         passenger_match += 0.2  # 20% weight for infants
+    
+#     passenger_points = (total_points * 0.25) * passenger_match
+    
+#     # Price points (20%)
+#     total_price = booking_details['total_cost']
+#     price_points = total_points * 0.20
+#     if activity.required_max_price and total_price > float(activity.required_max_price):
+#         overage_percentage = min((total_price - float(activity.required_max_price)) / float(activity.required_max_price), 1.0)
+#         price_points *= (1 - overage_percentage)
+    
+#     # Compliance points (15%)
+#     compliance_match = 0
+#     if booking.trip_type == activity.required_trip_type:
+#         compliance_match += 0.5  # 50% weight for trip type
+    
+#     has_correct_class = any(
+#         seat_class_name == activity.required_travel_class.lower() 
+#         for seat_class_name in seat_class_names
+#     )
+#     if has_correct_class:
+#         compliance_match += 0.5  # 50% weight for travel class
+    
+#     compliance_points = (total_points * 0.15) * compliance_match
+    
+#     # Add-on points (15%) - This should come from the submission, not recalculated here
+#     # We'll use the actual submission data
+    
+#     return {
+#         'base_points': base_points,  # 25 pts
+#         'passenger_points': passenger_points,  # Up to 25 pts
+#         'price_points': price_points,  # Up to 20 pts  
+#         'compliance_points': compliance_points,  # Up to 15 pts
+#         'total_earned': base_points + passenger_points + price_points + compliance_points,
+#         'total_possible': total_points,
+#         # Add these for template percentage calculations
+#         'total_possible_passenger_points': total_points * 0.25,  # 25 pts
+#         'total_possible_price_points': total_points * 0.20,      # 20 pts
+#         'total_possible_compliance_points': total_points * 0.15, # 15 pts
+#         'total_possible_addon_points': total_points * 0.15,      # 15 pts
+#     }
+
+# def calculate_detailed_score_breakdown(activity, booking, booking_details, seat_class_names):
+#     """Calculate detailed score breakdown for display with CORRECT weights"""
+#     total_points = float(activity.total_points)
+    
+#     # CORRECTED WEIGHTS (matching calculate_activity_score):
+#     # Base: 25%, Passengers: 25%, Price: 20%, Compliance: 15%, Add-ons: 15%
+    
+#     # Base completion points (25%)
+#     base_points = total_points * 0.25
+    
+#     # Passenger points (25%)
+#     adult_count = len([p for p in booking_details['passengers'] if p['type'].lower() == 'adult'])
+#     child_count = len([p for p in booking_details['passengers'] if p['type'].lower() == 'child'])
+#     infant_count = len([p for p in booking_details['passengers'] if p['type'].lower() == 'infant'])
+    
+#     passenger_match = 0
+#     if adult_count == activity.required_passengers:
+#         passenger_match += 0.5  # 50% weight for adults
+#     if child_count == activity.required_children:
+#         passenger_match += 0.3  # 30% weight for children  
+#     if infant_count == activity.required_infants:
+#         passenger_match += 0.2  # 20% weight for infants
+    
+#     passenger_points = (total_points * 0.25) * passenger_match
+    
+#     # Price points (20%)
+#     total_price = booking_details['total_cost']
+#     price_points = total_points * 0.20
+#     if activity.required_max_price and total_price > float(activity.required_max_price):
+#         overage_percentage = min((total_price - float(activity.required_max_price)) / float(activity.required_max_price), 1.0)
+#         price_points *= (1 - overage_percentage)
+    
+#     # Compliance points (15%)
+#     compliance_match = 0
+#     if booking.trip_type == activity.required_trip_type:
+#         compliance_match += 0.5  # 50% weight for trip type
+    
+#     has_correct_class = any(
+#         seat_class_name == activity.required_travel_class.lower() 
+#         for seat_class_name in seat_class_names
+#     )
+#     if has_correct_class:
+#         compliance_match += 0.5  # 50% weight for travel class
+    
+#     compliance_points = (total_points * 0.15) * compliance_match
+    
+#     return {
+#         'base_points': base_points,  # 25 pts
+#         'passenger_points': passenger_points,  # Up to 25 pts
+#         'price_points': price_points,  # Up to 20 pts  
+#         'compliance_points': compliance_points,  # Up to 15 pts
+#         'total_earned': base_points + passenger_points + price_points + compliance_points,
+#         'total_possible': total_points,
+#         # Add these for template percentage calculations
+#         'total_possible_passenger_points': total_points * 0.25,  # 25 pts
+#         'total_possible_price_points': total_points * 0.20,      # 20 pts
+#         'total_possible_compliance_points': total_points * 0.15, # 15 pts
+#         'total_possible_addon_points': total_points * 0.15,      # 15 pts
+#     }
+
+
+
+def get_booking_details(booking):
+    """Get detailed information about what was actually booked"""
+    print(f"=== GET_BOOKING_DETAILS DEBUG ===")
+    print(f"Booking ID: {booking.id}")
+    
+    # FIX: Use list() to evaluate the queryset first, then process
+    try:
+        booking_details_list = list(booking.details.all().select_related(
+            'passenger', 'schedule', 'schedule__flight', 'schedule__flight__route'
+        ))
+    except Exception as e:
+        print(f"Error in select_related: {e}")
+        # Fallback: get details without select_related
+        booking_details_list = list(booking.details.all())
+    
+    print(f"Found {len(booking_details_list)} booking details")
+    
+    details = {
+        'passengers': [],
+        'flights': {},
+        'total_cost': 0,
+        'seat_classes_used': set()
+    }
+    
+    # Rest of your function remains the same, but use booking_details_list instead of booking_details
+    # Group by flight schedule
+    flight_groups = {}
+    for detail in booking_details_list:
+        print(f"Processing detail: {detail.id} - Passenger: {detail.passenger.first_name}")
+        schedule_id = detail.schedule.id
+        if schedule_id not in flight_groups:
+            flight_groups[schedule_id] = {
+                'schedule': detail.schedule,
+                'passengers': [],
+                'total_seats': 0
+            }
+        
+        flight_groups[schedule_id]['passengers'].append({
+            'passenger': detail.passenger,
+            'seat_class': detail.seat_class,
+            'seat_number': detail.seat.seat_number if detail.seat else 'Not assigned',
+            'price': detail.price
+        })
+        flight_groups[schedule_id]['total_seats'] += 1
+        
+        # Add to overall details
+        details['seat_classes_used'].add(detail.seat_class)
+        if detail.passenger.passenger_type.lower() != 'infant':
+            details['total_cost'] += float(detail.price)
+    
+    details['flights'] = flight_groups
+    details['seat_classes_used'] = list(details['seat_classes_used'])
+    
+    print(f"Flight groups: {len(flight_groups)}")
+    
+    # Get all passengers with their details
+    for detail in booking_details_list:
+        # Build the full name with middle name if available
+        if detail.passenger.middle_name:
+            full_name = f"{detail.passenger.first_name} {detail.passenger.middle_name} {detail.passenger.last_name}"
+        else:
+            full_name = f"{detail.passenger.first_name} {detail.passenger.last_name}"
+        
+        passenger_info = {
+            'name': full_name,
+            'type': detail.passenger.passenger_type,
+            'date_of_birth': detail.passenger.date_of_birth,
+            'gender': detail.passenger.gender,
+            'passport': detail.passenger.passport_number,
+            'flights': []
+        }
+        
+        # Add flight details for this passenger
+        for flight_group in flight_groups.values():
+            for passenger in flight_group['passengers']:
+                if passenger['passenger'].id == detail.passenger.id:
+                    passenger_info['flights'].append({
+                        'route': f"{flight_group['schedule'].flight.route.origin_airport.code} → {flight_group['schedule'].flight.route.destination_airport.code}",
+                        'date': flight_group['schedule'].departure_time.date(),
+                        'seat_class': passenger['seat_class'].name if passenger['seat_class'] else 'Not assigned',
+                        'seat_number': passenger['seat_number'],
+                        'price': passenger['price']
+                    })
+        
+        # Only add each passenger once
+        if not any(p['name'] == passenger_info['name'] for p in details['passengers']):
+            details['passengers'].append(passenger_info)
+    
+    print(f"Final passengers count: {len(details['passengers'])}")
+    print(f"Final flights count: {len(details['flights'])}")
+    print("=== END GET_BOOKING_DETAILS ===")
+    
+    return details

@@ -3,12 +3,10 @@
 
 {% block content %}
 
-<h1 class="text-4xl inria-serif-bold ">Instructor </h1>
-<a href="{% url 'instructor_home'  %}" class="bg-gray-500 hover:bg-gray-600 max-w-30 text-white px-4 py-2 rounded-md text-sm">
-    Back to Home
-</a>
 
-<div class="flex flex-1 h-[80vh] py-10 flex-col">
+
+
+<div class="flex flex-1 h-[80vh]  py-10 flex-col">
     <div class="flex-1 max-h-[138px] mx-30 rounded-lg flex items-start flex-col justify-center bg-[#093704] h-[140px] py-10 p-5">
         <h1 class="text-4xl text-[#FFC83D] font-semibold">{{ section.section_name }}</h1>
         <p class="text-[#FFC83D] text-lg">{{ section.section_code }} • {{ section.semester }} Semester • {{ section.academic_year }}</p>
@@ -32,6 +30,9 @@
         <div class="flex justify-between items-center">
             <div class="text-xs  space-x-10 font-medium">
                 <a href="#" class="text-[#093704] border-b-2 border-[#093704] pb-1">Activity</a>
+                <a href="{% url 'item_analysis'  %}" class="text-gray-600 hover:text-[#093704]">
+                    Item Analysis
+                </a>
                 <a href="#" class="text-gray-600 hover:text-[#093704]">People</a>
                 <a href="#" class="text-gray-600 hover:text-[#093704]">Settings</a>
             </div>
@@ -48,7 +49,7 @@
             <p class="text-sm text-gray-600">{{ section.description }}</p>
         </div>
         {% endif %}
-
+        
         <!-- Activities Section -->
         <div class="flex-1 flex flex-col px-20 py-13 space-y-5">
             {% if activities %}
@@ -90,6 +91,7 @@
                         <div id="menu-{{ activity.id }}" class="hidden absolute right-20 mt-8 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
                             <div class="py-1">
                                 <a href="{% url 'activity_detail' activity.id %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">View Activity</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Item Analysis</a>
                                 {% if not activity.is_code_active %}
                                 <form method="POST" action="{% url 'activate_activity' activity.id %}">
                                     {% csrf_token %}
@@ -99,7 +101,7 @@
                                 <a href="{% url 'activity_submissions' activity.id %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">View Submissions</a>
                                 {% endif %}
                                 <a href="{% url 'edit_activity' activity.id %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Edit Activity</a>
-                                <a href="#" onclick="openDeleteModal({{ activity.id }})" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</a>
+                                <a href="#" data-activity-id="{{ activity.id }}" class="delete-activity block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</a>
                             </div>
                         </div>
                     </div>
@@ -936,29 +938,40 @@
     }
 
     // Initialize passenger forms when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-        // Add event listeners to passenger count inputs
-        document.getElementById('adultsCount').addEventListener('change', updatePassengerForms);
-        document.getElementById('childrenCount').addEventListener('change', updatePassengerForms);
-        document.getElementById('infantsCount').addEventListener('change', updatePassengerForms);
-        document.getElementById('requirePassengerDetails').addEventListener('change', togglePassengerForms);
-        
-        // NEW: Add event listener for passport requirement
-        const requirePassportCheckbox = document.getElementById('requirePassport');
-        if (requirePassportCheckbox) {
-            requirePassportCheckbox.addEventListener('change', togglePassportRequirement);
-        }
-        
-        // Also update add-ons when passenger counts change
-        const passengerInputs = ['adultsCount', 'childrenCount', 'infantsCount'];
-        passengerInputs.forEach(inputId => {
-            const input = document.getElementById(inputId);
-            if (input) {
-                input.addEventListener('change', function() {
-                    setTimeout(generatePassengerAddonSections, 100);
-                });
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listeners to passenger count inputs
+            document.getElementById('adultsCount').addEventListener('change', updatePassengerForms);
+            document.getElementById('childrenCount').addEventListener('change', updatePassengerForms);
+            document.getElementById('infantsCount').addEventListener('change', updatePassengerForms);
+            document.getElementById('requirePassengerDetails').addEventListener('change', togglePassengerForms);
+            
+            // NEW: Add event listener for passport requirement
+            const requirePassportCheckbox = document.getElementById('requirePassport');
+            if (requirePassportCheckbox) {
+                requirePassportCheckbox.addEventListener('change', togglePassportRequirement);
             }
+            
+            // Also update add-ons when passenger counts change
+            const passengerInputs = ['adultsCount', 'childrenCount', 'infantsCount'];
+            passengerInputs.forEach(inputId => {
+                const input = document.getElementById(inputId);
+                if (input) {
+                    input.addEventListener('change', function() {
+                        setTimeout(generatePassengerAddonSections, 100);
+                    });
+                }
+            });
+    
+            // Attach click handlers to delete links using data attributes to avoid inline template JS parsing issues
+            document.querySelectorAll('.delete-activity').forEach(el => {
+                el.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const activityId = this.dataset.activityId;
+                    if (activityId) {
+                        openDeleteModal(activityId);
+                    }
+                });
+            });
         });
-    });
 </script>
 {% endblock %}

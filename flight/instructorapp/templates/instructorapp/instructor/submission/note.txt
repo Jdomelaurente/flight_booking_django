@@ -1,0 +1,40 @@
+modal last part: dapat matibo ang names sa panuway
+                upper icon for slider remove
+                add new button for slider to the right side below with < number > ex. < 1 2 3 >
+                remove 4 dots 
+
+modal first slide: route information dapat naa sa taas nabutang
+                    naay duha ka division:
+                                            information
+                                            percentage progress
+
+*************************************************************************************************************
+tibuon tanan ug butang sa isa pa slide/modal
+
+left side is details
+right side is percentage
+
+++++++++++++++++++++++++++
+debug search bar: dapat sensitive
+remove passed failed indicator
+
+_________________________________________
+dapat pantay ang box sa activity details sa passenger na part       
+Time limit dapat naa sa top
+remove gender in the right corner inside the passenger details
+remove primary word inside the passenger details
+remove activity code below
+
+++++++++++++++++++++++++++
+make sure the passport is unique - ask ojt
+So the correct sequence:
+
+Name → Gender → Date of Birth → Nationality → Passport
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ask sir nga ipa iwit ang item analysis
+add dashboard
+
+
+9-10 TRAVEL
++++ Ask sir  Earl to present system if possible 

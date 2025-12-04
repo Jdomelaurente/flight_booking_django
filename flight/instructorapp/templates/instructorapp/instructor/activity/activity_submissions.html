@@ -24,13 +24,13 @@
 
     <div class="flex flex-col mt-10 px-30 space-y-10">
 
-        <!-- Debug Info -->
+        <!-- Debug Info
         <div class="bg-yellow-100 border border-yellow-400 p-4 rounded">
             <h3 class="font-bold">Debug Information</h3>
             <p>Activity: {{ activity.title }} (ID: {{ activity.id }})</p>
             <p>Total Submissions: {{ submissions.count }}</p>
             <p>Current User: {{ current_user.username }} (ID: {{ current_user.id }})</p>
-        </div>
+        </div> -->
 
         <div class="flex justify-between items-center">
             <div class="flex gap-6 items-center">
@@ -41,7 +41,7 @@
                 </div>
                 <div class="flex flex-col">
                     <h1 class="text-xl font-semibold">{{ activity.title }} - Submissions</h1>
-                    <p class="text-xs text-gray-400">{{ activity.section.instructor.username }}</p>
+                    <p class="text-xs text-gray-400">{{ activity.section.instructor.user.username }}</p>
                 </div>
             </div>
         </div>

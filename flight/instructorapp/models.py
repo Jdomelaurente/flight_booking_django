@@ -38,19 +38,8 @@ class SectionEnrollment(models.Model):
     enrolled_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
 
-    # REMOVE THIS CONSTRAINT or change it to allow multiple sections per student
     class Meta:
-        # Remove or comment out the UniqueConstraint
-        # constraints = [
-        #     models.UniqueConstraint(
-        #         fields=['student'],
-        #         name='unique_student_section_enrollment'
-        #     )
-        # ]
-        
-        # If you want students to be in only ONE section, use this instead:
-        unique_together = ['student', 'section']
-        # This allows a student to be in multiple sections, but not the same section twice
+        unique_together = ['section', 'student']
 
     def __str__(self):
         return f"{self.student.student_number} - {self.section.section_code}"

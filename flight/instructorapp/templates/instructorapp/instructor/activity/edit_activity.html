@@ -1,6 +1,5 @@
 {% extends 'instructorapp/base.html' %}
-{% load dict_filters %}  <!-- Remove this if it doesn't exist -->
-{% load custom_filters %}  <!-- ADD THIS LINE -->
+{% load dict_filters %}
 {% block title %}Edit Activity - {{ activity.title }}{% endblock %}
 
 {% block content %}
@@ -433,7 +432,6 @@
                                                 <div class="space-y-3" id="passenger-{{ forloop.counter0 }}-addons">
                                                     {% for addon in addons %}
                                                     {% with passenger_addons=existing_addon_data|get_item:passenger.id %}
-                                                    {% with existing_addon=passenger_addons|get_addon_by_id:addon.id %}
                                                     <div class="flex items-start p-3 bg-white rounded border border-gray-200">
                                                         <input type="checkbox" name="selected_addons_passenger_{{ forloop.parentloop.counter0 }}[]" value="{{ addon.id }}" 
                                                                {% if existing_addon %}checked{% endif %}
@@ -486,7 +484,6 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    {% endwith %}
                                                     {% endwith %}
                                                     {% endfor %}
                                                 </div>

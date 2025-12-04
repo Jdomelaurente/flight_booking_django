@@ -1,11 +1,13 @@
 from django.urls import path
 from . import views
+from . import views_score
 
 urlpatterns = [
     # Authentication
     path('login/', views.instructor_login, name='instructor_login'),
     path('register/', views.instructor_register, name='instructor_register'),
     path('logout/', views.logout_view, name='instructor_logout'),
+
     
     # Main views
     path('', views.instructor_home, name='instructor_home'),
@@ -23,10 +25,15 @@ urlpatterns = [
     path('activity/<int:activity_id>/activate/', views.activate_activity, name='activate_activity'),
     path('activity/<int:activity_id>/submissions/', views.activity_submissions, name='activity_submissions'),
 
-
     path('debug/submissions/', views.debug_submissions, name='debug_submissions'),
     # in instructorapp/urls.py
     path('debug-session/', views.debug_session, name='debug_session'),
+
+    # Student work view
+    path('activity/<int:activity_id>/student-work/', views.index, name='index'),
+    path('api/grade/<int:activity_id>/', views_score.grade_all_submissions, name='grade_all_submissions'),
+
+    path('item_analysis/', views_score.item_analysis, name='item_analysis'),
 
 
 
