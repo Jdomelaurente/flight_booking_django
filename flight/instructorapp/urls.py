@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from . import views_score
+from . import views_item_analysis
 
 urlpatterns = [
     # Authentication
@@ -33,7 +34,9 @@ urlpatterns = [
     path('activity/<int:activity_id>/student-work/', views.index, name='index'),
     path('api/grade/<int:activity_id>/', views_score.grade_all_submissions, name='grade_all_submissions'),
 
-    path('item_analysis/', views_score.item_analysis, name='item_analysis'),
+    path('item_analysis/<int:section_id>/', views_item_analysis.item_analysis, name='item_analysis'),
+    path('item-analysis-json/<int:section_id>/', views_item_analysis.item_analysis_json, name='item_analysis_json'),
+
 
 
 

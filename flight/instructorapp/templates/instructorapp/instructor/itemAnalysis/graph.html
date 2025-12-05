@@ -1,0 +1,62 @@
+<div class="charts-row">
+    <div class="chart-card">
+        <div class="chart-header">
+            <h2>Top Performance</h2>
+        </div>
+        <div>neggas</div>
+
+    </div>
+    <div class="chart-card">
+        <div class="chart-header">
+            <h2>Score Distribution</h2>
+        </div>
+        <div>neggas</div>
+    </div>
+</div>
+
+<style>
+.charts-row {
+    display: flex;
+    gap: 2rem; /* space between the two charts */
+    margin-top: 2rem;
+}
+
+.chart-card {
+    background: white;
+    padding: 1.5rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    width: 40%; /* left column */
+}
+
+.chart-card-2 {
+    background: white;
+    padding: 1.5rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    width: 60%; /* right column */
+}
+
+/* Optional: make responsive for mobile */
+@media (max-width: 768px) {
+    .charts-row {
+        flex-direction: column;
+    }
+    .chart-card, .chart-card-2 {
+        width: 100%;
+    }
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    background: var(--csu-dark-green);
+    padding: 10px 15px;
+    color: white;
+    border-radius: 5px 5px 0 0;
+    align-items: center;
+}
+
+.chart-header h2 { font-size: 1.2rem; font-weight: 700; }
+
+</style>

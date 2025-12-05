@@ -1,174 +1,273 @@
 {% extends 'instructorapp/base.html' %}
-{% block title %}Item Analysis{% endblock %}
+{% block title %}Item Analysis Dashboard{% endblock %}
 {% load static %}
 {% block content %}
 
-<div class="w-full mx-auto p-6 font-sans">
+<div class="flex flex-col flex-1 px-6 py-4">
 
+    <!-- Back Button -->
+    <div class="flex items-center mb-4">
+        <a href="{% url 'section_detail' section.id %}" class="flex items-center text-green-900 hover:text-green-700 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="#093704" viewBox="0 0 24 24">
+                <path d="M14.29 6.29 8.59 12l5.7 5.71 1.42-1.42-4.3-4.29 4.3-4.29z"></path>
+            </svg>
+            <span class="ml-2 text-lg font-medium">Back to Section</span>
+        </a>
+    </div>
 
-    <h1 class="text-3xl font-bold text-gray-800 mb-6">Item Analysis Dashboard</h1>
+    <!-- Header -->
+    <h1 class="text-2xl font-semibold text-green-900 text-left mt-2 mb-1 tracking-wide">
+        ITEM ANALYSIS DASHBOARD
+    </h1>
+    <p class="mt-0 text-gray-700">
+        Comprehensive performance analysis for flight booking activities
+    </p>
 
-    <!-- Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div class="bg-white shadow rounded-lg p-4">
-            <div class="text-gray-500 text-sm">Total Items</div>
-            <div class="text-2xl font-semibold text-gray-800" id="totalItems">5</div>
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid">
+
+        <!-- Total Submissions -->
+        <div class="dashboard-card">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="card-title">Total Submissions</h2>
+                    <p class="card-subtitle" id="totalStudentsLabel">---</p>
+                </div>
+                <span class="card-number" id="totalSubmissions">0</span>
+            </div>
         </div>
-        <div class="bg-white shadow rounded-lg p-4">
-            <div class="text-gray-500 text-sm">Average Difficulty</div>
-            <div class="text-2xl font-semibold text-gray-800" id="avgDifficulty">—</div>
+
+        <!-- Student Passing -->
+        <div class="dashboard-card">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="card-title">Student Passing</h2>
+                    <p class="card-subtitle" id="passingRateLabel">---</p>
+                </div>
+                <span class="card-number" id="passingCount">0</span>
+            </div>
         </div>
-        <div class="bg-white shadow rounded-lg p-4">
-            <div class="text-gray-500 text-sm">Average Discrimination</div>
-            <div class="text-2xl font-semibold text-gray-800" id="avgDiscrimination">—</div>
+
+        <!-- Student Failing -->
+        <div class="dashboard-card">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="card-title">Student Failing</h2>
+                    <p class="card-subtitle" id="failingRateLabel">---</p>
+                </div>
+                <span class="card-number" id="failingCount">0</span>
+            </div>
         </div>
+
+        <!-- Average Score -->
+        <div class="dashboard-card">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="card-title">Average Score</h2>
+                    <p class="card-subtitle">Out of 100 points</p>
+                </div>
+                <span class="card-number" id="averageScore">0</span>
+            </div>
+        </div>
+
     </div>
 
     <!-- Filters -->
-    <div class="flex flex-col md:flex-row gap-4 mb-4">
-        <input type="text" id="searchInput" placeholder="Search items..." class="p-2 border border-gray-300 rounded-lg flex-1">
-        <select id="sortSelect" class="p-2 border border-gray-300 rounded-lg">
-            <option value="difficulty">Sort by Difficulty</option>
-            <option value="discrimination">Sort by Discrimination</option>
-            <option value="correct">Sort by Correct %</option>
-            <option value="name">Sort by Name</option>
-        </select>
-    </div>
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
 
-    <!-- Chart -->
-    <div class="bg-white shadow rounded-lg p-4 mb-6">
-        <canvas id="analysisChart" height="50"></canvas>
-    </div>
+        <!-- Filters -->
+        <div class="flex flex-col sm:flex-row gap-3 items-center">
 
-    <!-- Table -->
-    <div class="overflow-x-auto bg-white shadow rounded-lg">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-blue-600 text-white">
-                <tr>
-                    <th class="px-6 py-3 text-left text-sm font-medium">Item</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium">Difficulty Index</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium">Discrimination Index</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium">Correct %</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium">Total Responses</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody" class="bg-white divide-y divide-gray-200"></tbody>
-        </table>
+            <!-- Activity Select -->
+            <div class="relative">
+                <select id="activitySelect" class="border border-gray-300 rounded-md pl-8 pr-10 py-2">
+                    <option value="">All Activities</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Action Buttons with Icons -->
+        <div class="flex gap-3">
+            <button class="bg-green-700 text-white px-4 py-2 rounded-md hover:bg-green-800 transition flex items-center gap-2">
+                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                </svg>
+                Export Data
+            </button>
+            <button class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition flex items-center gap-2">
+                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 9v6h12V9H6zm0 0l-2 2m16-2l2 2"/>
+                </svg>
+                Print Data
+            </button>
+        </div>
     </div>
+    {%include 'instructorapp/instructor/itemAnalysis/charts.html' %}
+    <br>
+    {%include 'instructorapp/instructor/itemAnalysis/graph.html' %}
 </div>
 
-<!-- Chart.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- =========================
+     STYLES
+========================== -->
+<style>
+:root {
+    --csu-dark-green: #093704;
+    --csu-main-green: #0A4D18;
+}
 
+/* ==========================
+   DASHBOARD CARDS
+========================== */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+    margin: 2% 0;
+}
+
+.dashboard-card {
+    background: #ffffff;
+    border-left: 6px solid var(--csu-dark-green);
+    border-radius: 0.6rem;
+    padding: 1.8rem 1.5rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.12);
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--csu-main-green);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.card-subtitle {
+    margin-top: 0.3rem;
+    font-size: 0.9rem;
+    color: #4b5563;
+}
+
+.card-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--csu-dark-green);
+}
+
+@media (max-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 1.2rem;
+    }
+}
+
+</style>
+
+<!-- =========================
+     SCRIPTS
+========================== -->
 <script>
-const dummyData = [
-    { id: 1, name: 'Question 1', difficulty: 0.75, discrimination: 0.68, correct: 85, total: 100 },
-    { id: 2, name: 'Question 2', difficulty: 0.45, discrimination: 0.52, correct: 45, total: 100 },
-    { id: 3, name: 'Question 3', difficulty: 0.90, discrimination: 0.71, correct: 90, total: 100 },
-    { id: 4, name: 'Question 4', difficulty: 0.30, discrimination: 0.44, correct: 30, total: 100 },
-    { id: 5, name: 'Question 5', difficulty: 0.60, discrimination: 0.59, correct: 60, total: 100 },
-];
-
-let currentData = [...dummyData];
-let chartInstance = null;
-
-function renderTable(data) {
-    const tbody = document.getElementById('tableBody');
-    tbody.innerHTML = '';
-
-    data.forEach(item => {
-        const difficultyBar = `
-            <div class="w-full bg-gray-200 rounded-full h-2">
-                <div class="h-2 rounded-full ${getDifficultyClass(item.difficulty)}" style="width:${item.difficulty*100}%"></div>
-            </div>
-        `;
-
-        const discriminationBar = `
-            <div class="w-full bg-gray-200 rounded-full h-2">
-                <div class="h-2 rounded-full bg-blue-500" style="width:${item.discrimination*100}%"></div>
-            </div>
-        `;
-
-        const row = `
-            <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4">${item.name}</td>
-                <td class="px-6 py-4">
-                    <div class="font-semibold text-sm mb-1">${(item.difficulty*100).toFixed(0)}%</div>
-                    ${difficultyBar}
-                </td>
-                <td class="px-6 py-4">
-                    <div class="font-semibold text-sm mb-1">${(item.discrimination*100).toFixed(0)}%</div>
-                    ${discriminationBar}
-                </td>
-                <td class="px-6 py-4">${(item.correct/item.total*100).toFixed(0)}%</td>
-                <td class="px-6 py-4">${item.total}</td>
-            </tr>
-        `;
-        tbody.innerHTML += row;
-    });
-
-    // Update summary cards
-    document.getElementById('totalItems').textContent = data.length;
-    document.getElementById('avgDifficulty').textContent = ((data.reduce((a,b)=>a+b.difficulty,0)/data.length)*100).toFixed(0)+'%';
-    document.getElementById('avgDiscrimination').textContent = ((data.reduce((a,b)=>a+b.discrimination,0)/data.length)*100).toFixed(0)+'%';
-
-    renderChart(data);
-}
-
-function getDifficultyClass(difficulty) {
-    if(difficulty>0.70) return 'bg-red-500';
-    if(difficulty>0.40) return 'bg-yellow-500';
-    return 'bg-green-500';
-}
-
-// Chart rendering
-function renderChart(data) {
-    const ctx = document.getElementById('analysisChart').getContext('2d');
-    const labels = data.map(d => d.name);
-    const difficultyData = data.map(d => (d.difficulty*100).toFixed(0));
-    const discriminationData = data.map(d => (d.discrimination*100).toFixed(0));
-    const correctData = data.map(d => ((d.correct/d.total*100).toFixed(0)));
-
-    if(chartInstance) chartInstance.destroy(); // remove old chart
-
-    chartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [
-                { label: 'Difficulty %', data: difficultyData, backgroundColor: 'rgba(220,53,69,0.7)' },
-                { label: 'Discrimination %', data: discriminationData, backgroundColor: 'rgba(0,123,255,0.7)' },
-                { label: 'Correct %', data: correctData, backgroundColor: 'rgba(40,167,69,0.7)' }
-            ]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: { beginAtZero:true, max: 100 }
-            }
-        }
-    });
-}
-
-// Filters
-document.getElementById('searchInput').addEventListener('input', e=>{
-    const filtered = dummyData.filter(item=>item.name.toLowerCase().includes(e.target.value.toLowerCase()));
-    currentData = filtered;
-    renderTable(currentData);
+document.addEventListener("DOMContentLoaded", () => {
+    const sectionId = "{{ section.id }}";
+    loadDashboard(sectionId);
 });
 
-document.getElementById('sortSelect').addEventListener('change', e=>{
-    const sortBy = e.target.value;
-    currentData.sort((a,b)=>{
-        if(sortBy==='difficulty') return b.difficulty - a.difficulty;
-        if(sortBy==='discrimination') return b.discrimination - a.discrimination;
-        if(sortBy==='correct') return (b.correct/b.total) - (a.correct/a.total);
-        return a.name.localeCompare(b.name);
-    });
-    renderTable(currentData);
-});
+let activityData = []; // cache backend data
 
-renderTable(currentData);
+async function loadDashboard(sectionId) {
+    const response = await fetch(`/instructor/h/item-analysis-json/${sectionId}/`);
+    const data = await response.json();
+    activityData = data.activities;
+
+    populateActivityDropdown();
+    loadAllActivitiesStats();
+}
+
+/* POPULATE DROPDOWN */
+function populateActivityDropdown() {
+    const select = document.getElementById("activitySelect");
+    select.innerHTML = "";
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "All Activities";
+    select.appendChild(defaultOption);
+
+    activityData.forEach(act => {
+        const option = document.createElement("option");
+        option.value = act.activity_id;
+        option.textContent = act.activity_title;
+        select.appendChild(option);
+    });
+
+    select.addEventListener("change", (e) => {
+        const selectedId = e.target.value;
+        if (selectedId) loadActivityStats(selectedId);
+        else loadAllActivitiesStats();
+    });
+}
+
+/* LOAD AGGREGATE STATS */
+function loadAllActivitiesStats() {
+    let totalSubmissions = 0, passingCount = 0, failingCount = 0;
+    let totalScoreSum = 0, totalScoreCount = 0;
+    let studentSet = new Set();
+
+    activityData.forEach(act => {
+        totalSubmissions += act.total_submissions;
+        passingCount += act.passing_count;
+        failingCount += act.failing_count;
+        totalScoreSum += act.average_score * act.total_submissions;
+        totalScoreCount += act.total_submissions;
+        if (act.student_ids) act.student_ids.forEach(id => studentSet.add(id));
+    });
+
+    const totalStudents = studentSet.size;
+    const averageScore = totalScoreCount ? (totalScoreSum / totalScoreCount).toFixed(2) : "0.00";
+
+    document.getElementById("totalSubmissions").textContent = totalSubmissions;
+    document.getElementById("passingCount").textContent = passingCount;
+    document.getElementById("failingCount").textContent = failingCount;
+    document.getElementById("averageScore").textContent = averageScore;
+    document.getElementById("totalStudentsLabel").textContent = `${totalStudents} enrolled`;
+    document.getElementById("passingRateLabel").textContent = totalStudents ? `${Math.round((passingCount/totalStudents)*100)}% pass rate` : "0%";
+    document.getElementById("failingRateLabel").textContent = totalStudents ? `${Math.round((failingCount/totalStudents)*100)}% fail rate` : "0%";
+
+    // Example item-level stats (replace with your backend item_breakdown if available)
+    updateDonutChart(passingCount, failingCount);
+    updateBarChart({ passenger: 95, departure: 45, return: 80 });
+}
+
+/* LOAD SINGLE ACTIVITY STATS */
+function loadActivityStats(activityId) {
+    const act = activityData.find(a => a.activity_id == activityId);
+    if (!act) return;
+
+    document.getElementById("totalSubmissions").textContent = act.total_submissions;
+    document.getElementById("passingCount").textContent = act.passing_count;
+    document.getElementById("failingCount").textContent = act.failing_count;
+    document.getElementById("averageScore").textContent = act.average_score;
+
+    document.getElementById("totalStudentsLabel").textContent = `${act.total_students} enrolled`;
+    document.getElementById("passingRateLabel").textContent = `${Math.round((act.passing_count / act.total_students) * 100)}% pass rate`;
+    document.getElementById("failingRateLabel").textContent = `${Math.round((act.failing_count / act.total_students) * 100)}% fail rate`;
+
+    updateDonutChart(act.passing_count, act.failing_count);
+    // Replace with real backend item-level data
+    updateBarChart({ passenger: 95, departure: 45, return: 80 });
+}
+
 </script>
-
 {% endblock %}

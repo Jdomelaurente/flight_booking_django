@@ -5,7 +5,7 @@ from django.views.decorators.http import require_GET
 from decimal import Decimal
 from instructorapp.models import ActivitySubmission
 from instructorapp.utils_grading import get_booking_details, get_detailed_comparison
-from django.shortcuts import render
+
 
 @require_GET
 def grade_all_submissions(request, activity_id):
@@ -156,5 +156,3 @@ def grade_all_submissions(request, activity_id):
 
     return JsonResponse({"submissions": all_results}, safe=True)
 
-def item_analysis(request):
-    return render(request, 'instructorapp/instructor/itemAnalysis/index.html')

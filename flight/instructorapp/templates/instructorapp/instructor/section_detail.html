@@ -30,9 +30,10 @@
         <div class="flex justify-between items-center">
             <div class="text-xs  space-x-10 font-medium">
                 <a href="#" class="text-[#093704] border-b-2 border-[#093704] pb-1">Activity</a>
-                <a href="{% url 'item_analysis'  %}" class="text-gray-600 hover:text-[#093704]">
+                <a href="{% url 'item_analysis' section.id %}" class="text-gray-600 hover:text-[#093704]">
                     Item Analysis
                 </a>
+
                 <a href="#" class="text-gray-600 hover:text-[#093704]">People</a>
                 <a href="#" class="text-gray-600 hover:text-[#093704]">Settings</a>
             </div>

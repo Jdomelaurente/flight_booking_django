@@ -1,0 +1,232 @@
+<!-- =========================
+         CHARTS
+========================== -->
+<div class="charts-row">
+<!-- PASS / FAIL DONUT -->
+    <div class="chart-card">
+        <div class="chart-header">
+            <h2>Pass/Fail Distribution</h2>
+        </div>
+        <div class="donut-container">
+            <div class="donut-chart" id="donutChart" style="--pass:0; --fail:0;"></div>
+            <div class="donut-legend">
+                <div class="legend-item"><span class="legend-color pass"></span> <span id="donutPassLabel">Pass (0%)</span></div>
+                <div class="legend-item"><span class="legend-color fail"></span> <span id="donutFailLabel">Fail (0%)</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ITEM-LEVEL PERFORMANCE BAR CHART -->
+    <div class="chart-card-2">
+        <div class="chart-header">
+            <h2>Item-Level Performance</h2>
+        </div>
+        <div class="bar-container">
+            <div class="bar-row">
+                <span class="bar-label">Passenger Information</span>
+                <div class="bar" id="barPassenger" style="--width:0;"></div>
+                <span class="bar-value" id="barPassengerValue">0</span>
+            </div>
+            <div class="bar-row">
+                <span class="bar-label">Correct departure date</span>
+                <div class="bar" id="barDeparture" style="--width:0;"></div>
+                <span class="bar-value" id="barDepartureValue">0</span>
+            </div>
+            <div class="bar-row">
+                <span class="bar-label">Correct return date</span>
+                <div class="bar" id="barReturn" style="--width:0;"></div>
+                <span class="bar-value" id="barReturnValue">0</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+/* UPDATE DONUT CHART */
+function updateDonutChart(passingCount, failingCount) {
+    const total = passingCount + failingCount;
+    const passPercent = total ? Math.round((passingCount / total) * 100) : 0;
+    const failPercent = total ? Math.round((failingCount / total) * 100) : 0;
+
+    const donut = document.getElementById("donutChart");
+    donut.style.setProperty("--pass", passPercent);
+    donut.style.setProperty("--fail", failPercent);
+
+    document.getElementById("donutPassLabel").textContent = `Pass (${passPercent}%)`;
+    document.getElementById("donutFailLabel").textContent = `Fail (${failPercent}%)`;
+}
+
+/* UPDATE BAR CHART */
+function updateBarChart(itemStats) {
+    document.getElementById("barPassenger").style.setProperty("--width", itemStats.passenger);
+    document.getElementById("barPassengerValue").textContent = itemStats.passenger;
+
+    document.getElementById("barDeparture").style.setProperty("--width", itemStats.departure);
+    document.getElementById("barDepartureValue").textContent = itemStats.departure;
+
+    document.getElementById("barReturn").style.setProperty("--width", itemStats.return);
+    document.getElementById("barReturnValue").textContent = itemStats.return;
+}
+
+</script>
+
+<style>
+/* ==========================
+   CHARTS
+========================== */
+.charts-row {
+    display: flex;
+    gap: 2rem; /* space between the two charts */
+    margin-top: 2rem;
+}
+
+.chart-card {
+    background: white;
+    padding: 1.5rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    width: 40%; /* left column */
+}
+
+.chart-card-2 {
+    background: white;
+    padding: 1.5rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    width: 60%; /* right column */
+}
+
+/* Optional: make responsive for mobile */
+@media (max-width: 768px) {
+    .charts-row {
+        flex-direction: column;
+    }
+    .chart-card, .chart-card-2 {
+        width: 100%;
+    }
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    background: var(--csu-dark-green);
+    padding: 10px 15px;
+    color: white;
+    border-radius: 5px 5px 0 0;
+    align-items: center;
+}
+
+.chart-header h2 { font-size: 1.2rem; font-weight: 700; }
+
+.view-btn {
+    background: var(--csu-dark-green);
+    border: 1px solid white;
+    padding: 4px 12px;
+    color: white;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+/* DONUT CHART */
+/* DONUT CHART */
+.donut-container {
+    text-align: center;
+    padding: 20px;
+}
+
+/* MAIN DONUT */
+.donut-chart {
+    --size: 200px;
+    width: var(--size);
+    height: var(--size);
+    margin: 0 auto;
+    border-radius: 50%;
+    display: inline-block;
+
+    /* Modern thin donut look */
+    background: conic-gradient(
+        hsl(0, 91%, 45%) calc(var(--pass) * 1%),      /* pass segment (blue/violet) */
+        #019564 calc((var(--pass) + var(--fail)) * 1%) /* fail segment (light purple) */
+    );
+
+    /* thinner inner circle */
+    mask: radial-gradient(circle, transparent 40%, black 45%);
+
+    transition: background 0.6s ease;
+}
+
+/* LEGEND */
+.donut-legend {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: center;
+    gap: 2.5rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.95rem;
+    color: #0e1116; /* soft text color, similar to sample */
+}
+
+.legend-color {
+    width: 14px;
+    height: 14px;
+    display: inline-block;
+    border-radius: 4px;
+}
+
+.legend-color.fail { background: hsl(0, 91%, 45%); }
+.legend-color.pass { background: #019564; }
+
+
+/* BAR CHART */
+/* MAIN CONTAINER (dark, modern) */
+.bar-container {
+    padding: 20px;
+    margin-top: 10px;
+    background: #fffefe;                     /* dark background like sample */
+    border-radius: 12px;
+    background-image: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.05) 1px,
+        transparent 1px
+    );
+    background-size: 100% 26px;              /* subtle horizontal grid */
+}
+
+/* ROW LAYOUT */
+.bar-row {
+    display: grid;
+    grid-template-columns: 1.2fr 6fr 60px;
+    align-items: center;
+    margin-bottom: 1.1rem;
+}
+
+/* LABELS */
+.bar-label {
+    font-size: 0.92rem;
+    color: #000000;                          /* soft white/gray */
+}
+
+/* BAR STYLE — modern green (same as sample lines) */
+.bar {
+    height: 20px;
+    width: calc(var(--width) * 1%);
+    border-radius: 6px;
+    background: linear-gradient(90deg, #07593e, #068254);
+    transition: width 0.45s ease;
+}
+
+/* VALUE TEXT */
+.bar-value {
+    font-weight: 600;
+    color: #000000;
+    text-align: right;
+    font-size: 0.9rem;
+}
+</style>
