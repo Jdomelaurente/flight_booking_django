@@ -143,7 +143,7 @@ const form = ref({
 const fetchAirports = async () => {
   try {
     const res = await api.get('/airports/');
-    airports.value = res.data;
+    airports.value = res.data.results || res.data;
   } catch (err) {
     console.error("Fetch Error:", err.response?.data || err.message);
   }

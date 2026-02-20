@@ -189,6 +189,7 @@ def register_view(request):
                     email=email,
                     phone_number=data.get('phone_number', ''),
                     mi=data.get('mi', ''),
+                    gender=data.get('gender', ''),
                     password=''
                 )
             elif role == 'instructor':

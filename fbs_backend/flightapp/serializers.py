@@ -176,19 +176,12 @@ class SeatSerializer(serializers.ModelSerializer):
     class Meta:
         model = Seat
         fields = [
-<<<<<<< HEAD
-            'id', 'seat_number', 'row', 'column', 'is_available', 
+            'id', 'seat_code', 'seat_number', 'row', 'column', 'is_available', 
             'price_adjustment', 'final_price', 'seat_class', 
-            'seat_class_name', 'is_window', 'is_aisle', 'has_extra_legroom',
+            'is_window', 'is_aisle', 'has_extra_legroom',
             'is_exit_row', 'is_wheelchair_accessible', 'has_bassinet', 
             'has_nut_allergy', 'is_unaccompanied_minor', 'is_bulkhead', 
-            'price_adjustment_manual'
-=======
-            'id', 'seat_code', 'seat_number', 'row', 'column',
-            'is_available', 'final_price', 'price_adjustment',
-            'has_extra_legroom', 'is_exit_row', 'is_bulkhead',
-            'is_window', 'is_aisle', 'seat_class', 'features'
->>>>>>> origin/criss
+            'price_adjustment_manual', 'features'
         ]
     
     def get_seat_class(self, obj):
@@ -221,20 +214,6 @@ class SeatSerializer(serializers.ModelSerializer):
     def get_seat_code(self, obj):
         return f"{obj.row}{obj.column}" if obj.row and obj.column else obj.seat_number
     
-    def get_features(self, obj):
-        # Use the seat_features property from your Seat model
-        features = []
-        if obj.has_extra_legroom:
-            features.append("Extra Legroom")
-        if obj.is_exit_row:
-            features.append("Exit Row")
-        if obj.is_bulkhead:
-            features.append("Bulkhead")
-        if obj.is_window:
-            features.append("Window")
-        if obj.is_aisle:
-            features.append("Aisle")
-        return features
     def get_features(self, obj):
         # Use the seat_features property from your Seat model
         features = []

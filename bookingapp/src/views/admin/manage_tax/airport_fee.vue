@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6">
+  <div class="p-6 poppins">
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <button 
@@ -12,47 +12,47 @@
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-      <div class="bg-white p-4 border border-gray-200 rounded-[1px] shadow-sm">
+      <div class="bg-white p-5 border border-gray-200 rounded-[1px] shadow-sm hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-[10px] uppercase font-semibold text-gray-500 tracking-widest poppins">Total Fees</p>
-            <p class="text-2xl font-bold text-[#002D1E] poppins">{{ stats.total }}</p>
+            <p class="text-[10px] uppercase font-black text-gray-400 tracking-[2px] mb-1">Total Fees</p>
+            <p class="text-3xl font-bold text-[#002D1E]">{{ stats.total }}</p>
           </div>
-          <div class="w-12 h-12 rounded-full bg-green-200 flex items-center justify-center">
-            <i class="ph ph-airplane-tilt text-xl"></i>
+          <div class="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center border border-green-100">
+            <i class="ph ph-airplane-landing text-green-500 text-2xl"></i>
           </div>
         </div>
       </div>
-      <div class="bg-white p-4 border border-gray-200 rounded-[1px] shadow-sm">
+      <div class="bg-white p-5 border border-gray-200 rounded-[1px] shadow-sm hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-[10px] uppercase font-semibold text-gray-500 tracking-widest poppins">Active Fees</p>
-            <p class="text-2xl font-bold  poppins">{{ stats.active }}</p>
+            <p class="text-[10px] uppercase font-black text-gray-400 tracking-[2px] mb-1">Active Fees</p>
+            <p class="text-3xl font-bold text-blue-600">{{ stats.active }}</p>
           </div>
-          <div class="w-12 h-12 rounded-full bg-blue-200 flex items-center justify-center">
-            <i class="ph ph-check-circle  text-xl"></i>
+          <div class="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100">
+            <i class="ph ph-check-circle text-blue-500 text-2xl"></i>
           </div>
         </div>
       </div>
-      <div class="bg-white p-4 border border-gray-200 rounded-[1px] shadow-sm">
+      <div class="bg-white p-5 border border-gray-200 rounded-[1px] shadow-sm hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-[10px] uppercase font-semibold text-gray-500 tracking-widest poppins">Total Revenue</p>
-            <p class="text-2xl font-bold  poppins">₱{{ formatNumber(stats.totalRevenue) }}</p>
+            <p class="text-[10px] uppercase font-black text-gray-400 tracking-[2px] mb-1">Total Revenue</p>
+            <p class="text-3xl font-bold text-[#fe3787]">₱{{ formatNumber(stats.totalRevenue) }}</p>
           </div>
-          <div class="w-12 h-12 rounded-full bg-green-200 flex items-center justify-center">
-            <i class="ph ph-currency-circle-dollar text-xl"></i>
+          <div class="w-14 h-14 rounded-full bg-pink-50 flex items-center justify-center border border-pink-100">
+            <i class="ph ph-currency-circle-dollar text-[#fe3787] text-2xl"></i>
           </div>
         </div>
       </div>
-      <div class="bg-white p-4 border border-gray-200 rounded-[1px] shadow-sm">
+      <div class="bg-white p-5 border border-gray-200 rounded-[1px] shadow-sm hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-[10px] uppercase font-semibold text-gray-500 tracking-widest poppins">Avg Fee</p>
-            <p class="text-2xl font-bold  poppins">₱{{ formatNumber(stats.averageFee) }}</p>
+            <p class="text-[10px] uppercase font-black text-gray-400 tracking-[2px] mb-1">Avg Fee</p>
+            <p class="text-3xl font-bold text-purple-600">₱{{ formatNumber(stats.averageFee) }}</p>
           </div>
-          <div class="w-12 h-12 rounded-full bg-purple-200 flex items-center justify-center">
-            <i class="ph ph-chart-bar text-xl"></i>
+          <div class="w-14 h-14 rounded-full bg-purple-50 flex items-center justify-center border border-purple-100">
+            <i class="ph ph-chart-bar text-purple-500 text-2xl"></i>
           </div>
         </div>
       </div>
@@ -106,14 +106,14 @@
     <!-- Fees Table -->
     <div class="bg-white border border-gray-200 rounded-[1px] shadow-sm overflow-hidden">
       <table class="w-full text-left">
-        <thead class="bg-gray-50 text-gray-600 text-[14px] uppercase font-semibold border-b border-gray-200">
+        <thead class="bg-gray-50 border-b border-gray-200">
           <tr>
-            <th class="px-6 py-4 poppins">Airport</th>
-            <th class="px-6 py-4 poppins">Fee Type</th>
-            <th class="px-6 py-4 poppins">Category</th>
-            <th class="px-6 py-4 poppins">Amount</th>
-            <th class="px-6 py-4 poppins">Status</th>
-            <th class="px-6 py-4 text-right poppins">Actions</th>
+            <th class="px-6 py-4 text-[11px] uppercase font-black text-[#002D1E] tracking-widest">Airport</th>
+            <th class="px-6 py-4 text-[11px] uppercase font-black text-[#002D1E] tracking-widest">Fee Type</th>
+            <th class="px-6 py-4 text-[11px] uppercase font-black text-[#002D1E] tracking-widest">Category</th>
+            <th class="px-6 py-4 text-[11px] uppercase font-black text-[#002D1E] tracking-widest">Amount</th>
+            <th class="px-6 py-4 text-[11px] uppercase font-black text-[#002D1E] tracking-widest">Status</th>
+            <th class="px-6 py-4 text-[11px] uppercase font-black text-[#002D1E] tracking-widest text-right">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
@@ -125,21 +125,21 @@
                 </div>
                 <div>
                   <span class="font-semibold text-[#002D1E] block poppins">{{ fee.airport?.name }}</span>
-                  <span class="text-gray-400 poppins">{{ fee.airport?.code }} • {{ fee.airport?.city }}</span>
+                  <span class="text-gray-400 poppins text-xs">{{ fee.airport?.code }} • {{ fee.airport?.city }}</span>
                 </div>
               </div>
             </td>
             <td class="px-6 py-4">
               <span class="font-semibold text-[#002D1E] block poppins">{{ fee.tax_type?.name }}</span>
-              <span class="text-gray-400 poppins text-xs">{{ fee.tax_type?.code }}</span>
+              <span class="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded poppins">{{ fee.tax_type?.code }}</span>
             </td>
             <td class="px-6 py-4">
               <span :class="categoryClass(fee.tax_type?.category)" class="px-3 py-1 rounded-full font-semibold uppercase text-xs poppins">
-                {{ fee.tax_type?.category || 'N/A' }}
+                {{ formatCategory(fee.tax_type?.category) }}
               </span>
             </td>
             <td class="px-6 py-4">
-              <span class="text-lg font-bold poppins">₱{{ formatNumber(fee.amount) }}</span>
+              <span class="text-lg font-bold text-[#002D1E] poppins">₱{{ formatNumber(fee.amount) }}</span>
             </td>
             <td class="px-6 py-4">
               <span :class="statusClass(fee.tax_type?.is_active)" class="px-3 py-1 rounded-full font-semibold uppercase text-xs poppins">
@@ -164,7 +164,7 @@
       <!-- Empty State -->
       <div v-if="filteredFees.length === 0 && !loading" class="p-12 text-center">
         <div class="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-          <i class="ph ph-airplane-tilt text-2xl text-gray-400"></i>
+          <i class="ph ph-airplane-landing text-2xl text-gray-400"></i>
         </div>
         <h3 class="text-lg font-semibold text-gray-900 mb-2 poppins">No airport fees found</h3>
         <p class="text-gray-500 poppins">Add airport fees to manage terminal charges</p>
@@ -216,16 +216,16 @@
     </div>
 
     <!-- Add/Edit Modal -->
-    <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div class="bg-white w-full max-w-md p-6 rounded-[1px] shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-lg font-bold text-[#002D1E] poppins">{{ isEditing ? 'Edit Airport Fee' : 'Add Airport Fee' }}</h2>
-          <button @click="closeModal" class="text-gray-400 hover:text-gray-600">
-            <i class="ph ph-x"></i>
+    <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-[#002D1E]/60 backdrop-blur-sm p-4">
+      <div class="bg-white w-full max-w-lg rounded-[1px] shadow-2xl overflow-hidden">
+        <div class="bg-[#002D1E] p-4 text-white flex justify-between items-center">
+          <h2 class="text-sm font-black uppercase tracking-[2px]">{{ isEditing ? 'Revise Airport Fee' : 'Register Airport Fee' }}</h2>
+          <button @click="closeModal" class="text-white/70 hover:text-white transition-colors">
+            <i class="ph ph-x text-xl"></i>
           </button>
         </div>
         
-        <form @submit.prevent="saveFee" class="space-y-4">
+        <form @submit.prevent="saveFee" class="p-6 space-y-5">
           <div>
             <label class="block text-xs font-semibold text-gray-600 uppercase mb-1 poppins">Airport *</label>
             <select 
@@ -286,62 +286,71 @@
     </div>
 
     <!-- View Details Modal -->
-    <div v-if="showDetailsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div class="bg-white w-full max-w-lg p-6 rounded-[1px] shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-lg font-bold text-[#002D1E] poppins">Airport Fee Details</h2>
-          <button @click="showDetailsModal = false" class="text-gray-400 hover:text-gray-600">
-            <i class="ph ph-x"></i>
+    <div v-if="showDetailsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-[#002D1E]/60 backdrop-blur-sm p-4">
+      <div class="bg-white w-full max-w-lg rounded-[1px] shadow-2xl overflow-hidden">
+        <div class="bg-[#002D1E] p-4 text-white flex justify-between items-center">
+          <h2 class="text-sm font-black uppercase tracking-[2px]">Airport Fee Information</h2>
+          <button @click="showDetailsModal = false" class="text-white/70 hover:text-white transition-colors">
+            <i class="ph ph-x text-xl"></i>
           </button>
         </div>
         
-        <div v-if="selectedFee" class="space-y-4">
+        <div v-if="selectedFee" class="p-8 space-y-6">
           <div class="flex items-center gap-4 mb-4">
-            <div class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
-              <i class="ph ph-airplane-tilt text-3xl text-blue-600"></i>
+            <div class="w-16 h-16 rounded-full bg-[#fe3787]/10 flex items-center justify-center">
+              <i class="ph ph-airplane-tilt text-3xl text-[#fe3787]"></i>
             </div>
             <div>
               <h3 class="text-xl font-semibold text-[#002D1E] poppins">{{ selectedFee.airport?.name }}</h3>
               <p class="text-sm text-gray-500 poppins">{{ selectedFee.airport?.code }} • {{ selectedFee.airport?.city }}</p>
             </div>
           </div>
-          
+
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-semibold text-gray-600 uppercase mb-1 poppins">Fee Type</label>
-              <div class="p-2 border border-gray-200 rounded-[1px] poppins">{{ selectedFee.tax_type?.name }}</div>
+              <label class="block text-[10px] uppercase font-black text-gray-400 tracking-[2px] mb-1 poppins">Fee Type</label>
+              <div class="p-3 border border-gray-200 rounded-[1px] poppins text-sm font-medium">{{ selectedFee.tax_type?.name }}</div>
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-600 uppercase mb-1 poppins">Code</label>
-              <div class="p-2 border border-gray-200 rounded-[1px] poppins">{{ selectedFee.tax_type?.code }}</div>
+              <label class="block text-[10px] uppercase font-black text-gray-400 tracking-[2px] mb-1 poppins">Code</label>
+              <div class="p-3 border border-gray-200 rounded-[1px] font-mono text-sm">{{ selectedFee.tax_type?.code }}</div>
             </div>
           </div>
-          
+
           <div>
-            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1 poppins">Category</label>
-            <div class="p-2 border border-gray-200 rounded-[1px]">
+            <label class="block text-[10px] uppercase font-black text-gray-400 tracking-[2px] mb-1 poppins">Category</label>
+            <div class="p-3 border border-gray-200 rounded-[1px]">
               <span :class="categoryClass(selectedFee.tax_type?.category)" class="px-3 py-1 rounded-full text-xs font-semibold uppercase poppins">
-                {{ selectedFee.tax_type?.category || 'N/A' }}
+                {{ formatCategory(selectedFee.tax_type?.category) }}
               </span>
             </div>
           </div>
-          
+
           <div>
-            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1 poppins">Amount</label>
-            <div class="p-2 border border-gray-200 rounded-[1px] text-2xl font-bold text-[#fe3787] poppins">
+            <label class="block text-[10px] uppercase font-black text-gray-400 tracking-[2px] mb-1 poppins">Amount</label>
+            <div class="p-3 border border-gray-200 rounded-[1px] text-2xl font-bold text-[#fe3787] poppins">
               ₱{{ formatNumber(selectedFee.amount) }}
             </div>
           </div>
-          
+
+          <div>
+            <label class="block text-[10px] uppercase font-black text-gray-400 tracking-[2px] mb-1 poppins">Status</label>
+            <div class="p-3 border border-gray-200 rounded-[1px]">
+              <span :class="statusClass(selectedFee.tax_type?.is_active)" class="px-3 py-1 rounded-full text-xs font-semibold uppercase poppins">
+                {{ selectedFee.tax_type?.is_active ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+          </div>
+
           <div v-if="selectedFee.tax_type?.description">
-            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1 poppins">Description</label>
-            <div class="p-2 border border-gray-200 rounded-[1px] text-sm text-gray-600 poppins">
+            <label class="block text-[10px] uppercase font-black text-gray-400 tracking-[2px] mb-1 poppins">Description</label>
+            <div class="p-3 border border-gray-200 rounded-[1px] text-sm text-gray-600 poppins">
               {{ selectedFee.tax_type?.description }}
             </div>
           </div>
         </div>
         
-        <div class="flex justify-end gap-2 pt-4 border-t mt-6">
+        <div class="flex justify-end gap-2 p-6 pt-0 border-t">
           <button 
             type="button" 
             @click="showDetailsModal = false" 
@@ -468,9 +477,10 @@ const fetchData = async () => {
       api.get('/tax-types/')
     ])
     
-    fees.value = feesRes.data
-    airports.value = airportsRes.data
-    taxTypes.value = taxTypesRes.data.filter(t => t.category === 'airport')
+    fees.value = feesRes.data.results || feesRes.data
+    airports.value = airportsRes.data.results || airportsRes.data
+    const allTaxTypes = taxTypesRes.data.results || taxTypesRes.data
+    taxTypes.value = allTaxTypes.filter(t => t.category === 'airport')
     
     calculateStats()
   } catch (err) {
@@ -516,12 +526,10 @@ const viewDetails = (fee) => {
 const saveFee = async () => {
   try {
     const payload = {
-      airport_id: form.value.airport,  // Change from 'airport' to 'airport_id'
-      tax_type_id: form.value.tax_type,  // Change from 'tax_type' to 'tax_type_id'
+      airport_id: form.value.airport,
+      tax_type_id: form.value.tax_type,
       amount: parseFloat(form.value.amount)
     }
-    
-    console.log('Sending payload:', payload)
     
     if (isEditing.value) {
       await api.put(`/airport-fees/${currentId.value}/`, payload)
@@ -569,17 +577,26 @@ const formatNumber = (num) => {
   })
 }
 
+const formatCategory = (category) => {
+  const map = {
+    'government': 'Government',
+    'airport': 'Airport',
+    'airline': 'Airline'
+  }
+  return map[category] || category || 'N/A'
+}
+
 const categoryClass = (category) => {
   switch(category) {
-    case 'government': return 'bg-red-200'
-    case 'airport': return 'bg-blue-200'
-    case 'airline': return 'bg-green-200'
-    default: return 'bg-gray-200 '
+    case 'government': return 'bg-red-200 text-red-700'
+    case 'airport': return 'bg-blue-200 text-blue-700'
+    case 'airline': return 'bg-purple-200 text-purple-700'
+    default: return 'bg-gray-200 text-gray-600'
   }
 }
 
 const statusClass = (isActive) => {
-  return isActive ? 'bg-green-200 ' : 'bg-gray-200'
+  return isActive ? 'bg-green-200 text-green-700' : 'bg-gray-200 text-gray-500'
 }
 
 const filterFees = () => {

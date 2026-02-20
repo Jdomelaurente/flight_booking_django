@@ -61,10 +61,12 @@ class FlightPricePredictor:
     def load_model(self):
         """Load the trained XGBoost model from the correct path"""
         try:
-            # Construct path relative to this file's parent or BASE_DIR
-            # The model is usually in the fbs_backend root
-            base_dir = Path(__file__).resolve().parent.parent.parent
-            model_path = base_dir / 'flight_xgb.pkl'
+            # Path to your XGBoost model file (relative to this file)
+            model_path = Path(__file__).parent / 'flight_xgb.pkl'
+            
+            # Fallback: also check the fbs_backend root directory
+            if not model_path.exists():
+                model_path = Path(__file__).parent.parent.parent / 'flight_xgb.pkl'
             
             print(f"[MODEL] Attempting to load XGBoost model from: {model_path}")
             

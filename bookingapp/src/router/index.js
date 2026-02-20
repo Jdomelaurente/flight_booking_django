@@ -2,14 +2,10 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useBookingStore } from '@/stores/booking';
 import { useNotificationStore } from '@/stores/notification';
 
-<<<<<<< HEAD
 // 1. Import your new admin routes file
 import adminRoutes from './admin';
 
-// 2. Booking Views (Keep these or move them to a booking.js later)
-=======
 // Booking Views
->>>>>>> origin/criss
 import HomeView from '@/views/booking/HomeView.vue';
 import SearchResults from '@/views/booking/SearchResultsView.vue';
 import PassengerDetails from '@/views/booking/PassengerDetailsView.vue';
@@ -33,12 +29,9 @@ import StudentDashboard from '@/views/Student/Student_dashboard.vue';
 import StudentActivityDetails from '@/views/Student/Activities/Student_activity_details.vue'
 
 const routes = [
-<<<<<<< HEAD
   // 3. Use the Spread Operator (...) to include all admin routes
   ...adminRoutes,
 
-  // --- Booking Routes (The main site) ---
-=======
   {
     path: '/login',
     name: 'instructor_login',
@@ -95,7 +88,6 @@ const routes = [
     name: 'Airbus321',
     component: AirbusA321Layout
   },
->>>>>>> origin/criss
   {
     path: '/',
     name: 'Home',
@@ -107,17 +99,9 @@ const routes = [
     }
   },
   {
-    path: '/airbus-321',
-    name: 'Airbus321',
-    component: AirbusA321Layout
-  },
-  {
     path: '/check-in',
     name: 'check-in',
-<<<<<<< HEAD
-=======
     meta: { layout: 'BookingLayout' },
->>>>>>> origin/criss
     component: () => import('../views/booking/CheckInView.vue')
   },
   {
@@ -165,10 +149,6 @@ const routes = [
   {
     path: '/payment-callback',
     name: 'PaymentCallback',
-<<<<<<< HEAD
-    component: () => import('../views/booking/PaymentCallbackView.vue'),
-    meta: { requiresAuth: false }
-=======
     meta: { layout: 'BookingLayout' },
     component: () => import('../views/booking/PaymentCallbackView.vue'),
     meta: { requiresAuth: false }
@@ -178,7 +158,6 @@ const routes = [
     name: 'BookingSuccess',
     meta: { layout: 'BookingLayout' },
     component: () => import('@/views/booking/BookingSuccessView.vue')
->>>>>>> origin/criss
   }
 ];
 
@@ -187,26 +166,6 @@ const router = createRouter({
   routes,
 });
 
-<<<<<<< HEAD
-// Keep your router.beforeEach logic here...
-router.beforeEach((to, from, next) => {
-  const bookingStore = useBookingStore();
-  document.title = to.meta.title || 'Philippine Airlines';
-
-  const bookingRoutes = ['PassengerDetails', 'Addons', 'SeatSelection', 'ReviewBooking', 'Payment'];
-  if (bookingRoutes.includes(to.name)) {
-    if (!bookingStore.sessionExpiry || Date.now() > bookingStore.sessionExpiry) {
-      alert("Your booking session has expired. Please start a new search.");
-      bookingStore.resetBooking();
-      return next('/');
-    }
-  }
-
-  if (to.meta.requiresAuth && to.meta.role === 'admin') {
-    const isAdminLoggedIn = !!localStorage.getItem('adminLoggedIn');
-    if (!isAdminLoggedIn) {
-      return next('/admin/login'); // Matches the login path in admin.js
-=======
 // ==========================================
 // NAVIGATION GUARD
 // ==========================================
@@ -217,6 +176,14 @@ router.beforeEach((to, from, next) => {
   // Set page title
   if (to.meta.title) {
     document.title = to.meta.title;
+  }
+
+  // Admin specific logic
+  if (to.meta.requiresAuth && to.meta.role === 'admin') {
+    const isAdminLoggedIn = !!localStorage.getItem('adminLoggedIn');
+    if (!isAdminLoggedIn) {
+      return next('/admin/login');
+    }
   }
 
   // Check for authentication token
@@ -244,41 +211,44 @@ router.beforeEach((to, from, next) => {
 
   // Authentication Check
   if (to.meta.requiresAuth) {
-    if (!token) {
+    if (!token && to.meta.role !== 'admin') {
       console.log('❌ No token - Redirecting to login');
       return next('/login');
     }
 
-    try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      console.log('👤 User role:', user.role);
+    // Optional: Check role if specified
+    if (to.meta.role && to.meta.role !== 'admin') {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        console.log('👤 User role:', user.role);
 
-      // STRICT INSTRUCTOR RESTRICTION
-      if (user.role === 'instructor') {
-        const allowedRoutes = ['instructor_dashboard', 'SectionDetails', 'SectionPeople', 'ActivityDetails'];
-        const isAllowedPath = to.path.startsWith('/instructor/');
+        // STRICT INSTRUCTOR RESTRICTION
+        if (user.role === 'instructor') {
+          const allowedRoutes = ['instructor_dashboard', 'SectionDetails', 'SectionPeople', 'ActivityDetails'];
+          const isAllowedPath = to.path.startsWith('/instructor/');
 
-        if (!isAllowedPath && !allowedRoutes.includes(to.name)) {
-          console.warn('⛔ Instructor attempted to access restricted page:', to.path);
-          return next('/instructor/dashboard');
+          if (!isAllowedPath && !allowedRoutes.includes(to.name)) {
+            console.warn('⛔ Instructor attempted to access restricted page:', to.path);
+            return next('/instructor/dashboard');
+          }
         }
-      }
 
-      // STRICT STUDENT RESTRICTION
-      if (user.role === 'student') {
-        // Prevent access to ANY instructor routes
-        if (to.path.startsWith('/instructor/')) {
-          console.warn('⛔ Student attempted to access instructor page:', to.path);
-          return next('/student/dashboard');
+        // STRICT STUDENT RESTRICTION
+        if (user.role === 'student') {
+          // Prevent access to ANY instructor routes
+          if (to.path.startsWith('/instructor/')) {
+            console.warn('⛔ Student attempted to access instructor page:', to.path);
+            return next('/student/dashboard');
+          }
         }
-      }
 
-      // Optional: Check role if specified
-      if (to.meta.role && user.role && user.role !== to.meta.role) {
-        console.log('⚠️ Role mismatch - but allowing (backend will block if needed)');
+        // Optional: Check role if specified
+        if (to.meta.role && user.role && user.role !== to.meta.role) {
+          console.log('⚠️ Role mismatch - but allowing (backend will block if needed)');
+        }
+      } catch (e) {
+        console.error('Error parsing user data:', e);
       }
-    } catch (e) {
-      console.error('Error parsing user data:', e);
     }
   }
 
@@ -344,7 +314,6 @@ router.beforeEach((to, from, next) => {
       notificationStore.error("Your booking session has expired or hasn't started. Please start a new search.");
       bookingStore.resetBooking();
       return next('/');
->>>>>>> origin/criss
     }
   }
 

@@ -9,6 +9,9 @@
         <button @click="refreshData" class="bg-white border border-gray-200 text-gray-700 px-4 py-2 flex items-center gap-2 hover:bg-gray-50 font-semibold poppins text-[14px] rounded-[1px] shadow-sm transition-all">
           <i class="ph ph-arrows-clockwise"></i> Refresh
         </button>
+        <button @click="openAddModal" class="bg-[#fe3787] text-white px-6 py-2 flex items-center gap-2 hover:bg-[#e6327a] font-bold poppins text-[14px] rounded-[1px] shadow-md transition-all ml-auto">
+          <i class="ph ph-plus-circle"></i> Add Passenger
+        </button>
       </div>
     </div>
 
@@ -190,14 +193,26 @@
         </div>
         
         <form @submit.prevent="savePassenger" class="space-y-6">
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">Title</label>
+              <select v-model="form.title" class="w-full border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px] bg-white" required>
+                <option value="MR">Mr.</option>
+                <option value="MRS">Mrs.</option>
+                <option value="MS">Ms.</option>
+              </select>
+            </div>
             <div>
               <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">First Name</label>
-              <input v-model="form.first_name" type="text" class="w-full border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px]" required>
+              <input v-model="form.first_name" type="text" class="w-full border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px]" placeholder="e.g. JUAN" required>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">Middle Name (Optional)</label>
+              <input v-model="form.middle_name" type="text" class="w-full border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px]" placeholder="e.g. DELA">
             </div>
             <div>
               <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">Last Name</label>
-              <input v-model="form.last_name" type="text" class="w-full border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px]" required>
+              <input v-model="form.last_name" type="text" class="w-full border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px]" placeholder="e.g. CRUZ" required>
             </div>
           </div>
           
@@ -263,12 +278,13 @@ const itemsPerPage = 10
 // Form data
 const form = ref({
   first_name: '',
+  middle_name: '',
   last_name: '',
-  passenger_type: '',
+  passenger_type: 'Adult',
   date_of_birth: '',
   passport_number: '',
   nationality: '',
-  title: '',
+  title: 'MR',
   linked_adult: null
 })
 
@@ -368,6 +384,23 @@ const visiblePages = computed(() => {
 })
 
 // Methods
+const openAddModal = () => {
+  isEditing.value = false
+  currentId.value = null
+  form.value = {
+    first_name: '', 
+    middle_name: '',
+    last_name: '', 
+    passenger_type: 'Adult', 
+    date_of_birth: '', 
+    passport_number: '', 
+    nationality: '', 
+    title: 'MR', 
+    linked_adult: null
+  }
+  showAddModal.value = true
+}
+
 const fetchPassengers = async () => {
   loading.value = true
   try {
@@ -420,15 +453,44 @@ const deletePassenger = async (id) => {
 
 const savePassenger = async () => {
   try {
+    // Basic cleanup of data
+    const payload = { ...form.value };
+    console.log('Sending Passenger Payload:', payload);
+    
+    // Convert empty strings to null for backend validation
+    if (!payload.date_of_birth) payload.date_of_birth = null;
+    if (!payload.passport_number) payload.passport_number = null;
+    if (!payload.nationality) payload.nationality = null;
+    if (!payload.middle_name) payload.middle_name = null;
+    
+    // Conventions: Uppercase names
+    payload.first_name = payload.first_name?.toUpperCase();
+    payload.last_name = payload.last_name?.toUpperCase();
+    if (payload.middle_name) payload.middle_name = payload.middle_name.toUpperCase();
+
     if (isEditing.value) {
-      await api.put(`/passengers/${currentId.value}/`, form.value)
+      await api.put(`/passengers/${currentId.value}/`, payload)
     } else {
-      await api.post('/passengers/', form.value)
+      await api.post('/passengers/', payload)
     }
     await fetchPassengers()
     closeModal()
   } catch (err) {
     console.error('Save error:', err)
+    const errorData = err.response?.data;
+    let errorMsg = 'Failed to save passenger profile.';
+    
+    if (errorData) {
+      if (typeof errorData === 'object') {
+        errorMsg = Object.entries(errorData)
+          .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
+          .join('\n');
+      } else {
+        errorMsg = errorData;
+      }
+    }
+    
+    alert('Error Saving Passenger:\n\n' + errorMsg);
   }
 }
 
@@ -441,7 +503,7 @@ const closeModal = () => {
   form.value = {
     first_name: '', last_name: '', passenger_type: '', 
     date_of_birth: '', passport_number: '', nationality: '', 
-    title: '', linked_adult: null
+    title: 'MR', linked_adult: null
   }
 }
 

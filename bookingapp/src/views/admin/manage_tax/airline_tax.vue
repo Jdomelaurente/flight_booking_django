@@ -530,9 +530,9 @@ const fetchData = async () => {
       api.get('/tax-types/')
     ])
     
-    taxes.value = taxesRes.data
-    airlines.value = airlinesRes.data
-    taxTypes.value = taxTypesRes.data
+    taxes.value = taxesRes.data.results || taxesRes.data
+    airlines.value = airlinesRes.data.results || airlinesRes.data
+    taxTypes.value = taxTypesRes.data.results || taxTypesRes.data
     
     calculateStats()
     calculateBreakdowns()

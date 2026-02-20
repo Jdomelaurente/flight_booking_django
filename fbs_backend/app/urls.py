@@ -21,7 +21,10 @@ from .views import (
     SeatViewSet,
     SeatRequirementViewSet,
     AirportFeeViewSet,
-    TaxTypeViewSet
+    TaxTypeViewSet,
+    StudentsViewSet,
+    InstructorsViewSet,
+    PaymentViewSet
 )
 
 # Create a router and register our viewsets
@@ -29,6 +32,8 @@ router = DefaultRouter()
 
 # ... (rest of the router registrations)
 router.register(r'seat-requirements', SeatRequirementViewSet, basename='seatrequirement')
+router.register(r'students', StudentsViewSet, basename='student')
+router.register(r'instructors', InstructorsViewSet, basename='instructor')
 
 # ==========================================
 # DASHBOARD
@@ -71,6 +76,7 @@ router.register(r'airline-taxes', AirlineTaxViewSet, basename='airlinetax')
 router.register(r'passenger-tax-rates', PassengerTypeTaxRateViewSet, basename='passengertaxrate')
 router.register(r'booking-taxes', BookingTaxViewSet, basename='bookingtax')
 router.register(r'bookings', BookingViewSet, basename='booking')
+router.register(r'payments', PaymentViewSet, basename='payment')
 
 urlpatterns = [
     # Manual path for login

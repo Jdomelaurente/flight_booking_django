@@ -576,9 +576,9 @@ const fetchData = async () => {
       api.get('/tax-types/')
     ])
     
-    taxes.value = taxesRes.data
-    bookings.value = bookingsRes.data
-    taxTypes.value = taxTypesRes.data
+    taxes.value = taxesRes.data.results || taxesRes.data
+    bookings.value = bookingsRes.data.results || bookingsRes.data
+    taxTypes.value = taxTypesRes.data.results || taxTypesRes.data
     
     calculateStats()
     calculateSummaries()

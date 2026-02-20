@@ -597,7 +597,7 @@ const fetchTaxes = async () => {
   loading.value = true
   try {
     const response = await api.get('/tax-types/')
-    taxes.value = response.data
+    taxes.value = response.data.results || response.data
     calculateStats()
   } catch (err) {
     console.error('Fetch error:', err)

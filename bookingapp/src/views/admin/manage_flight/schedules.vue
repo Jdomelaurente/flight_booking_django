@@ -56,12 +56,18 @@
               </div>
             </td>
             <td class="px-6 py-4">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="font-bold text-[#002D1E] poppins">{{ formatTime(s.departure_time) }}</span>
-                <i class="ph ph-caret-right text-gray-300"></i>
-                <span class="font-bold text-[#002D1E] poppins">{{ formatTime(s.arrival_time) }}</span>
+              <div class="flex flex-col gap-2">
+                <div>
+                  <p class="text-[9px] font-black uppercase text-gray-400 tracking-widest poppins mb-0.5">Departure</p>
+                  <span class="font-bold text-[#002D1E] poppins block">{{ formatDate(s.departure_time) }}</span>
+                  <span class="text-[11px] text-[#fe3787] font-semibold poppins">{{ formatTime(s.departure_time) }}</span>
+                </div>
+                <div>
+                  <p class="text-[9px] font-black uppercase text-gray-400 tracking-widest poppins mb-0.5">Arrival</p>
+                  <span class="font-bold text-[#002D1E] poppins block">{{ formatDate(s.arrival_time) }}</span>
+                  <span class="text-[11px] text-blue-500 font-semibold poppins">{{ formatTime(s.arrival_time) }}</span>
+                </div>
               </div>
-              <div class="text-[10px] text-gray-400 poppins">{{ formatDate(s.departure_time) }}</div>
             </td>
             <td class="px-6 py-4 poppins text-gray-500 italic">
               {{ s.duration_display }}

@@ -90,7 +90,7 @@ const form = ref({ name: '', description: '' });
 const fetchAddOns = async () => {
   try {
     const res = await api.get('/add-ons/');
-    addOns.value = res.data;
+    addOns.value = res.data.results || res.data;
   } catch (err) {
     console.error("Fetch Error:", err);
   }

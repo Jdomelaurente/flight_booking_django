@@ -1648,7 +1648,10 @@ const loadLayoutFromSeats = (fetchedSeats) => {
     const numericClassId = parseInt(classId);
     if (isNaN(numericClassId)) return;
     
-    const rows = Math.max(...classSeats.map(s => s.row || 1));
+    const maxRow = Math.max(...classSeats.map(s => s.row || 1));
+    const minRow = Math.min(...classSeats.map(s => s.row || 1));
+    const rows = maxRow - minRow + 1;
+    
     const cols = Math.max(...classSeats.map(s => {
       const col = s.column;
       return typeof col === 'string' ? col.charCodeAt(0) - 64 : parseInt(col) || 1;

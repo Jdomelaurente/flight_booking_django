@@ -113,8 +113,8 @@ const fetchData = async () => {
       api.get('/aircraft/'),
       api.get('/airlines/')
     ]);
-    aircraftList.value = planeRes.data;
-    airlines.value = airlineRes.data;
+    aircraftList.value = planeRes.data.results || planeRes.data;
+    airlines.value = airlineRes.data.results || airlineRes.data;
   } catch (err) { 
     console.error("Fetch Error:", err); 
   }

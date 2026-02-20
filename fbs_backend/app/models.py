@@ -388,7 +388,6 @@ class Schedule(models.Model):
 
     @property
     def is_open(self):
-<<<<<<< HEAD
         return self.automatic_status == "Open"
 
     # --- VALIDATION ---
@@ -430,23 +429,6 @@ class Schedule(models.Model):
         self.status = self.automatic_status  # Ensure status is correct before saving
         super().save(*args, **kwargs)
 
-
-# ============================================================
-# SEAT REQUIREMENT MODEL (Prices for special seats)
-# ============================================================
-class SeatRequirement(models.Model):
-    name = models.CharField(max_length=100)
-    code = models.CharField(max_length=50, unique=True) # e.g., 'is_exit_row'
-    price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    icon = models.CharField(max_length=50, blank=True, null=True)
-    description = models.TextField(blank=True, null=True)
-
-    def __str__(self):
-        return f"{self.name} (₱{self.price})"
-=======
-        return self.status == "Open"
-    
-    
     def update_ml_price(self, save=True):
         """Update the ML predicted price for this schedule"""
         try:
@@ -489,8 +471,20 @@ class SeatRequirement(models.Model):
             import traceback
             traceback.print_exc()
             return False, None
-        # ===================================================
->>>>>>> origin/criss
+
+
+# ============================================================
+# SEAT REQUIREMENT MODEL (Prices for special seats)
+# ============================================================
+class SeatRequirement(models.Model):
+    name = models.CharField(max_length=100)
+    code = models.CharField(max_length=50, unique=True) # e.g., 'is_exit_row'
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    icon = models.CharField(max_length=50, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.name} (₱{self.price})"
 
 
 class Seat(models.Model):
@@ -611,9 +605,13 @@ class Seat(models.Model):
 
     @property
     def final_price(self):
-<<<<<<< HEAD
         """Calculate final price including all adjustments"""
-        base_price = self.schedule.price if self.schedule else Decimal('0.00')
+        if self.schedule:
+            # Use ML base price if available, otherwise fallback to regular price
+            base_price = self.schedule.ml_base_price or self.schedule.price or Decimal('0.00')
+        else:
+            base_price = Decimal('0.00')
+            
         multiplier = self.seat_class.price_multiplier if self.seat_class else Decimal('1.00')
         
         return (base_price * multiplier) + self.total_price_adjustment
@@ -621,7 +619,11 @@ class Seat(models.Model):
     @property
     def price_breakdown(self):
         """Get detailed price breakdown"""
-        base_price = float(self.schedule.price) if self.schedule else 0.0
+        if self.schedule:
+            base_price = float(self.schedule.ml_base_price or self.schedule.price or 0.0)
+        else:
+            base_price = 0.0
+            
         multiplier = float(self.seat_class.price_multiplier) if self.seat_class else 1.0
         calculated_base = base_price * multiplier
         
@@ -678,19 +680,6 @@ class Seat(models.Model):
                 })
         
         return details
-=======
-        """Calculate final price including adjustments"""
-        if self.schedule:
-            # Use ML base price if available, otherwise fallback to regular price
-            base_price = self.schedule.ml_base_price or self.schedule.price or Decimal('0.00')
-        else:
-            base_price = Decimal('0.00')
-        
-        multiplier = self.seat_class.price_multiplier if self.seat_class else Decimal('1.00')
-        adjustment = self.price_adjustment or Decimal('0.00')
-        
-        return (base_price * multiplier) + adjustment
->>>>>>> origin/criss
 
     @property
     def seat_features(self):

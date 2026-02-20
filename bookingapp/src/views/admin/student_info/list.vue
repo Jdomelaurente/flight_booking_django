@@ -45,7 +45,7 @@
           <input 
             v-model="searchQuery" 
             type="text" 
-            placeholder="Search by name, passport, student ID..." 
+            placeholder="Search by name, student ID, email..." 
             class="pl-10 pr-4 py-2 border border-gray-200 rounded-[1px] w-full outline-none focus:border-[#fe3787] transition-all poppins text-sm"
             @input="debounceSearch"
           />
@@ -56,20 +56,10 @@
           class="border border-gray-200 px-3 py-2 rounded-[1px] outline-none focus:border-[#fe3787] transition-all poppins text-sm bg-white min-w-[150px]"
           @change="fetchStudents"
         >
-          <option value="">All Types</option>
-          <option value="Adult">Adult</option>
-          <option value="Child">Child</option>
-          <option value="Infant">Infant</option>
-        </select>
-
-        <select 
-          v-model="bookingFilter" 
-          class="border border-gray-200 px-3 py-2 rounded-[1px] outline-none focus:border-[#fe3787] transition-all poppins text-sm bg-white min-w-[150px]"
-          @change="fetchStudents"
-        >
-          <option value="">Status Filter</option>
-          <option value="yes">With Bookings</option>
-          <option value="no">No Bookings</option>
+          <option value="">All Genders</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="other">Other</option>
         </select>
 
         <button 
@@ -87,10 +77,9 @@
         <thead class="bg-gray-50 text-gray-600 text-[14px] uppercase font-semibold border-b border-gray-200">
           <tr>
             <th class="px-6 py-4 poppins">Student Profile</th>
-            <th class="px-6 py-4 poppins">Identification</th>
-            <th class="px-6 py-4 poppins text-center">Type</th>
-            <th class="px-6 py-4 poppins">Birth Date</th>
-            <th class="px-6 py-4 poppins">Engagement</th>
+            <th class="px-6 py-4 poppins">Contact Details</th>
+            <th class="px-6 py-4 poppins text-center">Gender</th>
+            <th class="px-6 py-4 poppins">Enrollment Date</th>
             <th class="px-6 py-4 text-right poppins">Actions</th>
           </tr>
         </thead>
@@ -103,35 +92,25 @@
                 </div>
                 <div>
                   <span class="font-bold text-[#002D1E] block poppins">{{ student.full_name }}</span>
-                  <span class="text-[10px] text-gray-400 poppins uppercase tracking-wider">ID #{{ student.id }}</span>
+                  <span class="text-[10px] text-gray-400 poppins uppercase tracking-wider">SN #{{ student.student_number }}</span>
                 </div>
               </div>
             </td>
             <td class="px-6 py-4">
               <div class="flex items-center gap-2 mb-1">
-                <i class="ph ph-passport text-gray-400"></i>
-                <span class="font-bold text-[#002D1E] poppins">{{ student.passport_number || 'N/A' }}</span>
+                <i class="ph ph-envelope text-gray-400"></i>
+                <span class="font-bold text-[#002D1E] poppins">{{ student.email || 'N/A' }}</span>
               </div>
-              <div class="text-[10px] text-gray-400 poppins uppercase">{{ student.nationality || 'Unspecified' }}</div>
+              <div class="text-[10px] text-gray-400 poppins uppercase">{{ student.phone_number || 'No Phone' }}</div>
             </td>
             <td class="px-6 py-4 text-center">
-              <span :class="typeClass(student.passenger_type)" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase poppins">
-                {{ student.passenger_type }}
+              <span :class="genderClass(student.gender)" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase poppins">
+                {{ student.gender || 'Unknown' }}
               </span>
             </td>
             <td class="px-6 py-4">
-              <div class="font-bold text-[#002D1E] poppins">{{ formatDate(student.date_of_birth) || '—' }}</div>
-              <div class="text-[10px] text-gray-400 poppins uppercase">Age: {{ student.age || '—' }}</div>
-            </td>
-            <td class="px-6 py-4">
-              <div class="flex items-center gap-2">
-                <span :class="bookingClass(student.booking_count)" class="px-3 py-1 rounded-[1px] text-[10px] font-bold uppercase poppins">
-                  {{ student.booking_count }} Bookings
-                </span>
-              </div>
-              <div v-if="student.last_booking" class="text-[10px] text-gray-400 mt-1 poppins uppercase">
-                Recent: {{ formatDate(student.last_booking) }}
-              </div>
+              <div class="font-bold text-[#002D1E] poppins">{{ formatDate(student.date_enrolled) || '—' }}</div>
+              <div class="text-[10px] text-gray-400 poppins uppercase text-xs">Joined System</div>
             </td>
             <td class="px-6 py-4 text-right">
               <div class="flex justify-end gap-2">
@@ -208,60 +187,79 @@
     <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 poppins">
       <div class="bg-white w-full max-w-lg p-6 rounded-[1px] shadow-2xl animate-in fade-in zoom-in duration-200">
         <div class="flex justify-between items-center mb-6">
-          <h2 class="text-lg font-bold text-[#002D1E] poppins">{{ isEditing ? 'Update Student' : 'New Enrollment' }}</h2>
+          <h2 class="text-lg font-bold text-[#002D1E] poppins">{{ isEditing ? 'Update Student' : 'Register Student' }}</h2>
           <button @click="closeModal" class="text-gray-400 hover:text-black transition-colors">
             <i class="ph ph-x text-xl"></i>
           </button>
         </div>
         
-        <form @submit.prevent="saveStudent" class="space-y-6">
+        <form @submit.prevent="saveStudent" class="space-y-4">
+          <!-- Account credentials (only shown when adding) -->
+          <template v-if="!isEditing">
+            <div class="bg-blue-50 border border-blue-100 rounded-[1px] p-3">
+              <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest poppins">Account Credentials</p>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">Username *</label>
+                <input v-model="form.username" type="text" class="w-full border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px]" required placeholder="e.g. jdoe">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">Password *</label>
+                <input v-model="form.password" type="password" class="w-full border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px]" required placeholder="••••••••">
+              </div>
+            </div>
+          </template>
+
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">First Name</label>
+              <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">First Name *</label>
               <input v-model="form.first_name" type="text" class="w-full border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px]" required>
             </div>
             <div>
-              <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">Last Name</label>
+              <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">Last Name *</label>
               <input v-model="form.last_name" type="text" class="w-full border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px]" required>
             </div>
           </div>
 
           <div>
-            <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">Middle Name (Optional)</label>
-            <input v-model="form.middle_name" type="text" class="w-full border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px]">
+            <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">Middle Initial (Optional)</label>
+            <input v-model="form.mi" type="text" maxlength="1" class="w-full border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px]" placeholder="M">
           </div>
           
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">Student Category</label>
-              <select v-model="form.passenger_type" class="w-full border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px] bg-white" required>
-                <option value="">Select Category</option>
-                <option value="Adult">Adult</option>
-                <option value="Child">Child</option>
-                <option value="Infant">Infant</option>
+              <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">Student Number *</label>
+              <input v-model="form.id_number" type="text" class="w-full border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px]" required placeholder="2024-XXXX">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">Gender</label>
+              <select v-model="form.gender" class="w-full border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px] bg-white">
+                <option value="">Select Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
               </select>
             </div>
-            <div>
-              <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">Birth Date</label>
-              <input v-model="form.date_of_birth" type="date" class="w-full border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px]">
-            </div>
           </div>
           
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">Passport (Opt)</label>
-              <input v-model="form.passport_number" type="text" class="w-full border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px]">
+              <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">Email Address *</label>
+              <input v-model="form.email" type="email" class="w-full border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px]" required>
             </div>
             <div>
-              <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">Nationality</label>
-              <input v-model="form.nationality" type="text" class="w-full border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px]">
+              <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">Phone Number</label>
+              <input v-model="form.phone_number" type="text" class="w-full border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px]">
             </div>
           </div>
+
+          <p v-if="formError" class="text-red-500 text-xs poppins font-semibold">{{ formError }}</p>
           
-          <div class="flex justify-end gap-3 pt-6 border-t">
+          <div class="flex justify-end gap-3 pt-4 border-t">
             <button type="button" @click="closeModal" class="text-sm text-gray-500 font-medium poppins">Cancel</button>
-            <button type="submit" class="bg-[#fe3787] text-white px-6 py-2 text-sm font-bold shadow-md hover:bg-[#e6327a] transition-all rounded-[1px] poppins">
-              {{ isEditing ? 'Apply Changes' : 'Confirm Enrollment' }}
+            <button type="submit" :disabled="saving" class="bg-[#fe3787] text-white px-6 py-2 text-sm font-bold shadow-md hover:bg-[#e6327a] transition-all rounded-[1px] poppins disabled:opacity-60">
+              {{ saving ? 'Saving...' : (isEditing ? 'Apply Changes' : 'Register Student') }}
             </button>
           </div>
         </form>
@@ -291,25 +289,25 @@
           
           <div class="grid grid-cols-2 gap-6">
             <div>
-              <p class="text-[10px] uppercase font-bold text-gray-400 mb-1 poppins">Category</p>
-              <span :class="typeClass(selectedStudent.passenger_type)" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase poppins">
-                {{ selectedStudent.passenger_type }}
+              <p class="text-[10px] uppercase font-bold text-gray-400 mb-1 poppins">Gender</p>
+              <span :class="genderClass(selectedStudent.gender)" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase poppins">
+                {{ selectedStudent.gender || 'Unknown' }}
               </span>
             </div>
             <div>
-              <p class="text-[10px] uppercase font-bold text-gray-400 mb-1 poppins">Life Stats</p>
-              <p class="text-sm font-bold text-[#002D1E] poppins">{{ selectedStudent.age || '—' }} Years Old</p>
+              <p class="text-[10px] uppercase font-bold text-gray-400 mb-1 poppins">Enrollment Date</p>
+              <p class="text-sm font-bold text-[#002D1E] poppins">{{ formatDate(selectedStudent.date_enrolled) || '—' }}</p>
             </div>
           </div>
           
           <div class="grid grid-cols-2 gap-6">
             <div>
-              <p class="text-[10px] uppercase font-bold text-gray-400 mb-1 poppins">Date of Birth</p>
-              <p class="text-sm font-bold text-[#002D1E] poppins">{{ formatDate(selectedStudent.date_of_birth) || 'Unknown' }}</p>
+              <p class="text-[10px] uppercase font-bold text-gray-400 mb-1 poppins">Email Address</p>
+              <p class="text-sm font-bold text-[#002D1E] poppins">{{ selectedStudent.email || 'N/A' }}</p>
             </div>
             <div>
-              <p class="text-[10px] uppercase font-bold text-gray-400 mb-1 poppins">Nationality</p>
-              <p class="text-sm font-bold text-[#002D1E] poppins">{{ selectedStudent.nationality || 'Unspecified' }}</p>
+              <p class="text-[10px] uppercase font-bold text-gray-400 mb-1 poppins">Phone Number</p>
+              <p class="text-sm font-bold text-[#002D1E] poppins">{{ selectedStudent.phone_number || 'N/A' }}</p>
             </div>
           </div>
           
@@ -361,24 +359,28 @@ const itemsPerPage = 10
 
 // Form data
 const form = ref({
+  username: '',
+  password: '',
+  student_number: '',
+  id_number: '',
   first_name: '',
   last_name: '',
-  middle_name: '',
-  passenger_type: '',
-  date_of_birth: '',
-  passport_number: '',
-  nationality: '',
-  title: ''
+  mi: '',
+  email: '',
+  phone_number: '',
+  gender: ''
 })
+const formError = ref('')
+const saving = ref(false)
 
 // Stats
-const stats = ref({ total: 0, withBookings: 0, adults: 0, minors: 0 })
+const stats = ref({ total: 0, male: 0, female: 0, other: 0 })
 
 const statsItems = computed(() => ({
   'Total Students': { value: stats.value.total, icon: 'ph ph-users-three', iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
-  'With Active Bookings': { value: stats.value.withBookings, icon: 'ph ph-ticket', iconBg: 'bg-green-100', iconColor: 'text-green-600' },
-  'Adult Category': { value: stats.value.adults, icon: 'ph ph-user', iconBg: 'bg-purple-100', iconColor: 'text-purple-600' },
-  'Minor Category': { value: stats.value.minors, icon: 'ph ph-baby', iconBg: 'bg-pink-100', iconColor: 'text-pink-600' }
+  'Male Students': { value: stats.value.male, icon: 'ph ph-gender-male', iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
+  'Female Students': { value: stats.value.female, icon: 'ph ph-gender-female', iconBg: 'bg-pink-100', iconColor: 'text-pink-600' },
+  'Other/Unset': { value: stats.value.other, icon: 'ph ph-user-circle', iconBg: 'bg-gray-100', iconColor: 'text-gray-600' }
 }))
 
 // Computed properties
@@ -386,9 +388,14 @@ const filteredStudents = computed(() => {
   let filtered = students.value
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(s => s.first_name?.toLowerCase().includes(q) || s.last_name?.toLowerCase().includes(q) || s.passport_number?.toLowerCase().includes(q))
+    filtered = filtered.filter(s => 
+      s.first_name?.toLowerCase().includes(q) || 
+      s.last_name?.toLowerCase().includes(q) || 
+      s.student_number?.toLowerCase().includes(q) ||
+      s.email?.toLowerCase().includes(q)
+    )
   }
-  if (selectedType.value) filtered = filtered.filter(s => s.passenger_type === selectedType.value)
+  if (selectedType.value) filtered = filtered.filter(s => s.gender === selectedType.value)
   return filtered
 })
 
@@ -417,11 +424,10 @@ const fetchStudents = async () => {
   loading.value = true
   try {
     const params = {}
-    if (selectedType.value) params.type = selectedType.value
+    if (selectedType.value) params.gender = selectedType.value
     if (searchQuery.value) params.search = searchQuery.value
-    if (bookingFilter.value) params.has_booking = bookingFilter.value
     
-    const response = await api.get('/passengers/', { params })
+    const response = await api.get('/students/', { params })
     students.value = (response.data.results || response.data)
     calculateStats()
   } catch (err) { console.error(err) } finally { loading.value = false }
@@ -429,48 +435,82 @@ const fetchStudents = async () => {
 
 const calculateStats = () => {
   const total = students.value.length
-  const withBookings = students.value.filter(s => s.booking_count > 0).length
-  const adults = students.value.filter(s => s.passenger_type === 'Adult').length
-  const minors = students.value.filter(s => s.passenger_type !== 'Adult').length
-  stats.value = { total, withBookings, adults, minors }
+  const male = students.value.filter(s => s.gender === 'male').length
+  const female = students.value.filter(s => s.gender === 'female').length
+  const other = total - (male + female)
+  stats.value = { total, male, female, other }
 }
 
 const openAddModal = () => {
   isEditing.value = false; currentId.value = null;
-  form.value = { first_name: '', last_name: '', middle_name: '', passenger_type: '', date_of_birth: '', passport_number: '', nationality: '', title: '' }
+  form.value = { username: '', password: '', student_number: '', id_number: '', first_name: '', last_name: '', mi: '', email: '', phone_number: '', gender: '' }
+  formError.value = ''
   showModal.value = true
 }
 
 const editStudent = (s) => {
   isEditing.value = true; currentId.value = s.id;
-  form.value = { ...s, date_of_birth: s.date_of_birth ? s.date_of_birth.split('T')[0] : '' }
+  form.value = { username: '', password: '', student_number: s.student_number || '', id_number: s.student_number || '', first_name: s.first_name || '', last_name: s.last_name || '', mi: s.mi || '', email: s.email || '', phone_number: s.phone_number || '', gender: s.gender || '' }
+  formError.value = ''
   showModal.value = true
 }
 
 const viewDetails = (s) => { selectedStudent.value = s; showDetailsModal.value = true }
 
 const saveStudent = async () => {
+  saving.value = true
+  formError.value = ''
   try {
-    if (isEditing.value) await api.put(`/passengers/${currentId.value}/`, form.value)
-    else await api.post('/passengers/', form.value)
-    await fetchStudents(); closeModal()
-  } catch (err) { console.error(err) }
+    if (isEditing.value) {
+      await api.put(`/students/${currentId.value}/`, {
+        first_name: form.value.first_name,
+        last_name: form.value.last_name,
+        mi: form.value.mi,
+        student_number: form.value.student_number,
+        email: form.value.email,
+        phone_number: form.value.phone_number,
+        gender: form.value.gender
+      })
+      alert('Student updated successfully!')
+    } else {
+      // Use the same registration endpoint as Register.vue
+      await api.post('/register/', {
+        role: 'student',
+        username: form.value.username,
+        password: form.value.password,
+        first_name: form.value.first_name,
+        last_name: form.value.last_name,
+        mi: form.value.mi,
+        id_number: form.value.id_number,
+        email: form.value.email,
+        gender: form.value.gender
+      })
+      alert('Student account created successfully!')
+    }
+    await fetchStudents()
+    closeModal()
+  } catch (err) {
+    console.error('Save error:', err)
+    formError.value = err.response?.data?.error || 'Failed to save. Please check the details and try again.'
+  } finally {
+    saving.value = false
+  }
 }
 
 const deleteStudent = async (id) => {
   if (confirm('Permanently delete student record?')) {
     try {
-      await api.delete(`/passengers/${id}/`)
+      await api.delete(`/students/${id}/`)
       students.value = students.value.filter(s => s.id !== id); calculateStats()
-    } catch (err) { alert('Deletion failed. Student has active links.') }
+    } catch (err) { alert('Deletion failed.') }
   }
 }
 
-const closeModal = () => { showModal.value = false; isEditing.value = false; currentId.value = null }
+const closeModal = () => { showModal.value = false; isEditing.value = false; currentId.value = null; formError.value = ''; saving.value = false }
 
 const exportStudents = async () => {
   try {
-    const response = await api.get('/passengers/export/', { responseType: 'blob' })
+    const response = await api.get('/students/export/', { responseType: 'blob' })
     const url = window.URL.createObjectURL(new Blob([response.data]))
     const link = document.createElement('a')
     link.href = url
@@ -480,11 +520,10 @@ const exportStudents = async () => {
   } catch (err) { console.error(err) }
 }
 
-const typeClass = (type) => {
-  switch(type) {
-    case 'Adult': return 'bg-green-100 text-green-700'
-    case 'Child': return 'bg-purple-100 text-purple-700'
-    case 'Infant': return 'bg-pink-100 text-pink-700'
+const genderClass = (gender) => {
+  switch(gender?.toLowerCase()) {
+    case 'male': return 'bg-blue-100 text-blue-700'
+    case 'female': return 'bg-pink-100 text-pink-700'
     default: return 'bg-gray-100 text-gray-500'
   }
 }

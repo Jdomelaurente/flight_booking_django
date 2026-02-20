@@ -19,8 +19,9 @@ from .models import (
     AirlineTax, Booking, BookingDetail, BookingTax, CheckInDetail, 
     PassengerTypeTaxRate, Route, TrackLog, AirportFee, TaxType,
     Airline, Airport, Aircraft, SeatClass, AddOnType, Flight, Schedule, 
-    Seat, PassengerInfo, SeatRequirement
+    Seat, PassengerInfo, SeatRequirement, Students, Payment
 )
+from fbs_instructor.models import Instructor
 from .serializers import (
     AirlineSerializer, AirlineTaxSerializer, AirportSerializer, 
     AircraftSerializer, BookingDetailSerializer, BookingTaxSerializer,
@@ -28,7 +29,8 @@ from .serializers import (
     AddOnTypeSerializer, RouteSerializer, FlightSerializer, ScheduleSerializer,
     SeatSerializer, PassengerInfoSerializer, TrackLogSerializer,
     AirportFeeSerializer, TaxTypeSerializer, PassengerTypeTaxRateSerializer,
-    BookingSerializer, SeatRequirementSerializer
+    BookingSerializer, SeatRequirementSerializer, StudentsSerializer, InstructorsSerializer,
+    PaymentSerializer
 )
 
 
@@ -79,6 +81,12 @@ class FlightViewSet(viewsets.ModelViewSet):
 class SeatRequirementViewSet(viewsets.ModelViewSet):
     queryset = SeatRequirement.objects.all()
     serializer_class = SeatRequirementSerializer
+    permission_classes = [AllowAny]
+
+
+class PaymentViewSet(viewsets.ModelViewSet):
+    queryset = Payment.objects.all().order_by('-payment_date')
+    serializer_class = PaymentSerializer
     permission_classes = [AllowAny]
 
 
@@ -135,6 +143,8 @@ class ScheduleViewSet(viewsets.ModelViewSet):
                 created_count = 0
                 updated_count = 0
                 
+                processed_seat_ids = []
+                
                 for sc_config in seat_classes:
                     class_id = sc_config.get('class_id')
                     rows = sc_config.get('rows', 0)
@@ -179,20 +189,29 @@ class ScheduleViewSet(viewsets.ModelViewSet):
                             if seat_key in existing_map:
                                 # Update existing seat class if changed
                                 seat = existing_map[seat_key]
+                                processed_seat_ids.append(seat.id)
                                 if seat.seat_class_id != class_id:
                                     seat.seat_class = seat_class
                                     seat.save()
                                     updated_count += 1
                             else:
                                 # Create new seat
-                                Seat.objects.create(**seat_data)
+                                seat = Seat.objects.create(**seat_data)
                                 created_count += 1
-                                
+                                processed_seat_ids.append(seat.id)
+
+                
+                # Delete seats that are no longer in the layout
+                seats_to_delete = Seat.objects.filter(schedule=schedule).exclude(id__in=processed_seat_ids)
+                deleted_count = seats_to_delete.count()
+                seats_to_delete.delete()
+
                 return Response({
                     'success': True,
-                    'message': f'Generated {created_count} new seats, updated {updated_count} seats',
+                    'message': f'Generated {created_count} new seats, updated {updated_count} seats, deleted {deleted_count} obsolete seats',
                     'created': created_count,
-                    'updated': updated_count
+                    'updated': updated_count,
+                    'deleted': deleted_count
                 })
                 
         except Exception as e:
@@ -206,6 +225,9 @@ class SeatViewSet(viewsets.ModelViewSet):
     queryset = Seat.objects.all()
     serializer_class = SeatSerializer
     permission_classes = [AllowAny]
+    pagination_class = None
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['schedule', 'seat_class']
 
     @action(detail=False, methods=['post'], url_path='bulk-reset')
     def bulk_reset(self, request):
@@ -430,7 +452,7 @@ class BookingDetailViewSet(viewsets.ModelViewSet):
                 Q(schedule__flight__flight_number__icontains=search)
             )
         
-        return queryset
+        return queryset.order_by('id')
 
     @action(detail=False, methods=['get'])
     def today_checkins(self, request):
@@ -514,7 +536,7 @@ class PassengerInfoViewSet(viewsets.ModelViewSet):
             passenger_ids = BookingDetail.objects.values_list('passenger_id', flat=True).distinct()
             queryset = queryset.exclude(id__in=passenger_ids)
         
-        return queryset.select_related('linked_adult')
+        return queryset.select_related('linked_adult').order_by('id')
 
     @action(detail=False, methods=['get'])
     def stats(self, request):
@@ -567,6 +589,61 @@ class PassengerInfoViewSet(viewsets.ModelViewSet):
             ])
         
         return response
+
+
+# ==========================================
+# STUDENTS VIEWSET
+# ==========================================
+class StudentsViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for managing student information.
+    """
+    queryset = Students.objects.all().order_by('id')
+    serializer_class = StudentsSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        search = self.request.query_params.get('search')
+        gender = self.request.query_params.get('gender')
+        
+        if search:
+            queryset = queryset.filter(
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(student_number__icontains=search) |
+                Q(email__icontains=search)
+            )
+            
+        if gender:
+            queryset = queryset.filter(gender=gender)
+            
+        return queryset
+
+
+
+# ==========================================
+# INSTRUCTORS VIEWSET
+# ==========================================
+class InstructorsViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for managing instructor information.
+    """
+    queryset = Instructor.objects.all().order_by('id')
+    serializer_class = InstructorsSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        search = self.request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(instructor_id__icontains=search) |
+                Q(email__icontains=search)
+            )
+        return queryset
 
 
 # ==========================================

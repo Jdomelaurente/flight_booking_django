@@ -96,7 +96,7 @@ const form = ref({ name: '', code: '' });
 const fetchAirlines = async () => {
   try {
     const res = await api.get('/airlines/');
-    airlines.value = res.data;
+    airlines.value = res.data.results || res.data;
   } catch (err) {
     console.error("Fetch Error:", err);
   }

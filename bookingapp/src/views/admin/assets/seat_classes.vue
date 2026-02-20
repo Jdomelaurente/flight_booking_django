@@ -113,8 +113,8 @@ const fetchData = async () => {
       api.get('/seat-classes/'),
       api.get('/airlines/')
     ]);
-    seatClasses.value = scRes.data;
-    airlines.value = aRes.data;
+    seatClasses.value = scRes.data.results || scRes.data;
+    airlines.value = aRes.data.results || aRes.data;
   } catch (err) {
     console.error("Fetch Error:", err);
   }

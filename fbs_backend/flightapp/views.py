@@ -120,7 +120,6 @@ class ScheduleViewSet(viewsets.ReadOnlyModelViewSet):
 
         return queryset.order_by('departure_time')
 
-<<<<<<< HEAD
     @action(detail=True, methods=['post'], url_path='generate-seats')
     def generate_seats(self, request, pk=None):
         """Generate seats for this schedule based on layout config"""
@@ -143,6 +142,7 @@ class ScheduleViewSet(viewsets.ReadOnlyModelViewSet):
                 
                 created_count = 0
                 updated_count = 0
+                processed_seat_ids = []
                 
                 for sc_config in seat_classes:
                     class_id = sc_config.get('class_id')
@@ -193,16 +193,24 @@ class ScheduleViewSet(viewsets.ReadOnlyModelViewSet):
                                     seat.seat_class = seat_class
                                     seat.save()
                                     updated_count += 1
+                                processed_seat_ids.append(seat.id)
                             else:
                                 # Create new seat
-                                Seat.objects.create(**seat_data)
+                                seat = Seat.objects.create(**seat_data)
                                 created_count += 1
-                                
+                                processed_seat_ids.append(seat.id)
+                
+                # Delete seats that are no longer in the layout
+                seats_to_delete = Seat.objects.filter(schedule=schedule).exclude(id__in=processed_seat_ids)
+                deleted_count = seats_to_delete.count()
+                seats_to_delete.delete()
+
                 return Response({
                     'success': True,
-                    'message': f'Generated {created_count} new seats, updated {updated_count} seats',
+                    'message': f'Generated {created_count} new seats, updated {updated_count} seats, deleted {deleted_count} obsolete seats',
                     'created': created_count,
-                    'updated': updated_count
+                    'updated': updated_count,
+                    'deleted': deleted_count
                 })
                 
         except Exception as e:
@@ -211,7 +219,6 @@ class ScheduleViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-=======
     @action(detail=True, methods=['get'], url_path='seats-with-info')
     def seats_with_info(self, request, pk=None):
         """Get seats with extra info for a specific schedule"""
@@ -625,10 +632,7 @@ def predict_flight_price(request):
             'success': False,
             'error': str(e)
         }, status=400)
-    
 
-# In views.py - Update the SeatViewSet class
->>>>>>> origin/criss
 class SeatViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint that allows seats to be viewed based on a schedule.
