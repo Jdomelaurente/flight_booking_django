@@ -9,9 +9,11 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useBookingStore } from '@/stores/booking';
 import { useRouter } from 'vue-router';
+import { useNotificationStore } from '@/stores/notification';
 
 const bookingStore = useBookingStore();
 const router = useRouter();
+const notificationStore = useNotificationStore();
 const timeLeft = ref(0);
 let interval = null;
 
@@ -37,7 +39,7 @@ const updateTimer = () => {
 };
 
 const handleTimeout = () => {
-  alert("Your booking session has expired. Please start over.");
+  notificationStore.error("Your booking session has expired. Please start over.");
   bookingStore.resetBooking();
   router.push({ name: 'Home' }); // Or your search page
 };

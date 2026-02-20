@@ -1,7 +1,6 @@
 <template>
   <div class="pal-card">
     <div class="pal-card-header">
-      <span class="user-icon">👤</span> 
       PASSENGER {{ index }} - {{ type }}
       <span v-if="type === 'Infant'" class="infant-tag">(Sits on adult's lap)</span>
     </div>
@@ -9,23 +8,35 @@
       <div class="form-row">
         <div class="field col-1">
           <label>Title</label>
-          <select v-model="form.title" @change="emitData">
+          <select v-model="form.title" @change="emitData" required :class="{ 'error-border': showErrors && !form.title }">
+            <option value="">Title</option>
             <option value="MR">Mr.</option>
             <option value="MS">Ms.</option>
             <option value="MRS">Mrs.</option>
           </select>
+          <span v-if="showErrors && !form.title" class="small-error">Title is required</span>
         </div>
         <div class="field col-3">
-          <label>First Name</label>
-          <input v-model="form.firstName" type="text" placeholder="First Name" @input="debounceEmit" required>
+          <label>First Name <span class="required">*</span></label>
+          <input v-model="form.firstName" type="text" placeholder="First Name" 
+                 @input="handleNameInput('firstName')" 
+                 :class="{ 'error-border': showErrors && !isNameValid(form.firstName) }"
+                 required>
+          <span v-if="showErrors && !form.firstName.trim()" class="small-error">First name is required</span>
+          <span v-else-if="showErrors && !isNameValid(form.firstName)" class="small-error">Letters, spaces, and hyphens only</span>
         </div>
         <div class="field col-1">
           <label>M.I.</label>
           <input v-model="form.middleInitial" type="text" maxlength="1" @input="debounceEmit">
         </div>
         <div class="field col-3">
-          <label>Last Name</label>
-          <input v-model="form.lastName" type="text" placeholder="Last Name" @input="debounceEmit" required>
+          <label>Last Name <span class="required">*</span></label>
+          <input v-model="form.lastName" type="text" placeholder="Last Name" 
+                 @input="handleNameInput('lastName')" 
+                 :class="{ 'error-border': showErrors && !isNameValid(form.lastName) }"
+                 required>
+          <span v-if="showErrors && !form.lastName.trim()" class="small-error">Last name is required</span>
+          <span v-else-if="showErrors && !isNameValid(form.lastName)" class="small-error">Letters, spaces, and hyphens only</span>
         </div>
       </div>
 
@@ -45,22 +56,25 @@
         </div>
         <div class="field">
           <input v-model="form.dobYear" type="number" placeholder="Year (YYYY)" min="1900" 
-                :max="new Date().getFullYear()" @input="debounceEmit" required>
+                :max="new Date().getFullYear()" @input="debounceEmit" 
+                :class="{ 'error-border': showErrors && !isDOBValid }"
+                required>
         </div>
       </div>
+      <span v-if="showErrors && !isDOBValid" class="small-error">Date of birth is required</span>
 
       <!-- Age Display -->
       <div v-if="form.dobDay && form.dobMonth && form.dobYear" class="age-display">
         Age: {{ calculatedAge }} years old
         <span v-if="showAgeWarning" class="age-warning">
-          ⚠️ Age indicates this should be a {{ correctPassengerType }}
+          Age indicates this should be a {{ correctPassengerType }}
         </span>
       </div>
 
       <div class="form-row mt-3">
         <div class="field col-2">
           <label>Nationality</label>
-          <select v-model="form.nationality" @change="emitData">
+          <select v-model="form.nationality" @change="emitData" :class="{ 'error-border': showErrors && !form.nationality }">
             <option value="">Select Nationality</option>
             <option value="Philippines">Philippines</option>
             <option value="United States">United States</option>
@@ -71,6 +85,7 @@
             <option value="Australia">Australia</option>
             <option value="United Kingdom">United Kingdom</option>
           </select>
+          <span v-if="showErrors && !form.nationality" class="small-error">Nationality is required</span>
         </div>
         <div class="field col-2">
           <label>Passport Number</label>
@@ -99,9 +114,9 @@
                 <div class="adult-number">Adult {{ adult.number }}</div>
               </div>
               <div class="adult-status">
-                <span v-if="adult.isCurrent" class="status-selected">✓ Selected</span>
+                <span v-if="adult.isCurrent" class="status-selected">Selected</span>
                 <span v-else-if="adult.alreadyHasInfant" class="status-unavailable">
-                  ⚠️ Already has infant
+                  Already has infant
                 </span>
                 <span v-else class="status-available">Available</span>
               </div>
@@ -112,19 +127,10 @@
         <div v-else class="no-adults-message">
           <span>No adult passengers found. Please complete adult information first.</span>
         </div>
+        <span v-if="showErrors && type === 'Infant' && !form.associatedAdult" class="small-error">Please select which adult this infant will sit with</span>
       </div>
 
-      <!-- Validation error messages -->
-      <div v-if="showErrors" class="validation-errors">
-        <div v-if="!form.title" class="error-message">Title is required</div>
-        <div v-if="!form.firstName.trim()" class="error-message">First name is required</div>
-        <div v-if="!form.lastName.trim()" class="error-message">Last name is required</div>
-        <div v-if="!isDOBValid" class="error-message">Date of birth is required</div>
-        <div v-if="!form.nationality" class="error-message">Nationality is required</div>
-        <div v-if="type === 'Infant' && !form.associatedAdult" class="error-message">
-          Please select which adult this infant will sit with
-        </div>
-      </div>
+      <!-- Validation error messages removed to be placed below inputs -->
     </div>
   </div>
 </template>
@@ -147,7 +153,7 @@ const months = ["January", "February", "March", "April", "May", "June",
                 "July", "August", "September", "October", "November", "December"];
 
 const form = reactive({
-    title: props.type === 'Infant' ? 'INF' : props.type === 'Child' ? 'CHD' : 'MR',
+    title: '',
     firstName: '',
     middleInitial: '',
     lastName: '',
@@ -158,6 +164,19 @@ const form = reactive({
     passport: '',
     associatedAdult: null
 });
+
+// Validation Regex
+const nameRegex = /^[a-zA-Z\s-]+$/;
+
+const isNameValid = (name) => {
+  if (!name || !name.trim()) return false;
+  return nameRegex.test(name.trim());
+};
+
+const handleNameInput = (field) => {
+  // Allow typing but flag for validation
+  debounceEmit();
+};
 
 // Computed properties
 const showErrors = computed(() => props.showValidation);
@@ -222,12 +241,13 @@ const adultOptions = computed(() => {
 
 const isFormValid = computed(() => {
   const basicValid = form.title && 
-                     form.firstName.trim() && 
-                     form.lastName.trim() && 
+                     isNameValid(form.firstName) && 
+                     isNameValid(form.lastName) && 
                      form.dobDay && 
                      form.dobMonth && 
                      form.dobYear &&
-                     form.nationality;
+                     form.nationality &&
+                     !showAgeWarning.value; // Important: Age must match type
   
   if (props.type === 'Infant' && !form.associatedAdult) return false;
   
@@ -265,7 +285,7 @@ const loadSavedData = () => {
   if (shouldLoadSavedData.value) {
     console.log(`📥 Loading saved data for passenger ${props.index}:`, savedPassenger.value);
     
-    form.title = savedPassenger.value.title || (props.type === 'Infant' ? 'INF' : props.type === 'Child' ? 'CHD' : 'MR');
+    form.title = savedPassenger.value.title || '';
     form.firstName = savedPassenger.value.firstName || '';
     form.middleInitial = savedPassenger.value.middleName || '';
     form.lastName = savedPassenger.value.lastName || '';
@@ -313,7 +333,7 @@ const loadSavedData = () => {
 
 // Reset form to initial state
 const resetForm = () => {
-  form.title = props.type === 'Infant' ? 'INF' : props.type === 'Child' ? 'CHD' : 'MR';
+  form.title = '';
   form.firstName = '';
   form.middleInitial = '';
   form.lastName = '';
@@ -472,7 +492,7 @@ onUnmounted(() => {
   color: #666;
   background: #FFF3CD;
   padding: 2px 6px;
-  border-radius: 10px;
+  border-radius: 2px;
 }
 .pal-card-body { 
   padding: 20px; 
@@ -527,7 +547,7 @@ input:focus, select:focus {
   outline: none;
 }
 input:invalid, select:invalid {
-  border-color: #ff6b6b;
+  border-color: #ef4444;
 }
 .mt-3 { 
   margin-top: 7px; 
@@ -544,7 +564,7 @@ input:invalid, select:invalid {
 }
 
 .age-warning {
-  color: #dc3545;
+  color: #ef4444;
   font-weight: 500;
   font-size: 0.75rem;
   display: flex;
@@ -557,7 +577,7 @@ input:invalid, select:invalid {
   margin-top: 20px;
   padding: 15px;
   background: #f8f9fa;
-  border-radius: 6px;
+  border-radius: 5px;
   border: 1px solid #e9ecef;
 }
 
@@ -570,7 +590,7 @@ input:invalid, select:invalid {
 .adult-option {
   padding: 12px 15px;
   border: 2px solid #e9ecef;
-  border-radius: 6px;
+  border-radius: 2px;
   cursor: pointer;
   transition: all 0.2s ease;
   background: white;
@@ -629,13 +649,26 @@ input:invalid, select:invalid {
 }
 
 .status-unavailable {
-  color: #dc3545;
+  color: #ef4444;
+}
+
+.error-border {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2;
+}
+
+.small-error {
+  color: #ef4444;
+  font-size: 0.7rem;
+  margin-top: 4px;
+  font-weight: 500;
+  display: block;
 }
 
 .no-adults-message {
   padding: 12px;
   background: #fff3cd;
-  border-radius: 6px;
+  border-radius: 2px;
   text-align: center;
   color: #856404;
   font-size: 0.8rem;
@@ -647,11 +680,11 @@ input:invalid, select:invalid {
   padding: 12px;
   background-color: #fff5f5;
   border: 1px solid #fed7d7;
-  border-radius: 6px;
+  border-radius: 5px;
 }
 
 .error-message {
-  color: #e53e3e;
+  color: #ef4444;
   font-size: 0.8rem;
   margin-bottom: 6px;
   display: flex;
@@ -659,7 +692,6 @@ input:invalid, select:invalid {
 }
 
 .error-message:before {
-  content: "⚠️";
   margin-right: 6px;
   font-size: 0.7rem;
 }

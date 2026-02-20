@@ -62,10 +62,10 @@
               <div v-if="infantCount > 0" class="infant-status">
                 <div class="infant-status-text">
                   <span v-if="allInfantsAssigned">
-                    ✅ All infants assigned to adults
+                    All infants assigned to adults
                   </span>
                   <span v-else class="infant-warning">
-                    ⚠️ {{ unassignedInfantsCount }} infant(s) need adult assignment
+                    {{ unassignedInfantsCount }} infant(s) need adult assignment
                   </span>
                 </div>
               </div>
@@ -184,7 +184,7 @@
                            :class="{ 'error': showValidation && !isValidPhone(contact.phone) }">
                   </div>
                   <span v-if="showValidation && !isValidPhone(contact.phone)" class="field-error">
-                    Valid phone number is required (minimum 7 digits)
+                    Valid phone number is required (10 digits)
                   </span>
                 </div>
               </div>
@@ -283,7 +283,6 @@
             
             <!-- Infant Assignment Note -->
             <div v-if="infantCount > 0" class="infant-note">
-              <span class="note-icon">ℹ️</span>
               <span class="note-text">Infants will sit on an adult's lap</span>
             </div>
           </div>
@@ -320,7 +319,7 @@ const isSaving = ref(false);
 const passengerValidation = ref({});
 
 const contact = reactive({ 
-  title: bookingStore.contactInfo.title || 'MR',
+  title: bookingStore.contactInfo.title || '',
   firstName: bookingStore.contactInfo.firstName || '', 
   middleName: bookingStore.contactInfo.middleName || '',
   lastName: bookingStore.contactInfo.lastName || '', 
@@ -363,13 +362,13 @@ const unassignedInfantsCount = computed(() => {
 
 // Validation helpers
 const isValidEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   return emailRegex.test(email);
 };
 
 const isValidPhone = (phone) => {
   const digitsOnly = phone.replace(/\D/g, '');
-  return digitsOnly.length >= 7;
+  return digitsOnly.length === 10; // Exactly 10 digits after +63
 };
 
 // Completion tracking
@@ -632,9 +631,9 @@ const validateCurrentTab = () => {
     
     const passengerType = getPassengerType(activeIndex.value);
     if (passengerType === 'Infant' && !infantAdultMapping.value[`pax_${activeIndex.value}`]) {
-      alert(`Please select which adult the infant will sit with for Passenger ${activeIndex.value} before continuing.`);
+      notificationStore.warn(`Please select which adult the infant will sit with for Passenger ${activeIndex.value} before continuing.`);
     } else {
-      alert(`Please complete all required fields for Passenger ${activeIndex.value} before continuing.`);
+      notificationStore.warn(`Please complete all required fields for Passenger ${activeIndex.value} before continuing.`);
     }
     return false;
   }
@@ -661,9 +660,9 @@ const handleTabChange = (n) => {
       
       const passengerType = getPassengerType(activeIndex.value);
       if (passengerType === 'Infant' && !infantAdultMapping.value[`pax_${activeIndex.value}`]) {
-        alert(`Please select which adult the infant will sit with for Passenger ${activeIndex.value} before continuing.`);
+        notificationStore.warn(`Please select which adult the infant will sit with for Passenger ${activeIndex.value} before continuing.`);
       } else {
-        alert(`Please complete all required fields for Passenger ${activeIndex.value} before continuing.`);
+        notificationStore.warn(`Please complete all required fields for Passenger ${activeIndex.value} before continuing.`);
       }
     }
   } else {
@@ -734,7 +733,7 @@ const saveAllPassengersToStore = async () => {
     const validatedPassengers = passengers.value.map(passenger => {
       const passengerData = {
         ...passenger,
-        title: passenger.title || (passenger.type === 'Infant' ? 'CHD' : 'MR'),
+        title: passenger.title || '',
         nationality: passenger.nationality || 'Philippines'
       };
       
@@ -757,7 +756,7 @@ const saveAllPassengersToStore = async () => {
     console.log('💾 Saving contact info to store:', contact);
     bookingStore.setContactInfo({
       ...contact,
-      title: contact.title || 'MR'
+      title: contact.title || ''
     });
     
     // Verify save was successful
@@ -770,7 +769,7 @@ const saveAllPassengersToStore = async () => {
     return true;
   } catch (error) {
     console.error('❌ Error saving passengers:', error);
-    alert(`Save failed: ${error.message}`);
+    notificationStore.error(`Save failed: ${error.message}`);
     return false;
   } finally {
     isSaving.value = false;
@@ -789,7 +788,7 @@ const handleContinueToAddons = async () => {
   }
   
   if (incompletePassengers.length > 0) {
-    alert(`Passengers ${incompletePassengers.join(', ')} information is incomplete. Please complete all required fields.`);
+    notificationStore.warn(`Passengers ${incompletePassengers.join(', ')} information is incomplete. Please complete all required fields.`);
     
     activeIndex.value = incompletePassengers[0];
     
@@ -815,7 +814,7 @@ const handleContinueToAddons = async () => {
       const infantNumbers = unassignedInfants.map(infant => 
         parseInt(infant.key.replace('pax_', ''))
       );
-      alert(`Infant(s) ${infantNumbers.join(', ')} must be assigned to an adult before continuing.`);
+      notificationStore.warn(`Infant(s) ${infantNumbers.join(', ')} must be assigned to an adult before continuing.`);
       
       activeIndex.value = infantNumbers[0];
       
@@ -840,34 +839,34 @@ const handleContinueToAddons = async () => {
       .map(([adultKey]) => adultKey.replace('pax_', ''));
     
     if (adultsWithMultipleInfants.length > 0) {
-      alert(`Adult(s) ${adultsWithMultipleInfants.join(', ')} cannot have more than 1 infant. Please reassign infants.`);
+      notificationStore.warn(`Adult(s) ${adultsWithMultipleInfants.join(', ')} cannot have more than 1 infant. Please reassign infants.`);
       return;
     }
   }
 
   // Validate contact info
   if (!contact.firstName.trim() || !contact.lastName.trim()) {
-    alert("Please provide your first and last name.");
+    notificationStore.warn("Please provide your first and last name.");
     return;
   }
   
   if (!isValidEmail(contact.email)) {
-    alert("Please provide a valid email address.");
+    notificationStore.warn("Please provide a valid email address.");
     return;
   }
   
   if (!isValidPhone(contact.phone)) {
-    alert("Please provide a valid phone number (minimum 7 digits).");
+    notificationStore.warn("Please provide a valid phone number (minimum 7 digits).");
     return;
   }
 
   if (!contact.title) {
-    contact.title = 'MR';
+    contact.title = '';
   }
 
   // Final validation
   if (passengers.value.length === 0) {
-    alert('No passenger data found. Please fill in all passenger details.');
+    notificationStore.warn('No passenger data found. Please fill in all passenger details.');
     return;
   }
   
@@ -1222,7 +1221,7 @@ onMounted(() => {
 }
 
 .infant-warning {
-  color: #dc3545;
+  color: #ef4444;
   font-weight: 500;
 }
 
@@ -1406,7 +1405,6 @@ onMounted(() => {
 }
 
 .field-error:before {
-  content: "⚠️";
   margin-right: 5px;
   font-size: 0.7rem;
 }
@@ -1511,7 +1509,7 @@ onMounted(() => {
 
 .summary-card {
   background: white;
-  border-radius: 8px;
+  border-radius: 5px;
   border: 1px solid #e5e5e5;
   overflow: hidden;
 }
@@ -1625,7 +1623,7 @@ onMounted(() => {
   margin-top: 12px;
   padding: 8px;
   background: #FFF3CD;
-  border-radius: 4px;
+  border-radius: 2px;
   display: flex;
   align-items: center;
   gap: 8px;

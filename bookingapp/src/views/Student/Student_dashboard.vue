@@ -486,6 +486,9 @@ export default {
     const notificationStore = useNotificationStore()
     return { userStore, modalStore, notificationStore }
   },
+  components: {
+    ComparisonModal
+  },
   data() {
     return {
       student: {
@@ -516,8 +519,7 @@ export default {
       comparisonActivity: null,
       comparisonBooking: null,
       isLoadingBooking: false,
-      comparisonError: null,
-      sidebarOpen: true,
+      comparisonError: null
     }
   },
   computed: {

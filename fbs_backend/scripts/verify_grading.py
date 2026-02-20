@@ -17,7 +17,7 @@ from flightapp.services.grading_service import grade_booking
 from flightapp.views import _create_booking, _update_booking_totals
 
 def run():
-    print("🚀 Starting Grading Verification...")
+    print("? Starting Grading Verification...")
 
     # 1. Setup Test Data
     # Create Instructor
@@ -44,7 +44,7 @@ def run():
         'required_destination': 'Cebu',
         'required_travel_class': 'economy'
     })
-    print(f"✅ Activity Created: {activity.title} (ID: {activity.id})")
+    print(f"? Activity Created: {activity.title} (ID: {activity.id})")
 
     # Create Student
     student_user, _ = User.objects.get_or_create(username="test_student", defaults={'email': 'student@test.com'})
@@ -54,10 +54,10 @@ def run():
     
     # Enroll Student
     files_enrolled, _ = SectionEnrollment.objects.get_or_create(student=student, section=section)
-    print(f"✅ Student Enrolled: {student.first_name}")
+    print(f"? Student Enrolled: {student.first_name}")
 
     # 2. Simulate Booking (Success Case)
-    print("\n🧪 Test Case 1: Correct Booking")
+    print("\n? Test Case 1: Correct Booking")
     
     # Create Booking
     booking_data = {'trip_type': 'one_way', 'activity_id': activity.id}
@@ -71,7 +71,7 @@ def run():
     schedule = Schedule.objects.filter(flight__route__origin__city__icontains='Manila', flight__route__destination__city__icontains='Cebu').first()
     
     if not schedule:
-        print("⚠️ No matching schedule found in DB. Creating dummy for test.")
+        print("?? No matching schedule found in DB. Creating dummy for test.")
         # Create minimal needed objects... skipping for brevity, hoping for existing data
         # If no schedule, we can't create detail easily.
         # Let's try to find ANY schedule and see what it is
@@ -99,9 +99,9 @@ def run():
         print(f"   Feedback: {binding.feedback}")
         
     else:
-        print("❌ Cannot proceed without schedule data.")
+        print("? Cannot proceed without schedule data.")
 
-    print("\n✅ Verification Complete")
+    print("\n? Verification Complete")
 
 if __name__ == "__main__":
     run()

@@ -434,6 +434,7 @@
 
 <script setup>
 import { ref, computed, watch, defineProps, onMounted } from 'vue';
+import { useNotificationStore } from '@/stores/notification';
 
 const props = defineProps({
   seats: {
@@ -470,6 +471,7 @@ const props = defineProps({
   }
 });
 
+const notificationStore = useNotificationStore();
 const selectedSeatCode = ref(null);
 const seatAttributeLegend = ref({
   'bulkhead': { 
@@ -816,7 +818,7 @@ const confirmSelection = () => {
                      `Price Adjustment: ${seatInfo.price}\n` +
                      `Features: ${seatInfo.features.join(', ')}`;
       
-      alert(message);
+      notificationStore.success(message);
     }
   }
 };

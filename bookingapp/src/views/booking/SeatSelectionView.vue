@@ -247,9 +247,12 @@ import { ref, computed, onMounted, defineAsyncComponent, watch, shallowRef } fro
 import { useRouter } from 'vue-router';
 import { useBookingStore } from '@/stores/booking';
 import { seatService } from '@/services/booking/seatService';
+import { useModalStore } from '@/stores/modal';
 
 const router = useRouter();
 const bookingStore = useBookingStore();
+const notificationStore = useNotificationStore();
+const modalStore = useModalStore();
 
 const activePIndex = ref(0);
 const activeFlightSegment = ref('depart'); // 'depart' or 'return'
@@ -648,7 +651,7 @@ const copySeatsToReturn = () => {
   if (!bookingStore.isRoundTrip) return;
   
   bookingStore.copySeatsToReturn();
-  alert('Seats copied from depart to return flight!');
+  notificationStore.success('Seats copied from depart to return flight!');
   
   // Switch to return segment to show copied seats
   if (activeFlightSegment.value === 'depart') {
@@ -656,8 +659,15 @@ const copySeatsToReturn = () => {
   }
 };
 
-const clearSegmentSeats = () => {
-  if (confirm(`Clear all seat selections for ${activeFlightSegmentLabel.value} flight?`)) {
+const clearSegmentSeats = async () => {
+  const confirmed = await modalStore.confirm({
+    title: 'Clear Seats?',
+    message: `Clear all seat selections for ${activeFlightSegmentLabel.value} flight?`,
+    confirmText: 'Clear All',
+    cancelText: 'Cancel'
+  })
+
+  if (confirmed) {
     bookingStore.clearSeatsForSegment(activeFlightSegment.value);
     console.log(`🧹 Cleared all seats for ${activeFlightSegmentLabel.value} flight`);
   }
@@ -665,7 +675,7 @@ const clearSegmentSeats = () => {
 
 const confirmSeats = () => {
   if (!allPassengersHaveSeats.value) {
-    alert(`Please assign seats to all passengers for the ${activeFlightSegmentLabel.value} flight.`);
+    notificationStore.warn(`Please assign seats to all passengers for the ${activeFlightSegmentLabel.value} flight.`);
     return;
   }
   

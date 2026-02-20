@@ -721,10 +721,12 @@ import { sectionDetailsService } from '@/services/instructor/sectionDetailsServi
 import { instructorDashboardService } from '@/services/instructor/instructorDashboardService'
 import { activityService } from '@/services/instructor/activityService'
 import { useUserStore } from '@/stores/user'
+import { useNotificationStore } from '@/stores/notification'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const notificationStore = useNotificationStore()
 
 const section = ref(null)
 const sidebarSections = ref([])
@@ -808,7 +810,10 @@ const openEnrollModal = () => {
 }
 
 const submitEnrollment = async () => {
-  if (!studentNumberInput.value) return alert("Please enter a student number")
+  if (!studentNumberInput.value) {
+    notificationStore.warn("Please enter a student number")
+    return
+  }
   
   loading.value = true
   try {
@@ -819,10 +824,10 @@ const submitEnrollment = async () => {
       { student_number: studentNumberInput.value }
     )
     
-    alert(response.data.message)
+    notificationStore.success(response.data.message)
     isModalOpen.value = false
   } catch (error) {
-    alert(error.response?.data?.error || "Failed to enroll student")
+    notificationStore.error(error.response?.data?.error || "Failed to enroll student")
   } finally {
     loading.value = false
   }
@@ -887,12 +892,12 @@ const confirmDeleteActivity = async () => {
       `api/instructor/sections/${sectionId}/activities/${activityId}/delete/`
     )
     
-    showSuccess(response.data.message || 'Activity deleted successfully!')
+    notificationStore.success(response.data.message || 'Activity deleted successfully!')
     closeDeleteModal()
     fetchAllData() // Refresh activities list
     
   } catch (error) {
-    alert(error.response?.data?.error || "Failed to delete activity")
+    notificationStore.error(error.response?.data?.error || "Failed to delete activity")
   } finally {
     loading.value = false
   }
@@ -1199,12 +1204,12 @@ const randomizeData = async () => {
   }
 
   if (airports.value.length === 0) {
-    alert('⚠️ No airports available. Please check your database.');
+    notificationStore.warn('⚠️ No airports available. Please check your database.');
     return;
   }
 
   if (students.value.length === 0) {
-    alert('⚠️ No students available in the database. Please add students first.');
+    notificationStore.warn('⚠️ No students available in the database. Please add students first.');
     return;
   }
 
@@ -1399,7 +1404,7 @@ const submitActivity = async () => {
   } catch (error) {
     console.error("Submission error details:", error.response?.data)
     const errorMsg = error.response?.data?.error || error.response?.data?.detail || 'Failed to create activity.'
-    alert("Error: " + errorMsg)
+    notificationStore.error("Error: " + errorMsg)
   } finally {
     loading.value = false
   }

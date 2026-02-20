@@ -5,10 +5,12 @@ import '@vuepic/vue-datepicker/dist/main.css';
 import airportService from '@/services/booking/airportService';
 import { useBookingStore } from '@/stores/booking';
 import { useRouter } from 'vue-router';
+import { useNotificationStore } from '@/stores/notification';
 import ActivityCodeEntry from '@/components/booking/ActivityCodeEntry.vue';
 
 const router = useRouter()
 const bookingStore = useBookingStore();
+const notificationStore = useNotificationStore();
 
 // Activity Code Modal State
 const showActivityCodeModal = ref(false);
@@ -134,19 +136,19 @@ const handleSearch = () => {
 
   // Check if fields are empty
   if (!selectedFrom.value || !selectedTo.value) {
-    alert("Please select both Origin and Destination.");
+    notificationStore.warn("Please select both Origin and Destination.");
     return;
   }
 
   // Check if they are the same
   if (selectedFrom.value.code === selectedTo.value.code) {
-    alert("Origin and Destination cannot be the same airport.");
+    notificationStore.warn("Origin and Destination cannot be the same airport.");
     return;
   }
 
   // Check if return date is required for round-trip
   if (tripType.value === 'round-trip' && !returnDate.value) {
-    alert("Please select a return date for round-trip flights.");
+    notificationStore.warn("Please select a return date for round-trip flights.");
     return;
   }
 
@@ -186,7 +188,7 @@ const handleActivityCodeContinue = () => {
     @continue="handleActivityCodeContinue"
   />
 
-  <div class="mx-auto my-5 rounded bg-white p-6 text-gray-800 shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
+  <div class="mx-auto my-5 rounded-[5px] bg-white p-6 text-gray-800 shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
 
     <!-- Trip Type Tabs -->
     <div class="mb-5 flex gap-2 border-b border-gray-200">
@@ -216,7 +218,7 @@ const handleActivityCodeContinue = () => {
           @input="searchAirports(fromSearch, 'from')"
           @focus="fromSearch = ''; fromResults = []"
           placeholder="e.g. MNL"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#003870]"
+          class="w-full rounded-[2px] border border-gray-300 bg-white px-2 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#003870]"
         />
 
         <ul
@@ -248,7 +250,7 @@ const handleActivityCodeContinue = () => {
           @input="searchAirports(toSearch, 'to')"
           @focus="toSearch = ''; toResults = []"
           placeholder="Destination City/Code"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#003870]"
+          class="w-full rounded-[2px] border border-gray-300 bg-white px-2 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#003870]"
         />
 
         <ul
@@ -313,7 +315,7 @@ const handleActivityCodeContinue = () => {
 
         <div
           @click.stop="showPassengerDropdown = !showPassengerDropdown"
-          class="cursor-pointer rounded border border-gray-300 bg-white px-2 py-3 text-sm"
+          class="cursor-pointer rounded-[2px] border border-gray-300 bg-white px-2 py-3 text-sm"
         >
           {{ totalPassengers }} Passenger(s)
         </div>
@@ -348,7 +350,7 @@ const handleActivityCodeContinue = () => {
 
           <button
             @click="showPassengerDropdown = false"
-            class="w-full rounded bg-[#003870] py-2 text-xs font-bold text-white"
+            class="w-full rounded-[2px] bg-[#003870] py-2 text-xs font-bold text-white"
           >
             DONE
           </button>
@@ -359,7 +361,7 @@ const handleActivityCodeContinue = () => {
       <div class="flex flex-col justify-end">
         <button
           @click="handleSearch"
-          class="h-12 w-full rounded bg-[#FF579A] text-lg font-bold text-white transition hover:bg-[#ff7bb0]"
+          class="h-12 w-full rounded-[2px] bg-[#FF579A] text-lg font-bold text-white transition hover:bg-[#ff7bb0]"
         >
           SEARCH FLIGHTS
         </button>

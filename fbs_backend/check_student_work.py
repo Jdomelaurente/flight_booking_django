@@ -23,7 +23,7 @@ print("=" * 60)
 print("\n--- Bookings Linked to Activities (latest 10) ---")
 bookings = Booking.objects.filter(activity__isnull=False).order_by('-created_at')[:10]
 if not bookings:
-    print("  ⚠️  NO bookings are linked to any activity!")
+    print("  ??  NO bookings are linked to any activity!")
 for b in bookings:
     print(f"  Booking #{b.id}:")
     print(f"    User: {b.user.username} (ID={b.user.id})")
@@ -54,10 +54,10 @@ if real_user:
     print(f"--- Bookings for user 'student' (ID={real_user.id}) ---")
     sb = Booking.objects.filter(user=real_user).order_by('-created_at')[:5]
     if not sb:
-        print("  ⚠️  No bookings found for this student!")
+        print("  ??  No bookings found for this student!")
     for b in sb:
         print(f"  Booking #{b.id}: status={b.status}, activity={b.activity}, code={b.activity_code_used}")
 else:
-    print("  ⚠️  User 'student' not found")
+    print("  ??  User 'student' not found")
 
 print("\n" + "=" * 60)

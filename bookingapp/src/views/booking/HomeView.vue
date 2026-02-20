@@ -76,14 +76,17 @@ onMounted(async () => {
           return;
         }
       }
-    } else if (!bookingStore.hasActivityCodeValidation) {
-      // Just reset silently if no real data AND no validation
+    } else {
+      // Valid session but no real data - just ensure search state is clean
       bookingStore.resetBooking();
     }
-  } else if (!bookingStore.hasActivityCodeValidation) {
-    // Make sure store is clean if session is invalid AND no validation
-    // But check role first - instructors don't need activity validation
+  } else {
+    // Session is invalid - clear everything if needed
     if (!userStore.isInstructor) {
+      if (bookingStore.hasActivityCodeValidation) {
+        console.log('🧹 Session invalid but validation remains - clearing everything');
+        bookingStore.clearActivityCodeValidation();
+      }
       bookingStore.resetBooking();
     }
   }

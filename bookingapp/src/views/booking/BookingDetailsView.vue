@@ -540,9 +540,13 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/booking/api'
+import { useNotificationStore } from '@/stores/notification'
+import { useModalStore } from '@/stores/modal'
 
 const route = useRoute()
 const router = useRouter()
+const notificationStore = useNotificationStore()
+const modalStore = useModalStore()
 
 const loading = ref(true)
 const error = ref('')
@@ -867,13 +871,13 @@ const canDownloadETicket = computed(() => {
 
 const downloadETicket = () => {
   if (canDownloadETicket.value) {
-    alert('E-Ticket download functionality would be implemented here')
+    notificationStore.info('E-Ticket download functionality would be implemented here')
     // Implement PDF generation/download
   }
 }
 
 const sendToEmail = () => {
-  alert('Booking details would be sent to your email')
+  notificationStore.info('Booking details would be sent to your email')
   // Implement email sending
 }
 
@@ -887,9 +891,16 @@ const modifyBooking = () => {
 }
 
 const cancelBooking = async () => {
-  if (!canCancel.value || !confirm('Are you sure you want to cancel this booking?')) {
-    return
-  }
+  if (!canCancel.value) return
+
+  const confirmed = await modalStore.confirm({
+    title: 'Cancel Booking?',
+    message: 'Are you sure you want to cancel this booking? This action cannot be undone.',
+    confirmText: 'Yes, Cancel',
+    cancelText: 'No, Keep'
+  })
+
+  if (!confirmed) return
 
   try {
     // Implement cancel booking API call
@@ -897,14 +908,14 @@ const cancelBooking = async () => {
     const response = await api.post(`cancel-booking/${bookingId}/`)
     
     if (response.data.success) {
-      alert('Booking cancelled successfully')
+      notificationStore.success('Booking cancelled successfully')
       // Refresh booking data
       await fetchBookingDetails()
     } else {
-      alert('Failed to cancel booking: ' + response.data.error)
+      notificationStore.error('Failed to cancel booking: ' + response.data.error)
     }
   } catch (err) {
-    alert('Failed to cancel booking: ' + err.message)
+    notificationStore.error('Failed to cancel booking: ' + err.message)
   }
 }
 

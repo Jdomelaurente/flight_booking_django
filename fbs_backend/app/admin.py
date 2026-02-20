@@ -69,7 +69,7 @@ class StudentAdmin(admin.ModelAdmin):
         'first_name', 
         'mi', 
         'last_name', 
-        'gender',  # ✅ Added gender to list view
+        'gender',  # ? Added gender to list view
         'email', 
         'phone_number', 
         'date_enrolled',
@@ -80,7 +80,7 @@ class StudentAdmin(admin.ModelAdmin):
     search_fields = ('student_number', 'first_name', 'last_name', 'email')
     
     # Adds a filter sidebar for the enrollment date and gender
-    list_filter = ('date_enrolled', 'gender')  # ✅ Added gender filter
+    list_filter = ('date_enrolled', 'gender')  # ? Added gender filter
     
     # Orders the list so the newest students appear at the top
     ordering = ('-date_enrolled',)
@@ -94,7 +94,7 @@ class StudentAdmin(admin.ModelAdmin):
             'fields': ('user', 'student_number')
         }),
         ('Personal Information', {
-            'fields': (('first_name', 'mi', 'last_name'), 'gender', 'email', 'phone_number')  # ✅ Added gender field
+            'fields': (('first_name', 'mi', 'last_name'), 'gender', 'email', 'phone_number')  # ? Added gender field
         }),
         ('System Information', {
             'fields': ('date_enrolled', 'password'),
@@ -572,7 +572,7 @@ class PlanCoverageAdmin(admin.ModelAdmin):
     raw_id_fields = ('insurance_plan', 'coverage_type')
     
     def formatted_amount(self, obj):
-        return f"₱{obj.amount:,.2f}"
+        return f"?{obj.amount:,.2f}"
     formatted_amount.short_description = 'Amount'
 
 
@@ -613,7 +613,7 @@ class BookingInsuranceRecordAdmin(admin.ModelAdmin):
     booking_detail_link.short_description = 'Passenger'
     
     def financial_summary(self, obj):
-        return f"Sale: ₱{obj.sale_price:,.2f} | Commission: ₱{obj.commission_amount:,.2f} ({obj.commission_rate}%) | Payout: ₱{obj.provider_payout:,.2f}"
+        return f"Sale: ?{obj.sale_price:,.2f} | Commission: ?{obj.commission_amount:,.2f} ({obj.commission_rate}%) | Payout: ?{obj.provider_payout:,.2f}"
     financial_summary.short_description = 'Financial Summary'
 
 
@@ -684,7 +684,7 @@ class BookingAdmin(admin.ModelAdmin):
     payment_status.short_description = 'Payment Status'
     
     def financial_summary(self, obj):
-        return f"Base Fare: ₱{obj.base_fare_total:,.2f} | Insurance: ₱{obj.insurance_total:,.2f} | Tax: ₱{obj.tax_total:,.2f} | Total: ₱{obj.total_amount:,.2f}"
+        return f"Base Fare: ?{obj.base_fare_total:,.2f} | Insurance: ?{obj.insurance_total:,.2f} | Tax: ?{obj.tax_total:,.2f} | Total: ?{obj.total_amount:,.2f}"
     financial_summary.short_description = 'Breakdown'
     
     actions = ['mark_as_confirmed', 'cancel_bookings']
@@ -711,11 +711,11 @@ class BookingDetailAdmin(admin.ModelAdmin):
         
         badges = []
         if impact['is_fiesta']:
-            badges.append("🎉 Fiesta")
+            badges.append("? Fiesta")
         if impact['is_long_weekend']:
-            badges.append("🏖️ Long Weekend")
+            badges.append("?? Long Weekend")
         if impact['is_payday']:
-            badges.append("💰 Payday")
+            badges.append("? Payday")
         
         return " | ".join(badges) if badges else "Standard"
     get_pricing_factors.short_description = "PH Factors"

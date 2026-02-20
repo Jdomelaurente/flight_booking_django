@@ -39,7 +39,7 @@ class FlightPricePredictor:
                 FlightPricePredictor._model = self.model
                 FlightPricePredictor._feature_mapping = self.feature_mapping
             else:
-                print("⚙️ Running migration command - skipping model load")
+                print("[CONFIG] Running migration command - skipping model load")
             
             FlightPricePredictor._initialized = True
         else:
@@ -61,17 +61,24 @@ class FlightPricePredictor:
     def load_model(self):
         """Load the trained XGBoost model from the correct path"""
         try:
-            # Path to your XGBoost model file
-            model_path = r'C:\Users\Crissaunt\Documents\GitHub\fbs-vue\fbs_backend\flight_xgb.pkl'
+            # Construct path relative to this file's parent or BASE_DIR
+            # The model is usually in the fbs_backend root
+            base_dir = Path(__file__).resolve().parent.parent.parent
+            model_path = base_dir / 'flight_xgb.pkl'
             
-            print(f"🔍 Attempting to load XGBoost model from: {model_path}")
+            print(f"[MODEL] Attempting to load XGBoost model from: {model_path}")
+            
+            if not model_path.exists():
+                # Try relative to CWD as fallback
+                model_path = Path('flight_xgb.pkl')
+                print(f"[WARN] Not found at primary path, trying fallback: {model_path.absolute()}")
             
             with open(model_path, 'rb') as file:
                 self.model = pickle.load(file)
                 # Cache at class level
                 FlightPricePredictor._model = self.model
             
-            print("✅ XGBoost Model loaded successfully!")
+            print("[SUCCESS] XGBoost Model loaded successfully!")
             print(f"   Model type: {type(self.model)}")
             
             # Try to get XGBoost specific info
@@ -85,11 +92,11 @@ class FlightPricePredictor:
             return True
             
         except Exception as e:
-            print(f"❌ Failed to load XGBoost model: {e}")
+            print(f"[ERROR] Failed to load XGBoost model: {e}")
             # Try to use cached model if available
             if FlightPricePredictor._model:
                 self.model = FlightPricePredictor._model
-                print("🔄 Using cached model from previous instance")
+                print("[INFO] Using cached model from previous instance")
                 return True
             self.model = None
             return False
@@ -104,14 +111,14 @@ class FlightPricePredictor:
                     self.feature_mapping = json.load(file)
                     # Cache at class level
                     FlightPricePredictor._feature_mapping = self.feature_mapping
-                print("✅ Feature mapping loaded from feature_mapping.json")
+                print("[SUCCESS] Feature mapping loaded from feature_mapping.json")
                 print(f"   Loaded {len(self.feature_mapping.get('feature_columns', []))} feature columns")
             else:
-                print(f"❌ Feature mapping file not found at: {mapping_path}")
+                print(f"[ERROR] Feature mapping file not found at: {mapping_path}")
                 self.feature_mapping = FlightPricePredictor._feature_mapping
                 
         except Exception as e:
-            print(f"❌ Failed to load feature mapping: {e}")
+            print(f"[ERROR] Failed to load feature mapping: {e}")
             self.feature_mapping = FlightPricePredictor._feature_mapping
     
     def prepare_features(self, flight_data):
@@ -193,7 +200,7 @@ class FlightPricePredictor:
             return df
             
         except Exception as e:
-            print(f"❌ Error preparing features: {e}")
+            print(f"[ERROR] Error preparing features: {e}")
             return None
     
     def predict_price(self, flight_data):
@@ -226,13 +233,49 @@ class FlightPricePredictor:
             predicted_price = max(predicted_price, 0)
             
             # Print raw prediction (remove in production)
-            print(f"💰 XGBoost: ₱{predicted_price:.2f}")
+            # print(f"[PRICE] XGBoost: PHP {predicted_price:.2f}")
             
             return float(predicted_price)
             
         except Exception as e:
-            print(f"❌ XGBoost prediction error: {e}")
+            print(f"[ERROR] XGBoost prediction error: {e}")
             return 0.0
+
+    def predict_prices_batch(self, flight_data_list):
+        """
+        Predict base prices for a list of flights using XGBoost in BATCH
+        Returns a list of floats
+        """
+        if not self.model or not flight_data_list:
+            return [0.0] * len(flight_data_list)
+            
+        try:
+            # Prepare all feature vectors
+            all_features = []
+            for data in flight_data_list:
+                df = self.prepare_features(data)
+                if df is not None:
+                    all_features.append(df)
+                else:
+                    # Fallback for failed feature preparation
+                    all_features.append(pd.DataFrame(np.zeros((1, len(self.feature_mapping['feature_columns']))), 
+                                                 columns=self.feature_mapping['feature_columns']))
+            
+            if not all_features:
+                return [0.0] * len(flight_data_list)
+                
+            # Combine into one large DataFrame
+            batch_df = pd.concat(all_features, ignore_index=True)
+            
+            # Batch prediction
+            predictions = self.model.predict(batch_df)
+            
+            # Convert to standard Python floats and ensure positive
+            return [max(float(p), 0.0) for p in predictions]
+            
+        except Exception as e:
+            print(f"[ERROR] Batch XGBoost prediction error: {e}")
+            return [0.0] * len(flight_data_list)
     
     def predict_seat_class_price(self, base_price, seat_class_name):
         """Predict price with seat class adjustment"""

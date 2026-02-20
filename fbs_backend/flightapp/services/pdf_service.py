@@ -280,8 +280,8 @@ class BoardingPassPDFService:
         # Scissor icons at perforation
         c.setFillColor(text_secondary)
         c.setFont("Helvetica", 8)
-        c.drawCentredString(perf_x, height - 0.15*inch, "✂")
-        c.drawCentredString(perf_x, 0.15*inch, "✂")
+        c.drawCentredString(perf_x, height - 0.15*inch, "?")
+        c.drawCentredString(perf_x, 0.15*inch, "?")
         
         # === SECURITY FOOTER ===
         c.setFillColor(text_secondary)
@@ -562,12 +562,12 @@ class BoardingPassPDFService:
         
         # Summary items
         summary_items = [
-            ("Base Fare", f"₱{booking.base_fare_total:,.2f}" if booking.base_fare_total else "₱0.00"),
-            ("Taxes & Fees", f"₱{booking.tax_total:,.2f}" if booking.tax_total else "₱0.00"),
+            ("Base Fare", f"?{booking.base_fare_total:,.2f}" if booking.base_fare_total else "?0.00"),
+            ("Taxes & Fees", f"?{booking.tax_total:,.2f}" if booking.tax_total else "?0.00"),
         ]
         
         if booking.insurance_total:
-            summary_items.append(("Travel Insurance", f"₱{booking.insurance_total:,.2f}"))
+            summary_items.append(("Travel Insurance", f"?{booking.insurance_total:,.2f}"))
         
         item_y = y_pos - 0.3*inch
         c.setFont("Helvetica", 10)
@@ -587,7 +587,7 @@ class BoardingPassPDFService:
         c.setFillColor(primary)
         c.setFont("Helvetica-Bold", 14)
         c.drawString(0.9*inch, item_y - 0.15*inch, "TOTAL PAID")
-        c.drawRightString(width - 0.9*inch, item_y - 0.15*inch, f"₱{booking.total_amount:,.2f}" if booking.total_amount else "₱0.00")
+        c.drawRightString(width - 0.9*inch, item_y - 0.15*inch, f"?{booking.total_amount:,.2f}" if booking.total_amount else "?0.00")
         
         # Payment method
         payment = booking.payments.filter(status='Completed').first()

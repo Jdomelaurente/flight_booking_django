@@ -2,26 +2,39 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBookingStore } from '@/stores/booking'
+import { useModalStore } from '@/stores/modal'
 
 const router = useRouter()
 const bookingStore = useBookingStore()
+const modalStore = useModalStore()
 
 const isSessionValid = computed(() => bookingStore.isSessionValid)
 
 const isPracticeMode = computed(() => bookingStore.isPractice)
 const hasValidation = computed(() => bookingStore.hasActivityCodeValidation)
 
-function handleReset() {
-  const confirmed = confirm('Are you sure you want to reset your search? Your selected flights and passenger details will be cleared.')
+async function handleReset() {
+  const confirmed = await modalStore.confirm({
+    title: 'Reset Search?',
+    message: 'Are you sure you want to reset your search? Your selected flights and passenger details will be cleared.',
+    confirmText: 'Reset Search',
+    cancelText: 'Cancel'
+  })
+  
   if (confirmed) {
     bookingStore.resetBooking()
     router.push('/')
   }
 }
 
-function handleEndSession() {
+async function handleEndSession() {
   const sessionType = isPracticeMode.value ? 'practice session' : 'activity'
-  const confirmed = confirm(`Are you sure you want to end this ${sessionType}? All progress will be permanently cleared and you will return to the dashboard.`)
+  const confirmed = await modalStore.confirm({
+    title: isPracticeMode.value ? 'End Practice?' : 'End Activity?',
+    message: `Are you sure you want to end this ${sessionType}? All progress will be permanently cleared and you will return to the dashboard.`,
+    confirmText: 'End Session',
+    cancelText: 'Stay'
+  })
   
   if (confirmed) {
     console.log(`🧹 Ending ${sessionType}...`)

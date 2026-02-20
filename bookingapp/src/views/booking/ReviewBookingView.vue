@@ -218,9 +218,11 @@ import { useBookingStore } from '@/stores/booking';
 import { useRouter } from 'vue-router';
 import { addonService } from '@/services/booking/addonService';
 import { bookingService } from '@/services/booking/bookingService';
+import { useNotificationStore } from '@/stores/notification';
 
 const bookingStore = useBookingStore();
 const router = useRouter();
+const notificationStore = useNotificationStore();
 
 const isLoading = ref(true);
 const isProcessing = ref(false);
@@ -592,11 +594,11 @@ const confirmBooking = async () => {
         } 
       });
     } else {
-      alert(`Booking Error: ${response.error}`);
+      notificationStore.error(`Booking Error: ${response.error}`);
     }
   } catch (error) {
     console.error("Booking critical failure:", error);
-    alert("An unexpected error occurred. Please try again.");
+    notificationStore.error("An unexpected error occurred. Please try again.");
   } finally {
     isProcessing.value = false;
   }
@@ -617,7 +619,7 @@ const handleBookingError = (error) => {
     errorMessage = error;
   }
   
-  alert(errorMessage);
+  notificationStore.error(errorMessage);
 };
 </script>
 

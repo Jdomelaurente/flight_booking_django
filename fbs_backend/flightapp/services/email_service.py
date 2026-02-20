@@ -37,13 +37,13 @@ class EmailService:
             recipient_email = contact.email
             booking_reference = f"BK{booking.id:08d}"
             
-            logger.info(f"📧 Preparing email for {recipient_email}, booking {booking_reference}")
+            logger.info(f"? Preparing email for {recipient_email}, booking {booking_reference}")
             
             # Prepare email context
             context = EmailService._prepare_email_context(booking, payment, booking_reference)
             
             # Render email templates
-            subject = f"✈️ Your Booking Confirmation - {booking_reference}"
+            subject = f"?? Your Booking Confirmation - {booking_reference}"
             text_content = render_to_string('emails/booking_confirmation.txt', context)
             html_content = render_to_string('emails/booking_confirmation.html', context)
             
@@ -63,7 +63,7 @@ class EmailService:
                     # Import here to avoid circular imports
                     from .pdf_service import BoardingPassPDFService
                     
-                    logger.info(f"📄 Generating itinerary PDF for booking {booking.id}...")
+                    logger.info(f"? Generating itinerary PDF for booking {booking.id}...")
                     
                     # Generate PDF
                     pdf_buffer = BoardingPassPDFService.generate_itinerary_pdf(booking)
@@ -82,7 +82,7 @@ class EmailService:
                     # Attach to email
                     email.attach(pdf_attachment)
                     
-                    logger.info(f"✅ PDF attached successfully: itinerary_{booking_reference}.pdf")
+                    logger.info(f"? PDF attached successfully: itinerary_{booking_reference}.pdf")
                     
                     # Also attach individual boarding passes for each flight
                     details = booking.details.select_related('passenger', 'schedule__flight').all()
@@ -102,25 +102,25 @@ class EmailService:
                                     filename=f"boarding_pass_{passenger_name}_{flight_num}.pdf"
                                 )
                                 email.attach(bp_attachment)
-                                logger.info(f"✅ Boarding pass attached for {passenger_name}")
+                                logger.info(f"? Boarding pass attached for {passenger_name}")
                             except Exception as bp_error:
-                                logger.warning(f"⚠️ Could not attach boarding pass for detail {detail.id}: {bp_error}")
+                                logger.warning(f"?? Could not attach boarding pass for detail {detail.id}: {bp_error}")
                     
                 except Exception as e:
-                    logger.error(f"❌ Failed to generate/attach PDF: {e}")
+                    logger.error(f"? Failed to generate/attach PDF: {e}")
                     import traceback
                     traceback.print_exc()
                     # Continue sending email even if PDF attachment fails
             
             # Send email
-            logger.info(f"📤 Sending email to {recipient_email}...")
+            logger.info(f"? Sending email to {recipient_email}...")
             email.send(fail_silently=False)
             
-            logger.info(f"✅ Booking confirmation email sent successfully to {recipient_email}")
+            logger.info(f"? Booking confirmation email sent successfully to {recipient_email}")
             return True
             
         except Exception as e:
-            logger.error(f"❌ Failed to send booking confirmation email: {str(e)}")
+            logger.error(f"? Failed to send booking confirmation email: {str(e)}")
             import traceback
             traceback.print_exc()
             return False

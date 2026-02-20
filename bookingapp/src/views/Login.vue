@@ -156,7 +156,7 @@ export default {
         this.userStore.setAuth({ token, user, role });
         
         console.log('✅ Login successful - User Store Updated');
-        this.successMessage = 'Login successful! Redirecting...'
+        this.notificationStore.success('Login successful! Redirecting...')
         
         // 3. Move to appropriate dashboard
         setTimeout(() => {
@@ -168,14 +168,12 @@ export default {
         if (err.response) {
           const data = err.response.data
           if (err.response?.status === 401) {
-            this.error = 'Invalid credentials'
             this.notificationStore.error('Invalid username or password')
           } else {
-            this.error = data.error || data.detail || data.message || 'An error occurred during login. Please try again.'
-            this.notificationStore.error('Login failed. Please check your connection.')
+            const msg = data.error || data.detail || data.message || 'An error occurred during login.'
+            this.notificationStore.error(msg)
           }
         } else {
-          this.error = "An unexpected error occurred. Please try again."
           this.notificationStore.error('Login failed. Please check your internet connection.')
         }
       } finally {

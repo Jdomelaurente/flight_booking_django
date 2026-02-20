@@ -450,16 +450,19 @@ export const useBookingStore = defineStore('booking', {
       }
     },
 
-    // NEW: Clear session with user confirmation
-    clearSessionWithConfirmation() {
+    async clearSessionWithConfirmation() {
+      const modalStore = useModalStore();
       const session = this.checkSession();
 
       if (session.valid) {
         // Show confirmation if user has unsaved data
         if (this.passengers.length > 0 || this.selectedOutbound || this.booking_id) {
-          const userConfirmed = window.confirm(
-            'We found an active booking session. Would you like to start a new search? Your current booking data will be cleared.'
-          );
+          const userConfirmed = await modalStore.confirm({
+            title: 'Active Session Found',
+            message: 'We found an active booking session. Would you like to start a new search? Your current booking data will be cleared.',
+            confirmText: 'Start New Search',
+            cancelText: 'Resume Current'
+          });
 
           if (userConfirmed) {
             this.resetBooking();
