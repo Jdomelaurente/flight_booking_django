@@ -1210,13 +1210,10 @@ class DashboardViewSet(viewsets.ViewSet):
                 'alerts',
                 'passenger_composition',
                 'popular_routes',
-<<<<<<< HEAD
-                'active_flights_map'
-=======
+                'active_flights_map',
                 'flight_operations_stats',
                 'aircraft_utilization',
                 'revenue_by_route'
->>>>>>> 7926be7605482d3d0aa1a2a6cb1ccb63031afcdf
             ]
         })
     

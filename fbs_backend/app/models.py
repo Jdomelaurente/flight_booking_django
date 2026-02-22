@@ -476,7 +476,6 @@ class Schedule(models.Model):
         self.status = self.automatic_status  # Ensure status is correct before saving
         super().save(*args, **kwargs)
 
-<<<<<<< HEAD
     def update_ml_price(self, save=True):
         """Update the ML predicted price for this schedule"""
         try:
@@ -519,9 +518,6 @@ class Schedule(models.Model):
             import traceback
             traceback.print_exc()
             return False, None
-
-=======
->>>>>>> 7926be7605482d3d0aa1a2a6cb1ccb63031afcdf
 
 # ============================================================
 # SEAT REQUIREMENT MODEL (Prices for special seats)
@@ -657,10 +653,7 @@ class Seat(models.Model):
     def final_price(self):
         """Calculate final price including all adjustments"""
         if self.schedule:
-<<<<<<< HEAD
             # Use ML base price if available, otherwise fallback to regular price
-=======
->>>>>>> 7926be7605482d3d0aa1a2a6cb1ccb63031afcdf
             base_price = self.schedule.ml_base_price or self.schedule.price or Decimal('0.00')
         else:
             base_price = Decimal('0.00')
