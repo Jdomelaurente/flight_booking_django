@@ -278,9 +278,12 @@ const contactName = computed(() => {
 });
 
 const totalAmount = computed(() => {
-  return bookingStore.booking_total > 0 
-    ? bookingStore.booking_total 
-    : bookingStore.grandTotal || 0;
+  if (bookingStore.booking_total > 0) {
+    console.log('💰 PaymentView: Using Store booking_total (from backend sync):', bookingStore.booking_total);
+    return bookingStore.booking_total;
+  }
+  console.log('⚠️ PaymentView: No backend synced total, using Store grandTotal:', bookingStore.grandTotal);
+  return bookingStore.grandTotal || 0;
 });
 
 const hasFlightInfo = computed(() => {
@@ -291,6 +294,22 @@ const isSessionValid = computed(() => {
   if (!bookingStore.sessionExpiry) return false;
   return Date.now() < bookingStore.sessionExpiry;
 });
+
+const syncBookingTotalFromBackend = async () => {
+  try {
+    if (!bookingStore.booking_id) return;
+    const res = await api.get(`flightapp/booking/${bookingStore.booking_id}/`);
+    if (res.data?.success && res.data?.booking) {
+      const backendTotal = parseFloat(res.data.booking.total_amount);
+      if (Number.isFinite(backendTotal) && backendTotal > 0) {
+        bookingStore.booking_total = backendTotal;
+        localStorage.setItem('current_booking_total', backendTotal);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to sync booking total from backend:', error.response?.data || error.message);
+  }
+};
 
 /**
  * Show toast message
@@ -416,6 +435,7 @@ const handlePayMongoCheckout = async () => {
 // Lifecycle hooks
 onMounted(() => {
   restoreBookingData();
+  syncBookingTotalFromBackend();
   checkPaymentCallback();
 });
 

@@ -62,6 +62,8 @@ onMounted(async () => {
       
       if (userConfirmed) {
         bookingStore.resetBooking();
+        localStorage.removeItem('payment_session');
+        localStorage.removeItem('current_booking');
         sessionCleared.value = true;
         notificationStore.info('Previous session cleared.');
         

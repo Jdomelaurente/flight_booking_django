@@ -35,7 +35,7 @@ class EmailService:
                 return False
             
             recipient_email = contact.email
-            booking_reference = f"BK{booking.id:08d}"
+            booking_reference = booking.pnr or f"BK{booking.id:08d}"
             
             logger.info(f"? Preparing email for {recipient_email}, booking {booking_reference}")
             

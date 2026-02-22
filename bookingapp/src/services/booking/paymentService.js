@@ -2,7 +2,7 @@
 import api from './api.js';
 import axios from 'axios'; // Only used for direct PayMongo API calls (external)
 
-const PAYMONGO_PUBLIC_KEY = 'pk_test_jpMbi5RUd8YQkvdFduig63Ga'; // Your PayMongo public key
+const PAYMONGO_PUBLIC_KEY = import.meta.env.VITE_PAYMONGO_PUBLIC_KEY || '';
 
 export const paymentService = {
 

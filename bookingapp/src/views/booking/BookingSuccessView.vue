@@ -26,9 +26,9 @@
       <div class="bg-white rounded-xl border border-slate-200 p-8 mb-10 shadow-sm">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
           <div>
-            <p class="text-[10px] text-slate-400 uppercase tracking-widest font-black mb-1">Booking Reference</p>
+            <p class="text-[10px] text-slate-400 uppercase tracking-widest font-black mb-1">PNR / RECORD LOCATOR</p>
             <div class="flex items-center gap-3">
-              <span class="text-2xl font-mono font-bold text-slate-900 tracking-tighter">{{ bookingReference }}</span>
+              <span class="text-2xl font-mono font-bold text-slate-900 tracking-tighter bg-slate-100 px-2 rounded">{{ bookingReference }}</span>
               <button @click="copyReference" class="text-emerald-600 text-[10px] uppercase font-black hover:text-emerald-700 transition-colors">Copy</button>
             </div>
           </div>
@@ -52,8 +52,17 @@
 
       <!-- Actions Section -->
       <div class="space-y-4 max-w-sm mx-auto">
+        <!-- Download Ticket Button -->
+        <button @click="downloadItinerary" 
+                class="w-full cursor-pointer py-5 bg-emerald-600 text-white rounded-lg font-black text-lg hover:bg-emerald-500 transition-all shadow-lg hover:shadow-emerald-200 flex items-center justify-center gap-3">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Download E-Ticket Itinerary
+        </button>
+
         <button @click="goToDashboard" 
-                class="w-full cursor-pointer py-5 bg-slate-900 text-white rounded-lg font-black text-lg hover:bg-slate-700 transition-all shadow-lg hover:shadow-slate-200 mb-2">
+                class="w-full cursor-pointer py-4 bg-slate-900 text-white rounded-lg font-black text-mg hover:bg-slate-700 transition-all shadow-lg hover:shadow-slate-200 mb-2">
           Return to Dashboard
         </button>
 
@@ -71,11 +80,16 @@
       </div>
 
       <!-- Share Link -->
-      <div class="mt-12 pt-8 border-t border-slate-100">
-        <button @click="copyBookingLink" class="text-slate-400 hover:text-slate-600 text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2 mx-auto">
+      <div class="mt-12 pt-8 border-t border-slate-100 ">
+        <button  class="text-slate-400 hover:text-slate-600 cursor-pointer text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2 mx-auto">
           <span>🔗 Share your journey link</span>
         </button>
       </div>
+      <!-- <div class="mt-12 pt-8 border-t border-slate-100">
+        <button @click="copyBookingLink" class="text-slate-400 hover:text-slate-600 text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2 mx-auto">
+          <span>🔗 Share your journey link</span>
+        </button>
+      </div> -->
     </div>
 
     <!-- Minimal Toast Message -->
@@ -105,9 +119,10 @@ const route = useRoute();
 const router = useRouter();
 const bookingStore = useBookingStore();
 
-const bookingReference = ref('PAL' + Math.random().toString(36).substr(2, 9).toUpperCase());
-const transactionId = ref('TRX' + Math.random().toString(36).substr(2, 12).toUpperCase());
-const amountPaid = ref(12500.50);
+const bookingReference = ref('');
+const transactionId = ref('');
+const amountPaid = ref(0);
+const bookingId = ref(null);
 const showToast = ref(false);
 const toastMessage = ref('');
 
@@ -134,10 +149,34 @@ onMounted(() => {
     amountPaid.value = parseFloat(query.amount);
   }
   
+  if (query.booking_id) {
+    bookingId.value = query.booking_id;
+  }
+  
   if (!bookingReference.value) {
-    bookingReference.value = localStorage.getItem('last_booking_ref') || 'PAL' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    bookingReference.value = localStorage.getItem('last_booking_ref') || 'N/A';
   }
 });
+
+const downloadItinerary = async () => {
+  if (!bookingId.value) {
+    showToastMessage('Booking ID missing - cannot download');
+    return;
+  }
+  
+  showToastMessage('Generating your E-Ticket...');
+  
+  try {
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const downloadUrl = `${baseUrl}/flightapp/download-itinerary/${bookingId.value}/`;
+    
+    // Open in new tab or trigger download
+    window.open(downloadUrl, '_blank');
+  } catch (error) {
+    console.error('Download error:', error);
+    showToastMessage('Failed to download itinerary');
+  }
+};
 
 const copyReference = () => {
   navigator.clipboard.writeText(bookingReference.value);

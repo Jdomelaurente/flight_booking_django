@@ -22,7 +22,7 @@ class AuthStorage {
     const sessionMetadata = {
       tabId, role, username: user.username, session_id, timestamp: Date.now()
     }
-    
+
     const allSessions = this.getAllSessionsMetadata()
     allSessions[tabId] = sessionMetadata
     localStorage.setItem('active_sessions', JSON.stringify(allSessions))
@@ -32,19 +32,19 @@ class AuthStorage {
   }
 
   static getToken() {
-    return sessionStorage.getItem('token') || sessionStorage.getItem('auth_token')
+    return sessionStorage.getItem('token') || sessionStorage.getItem('auth_token') || localStorage.getItem('token') || localStorage.getItem('auth_token')
   }
 
   static getSessionId() {
-    return sessionStorage.getItem('session_id')
+    return sessionStorage.getItem('session_id') || localStorage.getItem('session_id')
   }
 
   static getRole() {
-    return sessionStorage.getItem('role')
+    return sessionStorage.getItem('role') || localStorage.getItem('role')
   }
 
   static getUser() {
-    const userStr = sessionStorage.getItem('user') || sessionStorage.getItem('user_data')
+    const userStr = sessionStorage.getItem('user') || sessionStorage.getItem('user_data') || localStorage.getItem('user') || localStorage.getItem('user_data')
     try {
       return userStr ? JSON.parse(userStr) : null
     } catch (e) {
@@ -72,11 +72,11 @@ class AuthStorage {
   static clearCurrentSession() {
     const tabId = this.getTabId()
     sessionStorage.clear()
-    
+
     if (tabId) {
       const allSessions = this.getAllSessionsMetadata()
       delete allSessions[tabId]
-      
+
       if (Object.keys(allSessions).length > 0) {
         localStorage.setItem('active_sessions', JSON.stringify(allSessions))
       } else {
@@ -117,7 +117,7 @@ class AuthStorage {
     const allSessions = this.getAllSessionsMetadata()
     const now = Date.now()
     const maxAge = 24 * 60 * 60 * 1000
-    
+
     let cleaned = 0
     Object.keys(allSessions).forEach(tabId => {
       if (now - allSessions[tabId].timestamp > maxAge) {
@@ -125,7 +125,7 @@ class AuthStorage {
         cleaned++
       }
     })
-    
+
     if (cleaned > 0) {
       if (Object.keys(allSessions).length > 0) {
         localStorage.setItem('active_sessions', JSON.stringify(allSessions))

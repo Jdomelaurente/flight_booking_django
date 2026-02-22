@@ -80,16 +80,6 @@
                   <span v-else>Login</span>
                 </button>
 
-                <!-- Error Message -->
-                <div v-if="error" class="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p class="text-red-700 text-sm text-center">{{ error }}</p>
-                </div>
-
-                <!-- Success Message -->
-                <div v-if="successMessage" class="bg-green-50 border border-green-200 rounded-lg p-3">
-                  <p class="text-green-700 text-sm text-center">{{ successMessage }}</p>
-                </div>
-
                 <div class="text-center">
                   <a href="#" class="text-sm" style="color: #FF579A;">
                     forgot password?
@@ -111,21 +101,21 @@ import bgImage from '@/assets/image/bg-cthm.svg'
 import { authService } from '@/services/auth/authService'
 import { useUserStore } from '@/stores/user'
 import { useNotificationStore } from '@/stores/notification'
+import { useRouter } from 'vue-router'
 
 export default {
   name: 'LoginView',
   setup() {
     const userStore = useUserStore()
     const notificationStore = useNotificationStore()
-    return { userStore, notificationStore }
+    const router = useRouter() // Get router instance
+    return { userStore, notificationStore, router } // Expose router
   },
   data() {
     return {
       username: '',
       password: '',
-      isLoading: false,
-      error: null,
-      successMessage: ''
+      isLoading: false
     }
   },
   computed: {
@@ -143,8 +133,6 @@ export default {
       }
       
       this.isLoading = true
-      this.error = null
-      this.successMessage = ''
 
       try {
         console.log('🔐 Attempting login for:', this.username)
@@ -157,10 +145,21 @@ export default {
         
         console.log('✅ Login successful - User Store Updated');
         this.notificationStore.success('Login successful! Redirecting...')
+        console.log('DEBUG: dashboard_route:', dashboard_route);
+        console.log('DEBUG: router instance:', this.router);
         
         // 3. Move to appropriate dashboard
         setTimeout(() => {
-          this.$router.push(dashboard_route)
+          if (dashboard_route && this.router) {
+            this.router.push(dashboard_route).catch(err => {
+              console.error('Router push failed:', err);
+              // Fallback to window location if router fails
+              window.location.href = dashboard_route;
+            });
+          } else {
+             console.error('Dashboard route or router missing');
+             this.notificationStore.error('Navigation failed');
+          }
         }, 500)
         
       } catch (err) {

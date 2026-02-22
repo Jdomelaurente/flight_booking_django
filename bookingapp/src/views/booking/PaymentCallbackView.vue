@@ -94,7 +94,8 @@ const pollPaymentStatus = async (bookingId) => {
         query: {
           ref: bookingReference,
           payment_id: paymentId,
-          amount: amount
+          amount: amount,
+          booking_id: bookingId
         }
       });
       
@@ -202,7 +203,8 @@ onMounted(async () => {
             query: {
               ref: bookingReference,
               payment_id: paymentId,
-              amount: amount
+              amount: amount,
+              booking_id: bookingId
             }
           });
           

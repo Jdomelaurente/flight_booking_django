@@ -228,6 +228,7 @@
 
       <!-- Right Sidebar - Booking Summary -->
       <aside class="summary-sidebar">
+        <BookingTimer variant="sidebar" />
         <div class="summary-card">
           <div class="summary-header">
             <h3 class="summary-title">Booking Summary</h3>
@@ -235,31 +236,49 @@
           
           <!-- Flight Summary -->
           <div class="summary-section">
-            <div class="flight-summary">
-              <div class="flight-header">
-                <span class="flight-label">Departure</span>
-                <span class="flight-price">₱{{ Number(selectedFlight?.price || 0).toLocaleString() }}</span>
+            <template v-if="bookingStore.isMultiCity">
+              <div v-for="(segment, index) in bookingStore.multiCitySegments" :key="index" class="flight-summary">
+                <div class="flight-header">
+                  <span class="flight-label">Flight {{ index + 1 }}</span>
+                  <span class="flight-price">₱{{ Number(segment.selectedFlight?.price || 0).toLocaleString() }}</span>
+                </div>
+                <div class="route" v-if="segment.selectedFlight">
+                  <span class="city">{{ segment.selectedFlight.origin }}</span>
+                  <span class="arrow">→</span>
+                  <span class="city">{{ segment.selectedFlight.destination }}</span>
+                </div>
+                <div class="flight-date" v-if="segment.selectedFlight">
+                  {{ segment.selectedFlight.departure_date }}
+                </div>
               </div>
-              <div class="route">
-                <span class="city">{{ selectedFlight?.origin }}</span>
-                <span class="arrow">→</span>
-                <span class="city">{{ selectedFlight?.destination }}</span>
+            </template>
+            <template v-else>
+              <div class="flight-summary">
+                <div class="flight-header">
+                  <span class="flight-label">Departure</span>
+                  <span class="flight-price">₱{{ Number(selectedFlight?.price || 0).toLocaleString() }}</span>
+                </div>
+                <div class="route" v-if="selectedFlight">
+                  <span class="city">{{ selectedFlight.origin }}</span>
+                  <span class="arrow">→</span>
+                  <span class="city">{{ selectedFlight.destination }}</span>
+                </div>
+                <div class="flight-date" v-if="selectedFlight">{{ selectedFlight.departure_date }}</div>
               </div>
-              <div class="flight-date">{{ selectedFlight?.departure_date }}</div>
-            </div>
 
-            <div v-if="isRoundTrip && selectedReturn" class="flight-summary">
-              <div class="flight-header">
-                <span class="flight-label">Return</span>
-                <span class="flight-price">₱{{ Number(selectedReturn?.price || 0).toLocaleString() }}</span>
+              <div v-if="isRoundTrip && selectedReturn" class="flight-summary">
+                <div class="flight-header">
+                  <span class="flight-label">Return</span>
+                  <span class="flight-price">₱{{ Number(selectedReturn?.price || 0).toLocaleString() }}</span>
+                </div>
+                <div class="route">
+                  <span class="city">{{ selectedReturn.origin }}</span>
+                  <span class="arrow">→</span>
+                  <span class="city">{{ selectedReturn.destination }}</span>
+                </div>
+                <div class="flight-date">{{ selectedReturn.departure_date }}</div>
               </div>
-              <div class="route">
-                <span class="city">{{ selectedReturn?.origin }}</span>
-                <span class="arrow">→</span>
-                <span class="city">{{ selectedReturn?.destination }}</span>
-              </div>
-              <div class="flight-date">{{ selectedReturn?.departure_date }}</div>
-            </div>
+            </template>
           </div>
 
           <!-- Travelers Summary -->
@@ -267,17 +286,17 @@
             <div class="travelers-breakdown">
               <div class="breakdown-item">
                 <span class="breakdown-label">Adults ({{ adultCount }})</span>
-                <span class="breakdown-price">₱{{ (bookingStore.grandTotalForAdults).toLocaleString() }}</span>
+                <span class="breakdown-price">₱{{ (bookingStore.grandTotalForAdults || 0).toLocaleString() }}</span>
               </div>
               
               <div v-if="childCount > 0" class="breakdown-item">
                 <span class="breakdown-label">Children ({{ childCount }})</span>
-                <span class="breakdown-price">₱{{ (bookingStore.grandTotalForChildren).toLocaleString() }}</span>
+                <span class="breakdown-price">₱{{ (bookingStore.grandTotalForChildren || 0).toLocaleString() }}</span>
               </div>
               
               <div v-if="infantCount > 0" class="breakdown-item">
                 <span class="breakdown-label">Infants ({{ infantCount }})</span>
-                <span class="breakdown-price">₱{{ (bookingStore.grandTotalForInfants).toLocaleString() }}</span>
+                <span class="breakdown-price">₱{{ (bookingStore.grandTotalForInfants || 0).toLocaleString() }}</span>
               </div>
             </div>
             
@@ -291,7 +310,7 @@
           <div class="total-section">
             <div class="total-row">
               <span class="total-label">Total Amount</span>
-              <span class="total-amount">₱{{ calculateTotal().toLocaleString() }}</span>
+              <span class="total-amount">₱{{ (calculateTotal() || 0).toLocaleString() }}</span>
             </div>
             <div class="tax-note">Inclusive of all taxes and fees</div>
           </div>
@@ -304,10 +323,13 @@
 <script setup>
 import { ref, computed, reactive, onMounted, watch, nextTick } from 'vue';
 import { useBookingStore } from '@/stores/booking';
+import { useNotificationStore } from '@/stores/notification';
 import { useRouter } from 'vue-router';
 import PassengerForm from '@/components/booking/PassengerForm.vue';
+import BookingTimer from '@/components/booking/BookingTimer.vue';
 
 const bookingStore = useBookingStore();
+const notificationStore = useNotificationStore();
 const router = useRouter();
 
 // --- STATE ---
@@ -330,7 +352,7 @@ const contact = reactive({
 // --- COMPUTED ---
 const selectedFlight = computed(() => bookingStore.selectedOutbound);
 const selectedReturn = computed(() => bookingStore.selectedReturn); 
-const isRoundTrip = computed(() => bookingStore.tripType === 'round_trip'); 
+const isRoundTrip = computed(() => bookingStore.isRoundTrip); 
 const adultCount = computed(() => bookingStore.passengerCount.adults || 1);
 const childCount = computed(() => bookingStore.passengerCount.children || 0);
 const infantCount = computed(() => bookingStore.passengerCount.infants || 0);
@@ -526,7 +548,12 @@ const handlePassengerValidation = ({ index, isValid }) => {
 };
 
 const calculateTotal = () => {
-  return bookingStore.grandTotal;
+  // Passengers step shows base fare summary only (add-ons are selected on the next step)
+  return (
+    (bookingStore.grandTotalForAdults || 0) +
+    (bookingStore.grandTotalForChildren || 0) +
+    (bookingStore.grandTotalForInfants || 0)
+  );
 };
 
 // FIXED: Enhanced passenger completion check
@@ -769,7 +796,7 @@ const saveAllPassengersToStore = async () => {
     return true;
   } catch (error) {
     console.error('❌ Error saving passengers:', error);
-    notificationStore.error(`Save failed: ${error.message}`);
+    // Let global axios interceptor handle user feedback
     return false;
   } finally {
     isSaving.value = false;
@@ -876,6 +903,10 @@ const handleContinueToAddons = async () => {
   if (!saveSuccess) {
     return;
   }
+
+  // CREATE DRAFT ON SERVER (Phase 11: Data Resilience)
+  // We do this in the background/async, but wait just enough to ensure it's ongoing
+  bookingStore.snapshotToServer();
   
   // Add a small delay for visual feedback
   setTimeout(() => {

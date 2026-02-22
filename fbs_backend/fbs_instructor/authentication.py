@@ -40,7 +40,8 @@ class MultiSessionTokenAuthentication(BaseAuthentication):
                     is_active=True
                 )
             except UserSession.DoesNotExist:
-                raise AuthenticationFailed('Invalid or expired session token')
+                # Not a MultiSession token; allow other authentication backends to try
+                return None
             
             # Check if session is expired
             if session.is_expired():
@@ -57,7 +58,8 @@ class MultiSessionTokenAuthentication(BaseAuthentication):
             return (session.user, session)
             
         except Exception as e:
-            raise AuthenticationFailed(f'Authentication failed: {str(e)}')
+            # If anything goes wrong here, fall back to other authenticators
+            return None
     
     def authenticate_header(self, request):
         """

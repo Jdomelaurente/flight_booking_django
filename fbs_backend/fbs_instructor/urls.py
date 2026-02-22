@@ -65,6 +65,7 @@ urlpatterns = [
     # ? KEEP: Legacy URL for backward compatibility
     path('student/activity/<int:activity_id>/', student_activity_details, name='student_activity_details_legacy'),
 
-
+    # ? NEW: Practice Bookings History
+    path('student/practice-bookings/', views.get_student_practice_bookings, name='student_practice_bookings'),
     
 ]

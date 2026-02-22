@@ -24,33 +24,31 @@
           <div class="section-header">
             <span class="icon">✈️</span>
             <h3>Flight Details</h3>
-            <span class="trip-type-badge" :class="{ 'round-trip': bookingStore.isRoundTrip, 'one-way': !bookingStore.isRoundTrip }">
-              {{ bookingStore.isRoundTrip ? 'Round Trip' : 'One Way' }}
+            <span class="trip-type-badge" :class="{ 
+              'round-trip': bookingStore.isRoundTrip, 
+              'one-way': bookingStore.tripType === 'one_way',
+              'multi-city': bookingStore.tripType === 'multi_city' || bookingStore.tripType === 'multi-city'
+            }">
+              {{ 
+                bookingStore.tripType === 'multi_city' || bookingStore.tripType === 'multi-city' 
+                  ? 'Multi-City' 
+                  : (bookingStore.isRoundTrip ? 'Round Trip' : 'One Way') 
+              }}
             </span>
           </div>
           <div class="review-card">
-            <div class="flight-summary" v-if="bookingStore.selectedOutbound">
+            <div v-for="(segment, index) in flightSegments" :key="index" class="flight-summary" :class="{ 'mt-3': index > 0 }">
               <div class="route-info">
-                <span class="badge">Depart</span>
-                <strong>{{ bookingStore.selectedOutbound.origin }} → {{ bookingStore.selectedOutbound.destination }}</strong>
+                <span class="badge" :class="{ 'return': segment.isReturn, 'multi': segment.isMulti }">
+                  {{ segment.label }}
+                </span>
+                <strong>{{ segment.origin }} → {{ segment.destination }}</strong>
               </div>
               <div class="detail-grid">
-                <div><small>Flight:</small> {{ bookingStore.selectedOutbound.flight_number }}</div>
-                <div><small>Departure:</small> {{ formatDate(bookingStore.selectedOutbound.departure_time) }}</div>
-                <div><small>Class:</small> {{ bookingStore.selectedOutbound.class_type || 'Economy' }}</div>
-                <div><small>Price per person:</small> ₱{{ parseFloat(bookingStore.selectedOutbound.price).toLocaleString() }}</div>
-              </div>
-            </div>
-
-            <div class="flight-summary mt-3" v-if="bookingStore.selectedReturn">
-              <div class="route-info">
-                <span class="badge return">Return</span>
-                <strong>{{ bookingStore.selectedReturn.origin }} → {{ bookingStore.selectedReturn.destination }}</strong>
-              </div>
-              <div class="detail-grid">
-                <div><small>Flight:</small> {{ bookingStore.selectedReturn.flight_number }}</div>
-                <div><small>Departure:</small> {{ formatDate(bookingStore.selectedReturn.departure_time) }}</div>
-                <div><small>Price per person:</small> ₱{{ parseFloat(bookingStore.selectedReturn.price).toLocaleString() }}</div>
+                <div><small>Flight:</small> {{ segment.flight_number }}</div>
+                <div><small>Departure:</small> {{ formatDate(segment.departure_time) }}</div>
+                <div><small>Class:</small> {{ segment.class_type || 'Economy' }}</div>
+                <div><small>Price per person:</small> ₱{{ parseFloat(segment.price).toLocaleString() }}</div>
               </div>
             </div>
           </div>
@@ -62,11 +60,12 @@
             <h3>Passengers & Add-ons</h3>
           </div>
           
-          <!-- Depart Flight Add-ons -->
-          <div class="review-card" v-if="bookingStore.selectedOutbound">
+          <div v-for="(segment, index) in flightSegments" :key="'addons-' + index" class="review-card" :class="{ 'mt-3': index > 0 }">
             <div class="segment-header">
-              <h4>Depart Flight Add-ons</h4>
-              <span class="flight-badge">{{ bookingStore.selectedOutbound.flight_number }}</span>
+              <h4>{{ segment.label }} Add-ons</h4>
+              <span class="flight-badge" :class="{ 'return': segment.isReturn, 'multi': segment.isMulti }">
+                {{ segment.flight_number }}
+              </span>
             </div>
             <table class="review-table">
               <thead>
@@ -84,39 +83,10 @@
                     <strong>{{ p.title }} {{ p.firstName }} {{ p.lastName }}</strong>
                     <div class="sub-text">{{ p.type }}</div>
                   </td>
-                  <td>{{ getSeatLabel(p.key) }}</td>
-                  <td>{{ getBaggageLabel(p.key, 'depart') }}</td>
-                  <td>{{ getMealLabel(p.key, 'depart') }}</td>
-                  <td>{{ getAssistanceLabel(p.key, 'depart') }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Return Flight Add-ons (only for round trips) -->
-          <div class="review-card mt-3" v-if="bookingStore.isRoundTrip && bookingStore.selectedReturn">
-            <div class="segment-header">
-              <h4>Return Flight Add-ons</h4>
-              <span class="flight-badge return">{{ bookingStore.selectedReturn.flight_number }}</span>
-            </div>
-            <table class="review-table">
-              <thead>
-                <tr>
-                  <th>Passenger</th>
-                  <th>Baggage</th>
-                  <th>Meal</th>
-                  <th>Assistance</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="p in bookingStore.passengers" :key="p.key">
-                  <td>
-                    <strong>{{ p.title }} {{ p.firstName }} {{ p.lastName }}</strong>
-                    <div class="sub-text">{{ p.type }}</div>
-                  </td>
-                  <td>{{ getBaggageLabel(p.key, 'return') }}</td>
-                  <td>{{ getMealLabel(p.key, 'return') }}</td>
-                  <td>{{ getAssistanceLabel(p.key, 'return') }}</td>
+                  <td>{{ getSeatLabel(p.key, segment.key) }}</td>
+                  <td>{{ getBaggageLabel(p.key, segment.key) }}</td>
+                  <td>{{ getMealLabel(p.key, segment.key) }}</td>
+                  <td>{{ getAssistanceLabel(p.key, segment.key) }}</td>
                 </tr>
               </tbody>
             </table>
@@ -154,6 +124,7 @@
       </main>
 
       <aside class="sidebar">
+        <BookingTimer variant="sidebar" />
         <div class="summary-card sticky">
           <div class="summary-header">Payment Summary</div>
           <div class="summary-body" v-if="isCalculatingPrice">
@@ -165,15 +136,29 @@
             </div>
           </div>
           <div class="summary-body" v-else>
-            <!-- Flight Base Fares -->
-            <div class="flight-base-summary" v-if="bookingStore.selectedOutbound">
-              <div class="price-line">
-                <span>Depart Flight ({{ payingPassengerCount }} Pax)</span>
-                <span>₱{{ departBaseFare.toLocaleString() }}</span>
+            <!-- Flight Base Fares Breakdown -->
+            <div class="flight-base-summary" v-if="hasFlightData">
+              <!-- Adults Breakdown -->
+              <div class="price-line" v-if="bookingStore.passengerCount.adults > 0">
+                <span>{{ bookingStore.passengerCount.adults }} Adult(s) (Total Base Fare)</span> 
+                <AnimatedNumber :value="bookingStore.combinedBasePrice * bookingStore.passengerCount.adults" prefix="₱" />
               </div>
-              <div class="price-line" v-if="bookingStore.selectedReturn">
-                <span>Return Flight ({{ payingPassengerCount }} Pax)</span>
-                <span>₱{{ returnBaseFare.toLocaleString() }}</span>
+              
+              <!-- Children Breakdown -->
+              <div class="price-line" v-if="bookingStore.passengerCount.children > 0">
+                <span>{{ bookingStore.passengerCount.children }} Child(ren) (Total Base Fare)</span> 
+                <AnimatedNumber :value="bookingStore.combinedBasePrice * bookingStore.passengerCount.children" prefix="₱" />
+              </div>
+              
+              <!-- Infants Breakdown (50% Base Fare) -->
+              <div class="price-line infant-line" v-if="bookingStore.passengerCount.infants > 0">
+                <span>{{ bookingStore.passengerCount.infants }} Infant(s) (50% Base Fare)</span> 
+                <AnimatedNumber :value="(bookingStore.combinedBasePrice * 0.5) * bookingStore.passengerCount.infants" prefix="₱" />
+              </div>
+
+              <div class="price-line taxes-line">
+                <span>Verification / Taxes & Fees</span>
+                <AnimatedNumber :value="taxesPrice" prefix="₱" />
               </div>
             </div>
 
@@ -181,26 +166,32 @@
             <div class="addons-summary">
               <div class="price-line" v-if="totalSeatsPrice > 0">
                 <span>Seat Selection</span>
-                <span>₱{{ totalSeatsPrice.toLocaleString() }}</span>
+                <AnimatedNumber :value="totalSeatsPrice" prefix="₱" />
               </div>
               <div class="price-line" v-if="totalBaggagePrice > 0">
                 <span>Extra Baggage</span>
-                <span>₱{{ totalBaggagePrice.toLocaleString() }}</span>
+                <AnimatedNumber :value="totalBaggagePrice" prefix="₱" />
               </div>
               <div class="price-line" v-if="totalMealsPrice > 0">
                 <span>Meal Selection</span>
-                <span>₱{{ totalMealsPrice.toLocaleString() }}</span>
+                <AnimatedNumber :value="totalMealsPrice" prefix="₱" />
               </div>
               <div class="price-line" v-if="totalAssistancePrice > 0">
                 <span>Special Assistance</span>
-                <span>₱{{ totalAssistancePrice.toLocaleString() }}</span>
+                <AnimatedNumber :value="totalAssistancePrice" prefix="₱" />
+              </div>
+              <div class="price-line" v-if="insurancePrice > 0">
+                <span>Travel Insurance</span>
+                <AnimatedNumber :value="insurancePrice" prefix="₱" />
               </div>
             </div>
 
             <hr>
             <div class="total-row">
               <span>Grand Total</span>
-              <span class="final-amt">₱{{ grandTotal.toLocaleString() }}</span>
+              <span class="final-amt">
+                <AnimatedNumber :value="grandTotal" prefix="₱" />
+              </span>
             </div>
             <div class="passenger-count">
               <small>{{ payingPassengerCount }} paying passengers</small>
@@ -219,6 +210,8 @@ import { useRouter } from 'vue-router';
 import { addonService } from '@/services/booking/addonService';
 import { bookingService } from '@/services/booking/bookingService';
 import { useNotificationStore } from '@/stores/notification';
+import BookingTimer from '@/components/booking/BookingTimer.vue';
+import AnimatedNumber from '@/components/common/AnimatedNumber.vue';
 
 const bookingStore = useBookingStore();
 const router = useRouter();
@@ -325,6 +318,7 @@ const fetchBackendPrice = async () => {
       backendTotal.value = result.totalAmount;
       backendBreakdown.value = result.breakdown;
       console.log('✅ Backend price confirmed:', backendTotal.value);
+      console.log('📊 Backend breakdown:', backendBreakdown.value);
     } else {
       console.warn('⚠️ Could not get backend price, falling back to store calculation:', result.error);
     }
@@ -334,6 +328,16 @@ const fetchBackendPrice = async () => {
     isCalculatingPrice.value = false;
   }
 };
+
+const taxesLine = computed(() => {
+  if (!backendBreakdown.value) return null;
+  return backendBreakdown.value.taxes || 0;
+});
+
+const insuranceLine = computed(() => {
+  if (!backendBreakdown.value) return null;
+  return backendBreakdown.value.insurance || 0;
+});
 
 // Helper functions
 const getItemById = (list, id) => {
@@ -381,14 +385,71 @@ const getAssistanceLabel = (passengerKey, segment = 'depart') => {
   return option ? option.name : 'Special Assistance';
 };
 
-const getSeatLabel = (passengerKey) => {
-  const seat = bookingStore.addons?.seats?.[passengerKey];
+const getSeatLabel = (passengerKey, segmentKey = 'depart') => {
+  const seat = bookingStore.addons?.seats?.[segmentKey]?.[passengerKey] || bookingStore.addons?.seats?.[passengerKey];
   if (!seat) return 'Not selected';
   
   // Use seat_price instead of final_price
   const price = parseFloat(seat.seat_price) || 0;
   return `${seat.seat_code || 'N/A'} (₱${price.toLocaleString()})`;
 };
+
+// Computed Properties
+const flightSegments = computed(() => {
+  const tripType = bookingStore.tripType;
+  
+  const getAirportLabel = (airport) => {
+    if (!airport) return 'N/A';
+    if (typeof airport === 'string') return airport;
+    // Check if it's an object with city or name
+    return airport.city || airport.name || airport.code || 'N/A';
+  };
+
+  if (tripType === 'multi_city' || tripType === 'multi-city') {
+    return bookingStore.multiCitySegments.map((seg, idx) => ({
+      key: idx.toString(),
+      label: `Flight ${idx + 1}`,
+      origin: getAirportLabel(seg.origin),
+      destination: getAirportLabel(seg.destination),
+      flight_number: seg.selectedFlight?.flight_number || 'N/A',
+      departure_time: seg.selectedFlight?.departure_time,
+      class_type: seg.selectedFlight?.class_type,
+      price: seg.selectedFlight?.price || 0,
+      isMulti: true
+    }));
+  }
+
+  const segments = [];
+  if (bookingStore.selectedOutbound) {
+    segments.push({
+      key: 'depart',
+      label: 'Depart',
+      origin: getAirportLabel(bookingStore.selectedOutbound.origin),
+      destination: getAirportLabel(bookingStore.selectedOutbound.destination),
+      flight_number: bookingStore.selectedOutbound.flight_number,
+      departure_time: bookingStore.selectedOutbound.departure_time,
+      class_type: bookingStore.selectedOutbound.class_type,
+      price: bookingStore.selectedOutbound.price || 0,
+      isReturn: false
+    });
+  }
+  
+  if (bookingStore.isRoundTrip && bookingStore.selectedReturn) {
+    segments.push({
+      key: 'return',
+      label: 'Return',
+      origin: getAirportLabel(bookingStore.selectedReturn.origin),
+      destination: getAirportLabel(bookingStore.selectedReturn.destination),
+      flight_number: bookingStore.selectedReturn.flight_number,
+      departure_time: bookingStore.selectedReturn.departure_time,
+      class_type: bookingStore.selectedReturn.class_type,
+      price: bookingStore.selectedReturn.price || 0,
+      isReturn: true
+    });
+  }
+  
+  return segments;
+});
 
 const formatDate = (dateStr) => {
   if (!dateStr) return 'N/A';
@@ -405,6 +466,11 @@ const formatDate = (dateStr) => {
 
 // Computed Properties
 const hasFlightData = computed(() => {
+  if (bookingStore.tripType === 'multi_city' || bookingStore.tripType === 'multi-city') {
+    return bookingStore.multiCitySegments && 
+           bookingStore.multiCitySegments.length > 0 && 
+           bookingStore.multiCitySegments.every(seg => seg.selectedFlight);
+  }
   const outbound = bookingStore.selectedOutbound;
   return !!outbound && typeof outbound === 'object' && 'price' in outbound;
 });
@@ -416,23 +482,48 @@ const totalSeatsPrice = computed(() => bookingStore.totalSeatsPrice);
 const totalBaggagePrice = computed(() => bookingStore.totalBaggagePrice);
 const totalMealsPrice = computed(() => bookingStore.totalMealsPrice);
 const totalAssistancePrice = computed(() => bookingStore.totalAssistancePrice);
+const insurancePrice = computed(() => bookingStore.insurancePrice);
+const combinedBasePriceTotal = computed(() => bookingStore.combinedBasePriceTotal);
+
+const taxesPrice = computed(() => {
+  // If backend provided taxes, use them. Otherwise estimate 12%
+  if (backendBreakdown.value && backendBreakdown.value.taxes) {
+    return parseFloat(backendBreakdown.value.taxes);
+  }
+  return bookingStore.totalTaxes;
+});
 
 const grandTotal = computed(() => {
-  // Prioritize backend-calculated total if available
-  if (backendTotal.value !== null) return backendTotal.value;
-  return bookingStore.calculatedGrandTotal;
+  // Delegate to the store's authoritative grandTotal getter.
+  // If a backend-verified price exists, use that instead.
+  if (backendTotal.value) {
+    console.log('💰 ReviewBooking: Using Backend Total:', backendTotal.value);
+    console.log('📊 ReviewBooking Backend Breakdown:', backendBreakdown.value);
+    return parseFloat(backendTotal.value);
+  }
+  console.log('⚠️ ReviewBooking: No Backend Total, using Store Total:', bookingStore.grandTotal);
+  return bookingStore.grandTotal;
 });
 
 // Validation function
 const validateBooking = () => {
   const errors = [];
+  const tripType = bookingStore.tripType;
   
-  if (!bookingStore.selectedOutbound) {
-    errors.push('Please select an outbound flight');
-  }
-  
-  if (bookingStore.isRoundTrip && !bookingStore.selectedReturn) {
-    errors.push('Please select a return flight for round trip');
+  if (tripType === 'multi_city' || tripType === 'multi-city') {
+    bookingStore.multiCitySegments.forEach((seg, idx) => {
+      if (!seg.selectedFlight) {
+        errors.push(`Please select a flight for Segment ${idx + 1}`);
+      }
+    });
+  } else {
+    if (!bookingStore.selectedOutbound) {
+      errors.push('Please select an outbound flight');
+    }
+    
+    if (bookingStore.isRoundTrip && !bookingStore.selectedReturn) {
+      errors.push('Please select a return flight for round trip');
+    }
   }
   
   if (!bookingStore.passengers || bookingStore.passengers.length === 0) {
@@ -593,12 +684,10 @@ const confirmBooking = async () => {
           bookingReference: response.booking_reference || `CSUCC${String(response.booking_id).padStart(8, '0')}`
         } 
       });
-    } else {
-      notificationStore.error(`Booking Error: ${response.error}`);
     }
   } catch (error) {
     console.error("Booking critical failure:", error);
-    notificationStore.error("An unexpected error occurred. Please try again.");
+    // Global axios interceptor handles specific mapping/toast
   } finally {
     isProcessing.value = false;
   }
@@ -689,6 +778,16 @@ const handleBookingError = (error) => {
 
 .badge.return { 
   background: #d11241; 
+}
+ 
+.badge.multi {
+  background: #FF579A;
+}
+
+.trip-type-badge.multi-city {
+  background: #FFE6F1;
+  color: #FF579A;
+  border: 2px solid #FF579A;
 }
 
 .flight-summary { 

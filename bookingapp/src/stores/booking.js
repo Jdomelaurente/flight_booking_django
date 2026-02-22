@@ -1,4 +1,6 @@
 import { defineStore } from 'pinia';
+import { bookingService } from '@/services/booking/bookingService';
+import { useNotificationStore } from './notification';
 
 export const useBookingStore = defineStore('booking', {
   state: () => ({
@@ -9,6 +11,11 @@ export const useBookingStore = defineStore('booking', {
     selectedOutbound: null,
     selectedReturn: null,
     tripType: 'one_way',
+
+    // Multi-city Segments
+    multiCitySegments: [], // Array of { origin: {code, city}, destination: {code, city}, date: 'YYYY-MM-DD', selectedFlight: null }
+    currentSegmentIndex: 0,
+
     passengerCount: {
       adults: 1,
       children: 0,
@@ -25,23 +32,15 @@ export const useBookingStore = defineStore('booking', {
       phone: ''
     },
 
-    // UPDATED: Seats now support depart and return segments
+    // UPDATED: Segments are now keys (0, 1, 2... or 'depart', 'return')
     addons: {
-      baggage: {
-        depart: {},  // { passengerKey: baggageObject }
-        return: {}   // { passengerKey: baggageObject }
-      },
-      meals: {
-        depart: {},  // { passengerKey: mealObject }
-        return: {}   // { passengerKey: mealObject }
-      },
-      wheelchair: {
-        depart: {},  // { passengerKey: assistanceId }
-        return: {}   // { passengerKey: assistanceId }
-      },
-      seats: {       // UPDATED: Now supports segments
-        depart: {},  // { passengerKey: seatObject }
-        return: {}   // { passengerKey: seatObject }
+      baggage: {},     // { segmentIndexOrKey: { passengerKey: baggageObject } }
+      meals: {},       // { segmentIndexOrKey: { passengerKey: mealObject } }
+      wheelchair: {},  // { segmentIndexOrKey: { passengerKey: assistanceId } }
+      seats: {},       // { segmentIndexOrKey: { passengerKey: seatObject } }
+      insurance: {
+        selectedPlanId: null,
+        price: 0
       }
     },
 
@@ -60,66 +59,80 @@ export const useBookingStore = defineStore('booking', {
   },
 
   getters: {
-    isRoundTrip: (state) => state.tripType === 'round-trip',
+    isRoundTrip: (state) => state.tripType === 'round-trip' || state.tripType === 'round_trip',
+    isMultiCity: (state) => state.tripType === 'multi-city' || state.tripType === 'multi_city',
 
     payingPassengerCount: (state) => {
       const { adults = 0, children = 0 } = state.passengerCount || {};
       return adults + children;
     },
 
-    departBaseFare: (state) => {
-      const outboundPrice = parseFloat(state.selectedOutbound?.price) || 0;
-      return outboundPrice * ((state.passengerCount?.adults || 0) + (state.passengerCount?.children || 0));
+    // Flexible segments getter
+    allSegments: (state) => {
+      if (state.isMultiCity) {
+        return state.multiCitySegments;
+      }
+
+      const segments = [];
+      if (state.selectedOutbound) {
+        segments.push({
+          type: 'depart',
+          selectedFlight: state.selectedOutbound
+        });
+      }
+      if (state.isRoundTrip && state.selectedReturn) {
+        segments.push({
+          type: 'return',
+          selectedFlight: state.selectedReturn
+        });
+      }
+      return segments;
     },
 
-    returnBaseFare: (state) => {
-      if (!state.selectedReturn) return 0;
-      const returnPrice = parseFloat(state.selectedReturn?.price) || 0;
-      return returnPrice * ((state.passengerCount?.adults || 0) + (state.passengerCount?.children || 0));
-    },
-
-    totalSeatsPrice: (state) => {
+    totalSeatsPrice(state) {
       const seats = state.addons?.seats || {};
       let total = 0;
-      // Iterate over depart and return segments
-      for (const segmentKey in seats) {
-        if (Object.prototype.hasOwnProperty.call(seats, segmentKey)) {
-          const segmentSeats = seats[segmentKey];
-          Object.values(segmentSeats).forEach(seat => {
-            if (seat && seat.seat_price !== undefined) {
-              total += (parseFloat(seat.seat_price) || 0);
-            }
-          });
-        }
-      }
-      return total;
-    },
+      const activeSegments = this.allSegments;
 
-    totalBaggagePrice: (state) => {
-      let total = 0;
-      const segments = state.tripType === 'round_trip' ? ['depart', 'return'] : ['depart'];
-      segments.forEach(segment => {
-        const baggage = state.addons?.baggage?.[segment] || {};
-        Object.values(baggage).forEach(baggageItem => {
-          if (!baggageItem) return;
-          if (typeof baggageItem === 'object' && baggageItem.price !== undefined) {
-            total += (parseFloat(baggageItem.price) || 0);
+      activeSegments.forEach((seg, index) => {
+        const segKey = state.isMultiCity ? index.toString() : seg.type;
+        const segmentSeats = seats[segKey] || {};
+        Object.values(segmentSeats).forEach(seat => {
+          if (seat && seat.seat_price !== undefined) {
+            total += (parseFloat(seat.seat_price) || 0);
           }
-          // Note: If baggageItem is just an ID, we'd need baggageOptions which are in the component.
-          // However, for the Review page, they are often objects if already selected.
         });
       });
       return total;
     },
 
-    totalMealsPrice: (state) => {
+    totalBaggagePrice(state) {
       let total = 0;
-      const segments = state.tripType === 'round_trip' ? ['depart', 'return'] : ['depart'];
-      segments.forEach(segment => {
-        const meals = state.addons?.meals?.[segment] || {};
-        Object.values(meals).forEach(meal => {
-          if (!meal) return;
-          if (typeof meal === 'object' && meal.price !== undefined) {
+      const baggage = state.addons?.baggage || {};
+      const activeSegments = this.allSegments;
+
+      activeSegments.forEach((seg, index) => {
+        const segKey = state.isMultiCity ? index.toString() : seg.type;
+        const segmentBaggage = baggage[segKey] || {};
+        Object.values(segmentBaggage).forEach(baggageItem => {
+          if (baggageItem && typeof baggageItem === 'object' && baggageItem.price !== undefined) {
+            total += (parseFloat(baggageItem.price) || 0);
+          }
+        });
+      });
+      return total;
+    },
+
+    totalMealsPrice(state) {
+      let total = 0;
+      const meals = state.addons?.meals || {};
+      const activeSegments = this.allSegments;
+
+      activeSegments.forEach((seg, index) => {
+        const segKey = state.isMultiCity ? index.toString() : seg.type;
+        const segmentMeals = meals[segKey] || {};
+        Object.values(segmentMeals).forEach(meal => {
+          if (meal && typeof meal === 'object' && meal.price !== undefined) {
             total += (parseFloat(meal.price) || 0);
           }
         });
@@ -127,190 +140,108 @@ export const useBookingStore = defineStore('booking', {
       return total;
     },
 
-    totalAssistancePrice: (state) => {
-      // This getter might still need option lists to be authoritative if only IDs are stored,
-      // but if objects are stored it works.
-      return 0; // Fallback or handle separately
+    totalAssistancePrice(state) {
+      return 0; // Assistance is typically free
     },
 
-    calculatedGrandTotal: (state) => {
-      // Prioritize backend-calculated total if available in state
-      if (state.booking_total) return parseFloat(state.booking_total);
-
-      const outboundPrice = parseFloat(state.selectedOutbound?.price) || 0;
-      const returnPrice = state.selectedReturn ? parseFloat(state.selectedReturn?.price) : 0;
-      const paxCount = (state.passengerCount?.adults || 0) + (state.passengerCount?.children || 0);
-
-      const baseFare = (outboundPrice + returnPrice) * paxCount;
-
-      // Calculate add-ons from state
-      let addonsTotal = 0;
-
-      // Seats
-      const seats = state.addons?.seats || {};
-      for (const segmentKey in seats) {
-        if (Object.prototype.hasOwnProperty.call(seats, segmentKey)) {
-          const segmentSeats = seats[segmentKey];
-          addonsTotal += Object.values(segmentSeats).reduce((sum, s) => sum + (parseFloat(s?.seat_price) || 0), 0);
-        }
-      }
-
-      // Baggage, Meals, Wheelchair (Assuming objects with price are stored)
-      const segments = state.tripType === 'round_trip' ? ['depart', 'return'] : ['depart'];
-      segments.forEach(seg => {
-        ['baggage', 'meals', 'wheelchair'].forEach(type => {
-          const items = state.addons?.[type]?.[seg] || {};
-          Object.values(items).forEach(item => {
-            if (typeof item === 'object' && item?.price) {
-              addonsTotal += parseFloat(item.price);
-            }
-          });
+    combinedBasePrice(state) {
+      let base = 0;
+      if (state.tripType === 'multi_city' || state.tripType === 'multi-city') {
+        state.multiCitySegments.forEach(seg => {
+          if (seg.selectedFlight?.price) {
+            base += parseFloat(seg.selectedFlight.price);
+          }
         });
-      });
-
-      return baseFare + addonsTotal;
-    },
-    isOneWay: (state) => state.tripType === 'one_way',
-
-    adultPassengers: (state) => {
-      return state.passengers.filter(p => p.type === 'Adult');
-    },
-
-    allInfantsAssigned: (state) => {
-      const infants = state.passengers.filter(p => p.type === 'Infant');
-      if (infants.length === 0) return true;
-
-      return infants.every(infant => state.infantAdultMapping[infant.key]);
-    },
-
-    infantAssignmentValid: (state) => {
-      const infants = state.passengers.filter(p => p.type === 'Infant');
-      const adults = state.passengers.filter(p => p.type === 'Adult');
-
-      if (!infants.every(infant => state.infantAdultMapping[infant.key])) {
-        return false;
+      } else {
+        const outboundPrice = parseFloat(state.selectedOutbound?.price) || 0;
+        const returnPrice = (state.tripType === 'round_trip' || state.tripType === 'round-trip') && state.selectedReturn?.price
+          ? parseFloat(state.selectedReturn.price)
+          : 0;
+        base = outboundPrice + returnPrice;
       }
-
-      const infantCountPerAdult = {};
-      Object.values(state.infantAdultMapping).forEach(adultKey => {
-        infantCountPerAdult[adultKey] = (infantCountPerAdult[adultKey] || 0) + 1;
-      });
-
-      return Object.values(infantCountPerAdult).every(count => count <= 1);
-    },
-
-    combinedBasePrice: (state) => {
-      const outbound = parseFloat(state.selectedOutbound?.price || 0);
-      const returnPrice = state.tripType === 'round_trip' ? parseFloat(state.selectedReturn?.price || 0) : 0;
-      return outbound + returnPrice;
+      return base;
     },
 
     grandTotalForAdults(state) {
-      return this.combinedBasePrice * state.passengerCount.adults;
+      const base = this.combinedBasePrice;
+      const count = state.passengerCount.adults || 0;
+      return base * count;
     },
 
     grandTotalForChildren(state) {
-      return this.combinedBasePrice * state.passengerCount.children;
+      const base = this.combinedBasePrice;
+      const count = state.passengerCount.children || 0;
+      return base * count;
     },
 
     grandTotalForInfants(state) {
-      return (this.combinedBasePrice * 0.5) * state.passengerCount.infants;
+      const base = this.combinedBasePrice;
+      const count = state.passengerCount.infants || 0;
+      return (base * 0.5) * count;
     },
 
-    // UPDATED: Grand total calculation with segmented seats
-    grandTotal: (state) => {
+    // Total Base Fare for all passengers
+    combinedBasePriceTotal(state) {
+      const adultsCount = state.passengerCount.adults || 0;
+      const childrenCount = state.passengerCount.children || 0;
+      const infantsCount = state.passengerCount.infants || 0;
+      const base = this.combinedBasePrice;
+
+      return (base * (adultsCount + childrenCount)) + ((base * 0.5) * infantsCount);
+    },
+
+    // Total for all selected add-ons (Active segments only)
+    totalAddonsPrice(state) {
+      return this.totalBaggagePrice + this.totalMealsPrice + this.totalSeatsPrice + this.totalAssistancePrice;
+    },
+
+    // Standard 12% tax applied ONLY to the Base Fare (matches backend)
+    totalTaxes(state) {
+      return this.combinedBasePriceTotal * 0.12;
+    },
+
+    // Insurance price (covers all passengers once)
+    insurancePrice(state) {
+      return parseFloat(state.addons?.insurance?.price) || 0;
+    },
+
+    // Assistance price (active segments only)
+    totalAssistancePrice(state) {
       let total = 0;
-
-      // 1. Base Flight Prices
-      if (state.selectedOutbound?.price) {
-        total += parseFloat(state.selectedOutbound.price);
-      }
-
-      if (state.tripType === 'round_trip' && state.selectedReturn?.price) {
-        total += parseFloat(state.selectedReturn.price);
-      }
-
-      // Multiply by number of paying passengers (adults + children)
-      const travelerCount = (state.passengerCount.adults || 0) + (state.passengerCount.children || 0);
-      total = total * travelerCount;
-
-      // 2. Add Baggage (depart + return for round trips)
-      const baggageSegments = state.tripType === 'round_trip' ? ['depart', 'return'] : ['depart'];
-      baggageSegments.forEach(segment => {
-        Object.values(state.addons.baggage[segment] || {}).forEach(item => {
-          if (item?.price) total += parseFloat(item.price);
-        });
+      const activeSegments = this.allSegments;
+      activeSegments.forEach((seg, index) => {
+        const segKey = this.isMultiCity ? index.toString() : seg.type;
+        const assistance = state.addons.wheelchair?.[segKey];
+        // If assistance is an object with a price
+        if (assistance && typeof assistance === 'object' && assistance.price) {
+          total += parseFloat(assistance.price) || 0;
+        }
       });
-
-      // 3. Add Meals (depart + return for round trips)
-      baggageSegments.forEach(segment => {
-        Object.values(state.addons.meals[segment] || {}).forEach(item => {
-          if (item?.price) total += parseFloat(item.price);
-        });
-      });
-
-      // 4. Add Assistance (depart + return for round trips)
-      baggageSegments.forEach(segment => {
-        Object.values(state.addons.wheelchair[segment] || {}).forEach(serviceId => {
-          // Assistance services are free, but if they had price:
-          // const service = findServiceById(serviceId);
-          // if (service?.price) total += parseFloat(service.price);
-        });
-      });
-
-      // 5. Add Seats (UPDATED: Include both segments for round trips)
-      const seatSegments = state.tripType === 'round_trip' ? ['depart', 'return'] : ['depart'];
-      seatSegments.forEach(segment => {
-        Object.values(state.addons.seats[segment] || {}).forEach(seat => {
-          if (seat?.seat_price) {
-            total += parseFloat(seat.seat_price);
-            console.log(`📊 Adding seat price for ${segment}: ₱${seat.seat_price} for seat ${seat.seat_code}`);
-          }
-        });
-      });
-
       return total;
     },
 
-    isFlightSelectionComplete: (state) => {
+    // Final aggregated amount
+    grandTotal(state) {
+      return this.combinedBasePriceTotal + this.totalTaxes + this.totalAddonsPrice + this.insurancePrice;
+    },
+
+    // Backward compatibility or internal use
+    subtotal(state) {
+      return this.combinedBasePriceTotal;
+    },
+
+    isFlightSelectionComplete(state) {
+      if (this.isMultiCity) {
+        return state.multiCitySegments.length > 0 &&
+          state.multiCitySegments.every(seg => !!seg.selectedFlight);
+      }
+
       if (state.tripType === 'one_way') {
         return state.selectedOutbound !== null;
-      } else if (state.tripType === 'round_trip') {
+      } else if (this.isRoundTrip) {
         return state.selectedOutbound !== null && state.selectedReturn !== null;
       }
       return false;
-    },
-
-    // UPDATED: Helper to get total add-ons price with segmented seats
-    totalAddonsPrice: (state) => {
-      let total = 0;
-      const segments = state.tripType === 'round_trip' ? ['depart', 'return'] : ['depart'];
-
-      // Baggage
-      segments.forEach(segment => {
-        Object.values(state.addons.baggage[segment] || {}).forEach(item => {
-          if (item?.price) total += parseFloat(item.price);
-        });
-      });
-
-      // Meals
-      segments.forEach(segment => {
-        Object.values(state.addons.meals[segment] || {}).forEach(item => {
-          if (item?.price) total += parseFloat(item.price);
-        });
-      });
-
-      // Seats (UPDATED: Include both segments)
-      segments.forEach(segment => {
-        Object.values(state.addons.seats[segment] || {}).forEach(seat => {
-          if (seat?.seat_price) {
-            total += parseFloat(seat.seat_price);
-            console.log(`📊 Adding seat price to totalAddonsPrice for ${segment}: ₱${seat.seat_price} for seat ${seat.seat_code}`);
-          }
-        });
-      });
-
-      return total;
     },
 
     isSessionValid: (state) => {
@@ -318,33 +249,50 @@ export const useBookingStore = defineStore('booking', {
       return Date.now() < state.sessionExpiry;
     },
 
+    timeLeftFormatted(state) {
+      if (!state.sessionExpiry) return '00:00';
+      const diff = Math.max(0, Math.round((state.sessionExpiry - Date.now()) / 1000));
+      const mins = Math.floor(diff / 60);
+      const secs = diff % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    },
+
+    secondsLeft(state) {
+      if (!state.sessionExpiry) return 0;
+      return Math.max(0, Math.round((state.sessionExpiry - Date.now()) / 1000));
+    },
+
     // NEW: Get seats by segment
-    getSeatsBySegment: (state) => (segment = 'depart') => {
-      return state.addons.seats[segment] || {};
+    getSeatsBySegment(state) {
+      return (segmentKey = 'depart') => {
+        return state.addons.seats[segmentKey] || {};
+      };
     },
 
     // NEW: Check if all passengers have seats for a segment
-    allPassengersHaveSeatsForSegment: (state) => (segment = 'depart') => {
-      const segmentSeats = state.addons.seats[segment] || {};
-      return state.passengers.every(p => segmentSeats[p.key]);
+    allPassengersHaveSeatsForSegment(state) {
+      return (segmentKey = 'depart') => {
+        const segmentSeats = state.addons.seats[segmentKey] || {};
+        return state.passengers.every(p => segmentSeats[p.key]);
+      };
     },
 
     // NEW: Check if all passengers have seats for all segments
-    allPassengersHaveAllSeats: (state) => {
-      if (!state.isRoundTrip) {
-        return state.passengers.every(p => state.addons.seats.depart?.[p.key]);
-      } else {
-        return state.passengers.every(p =>
-          state.addons.seats.depart?.[p.key] &&
-          state.addons.seats.return?.[p.key]
-        );
-      }
+    allPassengersHaveAllSeats(state) {
+      const segments = this.allSegments;
+      if (segments.length === 0) return false;
+
+      return segments.every((seg, index) => {
+        const segmentKey = this.isMultiCity ? index.toString() : seg.type;
+        const segmentSeats = state.addons.seats[segmentKey] || {};
+        return state.passengers.every(p => segmentSeats[p.key]);
+      });
     },
 
     // NEW: Check if session should be cleared for home page
-    shouldClearSessionForHome: (state) => {
-      const sessionValid = state.isSessionValid;
-      const hasBookingData = state.passengers.length > 0 || state.selectedOutbound || state.booking_id;
+    shouldClearSessionForHome(state) {
+      const sessionValid = this.isSessionValid;
+      const hasBookingData = state.passengers.length > 0 || state.selectedOutbound || state.booking_id || state.multiCitySegments.length > 0;
 
       return {
         shouldClear: sessionValid && hasBookingData,
@@ -360,7 +308,7 @@ export const useBookingStore = defineStore('booking', {
         const savedBooking = JSON.parse(localStorage.getItem('current_booking'));
         if (savedBooking) {
           this.booking_id = savedBooking.id;
-          this.booking_reference = savedBooking.reference || `CSUCC${String(savedBooking.id).padStart(8, '0')}`;
+          this.booking_reference = savedBooking.pnr || savedBooking.reference || `CSUCC${String(savedBooking.id).padStart(8, '0')}`;
           this.booking_status = savedBooking.status || 'pending';
           this.booking_total = savedBooking.total || 0;
           console.log('📥 Loaded booking from storage:', {
@@ -536,6 +484,110 @@ export const useBookingStore = defineStore('booking', {
       console.log('🔄 Activity code validation cleared');
     },
 
+    setTripType(type) {
+      console.log('🟢 Setting trip type in Pinia:', type);
+      const normalizedType = type === 'round-trip' ? 'round_trip' :
+        (type === 'multi-city' ? 'multi_city' : type);
+
+      // If trip type actually changes, clear all non-insurance add-ons to prevent stale data
+      if (this.tripType !== normalizedType) {
+        console.log(`🧹 Trip type changed from ${this.tripType} to ${normalizedType}. Clearing add-ons.`);
+        this.addons.baggage = {};
+        this.addons.meals = {};
+        this.addons.wheelchair = {};
+        this.addons.seats = {};
+      }
+
+      this.tripType = normalizedType;
+
+      if (normalizedType === 'one_way') {
+        this.selectedReturn = null;
+        this.multiCitySegments = [];
+      } else if (normalizedType === 'round_trip') {
+        this.multiCitySegments = [];
+      } else if (normalizedType === 'multi_city') {
+        this.selectedOutbound = null;
+        this.selectedReturn = null;
+      }
+    },
+
+    setMultiCitySegments(segments) {
+      console.log('🟢 Setting Multi-city segments:', segments);
+      this.multiCitySegments = segments.map(s => ({
+        origin: s.origin,
+        destination: s.destination,
+        date: s.date,
+        selectedFlight: null
+      }));
+      this.currentSegmentIndex = 0;
+      this.tripType = 'multi_city';
+    },
+
+    selectSegmentFlight(index, flight) {
+      if (this.multiCitySegments[index]) {
+        // Apply seat class info if it's a raw flight object
+        const seatClassInfo = {
+          seat_class: flight.seat_class || flight.selected_seat_class,
+          selected_seat_class: flight.selected_seat_class,
+          seat_class_price: flight.price,
+          original_base_price: flight.original_price || flight.base_price,
+          seat_class_features: flight.seat_class_features
+        };
+
+        this.multiCitySegments[index].selectedFlight = {
+          ...flight,
+          ...seatClassInfo
+        };
+        console.log(`✅ Flight selected for segment ${index}:`, flight.flight_number);
+      }
+    },
+
+    // NEW: Minimum Connecting Time (MCT) Validation
+    validateMultiCityConnection(index, flight) {
+      if (index === 0) return { valid: true }; // First segment is always valid
+
+      const previousSegment = this.multiCitySegments[index - 1];
+      if (!previousSegment || !previousSegment.selectedFlight) {
+        return { valid: true }; // No previous flight to compare against
+      }
+
+      const prevFlight = previousSegment.selectedFlight;
+
+      // Basic check that dates exist
+      if (!prevFlight.arrival_time || !flight.departure_time) {
+        return { valid: true };
+      }
+
+      const prevArrival = new Date(prevFlight.arrival_time);
+      const nextDeparture = new Date(flight.departure_time);
+
+      // Calculate difference in milliseconds, convert to hours
+      const diffMs = nextDeparture - prevArrival;
+      const diffHours = diffMs / (1000 * 60 * 60);
+
+      const isValid = diffHours >= 1.5;
+
+      return {
+        valid: isValid,
+        diffHours: diffHours,
+        message: isValid
+          ? 'Valid connection'
+          : 'Connection Too Short: You need at least 1.5 hours between flights.'
+      };
+    },
+
+    nextSegment() {
+      if (this.currentSegmentIndex < this.multiCitySegments.length - 1) {
+        this.currentSegmentIndex++;
+      }
+    },
+
+    prevSegment() {
+      if (this.currentSegmentIndex > 0) {
+        this.currentSegmentIndex--;
+      }
+    },
+
     selectFlight(flight, type = 'outbound') {
       const seatClassInfo = {
         seat_class: flight.seat_class || flight.selected_seat_class,
@@ -650,10 +702,11 @@ export const useBookingStore = defineStore('booking', {
 
     setAddons(addonData) {
       this.addons = {
-        baggage: addonData.baggage || { depart: {}, return: {} },
-        meals: addonData.meals || { depart: {}, return: {} },
-        wheelchair: addonData.wheelchair || { depart: {}, return: {} },
-        seats: addonData.seats || { depart: {}, return: {} }
+        baggage: addonData.baggage || {},
+        meals: addonData.meals || {},
+        wheelchair: addonData.wheelchair || {},
+        seats: addonData.seats || {},
+        insurance: addonData.insurance || { selectedPlanId: null, price: 0 }
       };
     },
 
@@ -767,13 +820,48 @@ export const useBookingStore = defineStore('booking', {
       this.copySeatsToReturn();
     },
 
+    /**
+     * Propagates an add-on selection from a source segment to all other active segments.
+     * Useful for Multi-city trips where users want the same baggage/meal for all flights.
+     * 
+     * @param {String} type - 'baggage', 'meals', or 'wheelchair'
+     * @param {String} passengerKey - The key of the passenger
+     * @param {String} sourceSegmentKey - The key of the segment to copy FROM (e.g., 'depart' or '0')
+     */
+    copyAddonToAllSegments(type, passengerKey, sourceSegmentKey) {
+      if (!this.addons[type]) return;
+
+      const sourceValue = this.addons[type][sourceSegmentKey]?.[passengerKey];
+      if (!sourceValue) return;
+
+      console.log(`📋 Copying ${type} for passenger ${passengerKey} from segment ${sourceSegmentKey} to all active segments`);
+
+      const activeSegments = this.allSegments;
+      activeSegments.forEach((seg, index) => {
+        const segKey = this.isMultiCity ? index.toString() : seg.type;
+
+        // Skip the source segment itself
+        if (segKey === sourceSegmentKey) return;
+
+        // Ensure segment exists in store
+        if (!this.addons[type][segKey]) {
+          this.addons[type][segKey] = {};
+        }
+
+        // Deep copy the selection
+        this.addons[type][segKey][passengerKey] = JSON.parse(JSON.stringify(sourceValue));
+        console.log(`   -> Copied to ${segKey}`);
+      });
+    },
+
     // Clear all addons
     clearAllAddons() {
       this.addons = {
         baggage: { depart: {}, return: {} },
         meals: { depart: {}, return: {} },
         wheelchair: { depart: {}, return: {} },
-        seats: { depart: {}, return: {} }
+        seats: { depart: {}, return: {} },
+        insurance: { selectedPlanId: null, price: 0 }
       };
     },
 
@@ -790,16 +878,35 @@ export const useBookingStore = defineStore('booking', {
       this.addons.seats[segment] = {};
     },
 
+    // Insurance helpers
+    selectInsurancePlan(planId, price) {
+      this.addons.insurance.selectedPlanId = planId;
+      this.addons.insurance.price = parseFloat(price) || 0;
+    },
+
+    clearInsurance() {
+      this.addons.insurance.selectedPlanId = null;
+      this.addons.insurance.price = 0;
+    },
+
     saveBookingConfirmation(bookingData) {
       console.log('💾 Saving booking confirmation to store:', bookingData);
 
       this.booking_id = bookingData.booking_id;
-      this.booking_reference = bookingData.booking_reference || `CSUCC${String(bookingData.booking_id).padStart(8, '0')}`;
+      this.booking_reference = bookingData.pnr || bookingData.booking_reference || `CSUCC${String(bookingData.booking_id).padStart(8, '0')}`;
       this.booking_status = bookingData.status || 'pending';
-      this.booking_total = this.grandTotal || parseFloat(bookingData.total_amount) || 0;
+      // Backend-calculated total is the source of truth for Payment.
+      // Never prefer local grandTotal over an explicit backend total_amount.
+      const backendTotal = parseFloat(bookingData.total_amount);
+      this.booking_total = Number.isFinite(backendTotal) && backendTotal > 0
+        ? backendTotal
+        : (this.grandTotal || 0);
       this.sessionExpiry = Date.now() + (30 * 60 * 1000);
 
       localStorage.setItem('current_booking_id', this.booking_id);
+      localStorage.setItem('current_booking_reference', this.booking_reference);
+      localStorage.setItem('current_booking_status', this.booking_status);
+      localStorage.setItem('current_booking_total', this.booking_total);
 
       console.log('✅ Booking confirmation saved:', {
         booking_id: this.booking_id,
@@ -829,6 +936,8 @@ export const useBookingStore = defineStore('booking', {
         booking_total: 0,
         selectedOutbound: null,
         selectedReturn: null,
+        multiCitySegments: [],
+        currentSegmentIndex: 0,
         tripType: 'one_way',
         passengerCount: {
           adults: 1,
@@ -846,21 +955,13 @@ export const useBookingStore = defineStore('booking', {
           phone: ''
         },
         addons: {
-          baggage: {
-            depart: {},
-            return: {}
-          },
-          meals: {
-            depart: {},
-            return: {}
-          },
-          wheelchair: {
-            depart: {},
-            return: {}
-          },
-          seats: {
-            depart: {},
-            return: {}
+          baggage: {},
+          meals: {},
+          wheelchair: {},
+          seats: {},
+          insurance: {
+            selectedPlanId: null,
+            price: 0
           }
         },
         sessionExpiry: null,
@@ -873,7 +974,13 @@ export const useBookingStore = defineStore('booking', {
         'payment_session',
         'booking-store',
         'pinia-booking',
+        'current_booking_id',
+        'current_booking_reference',
+        'current_booking_status',
+        'current_booking_total',
+        'last_booking_ref',
         ...Array.from({ length: 10 }, (_, i) => `pax_${i + 1}`),
+        ...Array.from({ length: 15 }, (_, i) => `passenger_${i + 1}_details`),
       ];
 
       keysToRemove.forEach(key => {
@@ -965,6 +1072,58 @@ export const useBookingStore = defineStore('booking', {
     // NEW: Check if passenger has seat for segment
     hasSeatForSegment(passengerKey, segment = 'depart') {
       return !!this.addons.seats[segment]?.[passengerKey];
+    },
+
+    /**
+     * Incremental save to server (Draft model).
+     * Creates or updates a booking record on the backend in the background.
+     */
+    async snapshotToServer() {
+      if (!this.selectedOutbound && !this.isMultiCity) return null;
+      if (this.isMultiCity && this.multiCitySegments.every(s => !s.selectedFlight)) return null;
+
+      try {
+        console.log('🔄 Taking booking snapshot for server...');
+        const payload = bookingService.formatBookingData(this);
+
+        let res;
+        if (this.booking_id) {
+          res = await bookingService.updateBooking(this.booking_id, payload);
+          console.log('✅ Snapshot updated (ID:', this.booking_id, ')');
+        } else {
+          res = await bookingService.createBooking(payload);
+          if (res.success && res.booking_id) {
+            this.booking_id = res.booking_id;
+            localStorage.setItem('current_booking_id', res.booking_id);
+            console.log('✅ Snapshot created (New ID:', res.booking_id, ')');
+          }
+        }
+        return res;
+      } catch (err) {
+        console.error('❌ Snapshot failed:', err);
+        return { success: false, error: err.message };
+      }
+    },
+
+    /**
+     * Restore state from backend using booking_id.
+     * Full state recovery for cross-device or session recovery.
+     */
+    async syncFromServer() {
+      if (!this.booking_id) return;
+
+      try {
+        console.log('📡 Syncing booking from server (ID:', this.booking_id, ')...');
+        const res = await bookingService.getBookingDetails(this.booking_id);
+
+        if (res && res.id) {
+          this.booking_reference = res.booking_reference;
+          this.booking_status = res.status;
+          console.log('✅ Sync complete');
+        }
+      } catch (err) {
+        console.error('❌ Sync failed:', err);
+      }
     },
 
     // NEW: Get current booking state for debugging

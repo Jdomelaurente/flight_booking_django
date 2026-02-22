@@ -10,7 +10,7 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 from django.core.cache import cache
 from django.db import transaction
-from decimal import Decimal
+from decimal import Decimal, ROUND_UP
 from django.contrib.auth.models import User
 from .services.email_service import EmailService
 from .services.pdf_service import BoardingPassPDFService
@@ -20,7 +20,6 @@ from .ml.predictor import predictor
 from .ml.dynamic_pricing import dynamic_pricing
 import hashlib
 import json
-from decimal import Decimal
 import random
 
 from app.models import (
@@ -28,9 +27,8 @@ from app.models import (
     SeatClass, PassengerInfo, Airline, Booking, BookingDetail,
     MealOption, BaggageOption, AssistanceService, AddOn, AddOnType,
     TaxType, PassengerTypeTaxRate, BookingTax, TravelInsurancePlan, 
-    BookingInsuranceRecord, Aircraft, BookingContact, SeatClass, SeatClassFeature
+    BookingInsuranceRecord, Aircraft, BookingContact, SeatClassFeature
 )
-import json
 from .serializers import *
 from .services.paymongo_service import paymongo_service
 from .services.grading_service import grade_booking
@@ -743,7 +741,7 @@ def create_payment_intent(request):
         # Prepare FLAT metadata (PayMongo does not allow nested objects or Decimals)
         metadata = {
             "booking_id": str(booking.id),
-            "booking_ref": f"CSUCC{booking.id:08d}",
+            "booking_ref": booking.pnr,
             "trip_type": str(booking.trip_type)
         }
         
@@ -873,7 +871,7 @@ def verify_and_process_payment(request):
             return Response({
                 'success': True,
                 'payment_id': existing_payment.transaction_id,
-                'booking_reference': f"CSUCC{booking.id:08d}",
+                'booking_reference': booking.pnr,
                 'booking_status': booking.status,
                 'message': 'Payment already processed'
             })
@@ -1019,7 +1017,7 @@ def process_payment_from_paymongo(payment_id, payment_attrs, booking):
                 'message': 'Payment processed successfully',
                 'payment_id': payment.transaction_id,
                 'booking_id': booking.id,
-                'booking_reference': f"CSUCC{booking.id:08d}",
+                'booking_reference': booking.pnr,
                 'booking_status': 'confirmed',
                 'amount': float(amount),
                 'method': payment_method,
@@ -1381,32 +1379,36 @@ def create_booking(request):
             passengers = _create_passengers(data.get('passengers', []))
             print(f"DEBUG: Created {len(passengers)} passengers")
             
-            # 4. Create booking details for each passenger
+            # 4. Normalize and create segments
+            segments = []
+            if trip_type in ['multi_city', 'multi-city']:
+                segments = data.get('segments', [])
+            else:
+                outbound = {
+                    'selectedFlight': data.get('selectedOutbound'),
+                    'addons': data.get('addons', {})
+                }
+                segments.append(outbound)
+                if trip_type == 'round_trip' and data.get('selectedReturn'):
+                    returning = {
+                        'selectedFlight': data.get('selectedReturn'),
+                        'addons': data.get('return_addons', {})
+                    }
+                    segments.append(returning)
+
+            # 5. Create booking details for each passenger and segment
             booking_details = []
-            
-            # For each passenger, create TWO booking details for round trips
             for i, passenger in enumerate(passengers):
                 print(f"DEBUG: Creating booking details for passenger {i+1}: {passenger.first_name} {passenger.last_name}")
-                
-                # Get the passenger data from request to get the key
                 passenger_data = data.get('passengers', [])[i] if i < len(data.get('passengers', [])) else None
                 
-                # Create DEPART flight booking detail
-                depart_detail = _create_booking_detail(
-                    booking, passenger, data, passenger_data, is_return=False
-                )
-                if depart_detail:
-                    booking_details.append(depart_detail)
-                    print(f"DEBUG: Depart booking detail created: {depart_detail.id}")
-                
-                # Create RETURN flight booking detail for round trips
-                if trip_type == 'round_trip':
-                    return_detail = _create_booking_detail(
-                        booking, passenger, data, passenger_data, is_return=True
+                for idx, segment in enumerate(segments):
+                    detail = _create_booking_detail(
+                        booking, passenger, segment, passenger_data, idx
                     )
-                    if return_detail:
-                        booking_details.append(return_detail)
-                        print(f"DEBUG: Return booking detail created: {return_detail.id}")
+                    if detail:
+                        booking_details.append(detail)
+                        print(f"DEBUG: Segment {idx+1} booking detail created: {detail.id}")
             
             if not booking_details:
                 raise Exception("No booking details created")
@@ -1414,6 +1416,12 @@ def create_booking(request):
             # 5. Calculate and apply taxes
             print(f"DEBUG: Applying taxes for {len(booking_details)} booking details")
             _apply_taxes(booking, booking_details)
+            
+            # 5.5. Create insurance records if insurance_plan_id was provided
+            insurance_plan_id = data.get('insurance_plan_id')
+            if insurance_plan_id:
+                print(f"DEBUG: Creating insurance records for plan ID: {insurance_plan_id}")
+                _create_insurance_records(booking, booking_details, insurance_plan_id)
             
             # 6. Save booking totals
             print(f"DEBUG: Updating booking totals")
@@ -1429,7 +1437,7 @@ def create_booking(request):
             return Response({
                 'success': True,
                 'booking_id': booking.id,
-                'booking_reference': f"CSUCC{booking.id:08d}",
+                'booking_reference': booking.pnr,
                 'status': 'pending',
                 'total_amount': float(booking.total_amount),
                 'payment_info': {
@@ -1534,6 +1542,10 @@ def update_booking(request, booking_id):
                 deleted_details_count, _ = BookingDetail.objects.filter(booking=booking).delete()
                 print(f"DEBUG: Deleted {deleted_details_count} old booking details")
                 
+                # Delete old taxes to prevent accumulation
+                deleted_taxes_count, _ = BookingTax.objects.filter(booking=booking).delete()
+                print(f"DEBUG: Deleted {deleted_taxes_count} old taxes")
+                
                 # Delete existing passengers linked to this booking
                 passenger_ids = BookingDetail.objects.filter(booking=booking).values_list('passenger_id', flat=True)
                 PassengerInfo.objects.filter(id__in=passenger_ids).delete()
@@ -1544,30 +1556,34 @@ def update_booking(request, booking_id):
                 print(f"DEBUG: Created {len(new_passengers)} new passengers")
                 
                 # Create new booking details
+                # Normalize segments
+                segments = []
+                if booking.trip_type in ['multi_city', 'multi-city']:
+                    segments = data.get('segments', [])
+                else:
+                    outbound = {
+                        'selectedFlight': data.get('selectedOutbound'),
+                        'addons': data.get('addons', {})
+                    }
+                    segments.append(outbound)
+                    if booking.trip_type == 'round_trip' and data.get('selectedReturn'):
+                        returning = {
+                            'selectedFlight': data.get('selectedReturn'),
+                            'addons': data.get('return_addons', {})
+                        }
+                        segments.append(returning)
+
                 booking_details = []
-                
                 for i, passenger in enumerate(new_passengers):
-                    print(f"DEBUG: Creating booking details for passenger {i+1}")
-                    
-                    # Get passenger data
                     passenger_data = passengers_data[i] if i < len(passengers_data) else {}
                     
-                    # Create DEPART flight booking detail
-                    depart_detail = _create_booking_detail(
-                        booking, passenger, data, passenger_data, is_return=False
-                    )
-                    if depart_detail:
-                        booking_details.append(depart_detail)
-                        print(f"DEBUG: Created depart booking detail: {depart_detail.id}")
-                    
-                    # Create RETURN flight booking detail for round trips
-                    if booking.trip_type == 'round_trip':
-                        return_detail = _create_booking_detail(
-                            booking, passenger, data, passenger_data, is_return=True
+                    for idx, segment in enumerate(segments):
+                        detail = _create_booking_detail(
+                            booking, passenger, segment, passenger_data, idx
                         )
-                        if return_detail:
-                            booking_details.append(return_detail)
-                            print(f"DEBUG: Created return booking detail: {return_detail.id}")
+                        if detail:
+                            booking_details.append(detail)
+                            print(f"DEBUG: Created segment {idx+1} booking detail: {detail.id}")
                 
                 print(f"DEBUG: Created {len(booking_details)} new booking details")
             
@@ -1596,10 +1612,17 @@ def update_booking(request, booking_id):
             # Save booking
             booking.save()
             
-            # Recalculate taxes
+            # Recalculate taxes and insurance
             if booking_details:
                 print(f"DEBUG: Recalculating taxes for {len(booking_details)} booking details")
                 _apply_taxes(booking, booking_details)
+                
+                # Create insurance records if insurance_plan_id was provided
+                insurance_plan_id = data.get('insurance_plan_id')
+                if insurance_plan_id:
+                    print(f"DEBUG: Creating insurance records for plan ID: {insurance_plan_id}")
+                    _create_insurance_records(booking, booking_details, insurance_plan_id)
+                
                 _update_booking_totals(booking)
             
             print(f"DEBUG: Booking update successful!")
@@ -1607,7 +1630,7 @@ def update_booking(request, booking_id):
             return Response({
                 'success': True,
                 'booking_id': booking.id,
-                'booking_reference': f"CSUCC{booking.id:08d}",
+                'booking_reference': booking.pnr,
                 'status': booking.status,
                 'total_amount': float(booking.total_amount),
                 'message': 'Booking updated successfully'
@@ -1795,18 +1818,11 @@ def _create_passengers(passengers_data):
     print(f"DEBUG: Created {len(passengers)} passengers successfully")
     return passengers
 
-def _create_booking_detail(booking, passenger, data, passenger_data=None, is_return=False):
-    """Create booking detail for each passenger - UPDATED for round trips"""
+def _create_booking_detail(booking, passenger, segment, passenger_data=None, segment_index=0):
+    """Create booking detail for each passenger - UPDATED for multi-city support"""
     try:
-        print(f"DEBUG: In _create_booking_detail - is_return: {is_return}")
-        
-        # Determine which flight to use
-        if is_return:
-            selected_flight = data.get('selectedReturn', {})
-            flight_label = "Return"
-        else:
-            selected_flight = data.get('selectedOutbound', {})
-            flight_label = "Depart"
+        selected_flight = segment.get('selectedFlight', {})
+        flight_label = f"Segment {segment_index + 1}"
         
         print(f"  {flight_label} flight data: {selected_flight}")
         
@@ -1814,7 +1830,7 @@ def _create_booking_detail(booking, passenger, data, passenger_data=None, is_ret
         schedule_id = selected_flight.get('schedule_id') or selected_flight.get('id')
         
         if not schedule_id:
-            print(f"  ERROR: No schedule ID found for {flight_label.lower()} flight")
+            print(f"  ERROR: No schedule ID found for {flight_label.lower()}")
             return None
         
         print(f"  {flight_label} Schedule ID: {schedule_id}")
@@ -1827,15 +1843,14 @@ def _create_booking_detail(booking, passenger, data, passenger_data=None, is_ret
                 'flight__aircraft'
             ).get(id=schedule_id)
             print(f"  {flight_label} schedule found: {schedule.id} - {schedule.flight.flight_number}")
-            print(f"  {flight_label} schedule price: {schedule.price}")
         except Schedule.DoesNotExist:
             print(f"  ERROR: {flight_label} schedule with ID {schedule_id} not found")
             return None
         
-        # Get seat if selected (seats usually apply to all flights, not segmented)
+        # Get seat if selected
         seat = None
         seat_class = None
-        addons_data = data.get('addons', {})
+        segment_addons = segment.get('addons', {})
         
         # Use the passenger key from passenger_data
         passenger_key = None
@@ -1846,9 +1861,9 @@ def _create_booking_detail(booking, passenger, data, passenger_data=None, is_ret
         
         print(f"  Passenger key for addons: {passenger_key}")
         
-        # Find seat for this passenger (seats are not segmented)
-        if passenger_key in addons_data.get('seats', {}):
-            seat_data = addons_data['seats'][passenger_key]
+        # Find seat for this passenger
+        if passenger_key in segment_addons.get('seats', {}):
+            seat_data = segment_addons['seats'][passenger_key]
             print(f"  Seat data for this passenger: {seat_data}")
             
             try:
@@ -1858,10 +1873,8 @@ def _create_booking_detail(booking, passenger, data, passenger_data=None, is_ret
                     seat = Seat.objects.select_related('seat_class').get(id=seat_data['id'])
                 
                 if seat:
-                    # Only mark seat as unavailable for the FIRST booking detail (depart flight)
-                    if not is_return:  # Only mark seat unavailable once
-                        seat.is_available = False
-                        seat.save()
+                    seat.is_available = False
+                    seat.save()
                     seat_class = seat.seat_class
                     print(f"  Seat assigned: {seat.seat_number}")
                     
@@ -1877,12 +1890,10 @@ def _create_booking_detail(booking, passenger, data, passenger_data=None, is_ret
             ).first()
         
         # Calculate base price - DO NOT TRUST FRONTEND
-        # Get session ID and user for dynamic pricing
         session_id = getattr(booking, 'session_id', None) or "booking_creation"
         user = booking.user
         
-        # Prepare flight data for dynamic pricing
-        flight_data = {
+        flight_pricing_data = {
             'schedule_id': schedule.id,
             'flight_number': schedule.flight.flight_number,
             'airline_code': schedule.flight.airline.code,
@@ -1897,22 +1908,16 @@ def _create_booking_detail(booking, passenger, data, passenger_data=None, is_ret
         
         # Recalculate dynamic price
         price_data = dynamic_pricing.get_price_for_user(
-            flight_data, 
+            flight_pricing_data, 
             user=user,
             session_id=session_id
         )
-        
-        # Use ML base price from database for seat class multiplier logic (to match ScheduleViewSet)
-        ml_base = float(schedule.ml_base_price) if schedule.ml_base_price else schedule.price
-        
-        # Apply seat class multiplier and rounding if it's not the default Economy
+
         fare_type = selected_flight.get('class_type', 'Economy')
-        
-        # Get multiplier from the ScheduleViewSet method (or replicate logic here)
-        # We'll use a local helper or import if possible, but for now we'll match logic
+
         def get_multiplier(name):
-            if not name: return 1.0
-            from django.core.cache import cache
+            if not name:
+                return 1.0
             normalized = name.strip()
             sc = SeatClass.objects.filter(name__iexact=normalized).first()
             if not sc and "class" in normalized.lower():
@@ -1921,36 +1926,40 @@ def _create_booking_detail(booking, passenger, data, passenger_data=None, is_ret
             return float(sc.price_multiplier) if sc else 1.0
 
         multiplier = get_multiplier(fare_type)
-        raw_seat_price = Decimal(str(ml_base)) * Decimal(str(multiplier))
-        
-        # Final rounded price for this detail
-        base_price = Decimal(str(dynamic_pricing.round_seat_class_price(raw_seat_price)))
-        
-        print(f"  {flight_label} backend-calculated price: {base_price} (Frontend was: {selected_flight.get('price')})")
+
+        if multiplier == 1.0:
+            frontend_price = selected_flight.get('price')
+            if frontend_price is not None:
+                base_price = Decimal(str(frontend_price))
+            else:
+                base_price = Decimal(str(dynamic_pricing.round_price(price_data['final_price'])))
+        else:
+            ml_base = float(schedule.ml_base_price) if schedule.ml_base_price else float(schedule.price)
+            raw_seat_price = Decimal(str(ml_base)) * Decimal(str(multiplier))
+            base_price = Decimal(str(dynamic_pricing.round_seat_class_price(raw_seat_price)))
+            
+        # Apply infant discount
+        if passenger.passenger_type and passenger.passenger_type.lower() == 'infant':
+            base_price = base_price * Decimal('0.5')
+            
+        # Add seat adjustment if any
+        if seat and hasattr(seat, 'price_adjustment') and seat.price_adjustment:
+            base_price += seat.price_adjustment
         
         # Create booking detail
-        print(f"  Creating BookingDetail for {flight_label.lower()} flight...")
-        try:
-            booking_detail = BookingDetail.objects.create(
-                booking=booking,
-                passenger=passenger,
-                schedule=schedule,
-                seat=seat if not is_return else None,  # Only assign seat to depart flight
-                seat_class=seat_class,
-                price=base_price,
-                passenger_type=passenger.passenger_type,
-                status='pending'
-            )
-            print(f"  {flight_label} BookingDetail created with ID: {booking_detail.id}")
-        except Exception as e:
-            print(f"  ERROR creating {flight_label} BookingDetail: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            return None
+        booking_detail = BookingDetail.objects.create(
+            booking=booking,
+            passenger=passenger,
+            schedule=schedule,
+            seat=seat, 
+            seat_class=seat_class,
+            price=base_price,
+            passenger_type=passenger.passenger_type,
+            status='pending'
+        )
         
-        # Add add-ons - pass is_return flag
-        print(f"  Adding {flight_label.lower()} flight addons...")
-        _add_addons_to_booking_detail(booking_detail, addons_data, passenger_data or {}, is_return)
+        # Add add-ons
+        _add_addons_to_booking_detail(booking_detail, segment_addons, passenger_data or {})
         
         return booking_detail
         
@@ -1961,7 +1970,7 @@ def _create_booking_detail(booking, passenger, data, passenger_data=None, is_ret
         return None
 
 # In flightapp/views.py, update the _add_addons_to_booking_detail function:
-def _add_addons_to_booking_detail(booking_detail, addons_data, passenger_data, is_return=False):
+def _add_addons_to_booking_detail(booking_detail, segment_addons, passenger_data):
     """Add selected add-ons to booking detail with segment support"""
     addons_to_link = []
     
@@ -1972,20 +1981,13 @@ def _add_addons_to_booking_detail(booking_detail, addons_data, passenger_data, i
     passenger_key = passenger_data.get('key', f"{booking_detail.passenger.first_name}_{booking_detail.passenger.last_name}")
     
     print(f"DEBUG: Looking for addons for passenger key: {passenger_key}")
-    print(f"DEBUG: Is return flight: {is_return}")
-    
-    # Determine which addons to use (depart or return)
-    addon_source = addons_data
-    if is_return and 'return_addons' in addons_data:
-        addon_source = addons_data.get('return_addons', {})
     
     # Baggage add-on
-    baggage_data = addon_source.get('baggage', {}).get(passenger_key)
+    baggage_data = segment_addons.get('baggage', {}).get(passenger_key)
     if baggage_data:
         if isinstance(baggage_data, dict) and baggage_data.get('id'):
             try:
                 baggage_option = BaggageOption.objects.get(id=baggage_data['id'])
-                # Create add-on for baggage
                 addon, created = AddOn.objects.get_or_create(
                     baggage_option=baggage_option,
                     defaults={
@@ -1995,7 +1997,7 @@ def _add_addons_to_booking_detail(booking_detail, addons_data, passenger_data, i
                     }
                 )
                 addons_to_link.append(addon)
-                print(f"DEBUG: Added baggage addon ({'return' if is_return else 'depart'}): {baggage_option.name}")
+                print(f"DEBUG: Added baggage addon: {baggage_option.name}")
             except BaggageOption.DoesNotExist:
                 print(f"DEBUG: Baggage option with ID {baggage_data['id']} not found")
         elif isinstance(baggage_data, int):
@@ -2010,12 +2012,12 @@ def _add_addons_to_booking_detail(booking_detail, addons_data, passenger_data, i
                     }
                 )
                 addons_to_link.append(addon)
-                print(f"DEBUG: Added baggage addon ({'return' if is_return else 'depart'}): {baggage_option.name}")
+                print(f"DEBUG: Added baggage addon: {baggage_option.name}")
             except BaggageOption.DoesNotExist:
                 print(f"DEBUG: Baggage option with ID {baggage_data} not found")
     
     # Meal add-on
-    meal_data = addon_source.get('meals', {}).get(passenger_key)
+    meal_data = segment_addons.get('meals', {}).get(passenger_key)
     if meal_data:
         if isinstance(meal_data, dict) and meal_data.get('id'):
             try:
@@ -2029,7 +2031,7 @@ def _add_addons_to_booking_detail(booking_detail, addons_data, passenger_data, i
                     }
                 )
                 addons_to_link.append(addon)
-                print(f"DEBUG: Added meal addon ({'return' if is_return else 'depart'}): {meal_option.name}")
+                print(f"DEBUG: Added meal addon: {meal_option.name}")
             except MealOption.DoesNotExist:
                 print(f"DEBUG: Meal option with ID {meal_data['id']} not found")
         elif isinstance(meal_data, int):
@@ -2044,12 +2046,12 @@ def _add_addons_to_booking_detail(booking_detail, addons_data, passenger_data, i
                     }
                 )
                 addons_to_link.append(addon)
-                print(f"DEBUG: Added meal addon ({'return' if is_return else 'depart'}): {meal_option.name}")
+                print(f"DEBUG: Added meal addon: {meal_option.name}")
             except MealOption.DoesNotExist:
                 print(f"DEBUG: Meal option with ID {meal_data} not found")
     
     # Assistance service
-    service_id = addon_source.get('wheelchair', {}).get(passenger_key)
+    service_id = segment_addons.get('wheelchair', {}).get(passenger_key)
     if service_id:
         try:
             assistance_service = AssistanceService.objects.get(id=service_id)
@@ -2063,14 +2065,14 @@ def _add_addons_to_booking_detail(booking_detail, addons_data, passenger_data, i
                 }
             )
             addons_to_link.append(addon)
-            print(f"DEBUG: Added assistance addon ({'return' if is_return else 'depart'}): {assistance_service.name}")
+            print(f"DEBUG: Added assistance addon: {assistance_service.name}")
         except AssistanceService.DoesNotExist:
             print(f"DEBUG: Assistance service with ID {service_id} not found")
     
     # Link addons to booking detail
     if addons_to_link:
         booking_detail.addons.add(*addons_to_link)
-        print(f"DEBUG: Linked {len(addons_to_link)} addons to booking detail {booking_detail.id} for {'return' if is_return else 'depart'} flight")
+        print(f"DEBUG: Linked {len(addons_to_link)} addons to booking detail {booking_detail.id}")
 
 def _apply_taxes(booking, booking_details):
     """Calculate and apply taxes to booking"""
@@ -2089,6 +2091,7 @@ def _apply_taxes(booking, booking_details):
             applies_international=route.is_international
         )
         
+        applied_any_tax = False
         for tax in applicable_taxes:
             try:
                 # Check if passenger type is applicable
@@ -2118,16 +2121,98 @@ def _apply_taxes(booking, booking_details):
                     # Add to booking detail tax amount
                     detail.tax_amount += amount
                     detail.save()
+                    applied_any_tax = True
                 
             except Exception as e:
                 print(f"Error applying tax {tax.name}: {e}")
                 continue
+
+        # FALLBACK: If no explicit taxes found in DB, apply 12% VAT estimation
+        if not applied_any_tax:
+            try:
+                print(f"DEBUG: No explicit taxes found in DB for detail {detail.id}. Applying 12% VAT fallback.")
+                # We need a TaxType for the record, but if none exist we might be stuck.
+                # However, we can at least update the detail.tax_amount.
+                # To be compliant with _update_booking_totals (which sums BookingTax objects),
+                # we SHOULD ideally have a TaxType.
+                
+                # Try to find or create a default 'VAT' tax type
+                vat_tax, created = TaxType.objects.get_or_create(
+                    code='VAT',
+                    defaults={
+                        'name': 'Value Added Tax',
+                        'base_amount': Decimal('0.00'), # We will calculate it dynamically
+                        'is_active': True,
+                        'per_passenger': True,
+                        'applies_domestic': True,
+                        'applies_international': True
+                    }
+                )
+                
+                # Calculate 12% of detail price
+                fallback_amount = Decimal(str(detail.price)) * Decimal('0.12')
+                
+                BookingTax.objects.create(
+                    booking=booking,
+                    tax_type=vat_tax,
+                    amount=fallback_amount,
+                    passenger_type=passenger_type
+                )
+                
+                # Ensure detail.tax_amount is treated as Decimal
+                current_tax = Decimal(str(detail.tax_amount)) if detail.tax_amount else Decimal('0.00')
+                detail.tax_amount = current_tax + fallback_amount
+                detail.save()
+            except Exception as e:
+                print(f"ERROR in tax fallback: {e}")
+
+def _create_insurance_records(booking, booking_details, insurance_plan_id):
+    """Create insurance records for all passengers in the booking."""
+    try:
+        from app.models import TravelInsurancePlan, BookingInsuranceRecord
+        
+        # Safety check - ensure we have booking details
+        if not booking_details:
+            print(f"[WARN] No booking details to attach insurance to")
+            return
+        
+        print(f"DEBUG: Looking up insurance plan {insurance_plan_id}")
+        plan = TravelInsurancePlan.objects.get(id=insurance_plan_id, is_active=True)
+        print(f"DEBUG: Found insurance plan: {plan.name} - ₱{plan.retail_price}")
+        
+        # Get the first schedule (depart flight) to identify which details get insurance
+        first_schedule = booking_details[0].schedule
+        
+        created_count = 0
+        for detail in booking_details:
+            # Only create insurance for the depart flight (not both depart and return)
+            # Insurance is per passenger, not per flight segment
+            if detail.schedule_id == first_schedule.id:
+                insurance_record = BookingInsuranceRecord.objects.create(
+                    booking_detail=detail,
+                    insurance_plan=plan,
+                    insured_amount=plan.retail_price,
+                    sale_price=plan.retail_price,
+                    status='active'
+                )
+                created_count += 1
+                print(f"DEBUG: Created insurance record {insurance_record.policy_number} for passenger {detail.passenger.get_full_name()}")
+        
+        print(f"DEBUG: Created {created_count} insurance records")
+        
+    except TravelInsurancePlan.DoesNotExist:
+        print(f"[WARN] Insurance plan {insurance_plan_id} not found or inactive")
+    except Exception as e:
+        print(f"[ERR] Error creating insurance records: {str(e)}")
+        import traceback
+        traceback.print_exc()
 
 def _update_booking_totals(booking):
     """Update booking totals after all details are created.
     Backend is the SOLE source of truth — frontend total is ignored.
     """
     try:
+        print(f"\n\n=========== DEBUG: _update_booking_totals ===========")
         print(f"DEBUG: In _update_booking_totals for booking {booking.id}")
         
         # Wait a moment to ensure all details are saved
@@ -2145,8 +2230,13 @@ def _update_booking_totals(booking):
         ).aggregate(total=Sum('price'))['total'] or Decimal('0.00')
         print(f"  Base fare total: {base_fare_total}")
         
-        # 2. Insurance total
+        # 2. Insurance total - calculate from BookingInsuranceRecords
         insurance_total = Decimal('0.00')
+        booking_details = BookingDetail.objects.filter(booking=booking)
+        for detail in booking_details:
+            if hasattr(detail, 'insurance_record') and detail.insurance_record:
+                insurance_total += detail.insurance_record.sale_price
+        print(f"  Insurance total: {insurance_total}")
         
         # 3. Tax total
         tax_total = BookingTax.objects.filter(
@@ -2172,7 +2262,8 @@ def _update_booking_totals(booking):
         if stored_frontend_total and abs(calculated_total - stored_frontend_total) > Decimal('1.00'):
             print(f"  [WARN] SECURITY: Total mismatch! Frontend claimed: {stored_frontend_total}, Backend calculated: {calculated_total}")
         
-        # Always override with backend-calculated total
+        # Always override with backend-calculated total (rounding up to nearest integer)
+        calculated_total = (calculated_total).quantize(Decimal('1.'), rounding=ROUND_UP)
         booking.total_amount = calculated_total
         booking.base_fare_total = base_fare_total
         booking.insurance_total = insurance_total
@@ -2180,6 +2271,7 @@ def _update_booking_totals(booking):
         booking.save()
         
         print(f"  [OK] Booking totals saved: base={base_fare_total}, addons={addon_total}, tax={tax_total}, TOTAL={calculated_total}")
+        print(f"=========== END DEBUG: _update_booking_totals ===========\n\n")
         
     except Exception as e:
         print(f"ERROR in _update_booking_totals: {str(e)}")
@@ -2286,7 +2378,7 @@ def process_payment(request):
                     'success': True,
                     'payment_id': payment.transaction_id,
                     'booking_status': 'confirmed',
-                    'booking_reference': f"CSUCC{booking.id:08d}",
+                    'booking_reference': booking.pnr,
                     'message': 'Payment processed successfully'
                 }, status=status.HTTP_200_OK)
             
@@ -2690,7 +2782,7 @@ def process_payment_webhook(payment_id, payment_attrs, booking_id):
                 "payment_id": payment.transaction_id,
                 "booking_id": booking_id,
                 "booking_status": "confirmed",
-                "booking_reference": f"CSUCC{booking.id:08d}",
+                "booking_reference": booking.pnr,
                 "amount": float(amount),
                 "method": payment_method
             })
@@ -2710,7 +2802,7 @@ def send_booking_confirmation_email(booking):
     # For now, just log it
     print(f"\n[EMAIL] Would send confirmation email for booking {booking.id}")
     print(f"   To: {booking.user.email if booking.user else 'No user email'}")
-    print(f"   Reference: CSUCC{booking.id:08d}")
+    print(f"   Reference: {booking.pnr}")
     print(f"   Amount: {booking.total_amount}")
 
 def process_payment_with_id(payment_id, booking_id):
@@ -2789,7 +2881,7 @@ def process_payment_with_id(payment_id, booking_id):
                         'success': True,
                         'payment_id': payment.transaction_id,
                         'booking_status': 'confirmed',
-                        'booking_reference': f"CSUCC{booking.id:08d}",
+                        'booking_reference': booking.pnr,
                         'message': 'Payment processed successfully'
                     })
         
@@ -2898,7 +2990,7 @@ def check_payment_status(request, booking_id):
                 'paid': True,
                 'payment_id': payment.transaction_id if payment else None,
                 'booking_id': booking_id,
-                'booking_reference': f"CSUCC{booking.id:08d}",
+                'booking_reference': booking.pnr,
                 'booking_status': booking.status,
                 'amount': float(payment.amount) if payment else 0,
                 'method': payment.method if payment else None,
@@ -2914,7 +3006,7 @@ def check_payment_status(request, booking_id):
                 'paid': True,
                 'payment_id': payment.transaction_id,
                 'booking_id': booking_id,
-                'booking_reference': f"CSUCC{booking.id:08d}",
+                'booking_reference': booking.pnr,
                 'booking_status': booking.status,
                 'amount': float(payment.amount),
                 'method': payment.method,
@@ -3051,7 +3143,7 @@ def process_payment_immediately(payment_id, payment_attrs, booking):
                     'success': True,
                     'paid': True,
                     'payment_id': existing_payment.transaction_id,
-                    'booking_reference': f"CSUCC{booking.id:08d}",
+                    'booking_reference': booking.pnr,
                     'booking_status': booking.status,
                     'message': 'Payment already processed'
                 })
@@ -3094,7 +3186,7 @@ def process_payment_immediately(payment_id, payment_attrs, booking):
                 'paid': True,
                 'payment_id': payment.transaction_id,
                 'booking_id': booking.id,
-                'booking_reference': f"CSUCC{booking.id:08d}",
+                'booking_reference': booking.pnr,
                 'booking_status': 'confirmed',
                 'amount': float(amount),
                 'method': payment_method,
@@ -3198,7 +3290,7 @@ def check_booking_payment(request, booking_id):
                 'paid': True,
                 'booking_status': 'confirmed',
                 'booking_id': booking_id,
-                'booking_reference': f"CSUCC{booking.id:08d}",
+                'booking_reference': booking.pnr,
                 'payment_id': payment.transaction_id if payment else None,
                 'message': 'Booking is already confirmed'
             })
@@ -3311,7 +3403,7 @@ def check_booking_status(request, booking_id):
         return Response({
             'success': True,
             'booking_id': booking_id,
-            'booking_reference': f"CSUCC{booking.id:08d}",
+            'booking_reference': booking.pnr,
             'booking_status': booking.status,
             'has_payment': payment is not None,
             'payment_id': payment.transaction_id if payment else None,
@@ -3374,11 +3466,16 @@ def get_seat_class_features(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_booking_by_reference(request, reference):
-    """Get booking by reference number (CSUCC00000071)"""
+    """Get booking by reference number (CSUCC00000071 or PNR)"""
     try:
-        # Extract ID from reference
-        booking_id = int(reference.replace('CSUCC', ''))
-        booking = Booking.objects.get(id=booking_id)
+        if reference.startswith('CSUCC'):
+            # Extract ID from legacy reference
+            booking_id = int(reference.replace('CSUCC', ''))
+            booking = Booking.objects.get(id=booking_id)
+        else:
+            # Search by PNR (GDS style)
+            booking = Booking.objects.get(pnr=reference)
+            
         serializer = BookingSerializer(booking)
         return Response({
             'success': True,
@@ -3677,7 +3774,7 @@ def process_payment_webhook(payment_id, payment_attrs, booking_id):
                 "payment_id": payment.transaction_id,
                 "booking_id": booking_id,
                 "booking_status": "confirmed",
-                "booking_reference": f"CSUCC{booking.id:08d}",
+                "booking_reference": booking.pnr,
                 "amount": float(amount),
                 "method": payment_method,
                 "email_sent": email_sent
@@ -3841,6 +3938,7 @@ def calculate_booking_price(request):
     Used by the Review Booking page to show the authoritative backend price.
     """
     try:
+        print(f"\n\n=========== DEBUG: calculate_booking_price ===========")
         data = request.data
         print(f"DEBUG: Calculating price for request: {data}")
         
@@ -3853,43 +3951,36 @@ def calculate_booking_price(request):
             'grand_total': Decimal('0.00')
         }
         
-        # 1. Calculate Base Fare (Flight Prices)
+        # 1. Calculate Base Fare, Taxes, and Addons
         trip_type = data.get('trip_type', 'one_way')
         passenger_counts = data.get('passengerCount', {})
         adult_count = int(passenger_counts.get('adult', 1))
         child_count = int(passenger_counts.get('children', 0))
         infant_count = int(passenger_counts.get('infant', 0))
         
-        # Calculate for outbound
-        if data.get('selectedOutbound'):
-            outbound_price = Decimal(str(data['selectedOutbound'].get('price', 0)))
-            # Multiply by paying passengers (adults + children)
-            total_base = outbound_price * (adult_count + child_count)
-            # Add infant fare (usually 10-50% or flat rate, here assuming 50% for simplicity matching frontend)
-            total_base += (outbound_price * Decimal('0.5')) * infant_count
-            breakdown['base_fare'] += total_base
-            
-        # Calculate for return
-        if trip_type == 'round_trip' and data.get('selectedReturn'):
-            return_price = Decimal(str(data['selectedReturn'].get('price', 0)))
-            total_base = return_price * (adult_count + child_count)
-            total_base += (return_price * Decimal('0.5')) * infant_count
-            breakdown['base_fare'] += total_base
+        pax_type_counts = {
+            'adult': adult_count,
+            'child': child_count,
+            'infant': infant_count,
+        }
 
-        # 2. Calculate Taxes (simplified estimation matching _apply_taxes logic)
-        # In a real scenario, this would query TaxType models. 
-        # For now, we'll assume the frontend-passed tax or a standard estimate if not present.
-        # Ideally, we should fetch TaxType objects here based on the route.
-        # Use a standard estimate per passenger for now to be safe
-        # e.g. PH Tax ~500-1000 PHP per pax
-        tax_per_pax = Decimal('0.00') # Replace with actual tax logic if needed
-        # breakdown['taxes'] = tax_per_pax * (adult_count + child_count)
+        # Normalize segments
+        segments = []
+        if trip_type in ['multi_city', 'multi-city']:
+            segments = data.get('segments', [])
+        else:
+            if data.get('selectedOutbound'):
+                segments.append({
+                    'selectedFlight': data.get('selectedOutbound'),
+                    'addons': data.get('addons', {})
+                })
+            if trip_type == 'round_trip' and data.get('selectedReturn'):
+                segments.append({
+                    'selectedFlight': data.get('selectedReturn'),
+                    'addons': data.get('return_addons', {})
+                })
         
-        # 3. Calculate Addons (Baggage, Meals, Seats)
-        # We need to look up prices from the DB to be secure
-        addon_ids = []
-        
-        # Extract all addon IDs from the complex structure
+        # 2. Extract IDs helper
         def extract_ids(source):
             ids = []
             if not source: return ids
@@ -3902,42 +3993,123 @@ def calculate_booking_price(request):
                         ids.append({'type': category, 'id': val['id']})
             return ids
 
-        all_addons = extract_ids(data.get('addons', {}))
-        if trip_type == 'round_trip':
-            all_addons.extend(extract_ids(data.get('return_addons', {})))
-            
-        print(f"DEBUG: Found {len(all_addons)} metadata items to price")
+        # 3. Estimate Taxes helper
+        def estimate_taxes_for_segment(schedule_data, pax_type_counts):
+            if not schedule_data:
+                return Decimal('0.00')
 
-        for item in all_addons:
+            schedule_id = schedule_data.get('schedule_id') or schedule_data.get('id')
+            if not schedule_id:
+                return Decimal('0.00')
+
             try:
-                price = Decimal('0.00')
-                if item['type'] == 'baggage':
-                    obj = BaggageOption.objects.get(id=item['id'])
-                    price = obj.price
-                elif item['type'] == 'meals':
-                    obj = MealOption.objects.get(id=item['id'])
-                    price = obj.price
-                elif item['type'] == 'seats':
-                    obj = Seat.objects.get(id=item['id'])
-                    # Seat price logic (multiplier + adjustment)
-                    if obj.seat_class:
-                         # This logic should match Seat.final_price
-                         base = obj.schedule.ml_base_price if obj.schedule else Decimal('0.00')
-                         price = (base * obj.seat_class.price_multiplier) + obj.price_adjustment
-                    else:
-                        price = obj.price_adjustment
-                
-                breakdown['addons'] += price
-                
-            except Exception as e:
-                print(f"[WARN] Could not find price for addon {item}: {e}")
-                continue
+                schedule = Schedule.objects.select_related('flight__route').get(id=schedule_id)
+            except Schedule.DoesNotExist:
+                return Decimal('0.00')
 
-        # 4. Final Total
+            route = schedule.flight.route
+            applicable_taxes = TaxType.objects.filter(
+                is_active=True,
+                applies_domestic=route.is_domestic,
+                applies_international=route.is_international,
+            )
+
+            total_taxes = Decimal('0.00')
+            applied_any_tax = False
+            
+            for pax_type, count in pax_type_counts.items():
+                if count <= 0:
+                    continue
+
+                for tax in applicable_taxes:
+                    try:
+                        if tax.adult_only and pax_type != 'adult':
+                            continue
+
+                        try:
+                            rate = PassengerTypeTaxRate.objects.get(
+                                tax_type=tax,
+                                passenger_type=pax_type,
+                            )
+                            amount = rate.amount
+                        except PassengerTypeTaxRate.DoesNotExist:
+                            amount = tax.base_amount
+
+                        if not tax.per_passenger:
+                            if pax_type == 'adult':
+                                total_taxes += amount
+                                applied_any_tax = True
+                            continue
+
+                        total_taxes += amount * count
+                        applied_any_tax = True
+                    except Exception as e:
+                        print(f"Error estimating tax {tax.name}: {e}")
+                        continue
+
+            # FALLBACK: If no explicit taxes found in DB, use 12% VAT estimation (matches frontend)
+            if not applied_any_tax:
+                print(f"DEBUG: No explicit taxes found in DB. Applying 12% VAT estimation fallback.")
+                outbound_price = Decimal(str(schedule_data.get('price', 0)))
+                # Calculate base for this segment
+                seg_base = outbound_price * (pax_type_counts.get('adult', 0) + pax_type_counts.get('child', 0))
+                seg_base += (outbound_price * Decimal('0.5')) * pax_type_counts.get('infant', 0)
+                total_taxes = seg_base * Decimal('0.12')
+
+            return total_taxes
+
+        # 4. Iterate over segments
+        for segment in segments:
+            selected_flight = segment.get('selectedFlight')
+            if not selected_flight:
+                continue
+            
+            # Base Fare
+            outbound_price = Decimal(str(selected_flight.get('price', 0)))
+            total_base = outbound_price * (adult_count + child_count)
+            total_base += (outbound_price * Decimal('0.5')) * infant_count
+            breakdown['base_fare'] += total_base
+            
+            # Taxes
+            breakdown['taxes'] += estimate_taxes_for_segment(selected_flight, pax_type_counts)
+            
+            # Addons
+            segment_addons = segment.get('addons', {})
+            all_segment_addons = extract_ids(segment_addons)
+            for item in all_segment_addons:
+                try:
+                    price = Decimal('0.00')
+                    if item['type'] == 'baggage':
+                        obj = BaggageOption.objects.get(id=item['id'])
+                        price = obj.price
+                    elif item['type'] == 'meals':
+                        obj = MealOption.objects.get(id=item['id'])
+                        price = obj.price
+                    elif item['type'] == 'seats':
+                        obj = Seat.objects.get(id=item['id'])
+                        price = obj.price_adjustment
+                    
+                    breakdown['addons'] += price
+                except Exception as e:
+                    print(f"[WARN] Price calculation error for addon {item}: {e}")
+
+        # 5. Calculate Insurance (per passenger, once)
+        insurance_plan_id = data.get('insurance_plan_id')
+        if insurance_plan_id:
+            try:
+                plan = TravelInsurancePlan.objects.get(id=insurance_plan_id, is_active=True)
+                # Insurance is per passenger (Adult + Child)
+                breakdown['insurance'] = plan.retail_price * (adult_count + child_count)
+            except TravelInsurancePlan.DoesNotExist:
+                print(f"[WARN] Insurance plan {insurance_plan_id} not found")
+
+        # 5. Final Total (rounding up to nearest integer)
         total_price = breakdown['base_fare'] + breakdown['taxes'] + breakdown['addons'] + breakdown['insurance']
+        total_price = total_price.quantize(Decimal('1.'), rounding=ROUND_UP)
         breakdown['grand_total'] = total_price
         
         print(f"[OK] Calculated price: {total_price}")
+        print(f"=========== END DEBUG: calculate_booking_price ===========\n\n")
         
         return Response({
             'success': True,

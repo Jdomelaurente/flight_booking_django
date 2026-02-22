@@ -607,13 +607,19 @@ class AddonDataSerializer(serializers.Serializer):
     wheelchair = serializers.DictField(required=False)
     seats = serializers.DictField(required=False)
 
+class BookingSegmentSerializer(serializers.Serializer):
+    """Serializer for a single flight segment in a multi-city trip"""
+    selectedFlight = SelectedFlightSerializer()
+    addons = AddonDataSerializer(required=False)
+
 class CreateBookingSerializer(serializers.Serializer):
     """Main serializer for creating a booking"""
     trip_type = serializers.CharField(max_length=20)
     passengers = CreatePassengerSerializer(many=True)
     contact_info = ContactInfoSerializer()
-    selectedOutbound = SelectedFlightSerializer()
+    selectedOutbound = SelectedFlightSerializer(required=False, allow_null=True)
     selectedReturn = SelectedFlightSerializer(required=False, allow_null=True)
+    segments = BookingSegmentSerializer(many=True, required=False)
     addons = AddonDataSerializer(required=False)
     return_addons = ReturnAddonDataSerializer(required=False, allow_null=True)  
     passengerCount = serializers.DictField(required=False)
@@ -621,6 +627,7 @@ class CreateBookingSerializer(serializers.Serializer):
     activity_id = serializers.IntegerField(required=False, allow_null=True)
     activity_code = serializers.CharField(max_length=8, required=False, allow_null=True, allow_blank=True)
     is_practice = serializers.BooleanField(required=False, default=False)
+    insurance_plan_id = serializers.IntegerField(required=False, allow_null=True)
     
     def validate(self, data):
         """Custom validation for booking data"""
@@ -635,9 +642,20 @@ class CreateBookingSerializer(serializers.Serializer):
                     f"Invalid passenger type: {passenger['type']}. Must be Adult, Child, or Infant."
                 )
         
-        # For round trips, both flights should be present
-        if data.get('trip_type') == 'round_trip' and not data.get('selectedReturn'):
-            raise serializers.ValidationError("Return flight is required for round trips")
+        trip_type = data.get('trip_type')
+        
+        # Validation for Multi-city
+        if trip_type in ['multi_city', 'multi-city']:
+            if not data.get('segments'):
+                raise serializers.ValidationError("Segments are required for multi-city trips")
+        # Validation for Round Trip
+        elif trip_type == 'round_trip':
+            if not data.get('selectedOutbound') or not data.get('selectedReturn'):
+                raise serializers.ValidationError("Outbound and return flights are required for round trips")
+        # Validation for One Way
+        else:
+            if not data.get('selectedOutbound'):
+                raise serializers.ValidationError("Outbound flight is required")
         
         return data
 # ============================================================
@@ -744,7 +762,27 @@ class BookingResponseSerializer(serializers.Serializer):
     booking_reference = serializers.CharField()
     status = serializers.CharField()
     total_amount = serializers.DecimalField(max_digits=30, decimal_places=15)
-    message = serializers.CharField()
+    # Optional breakdown for display (base fare, taxes, addons, insurance)
+    breakdown = serializers.DictField(required=False)
+
+
+class TravelInsurancePlanSerializer(serializers.ModelSerializer):
+    """Serializer for travel insurance plans"""
+    provider_name = serializers.CharField(source='provider.name', read_only=True)
+
+    class Meta:
+        model = TravelInsurancePlan
+        fields = [
+            'id',
+            'name',
+            'description',
+            'retail_price',
+            'plan_type',
+            'coverage_summary',
+            'is_default',
+            'provider_name',
+        ]
+
 
 class PaymentResponseSerializer(serializers.Serializer):
     """Serializer for payment processing response"""

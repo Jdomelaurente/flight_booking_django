@@ -1,64 +1,94 @@
 <template>
-  <div v-if="timeLeft > 0" class="timer-banner" :class="{ 'timer-warn': timeLeft < 300 }">
-    <span class="clock-icon">⏳</span>
-    <span class="timer-text">Session expires in: <strong>{{ formattedTime }}</strong></span>
+  <div v-if="timeLeftSeconds > 0" 
+       :class="[variant === 'sidebar' ? 'timer-sidebar' : 'timer-banner', 
+                { 'timer-warn': timeLeftSeconds < 120 }]">
+    <span class="clock-icon">{{ variant === 'sidebar' ? '⌚' : '⏳' }}</span>
+    <span class="timer-text">
+      {{ variant === 'sidebar' ? 'Session Expires In' : 'Session expires in' }}: 
+      <strong>{{ formattedTime }}</strong>
+    </span>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { defineProps, onMounted, onUnmounted, ref, computed } from 'vue';
 import { useBookingStore } from '@/stores/booking';
 import { useRouter } from 'vue-router';
 import { useNotificationStore } from '@/stores/notification';
 
+const props = defineProps({
+  variant: {
+    type: String,
+    default: 'banner' // 'banner' or 'sidebar'
+  }
+});
+
 const bookingStore = useBookingStore();
 const router = useRouter();
 const notificationStore = useNotificationStore();
-const timeLeft = ref(0);
+
+const currentTime = ref(Date.now());
 let interval = null;
+let hasNotified = false;
+
+const timeLeftSeconds = computed(() => {
+  if (!bookingStore.sessionExpiry) return 0;
+  return Math.max(0, Math.round((bookingStore.sessionExpiry - currentTime.value) / 1000));
+});
 
 const formattedTime = computed(() => {
-  const mins = Math.floor(timeLeft.value / 60);
-  const secs = timeLeft.value % 60;
+  const diff = timeLeftSeconds.value;
+  const mins = Math.floor(diff / 60);
+  const secs = diff % 60;
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 });
 
-const updateTimer = () => {
-  if (!bookingStore.sessionExpiry) return;
+const tick = () => {
+  currentTime.value = Date.now();
   
-  const now = Date.now();
-  const diff = Math.round((bookingStore.sessionExpiry - now) / 1000);
-  
-  if (diff <= 0) {
-    timeLeft.value = 0;
-    clearInterval(interval);
+  const secondsLeft = timeLeftSeconds.value;
+
+  if (secondsLeft <= 0 && bookingStore.sessionExpiry) {
     handleTimeout();
-  } else {
-    timeLeft.value = diff;
+  }
+  
+  // Proximity notification at 2 minutes
+  if (secondsLeft <= 120 && secondsLeft > 115 && !hasNotified) {
+    notificationStore.info("Your flight price is locked for 2 more minutes. Need more time?");
+    hasNotified = true;
+  }
+  
+  // Reset notification flag if session is extended or restarted
+  if (secondsLeft > 120) {
+    hasNotified = false;
   }
 };
 
 const handleTimeout = () => {
+  if (interval) clearInterval(interval);
   notificationStore.error("Your booking session has expired. Please start over.");
   bookingStore.resetBooking();
-  router.push({ name: 'Home' }); // Or your search page
+  router.push({ name: 'Home' });
 };
 
 onMounted(() => {
-  // If no session exists, start one (usually triggered on flight selection)
+  // If no session exists, start one (usually happens at flight selection)
   if (!bookingStore.sessionExpiry) {
     bookingStore.startSession();
   }
-  updateTimer();
-  interval = setInterval(updateTimer, 1000);
+  
+  currentTime.value = Date.now();
+  interval = setInterval(tick, 1000);
 });
 
-onUnmounted(() => clearInterval(interval));
+onUnmounted(() => {
+  if (interval) clearInterval(interval);
+});
 </script>
 
 <style scoped>
 .timer-banner {
-  background: #003870; /* PAL Blue */
+  background: #003870; 
   color: white;
   padding: 10px;
   text-align: center;
@@ -66,9 +96,52 @@ onUnmounted(() => clearInterval(interval));
   top: 0;
   z-index: 1000;
   font-size: 0.9rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
-.timer-warn {
-  background: #d11241; /* PAL Red - Alert when under 5 mins */
+
+.timer-sidebar {
+  background: #F8F9FA;
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #666;
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
 }
-.timer-text strong { margin-left: 5px; font-family: monospace; font-size: 1.1rem; }
+
+.timer-warn.timer-banner {
+  background: #d11241;
+}
+
+.timer-warn.timer-sidebar {
+  background: #FFF5F5;
+  border-color: #FED7D7;
+  color: #C53030;
+  animation: pulse-border 2s infinite;
+}
+
+@keyframes pulse-border {
+  0% { border-color: #FED7D7; }
+  50% { border-color: #FC8181; }
+  100% { border-color: #FED7D7; }
+}
+
+.timer-text strong { 
+  margin-left: 5px; 
+  font-family: monospace; 
+  font-size: 1.1rem; 
+}
+
+.timer-warn.timer-sidebar .timer-text strong {
+  color: #D32F2F;
+}
+
+.timer-banner .timer-text strong {
+  color: white;
+}
 </style>

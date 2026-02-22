@@ -12,14 +12,6 @@ class PayMongoService:
         self.api_url = config('PAYMONGO_API_URL', default='https://api.paymongo.com/v1')
         self.secret_key = config('PAYMONGO_SECRET_KEY', default='')
 
-        # Debug: Print configuration
-        print(f"=== PAYMONGO CONFIGURATION ===")
-        print(f"API URL: {self.api_url}")
-        print(f"Secret Key Available: {'Yes' if self.secret_key else 'No'}")
-        print(f"Secret Key Length: {len(self.secret_key) if self.secret_key else 0}")
-        print(f"Secret Key Starts with 'sk_': {self.secret_key.startswith('sk_') if self.secret_key else False}")
-        print(f"=================================")
-        
         if not self.secret_key:
             raise ValueError("PAYMONGO_SECRET_KEY is not configured in environment variables")
         

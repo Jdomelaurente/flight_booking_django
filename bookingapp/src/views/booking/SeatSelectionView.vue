@@ -6,8 +6,8 @@
           <button @click="$router.back()" class="back-link">❮ Back to Add-ons</button>
           <h2>Select Your Seats</h2>
           
-          <!-- Flight Segment Tabs for Round Trips -->
-          <div v-if="bookingStore.isRoundTrip" class="flight-segment-tabs seat-segment">
+          <!-- Flight Segment Tabs -->
+          <div v-if="bookingStore.isRoundTrip || bookingStore.tripType.includes('multi')" class="flight-segment-tabs seat-segment">
             <div 
               v-for="segment in flightSegments" 
               :key="segment.key"
@@ -16,7 +16,8 @@
             >
               <div class="segment-icon">
                 <span v-if="segment.key === 'depart'">✈️</span>
-                <span v-else>🔄</span>
+                <span v-else-if="segment.key === 'return'">🔄</span>
+                <span v-else>📍</span>
               </div>
               <div class="segment-info">
                 <div class="segment-label">{{ segment.label }}</div>
@@ -190,22 +191,15 @@
                 </div>
               </div>
 
-              <div class="selection-progress" v-if="bookingStore.isRoundTrip">
+              <div class="selection-progress" v-if="bookingStore.isRoundTrip || bookingStore.tripType.includes('multi')">
                 <div class="progress-label">Selection Progress</div>
                 <div class="progress-bars">
-                  <div class="progress-bar">
-                    <div class="progress-text">Depart</div>
+                  <div v-for="seg in segmentProgress" :key="seg.key" class="progress-bar">
+                    <div class="progress-text">{{ seg.label }}</div>
                     <div class="progress-track">
-                      <div class="progress-fill" :style="{ width: departProgress + '%' }"></div>
+                      <div class="progress-fill" :style="{ width: seg.percent + '%' }"></div>
                     </div>
-                    <div class="progress-count">{{ departSeatCount }}/{{ bookingStore.passengers.length }}</div>
-                  </div>
-                  <div class="progress-bar">
-                    <div class="progress-text">Return</div>
-                    <div class="progress-track">
-                      <div class="progress-fill" :style="{ width: returnProgress + '%' }"></div>
-                    </div>
-                    <div class="progress-count">{{ returnSeatCount }}/{{ bookingStore.passengers.length }}</div>
+                    <div class="progress-count">{{ seg.count }}/{{ bookingStore.passengers.length }}</div>
                   </div>
                 </div>
               </div>
@@ -220,11 +214,11 @@
               </button>
               
               <button 
-                v-if="bookingStore.isRoundTrip && activeFlightSegment === 'depart' && allPassengersHaveSeats"
-                @click="switchToReturnSegment"
+                v-if="hasNextSegment"
+                @click="goToNextSegment"
                 class="btn-next-segment"
               >
-                Continue to Return Flight Seats →
+                Continue to Next Flight Seats →
               </button>
             </div>
           </aside>
@@ -248,6 +242,7 @@ import { useRouter } from 'vue-router';
 import { useBookingStore } from '@/stores/booking';
 import { seatService } from '@/services/booking/seatService';
 import { useModalStore } from '@/stores/modal';
+import { useNotificationStore } from '@/stores/notification';
 
 const router = useRouter();
 const bookingStore = useBookingStore();
@@ -255,7 +250,7 @@ const notificationStore = useNotificationStore();
 const modalStore = useModalStore();
 
 const activePIndex = ref(0);
-const activeFlightSegment = ref('depart'); // 'depart' or 'return'
+const activeFlightSegment = ref(''); // Will be set on mount
 const hoveredSeat = ref(null);
 const rawSeats = ref([]);
 const isLoading = ref(true);
@@ -266,9 +261,14 @@ const AircraftLayout = shallowRef(null);
 
 // Computed properties
 const currentFlight = computed(() => {
-  return activeFlightSegment.value === 'depart' 
-    ? bookingStore.selectedOutbound 
-    : bookingStore.selectedReturn;
+  const isMulti = bookingStore.tripType === 'multi_city' || bookingStore.tripType === 'multi-city';
+  if (isMulti) {
+    const idx = parseInt(activeFlightSegment.value);
+    return bookingStore.multiCitySegments[idx]?.selectedFlight;
+  }
+  return activeFlightSegment.value === 'return' 
+    ? bookingStore.selectedReturn 
+    : bookingStore.selectedOutbound;
 });
 
 const activeFlightSegmentLabel = computed(() => {
@@ -276,6 +276,17 @@ const activeFlightSegmentLabel = computed(() => {
 });
 
 const flightSegments = computed(() => {
+  const tripType = bookingStore.tripType;
+  
+  if (tripType === 'multi_city' || tripType === 'multi-city') {
+    return bookingStore.multiCitySegments.map((seg, idx) => ({
+      key: idx.toString(),
+      label: `Flight ${idx + 1}`,
+      flight: seg.selectedFlight?.flight_number || 'N/A',
+      route: `${seg.origin} → ${seg.destination}`
+    }));
+  }
+
   const segments = [
     {
       key: 'depart',
@@ -305,6 +316,20 @@ const assignedSeats = computed(() => {
 });
 
 // Get seats count for each segment
+// Multi-city progress
+const segmentProgress = computed(() => {
+  return flightSegments.value.map(seg => {
+    const count = Object.keys(bookingStore.getSeatsBySegment(seg.key)).length;
+    return {
+      label: seg.label,
+      key: seg.key,
+      count,
+      percent: (count / bookingStore.passengers.length) * 100
+    };
+  });
+});
+
+// Get seats count for each segment (deprecated for multi-city but kept for compat)
 const departSeatCount = computed(() => {
   return Object.keys(bookingStore.getSeatsBySegment('depart')).length;
 });
@@ -364,26 +389,39 @@ const segmentSeatTotal = computed(() => {
   }, 0);
 });
 
-// Total seats for both segments
+// Total seats for both/all segments
 const totalSeats = computed(() => {
   let total = 0;
   
-  // Add depart seats
-  Object.values(bookingStore.getSeatsBySegment('depart')).forEach(seat => {
-    total += parseFloat(seat.seat_price) || 0;
-  });
-  
-  // Add return seats if round trip
-  if (bookingStore.isRoundTrip) {
-    Object.values(bookingStore.getSeatsBySegment('return')).forEach(seat => {
+  flightSegments.value.forEach(seg => {
+    Object.values(bookingStore.getSeatsBySegment(seg.key)).forEach(seat => {
       total += parseFloat(seat.seat_price) || 0;
     });
-  }
+  });
   
   return total;
 });
 
 const hasSelections = computed(() => Object.keys(assignedSeats.value).length > 0);
+
+const hasNextSegment = computed(() => {
+  const tripType = bookingStore.tripType;
+  if (tripType === 'multi_city' || tripType === 'multi-city') {
+    const currentIdx = parseInt(activeFlightSegment.value);
+    return currentIdx < bookingStore.multiCitySegments.length - 1 && allPassengersHaveSeats.value;
+  }
+  return bookingStore.isRoundTrip && activeFlightSegment.value === 'depart' && allPassengersHaveSeats.value;
+});
+
+const goToNextSegment = () => {
+  const tripType = bookingStore.tripType;
+  if (tripType === 'multi_city' || tripType === 'multi-city') {
+    const currentIdx = parseInt(activeFlightSegment.value);
+    switchFlightSegment((currentIdx + 1).toString());
+  } else {
+    switchToReturnSegment();
+  }
+};
 
 // Get active passenger
 const activePassenger = computed(() => {
@@ -439,6 +477,13 @@ const fetchSeatData = async () => {
     
   } catch (err) {
     console.error(`❌ Failed to load seat map for ${activeFlightSegmentLabel.value}`, err);
+    // If it's a 400 error (verification failure), refresh the page after a short delay
+    // to give the user time to read the toast message.
+    if (err.response?.status === 400) {
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+    }
   } finally {
     isLoading.value = false;
   }
@@ -679,7 +724,17 @@ const confirmSeats = () => {
     return;
   }
   
-  if (bookingStore.isRoundTrip) {
+  const tripType = bookingStore.tripType;
+  if (tripType === 'multi_city' || tripType === 'multi-city') {
+    const currentIdx = parseInt(activeFlightSegment.value);
+    if (currentIdx < bookingStore.multiCitySegments.length - 1) {
+      // Move to next segment
+      switchFlightSegment((currentIdx + 1).toString());
+    } else {
+      // Done
+      router.back();
+    }
+  } else if (bookingStore.isRoundTrip) {
     if (activeFlightSegment.value === 'depart') {
       // Move to return seat selection
       switchFlightSegment('return');
@@ -703,13 +758,15 @@ onMounted(async () => {
   // First, migrate store to new format
   bookingStore.migrateAddonsToNewFormat();
   
+  // Initialize active segment
+  if (bookingStore.tripType === 'multi_city' || bookingStore.tripType === 'multi-city') {
+    activeFlightSegment.value = '0';
+  } else {
+    activeFlightSegment.value = 'depart';
+  }
+  
   // Fetch seat data for initial segment
   await fetchSeatData();
-  
-  // If return flight doesn't exist for round trip, show warning
-  if (bookingStore.isRoundTrip && !bookingStore.selectedReturn) {
-    console.warn('Round trip selected but return flight is missing');
-  }
 });
 </script>
 

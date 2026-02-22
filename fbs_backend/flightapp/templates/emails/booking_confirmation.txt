@@ -14,7 +14,7 @@ Download and print these PDFs or show them on your mobile device at the airport.
 
 BOOKING DETAILS
 ---------------
-Booking Reference: {{ booking_reference }}
+PNR / RECORD LOCATOR: {{ booking_reference }}
 Status: CONFIRMED
 Booking Date: {{ booking_date|date:"F d, Y H:i" }}
 
