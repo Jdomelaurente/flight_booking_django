@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from .models import AirlineTax, AirportFee, Booking, BookingDetail, BookingTax, CheckInDetail, PassengerInfo, Students, PassengerTypeTaxRate, Route, Airline, SeatClass, Aircraft, Airport, AddOnType, Flight, Schedule, Seat, TaxType, TrackLog, SeatRequirement, Payment
@@ -65,6 +66,14 @@ class InstructorsSerializer(serializers.ModelSerializer):
         return " ".join([p for p in parts if p])
 
 
+=======
+# serializers.py
+from rest_framework import serializers
+from django.contrib.auth.models import User
+from .models import AirlineTax, AirportFee, Booking, BookingDetail, BookingTax, CheckInDetail, PassengerInfo, PassengerTypeTaxRate, Route, Airline, SeatClass, Aircraft, Airport, AddOnType, Flight, Schedule, Seat, TaxType, TrackLog, SeatRequirement
+
+
+>>>>>>> 7926be7605482d3d0aa1a2a6cb1ccb63031afcdf
 # ==========================================
 # MANAGE FLIGHT
 # ==========================================
@@ -575,3 +584,12 @@ class BookingTaxSerializer(serializers.ModelSerializer):
     class Meta:
         model = BookingTax
         fields = ['id', 'booking', 'tax_type', 'amount', 'passenger_type', 'created_at']
+<<<<<<< HEAD
+=======
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        # Added first_name and last_name to the fields
+        fields = ['id', 'username', 'email', 'first_name', 'last_name']
+>>>>>>> 7926be7605482d3d0aa1a2a6cb1ccb63031afcdf

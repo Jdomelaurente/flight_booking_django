@@ -633,6 +633,10 @@ def predict_flight_price(request):
             'error': str(e)
         }, status=400)
 
+<<<<<<< HEAD
+=======
+# In views.py - Update the SeatViewSet class
+>>>>>>> 7926be7605482d3d0aa1a2a6cb1ccb63031afcdf
 class SeatViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint that allows seats to be viewed based on a schedule.

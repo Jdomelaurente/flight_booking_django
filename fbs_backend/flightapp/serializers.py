@@ -177,11 +177,19 @@ class SeatSerializer(serializers.ModelSerializer):
         model = Seat
         fields = [
             'id', 'seat_code', 'seat_number', 'row', 'column', 'is_available', 
+<<<<<<< HEAD
             'price_adjustment', 'final_price', 'seat_class', 
             'is_window', 'is_aisle', 'has_extra_legroom',
             'is_exit_row', 'is_wheelchair_accessible', 'has_bassinet', 
             'has_nut_allergy', 'is_unaccompanied_minor', 'is_bulkhead', 
             'price_adjustment_manual', 'features'
+=======
+            'price_adjustment', 'final_price', 'seat_class', 'seat_class_name',
+            'is_window', 'is_aisle', 'has_extra_legroom', 'is_exit_row', 
+            'is_wheelchair_accessible', 'has_bassinet', 'has_nut_allergy', 
+            'is_unaccompanied_minor', 'is_bulkhead', 'price_adjustment_manual',
+            'features'
+>>>>>>> 7926be7605482d3d0aa1a2a6cb1ccb63031afcdf
         ]
     
     def get_seat_class(self, obj):

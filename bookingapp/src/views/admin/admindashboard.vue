@@ -26,7 +26,6 @@
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span class="text-[10px] font-bold text-white uppercase tracking-[0.2em] poppins">System Live</span>
           </div>
           <h1 class="text-4xl font-black text-white poppins tracking-tight mb-2">
             {{ greeting }}, <span class="text-[#fe3787] drop-shadow-sm font-black italic">Admin</span>
@@ -383,7 +382,78 @@
       </div>
     </div>
 
-    <!-- Quick Actions Grid -->
+    <!-- Revenue & Operations Row (NEWLY ENHANCED) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+       <!-- Revenue by Route -->
+       <div class="lg:col-span-12 xl:col-span-7 bg-white p-6 border border-gray-200 rounded-[1px] shadow-sm relative group overflow-hidden">
+          <div class="absolute top-0 left-0 w-1 h-full bg-[#002D1E] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <h3 class="text-sm font-black text-[#002D1E] poppins uppercase tracking-widest mb-6 relative">Revenue Performance by Route</h3>
+          <div class="h-64 relative">
+             <canvas ref="revenueByRouteChartRef"></canvas>
+          </div>
+       </div>
+
+       <!-- Flight Status Distribution -->
+       <div class="lg:col-span-12 xl:col-span-5 bg-white p-6 border border-gray-200 rounded-[1px] shadow-sm relative group overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
+          <h3 class="text-sm font-black text-[#002D1E] poppins uppercase tracking-widest mb-6 relative">Flight Operations</h3>
+          <div class="h-48 relative mb-6">
+             <canvas ref="flightOpsChartRef"></canvas>
+          </div>
+          <div class="space-y-2 relative">
+             <div v-for="(val, idx) in flightOpsData.data" :key="idx" class="flex items-center justify-between text-[11px] font-bold uppercase poppins">
+                <span class="text-gray-400">{{ flightOpsData.labels[idx] }}</span>
+                <span class="text-[#002D1E]">{{ val }} Flights</span>
+             </div>
+          </div>
+       </div>
+    </div>
+
+    <!-- Fleet Row (NEW) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+       <!-- Aircraft Utilization -->
+       <div class="lg:col-span-12 xl:col-span-6 bg-[#002D1E] p-6 rounded-[1px] shadow-lg relative overflow-hidden">
+          <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
+          <h3 class="text-sm font-black text-white poppins uppercase tracking-widest mb-6 relative">Fleet Utilization</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5 relative">
+             <div v-for="aircraft in aircraftUtilization" :key="aircraft.flight" class="space-y-2">
+                <div class="flex justify-between items-end">
+                   <div>
+                      <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest poppins leading-none mb-1">{{ aircraft.flight }}</p>
+                      <p class="text-xs font-bold text-white poppins">{{ aircraft.occupied }}/{{ aircraft.total }} Seats</p>
+                   </div>
+                   <span class="text-xs font-black text-[#fe3787] poppins">{{ aircraft.occupancy }}%</span>
+                </div>
+                <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                   <div class="h-full bg-gradient-to-r from-[#fe3787] to-pink-400 transition-all duration-1000" :style="{ width: aircraft.occupancy + '%' }"></div>
+                </div>
+             </div>
+          </div>
+       </div>
+
+       <!-- Quick Stats/Actions Placeholder or System Alerts -->
+       <div class="lg:col-span-12 xl:col-span-6 bg-white p-6 border border-gray-200 rounded-[1px] shadow-sm flex flex-col justify-center">
+          <div class="flex items-center gap-4 mb-6">
+             <div class="w-12 h-12 bg-blue-50 text-blue-600 flex items-center justify-center rounded-[1px] shadow-inner">
+                <i class="ph ph-shield-check text-2xl"></i>
+             </div>
+             <div>
+                <h4 class="text-sm font-black text-[#002D1E] poppins uppercase tracking-widest">System Health Optimized</h4>
+                <p class="text-[10px] text-gray-400 poppins">All automated pricing models are operational</p>
+             </div>
+          </div>
+          <div class="flex gap-4">
+             <div class="flex-1 p-4 bg-gray-50 rounded-[1px] border border-gray-100">
+                <p class="text-[8px] uppercase font-bold text-gray-400 tracking-widest mb-1">Response Time</p>
+                <p class="text-lg font-black text-[#002D1E] poppins">24ms</p>
+             </div>
+             <div class="flex-1 p-4 bg-gray-50 rounded-[1px] border border-gray-100">
+                <p class="text-[8px] uppercase font-bold text-gray-400 tracking-widest mb-1">Server Load</p>
+                <p class="text-lg font-black text-[#002D1E] poppins">12%</p>
+             </div>
+          </div>
+       </div>
+    </div>
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
        <!-- Action Cards (Combined from original quick actions) -->
        <div v-for="action in quickActions" :key="action.label" class="bg-white p-6 border border-gray-200 rounded-[1px] shadow-sm hover:shadow-md transition-all group">
@@ -421,6 +491,8 @@ const revenueChartRef = ref(null)
 const compositionChartRef = ref(null)
 const routesChartRef = ref(null)
 const seatClassChartRef = ref(null)
+const flightOpsChartRef = ref(null)
+const revenueByRouteChartRef = ref(null)
 const mapContainer = ref(null)
 const mapCardRef = ref(null)
 const mapLoading = ref(false)
@@ -441,8 +513,20 @@ const stats = ref({
   scheduledFlights: 0
 })
 
+const flightOpsData = ref({
+  labels: [],
+  data: []
+})
+
+const aircraftUtilization = ref([])
+const flightOpsColors = ['#fe3787', '#3b82f6', '#002D1E', '#10b981']
+
 const recentBookings = ref([])
 const alerts = ref([])
+const revenueByRouteData = ref({
+  labels: [],
+  data: []
+})
 const ticketSalesData = ref({
   labels: [],
   data: []
@@ -470,6 +554,8 @@ let revenueChartInstance = null
 let compositionChartInstance = null
 let routesChartInstance = null
 let seatClassChartInstance = null
+let flightOpsChartInstance = null
+let revenueByRouteChartInstance = null
 let mapInstance = null
 let flightMarkers = []
 let flightPolylines = []
@@ -570,6 +656,8 @@ const fetchDashboardData = async () => {
     fetchExtraStats()
     fetchActiveFlights()
     fetchSeatClassDistribution()
+    fetchOpsStats()
+    fetchRevenueStats()
 
     // Wait for DOM to update then initialize charts
     await nextTick()
@@ -615,6 +703,37 @@ const fetchExtraStats = async () => {
         })
     } catch (err) {
         console.error('Extra stats error:', err)
+    }
+}
+
+const fetchOpsStats = async () => {
+    try {
+        const [opsRes, utilRes] = await Promise.all([
+            api.get('/dashboard/flight_operations_stats/'),
+            api.get('/dashboard/aircraft_utilization/')
+        ])
+        
+        if (opsRes.data) flightOpsData.value = opsRes.data
+        if (utilRes.data) aircraftUtilization.value = utilRes.data
+        
+        nextTick(() => {
+            initFlightOpsChart()
+        })
+    } catch (err) {
+        console.error('Ops stats error:', err)
+    }
+}
+
+const fetchRevenueStats = async () => {
+    try {
+        const res = await api.get('/dashboard/revenue_by_route/')
+        if (res.data) revenueByRouteData.value = res.data
+        
+        nextTick(() => {
+            initRevenueByRouteChart()
+        })
+    } catch (err) {
+        console.error('Revenue stats error:', err)
     }
 }
 
@@ -852,6 +971,69 @@ const initRoutesChart = () => {
             color: '#9ca3af'
           }
         }
+      }
+    }
+  })
+}
+
+const initFlightOpsChart = () => {
+  if (!flightOpsChartRef.value) return
+  if (flightOpsChartInstance) flightOpsChartInstance.destroy()
+  
+  const ctx = flightOpsChartRef.value.getContext('2d')
+  flightOpsChartInstance = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: flightOpsData.value.labels,
+      datasets: [{
+        data: flightOpsData.value.data,
+        backgroundColor: flightOpsColors,
+        borderWidth: 0,
+        hoverOffset: 15
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#002D1E',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          padding: 12
+        }
+      }
+    }
+  })
+}
+
+const initRevenueByRouteChart = () => {
+  if (!revenueByRouteChartRef.value) return
+  if (revenueByRouteChartInstance) revenueByRouteChartInstance.destroy()
+  
+  const ctx = revenueByRouteChartRef.value.getContext('2d')
+  revenueByRouteChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: revenueByRouteData.value.labels,
+      datasets: [{
+        label: 'Revenue (₱)',
+        data: revenueByRouteData.value.data,
+        backgroundColor: '#fe3787',
+        borderRadius: 2,
+        barThickness: 15
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family: 'Poppins', size: 10, weight: 'bold' }, color: '#9ca3af' } },
+        y: { grid: { color: '#f3f4f6' }, border: { display: false }, ticks: { font: { family: 'Poppins', size: 10 }, color: '#9ca3af' } }
       }
     }
   })
@@ -1199,6 +1381,7 @@ onUnmounted(() => {
     revenueChartInstance.destroy()
     revenueChartInstance = null
   }
+<<<<<<< HEAD
   if (mapInstance) {
     mapInstance.remove()
     mapInstance = null
@@ -1210,6 +1393,23 @@ onUnmounted(() => {
   if (mapRefreshInterval) {
     clearInterval(mapRefreshInterval)
     mapRefreshInterval = null
+=======
+  if (compositionChartInstance) {
+    compositionChartInstance.destroy()
+    compositionChartInstance = null
+  }
+  if (routesChartInstance) {
+    routesChartInstance.destroy()
+    routesChartInstance = null
+  }
+  if (flightOpsChartInstance) {
+    flightOpsChartInstance.destroy()
+    flightOpsChartInstance = null
+  }
+  if (revenueByRouteChartInstance) {
+    revenueByRouteChartInstance.destroy()
+    revenueByRouteChartInstance = null
+>>>>>>> 7926be7605482d3d0aa1a2a6cb1ccb63031afcdf
   }
 })
 </script>
