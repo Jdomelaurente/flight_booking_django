@@ -129,7 +129,7 @@
     </div>
 
     <!-- Active Flight Map (NEW) -->
-    <div ref="mapCardRef" class="bg-white border border-gray-200 rounded-[1px] shadow-sm mb-8 overflow-hidden group relative" :class="{'h-screen w-screen !m-0 !fixed inset-0 z-[100]': isMapFullScreen}">
+    <div ref="mapCardRef" class="bg-white border border-gray-200 rounded-[1px] shadow-sm mb-8 overflow-hidden group relative" :class="{'h-screen w-screen !m-0 !fixed inset-0 z-[100] flex flex-col': isMapFullScreen}">
       <div class="absolute top-0 left-0 w-1 h-full bg-[#002D1E] opacity-0 group-hover:opacity-100 transition-opacity"></div>
       <div class="p-6 border-b border-gray-100 flex items-center justify-between">
         <div>
@@ -152,19 +152,19 @@
           </button>
         </div>
       </div>
-      <div :class="isMapFullScreen ? 'h-[calc(100vh-80px)]' : 'h-[400px]'" class="relative transition-all duration-300">
+      <div :class="isMapFullScreen ? 'flex-grow' : 'h-[400px]'" class="relative transition-all duration-300">
         <div ref="mapContainer" class="absolute inset-0 z-0"></div>
         
         <!-- Map Overlay Stats -->
         <div class="absolute bottom-6 left-6 z-[400] flex flex-col gap-2">
-          <div class="bg-black/80 backdrop-blur-md border border-white/10 p-4 rounded-[1px] shadow-2xl">
+          <div class="bg-white/90 backdrop-blur-md border border-gray-200 p-4 rounded-[1px] shadow-2xl">
             <div class="flex items-center gap-3 mb-3">
               <div class="w-8 h-8 rounded-[1px] bg-[#fe3787] flex items-center justify-center">
                 <i class="ph ph-airplane-tilt text-white"></i>
               </div>
               <div>
                 <p class="text-[8px] text-gray-400 uppercase font-bold tracking-widest leading-none">Global Coverage</p>
-                <p class="text-xs text-white font-black poppins">Active Airspace</p>
+                <p class="text-xs text-[#002D1E] font-black poppins">Active Airspace</p>
               </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
@@ -1142,7 +1142,7 @@ const initMap = () => {
     attributionControl: false
   })
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     maxZoom: 19
   }).addTo(mapInstance)
 
@@ -1278,9 +1278,9 @@ const updateMapMarkers = () => {
     // Draw Route Line
     const polyline = L.polyline([origin, dest], {
       color: '#fe3787',
-      weight: 1,
-      dashArray: '5, 10',
-      opacity: 0.5
+      weight: 3,
+      dashArray: '5, 12',
+      opacity: 0.6
     }).addTo(mapInstance)
     flightPolylines.push(polyline)
 
