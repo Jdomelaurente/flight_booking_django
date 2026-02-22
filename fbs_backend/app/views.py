@@ -1132,7 +1132,10 @@ class DashboardViewSet(viewsets.ViewSet):
                 'recent_bookings',
                 'alerts',
                 'passenger_composition',
-                'popular_routes'
+                'popular_routes',
+                'flight_operations_stats',
+                'aircraft_utilization',
+                'revenue_by_route'
             ]
         })
     
@@ -1400,5 +1403,72 @@ class DashboardViewSet(viewsets.ViewSet):
             })
         except Exception as e:
             print(f"Popular routes error: {str(e)}")
+            return Response({'labels': [], 'data': []}, status=200)
+
+    @action(detail=False, methods=['get'])
+    def flight_operations_stats(self, request):
+        """Returns breakdown of flights by status"""
+        try:
+            stats = Schedule.objects.values('status').annotate(count=Count('id'))
+            status_map = {
+                'Open': 'Scheduled',
+                'Closed': 'Boarding',
+                'On Flight': 'In-Air',
+                'Arrived': 'Arrived'
+            }
+            labels = []
+            data = []
+            for s in stats:
+                label = status_map.get(s['status'], s['status'])
+                labels.append(label)
+                data.append(s['count'])
+            return Response({'labels': labels, 'data': data})
+        except Exception as e:
+            return Response({'labels': [], 'data': []}, status=200)
+
+    @action(detail=False, methods=['get'])
+    def aircraft_utilization(self, request):
+        """Returns aircraft utilization stats (occupancy rate)"""
+        try:
+            # Get 10 most recent schedules to show utilization
+            schedules = Schedule.objects.all().order_by('-departure_time')[:10]
+            utilization_data = []
+            for s in schedules:
+                total_seats = s.seats.count()
+                occupied_seats = s.bookingdetail_set.filter(
+                    status__in=['confirmed', 'checkin', 'boarding', 'completed']
+                ).count()
+                rate = round((occupied_seats / total_seats * 100), 1) if total_seats > 0 else 0
+                utilization_data.append({
+                    'flight': s.flight.flight_number,
+                    'occupancy': rate,
+                    'total': total_seats,
+                    'occupied': occupied_seats
+                })
+            return Response(utilization_data)
+        except Exception as e:
+            return Response([], status=200)
+
+    @action(detail=False, methods=['get'])
+    def revenue_by_route(self, request):
+        """Returns revenue breakdown by route"""
+        try:
+            routes = BookingDetail.objects.filter(
+                status__in=['confirmed', 'checkin', 'boarding', 'completed']
+            ).values(
+                'schedule__flight__route__origin_airport__code',
+                'schedule__flight__route__destination_airport__code'
+            ).annotate(
+                revenue=Sum('price')
+            ).order_by('-revenue')[:5]
+            
+            labels = [f"{r['schedule__flight__route__origin_airport__code']} → {r['schedule__flight__route__destination_airport__code']}" for r in routes]
+            data = [float(r['revenue']) for r in routes]
+            
+            return Response({
+                'labels': labels,
+                'data': data
+            })
+        except Exception as e:
             return Response({'labels': [], 'data': []}, status=200)
         

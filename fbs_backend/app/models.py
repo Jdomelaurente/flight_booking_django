@@ -224,6 +224,8 @@ class Airport(models.Model):
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True, related_name="airports")
     location = models.CharField(max_length=150, null=True, blank=True)
     airport_type = models.CharField(max_length=20, choices=AIRPORT_TYPE_CHOICES, default='domestic')
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
 
     def __str__(self):
         return f"{self.code} - {self.name} ({self.get_airport_type_display()})"
@@ -387,9 +389,51 @@ class Schedule(models.Model):
 
     @property
     def is_open(self):
-<<<<<<< HEAD
         return self.automatic_status == "Open"
-
+    
+    
+    def update_ml_price(self, save=True):
+        """Update the ML predicted price for this schedule"""
+        try:
+            # Import inside the method to avoid circular imports
+            from flightapp.ml.predictor import predictor
+            
+            # Check if model is loaded - if not, try to load it
+            if not predictor.model:
+                print(f"⚠️ Schedule {self.id}: ML model not loaded, attempting to load...")
+                predictor.load_model()
+                
+                if not predictor.model:
+                    print(f"❌ Schedule {self.id}: Failed to load ML model")
+                    return False, None
+            
+            flight_data = {
+                'schedule_id': self.id,
+                'flight_number': self.flight.flight_number,
+                'airline_code': self.flight.airline.code,
+                'airline_name': self.flight.airline.name,
+                'origin': self.flight.route.origin_airport.code,
+                'destination': self.flight.route.destination_airport.code,
+                'departure_time': self.departure_time.isoformat(),
+                'arrival_time': self.arrival_time.isoformat(),
+                'total_stops': 0,
+                'is_domestic': self.flight.route.is_domestic,
+            }
+            
+            predicted_price = Decimal(str(predictor.predict_price(flight_data)))
+            self.ml_base_price = predicted_price
+            self.ml_price_updated_at = timezone.now()
+            
+            if save:
+                self.save(update_fields=['ml_base_price', 'ml_price_updated_at'])
+            
+            print(f"✅ Schedule {self.id}: ML price updated to ₱{predicted_price:,.2f}")
+            return True, predicted_price
+        except Exception as e:
+            print(f"❌ Error updating ML price for schedule {self.id}: {e}")
+            import traceback
+            traceback.print_exc()
+            return False, None
     # --- VALIDATION ---
 
     def clean(self):
@@ -442,54 +486,6 @@ class SeatRequirement(models.Model):
 
     def __str__(self):
         return f"{self.name} (₱{self.price})"
-=======
-        return self.status == "Open"
-    
-    
-    def update_ml_price(self, save=True):
-        """Update the ML predicted price for this schedule"""
-        try:
-            # Import inside the method to avoid circular imports
-            from flightapp.ml.predictor import predictor
-            
-            # Check if model is loaded - if not, try to load it
-            if not predictor.model:
-                print(f"⚠️ Schedule {self.id}: ML model not loaded, attempting to load...")
-                predictor.load_model()
-                
-                if not predictor.model:
-                    print(f"❌ Schedule {self.id}: Failed to load ML model")
-                    return False, None
-            
-            flight_data = {
-                'schedule_id': self.id,
-                'flight_number': self.flight.flight_number,
-                'airline_code': self.flight.airline.code,
-                'airline_name': self.flight.airline.name,
-                'origin': self.flight.route.origin_airport.code,
-                'destination': self.flight.route.destination_airport.code,
-                'departure_time': self.departure_time.isoformat(),
-                'arrival_time': self.arrival_time.isoformat(),
-                'total_stops': 0,
-                'is_domestic': self.flight.route.is_domestic,
-            }
-            
-            predicted_price = Decimal(str(predictor.predict_price(flight_data)))
-            self.ml_base_price = predicted_price
-            self.ml_price_updated_at = timezone.now()
-            
-            if save:
-                self.save(update_fields=['ml_base_price', 'ml_price_updated_at'])
-            
-            print(f"✅ Schedule {self.id}: ML price updated to ₱{predicted_price:,.2f}")
-            return True, predicted_price
-        except Exception as e:
-            print(f"❌ Error updating ML price for schedule {self.id}: {e}")
-            import traceback
-            traceback.print_exc()
-            return False, None
-        # ===================================================
->>>>>>> origin/criss
 
 
 class Seat(models.Model):
@@ -610,9 +606,12 @@ class Seat(models.Model):
 
     @property
     def final_price(self):
-<<<<<<< HEAD
         """Calculate final price including all adjustments"""
-        base_price = self.schedule.price if self.schedule else Decimal('0.00')
+        if self.schedule:
+            base_price = self.schedule.ml_base_price or self.schedule.price or Decimal('0.00')
+        else:
+            base_price = Decimal('0.00')
+            
         multiplier = self.seat_class.price_multiplier if self.seat_class else Decimal('1.00')
         
         return (base_price * multiplier) + self.total_price_adjustment
@@ -620,7 +619,11 @@ class Seat(models.Model):
     @property
     def price_breakdown(self):
         """Get detailed price breakdown"""
-        base_price = float(self.schedule.price) if self.schedule else 0.0
+        if self.schedule:
+            base_price = float(self.schedule.ml_base_price or self.schedule.price or 0.0)
+        else:
+            base_price = 0.0
+            
         multiplier = float(self.seat_class.price_multiplier) if self.seat_class else 1.0
         calculated_base = base_price * multiplier
         
@@ -677,19 +680,6 @@ class Seat(models.Model):
                 })
         
         return details
-=======
-        """Calculate final price including adjustments"""
-        if self.schedule:
-            # Use ML base price if available, otherwise fallback to regular price
-            base_price = self.schedule.ml_base_price or self.schedule.price or Decimal('0.00')
-        else:
-            base_price = Decimal('0.00')
-        
-        multiplier = self.seat_class.price_multiplier if self.seat_class else Decimal('1.00')
-        adjustment = self.price_adjustment or Decimal('0.00')
-        
-        return (base_price * multiplier) + adjustment
->>>>>>> origin/criss
 
     @property
     def seat_features(self):

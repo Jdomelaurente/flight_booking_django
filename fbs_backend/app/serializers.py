@@ -1,9 +1,9 @@
-
 # serializers.py
 from rest_framework import serializers
+from django.contrib.auth.models import User
 from .models import AirlineTax, AirportFee, Booking, BookingDetail, BookingTax, CheckInDetail, PassengerInfo, PassengerTypeTaxRate, Route, Airline, SeatClass, Aircraft, Airport, AddOnType, Flight, Schedule, Seat, TaxType, TrackLog, SeatRequirement
 
-<<<<<<< HEAD
+
 # ==========================================
 # MANAGE FLIGHT
 # ==========================================
@@ -513,10 +513,9 @@ class BookingTaxSerializer(serializers.ModelSerializer):
     class Meta:
         model = BookingTax
         fields = ['id', 'booking', 'tax_type', 'amount', 'passenger_type', 'created_at']
-=======
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         # Added first_name and last_name to the fields
         fields = ['id', 'username', 'email', 'first_name', 'last_name']
->>>>>>> origin/criss

@@ -110,7 +110,6 @@ class ScheduleViewSet(viewsets.ReadOnlyModelViewSet):
 
         return queryset.order_by('departure_time')
 
-<<<<<<< HEAD
     @action(detail=True, methods=['post'], url_path='generate-seats')
     def generate_seats(self, request, pk=None):
         """Generate seats for this schedule based on layout config"""
@@ -201,7 +200,6 @@ class ScheduleViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-=======
     @action(detail=True, methods=['get'], url_path='seats-with-info')
     def seats_with_info(self, request, pk=None):
         """Get seats with extra info for a specific schedule"""
@@ -606,7 +604,6 @@ def predict_flight_price(request):
     
 
 # In views.py - Update the SeatViewSet class
->>>>>>> origin/criss
 class SeatViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint that allows seats to be viewed based on a schedule.
