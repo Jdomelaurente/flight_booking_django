@@ -1381,7 +1381,6 @@ onUnmounted(() => {
     revenueChartInstance.destroy()
     revenueChartInstance = null
   }
-<<<<<<< HEAD
   if (mapInstance) {
     mapInstance.remove()
     mapInstance = null
@@ -1393,7 +1392,7 @@ onUnmounted(() => {
   if (mapRefreshInterval) {
     clearInterval(mapRefreshInterval)
     mapRefreshInterval = null
-=======
+  }
   if (compositionChartInstance) {
     compositionChartInstance.destroy()
     compositionChartInstance = null
@@ -1409,7 +1408,10 @@ onUnmounted(() => {
   if (revenueByRouteChartInstance) {
     revenueByRouteChartInstance.destroy()
     revenueByRouteChartInstance = null
->>>>>>> 7926be7605482d3d0aa1a2a6cb1ccb63031afcdf
+  }
+  if (seatClassChartInstance) {
+    seatClassChartInstance.destroy()
+    seatClassChartInstance = null
   }
 })
 </script>
