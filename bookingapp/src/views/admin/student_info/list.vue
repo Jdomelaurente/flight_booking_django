@@ -340,6 +340,9 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import api from '@/services/admin/api'
+import { useModalStore } from '@/stores/modal'
+
+const modalStore = useModalStore()
 
 // Reactive state
 const students = ref([])
@@ -474,7 +477,7 @@ const saveStudent = async () => {
       alert('Student updated successfully!')
     } else {
       // Use the same registration endpoint as Register.vue
-      await api.post('/register/', {
+      await api.post('auth/register/', {
         role: 'student',
         username: form.value.username,
         password: form.value.password,
@@ -498,11 +501,25 @@ const saveStudent = async () => {
 }
 
 const deleteStudent = async (id) => {
-  if (confirm('Permanently delete student record?')) {
+  const confirmed = await modalStore.confirm({
+    title: 'Purge Personnel Record?',
+    message: 'Are you sure you want to permanently delete this student record? This action cannot be undone.',
+    variant: 'danger',
+    confirmText: 'Delete',
+    loadingText: 'Purging...'
+  });
+
+  if (confirmed) {
+    modalStore.setLoader(true);
     try {
       await api.delete(`/students/${id}/`)
-      students.value = students.value.filter(s => s.id !== id); calculateStats()
-    } catch (err) { alert('Deletion failed.') }
+      students.value = students.value.filter(s => s.id !== id);
+      calculateStats()
+      modalStore.close(true);
+    } catch (err) {
+      console.error(err);
+      modalStore.setLoader(false);
+    }
   }
 }
 

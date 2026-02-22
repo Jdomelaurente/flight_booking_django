@@ -99,6 +99,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '@/services/admin/api';
+import { useModalStore } from '@/stores/modal';
+
+const modalStore = useModalStore();
 
 const seatClasses = ref([]);
 const airlines = ref([]);
@@ -134,13 +137,23 @@ const saveSeatClass = async () => {
 };
 
 const deleteSeatClass = async (id) => {
-  if (confirm('Delete this seat class?')) {
+  const confirmed = await modalStore.confirm({
+    title: 'Delete Seat Class?',
+    message: 'Are you sure you want to delete this seat class?',
+    variant: 'danger',
+    confirmText: 'Delete',
+    loadingText: 'Deleting...'
+  });
+
+  if (confirmed) {
+    modalStore.setLoader(true);
     try {
       await api.delete(`/seat-classes/${id}/`);
       await fetchData();
+      modalStore.close(true);
     } catch (err) {
       console.error("Delete Error:", err);
-      alert("Delete failed.");
+      modalStore.setLoader(false);
     }
   }
 };

@@ -395,6 +395,9 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import api from '@/services/admin/api'
+import { useModalStore } from '@/stores/modal'
+
+const modalStore = useModalStore()
 
 // State
 const rates = ref([])
@@ -622,17 +625,26 @@ const saveRate = async () => {
 }
 
 const deleteRate = async (id) => {
-  if (!confirm('Are you sure you want to delete this travel tax rate?')) return
+  const confirmed = await modalStore.confirm({
+    title: 'Delete Travel Tax Rate?',
+    message: 'Are you sure you want to permanently delete this travel tax rate record?',
+    variant: 'danger',
+    confirmText: 'Delete',
+    loadingText: 'Deleting...'
+  });
+
+  if (!confirmed) return;
   
+  modalStore.setLoader(true);
   try {
     await api.delete(`/passenger-tax-rates/${id}/`)
     rates.value = rates.value.filter(r => r.id !== id)
     calculateStats()
     calculateBreakdowns()
-    alert('Travel tax rate deleted successfully!')
+    modalStore.close(confirmed);
   } catch (err) {
     console.error('Delete error:', err)
-    alert('Failed to delete travel tax rate')
+    modalStore.setLoader(false);
   }
 }
 

@@ -9,7 +9,7 @@ export const authService = {
      */
     async login(username, password) {
         try {
-            const response = await api.post('api/login/', { username, password });
+            const response = await api.post('api/auth/login/', { username, password });
             const { token, user, role, dashboard_route } = response.data;
 
             localStorage.setItem('auth_token', token);
@@ -29,7 +29,7 @@ export const authService = {
      * @returns {Promise}
      */
     register(formData) {
-        return api.post('api/register/', formData);
+        return api.post('api/auth/register/', formData);
     },
 
     /**

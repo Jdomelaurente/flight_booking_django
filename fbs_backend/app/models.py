@@ -224,6 +224,8 @@ class Airport(models.Model):
     city = models.CharField(max_length=100, blank=True, null=True)
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, blank=True, related_name="airports")
     location = models.CharField(max_length=150, null=True, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     airport_type = models.CharField(max_length=20, choices=AIRPORT_TYPE_CHOICES, default='domestic')
 
     def __str__(self):
@@ -1663,7 +1665,7 @@ def create_insurance_record_if_needed(sender, instance, created, **kwargs):
         return
     
     # Check if insurance was selected via addons
-    insurance_addons = instance.addons.filter(is_insurance=True)
+    insurance_addons = instance.addons.filter(insurance_plan__isnull=False)
     
     # If insurance addon exists and no insurance record yet
     if insurance_addons.exists() and not instance.has_insurance:

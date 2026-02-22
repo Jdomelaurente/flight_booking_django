@@ -9,7 +9,7 @@
       
       <!-- Content Container -->
       <div 
-        class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden transform transition-all"
+        class="relative bg-white rounded-[1px] shadow-2xl max-w-lg w-full overflow-hidden transform transition-all"
         :class="compact ? 'max-w-sm' : 'max-w-lg'"
       >
         <slot></slot>

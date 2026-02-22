@@ -258,6 +258,9 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import api from '@/services/admin/api'
+import { useModalStore } from '@/stores/modal'
+
+const modalStore = useModalStore()
 
 // Reactive state
 const passengers = ref([])
@@ -441,12 +444,24 @@ const editPassenger = (passenger) => {
 }
 
 const deletePassenger = async (id) => {
-  if (confirm('Permanently delete this passenger data?')) {
+  const confirmed = await modalStore.confirm({
+    title: 'Expunge Passenger?',
+    message: 'Are you sure you want to permanently delete this passenger data? This action cannot be undone.',
+    variant: 'danger',
+    confirmText: 'Expunge',
+    loadingText: 'Expunging...'
+  });
+
+  if (confirmed) {
+    modalStore.setLoader(true);
     try {
       await api.delete(`/passengers/${id}/`)
       passengers.value = passengers.value.filter(p => p.id !== id)
+      modalStore.close(true);
     } catch (err) {
-      alert('Deletion restricted: Passenger has active booking history.')
+      console.error('Delete error:', err);
+      modalStore.setLoader(false);
+      alert('Deletion restricted: Passenger has active booking history.');
     }
   }
 }

@@ -113,13 +113,18 @@
         </form>
       </div>
     </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '@/services/admin/api';
+import { useModalStore } from '@/stores/modal';
 
+const modalStore = useModalStore();
+
+// Requirements state
 const requirements = ref([]);
 const isModalOpen = ref(false);
 const isEditing = ref(false);
@@ -157,13 +162,24 @@ const saveRequirement = async () => {
 };
 
 const deleteRequirement = async (id) => {
-  if (confirm('Are you sure you want to delete this seat requirement? This might affect existing seat configurations.')) {
+  const confirmed = await modalStore.confirm({
+    title: 'Delete Requirement?',
+    message: 'Are you sure you want to delete this seat requirement? This might affect existing seat configurations.',
+    variant: 'danger',
+    confirmText: 'Delete',
+    loadingText: 'Deleting...'
+  });
+
+  if (confirmed) {
+    modalStore.setLoader(true);
     try {
       await api.delete(`/seat-requirements/${id}/`);
       await fetchRequirements();
+      modalStore.close(true);
     } catch (err) {
       console.error("Delete Error:", err);
       alert("Error deleting: " + JSON.stringify(err.response?.data || err.message));
+      modalStore.setLoader(false);
     }
   }
 };

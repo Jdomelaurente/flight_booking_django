@@ -1209,7 +1209,8 @@ class DashboardViewSet(viewsets.ViewSet):
                 'recent_bookings',
                 'alerts',
                 'passenger_composition',
-                'popular_routes'
+                'popular_routes',
+                'active_flights_map'
             ]
         })
     
@@ -1296,11 +1297,21 @@ class DashboardViewSet(viewsets.ViewSet):
         try:
             completed_bookings = Booking.objects.filter(status='Completed')
             
-            total = completed_bookings.aggregate(total=Sum('total_amount'))['total'] or 0
+            total = completed_bookings.aggregate(sum=Sum('total_amount'))['sum'] or 0
             tickets = completed_bookings.aggregate(sum=Sum('base_fare_total'))['sum'] or 0
             addons = completed_bookings.aggregate(sum=Sum('insurance_total'))['sum'] or 0
             taxes = completed_bookings.aggregate(sum=Sum('tax_total'))['sum'] or 0
             
+            # Fallback: If sub-totals are zero but total is not (e.g. legacy or partially migrated data)
+            # Try to aggregate from BookingDetail and BookingTax
+            if total > 0 and tickets == 0 and taxes == 0:
+                from .models import BookingDetail
+                # Standard tax is roughly 12% in PH, but we can aggregate actual fields
+                details = BookingDetail.objects.filter(booking__in=completed_bookings)
+                tickets = details.aggregate(sum=Sum('price'))['sum'] or 0
+                taxes = details.aggregate(sum=Sum('tax_amount'))['sum'] or 0
+                # Insurance/Addons are usually separate but for now we aggregate what we have
+                
             return Response({
                 'total': float(total),
                 'breakdown': {
@@ -1398,7 +1409,100 @@ class DashboardViewSet(viewsets.ViewSet):
         except Exception as e:
             print(f"Recent bookings error: {str(e)}")
             return Response([], status=200)
-    
+
+    @action(detail=False, methods=['get'])
+    def active_flights_map(self, request):
+        """Returns active flights with coordinates for the map"""
+        try:
+            from django.utils import timezone as tz
+            now = tz.now()
+            
+            # Get flights that are 'On Flight' or 'Closed' (boarding)
+            # AND whose arrival time is still in the future (not yet landed)
+            active_schedules = Schedule.objects.filter(
+                status__in=['On Flight', 'Closed'],
+                arrival_time__gt=now
+            ).select_related(
+                'flight__route__origin_airport',
+                'flight__route__destination_airport',
+                'flight__airline'
+            )
+            
+            data = []
+            for s in active_schedules:
+                origin = s.flight.route.origin_airport
+                dest = s.flight.route.destination_airport
+                
+                # Only include if coordinates are available
+                if origin.latitude and origin.longitude and dest.latitude and dest.longitude:
+                    data.append({
+                        'id': s.id,
+                        'flight_number': s.flight.flight_number,
+                        'airline': s.flight.airline.name,
+                        'status': s.status,
+                        'origin': {
+                            'code': origin.code,
+                            'city': origin.city,
+                            'lat': float(origin.latitude),
+                            'lng': float(origin.longitude)
+                        },
+                        'destination': {
+                            'code': dest.code,
+                            'city': dest.city,
+                            'lat': float(dest.latitude),
+                            'lng': float(dest.longitude)
+                        },
+                        'departure_time': s.departure_time,
+                        'arrival_time': s.arrival_time
+                    })
+            
+            return Response(data)
+        except Exception as e:
+            print(f"Active flights map error: {str(e)}")
+            return Response([], status=200)
+
+    @action(detail=False, methods=['get'])
+    def seat_class_distribution(self, request):
+        """Returns booking counts and revenue grouped by seat class"""
+        try:
+            from app.models import BookingDetail, SeatClass
+            from django.db.models import Count, Sum
+
+            # Aggregate by seat class
+            distribution = (
+                BookingDetail.objects
+                .filter(seat_class__isnull=False)
+                .values('seat_class__name', 'seat_class__color')
+                .annotate(
+                    count=Count('id'),
+                    revenue=Sum('price')
+                )
+                .order_by('-count')
+            )
+
+            total = sum(item['count'] for item in distribution)
+
+            data = []
+            palette = ['#fe3787', '#002D1E', '#6366f1', '#f59e0b', '#22c55e', '#0ea5e9', '#ec4899', '#84cc16']
+            for i, item in enumerate(distribution):
+                count = item['count']
+                color = item['seat_class__color'] or palette[i % len(palette)]
+                data.append({
+                    'label': item['seat_class__name'],
+                    'count': count,
+                    'revenue': float(item['revenue'] or 0),
+                    'percentage': round((count / total * 100), 1) if total else 0,
+                    'color': color,
+                })
+
+            return Response({
+                'total': total,
+                'classes': data
+            })
+        except Exception as e:
+            print(f"Seat class distribution error: {str(e)}")
+            return Response({'total': 0, 'classes': []}, status=200)
+
     @action(detail=False, methods=['get'])
     def alerts(self, request):
         try:

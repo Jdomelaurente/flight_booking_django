@@ -145,6 +145,9 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue';
 import api from '@/services/admin/api';
+import { useModalStore } from '@/stores/modal';
+
+const modalStore = useModalStore();
 
 const flights = ref([]);
 const airlines = ref([]);
@@ -234,12 +237,23 @@ const saveFlight = async () => {
 };
 
 const deleteFlight = async (id) => {
-  if (confirm('Delete this flight?')) {
+  const confirmed = await modalStore.confirm({
+    title: 'Delete Flight?',
+    message: 'Are you sure you want to delete this flight record?',
+    variant: 'danger',
+    confirmText: 'Delete',
+    loadingText: 'Deleting...'
+  });
+
+  if (confirmed) {
+    modalStore.setLoader(true);
     try {
       await api.delete(`/flights/${id}/`);
       await fetchData();
+      modalStore.close(true);
     } catch (err) {
       console.error("Delete Error:", err);
+      modalStore.setLoader(false);
     }
   }
 };

@@ -200,6 +200,9 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
 import api from '@/services/admin/api';
+import { useModalStore } from '@/stores/modal';
+
+const modalStore = useModalStore();
 
 // --- State ---
 const routes = ref([]);
@@ -303,12 +306,23 @@ const saveRoute = async () => {
 };
 
 const deleteRoute = async (id) => {
-  if (confirm('Permanently remove this route? This will affect schedules linked to it.')) {
+  const confirmed = await modalStore.confirm({
+    title: 'Purge Flight Route?',
+    message: 'Are you sure you want to permanently remove this route? This will affect schedules linked to it.',
+    variant: 'danger',
+    confirmText: 'Purge',
+    loadingText: 'Purging...'
+  });
+
+  if (confirmed) {
+    modalStore.setLoader(true);
     try {
       await api.delete(`/routes/${id}/`);
       routes.value = routes.value.filter(r => r.id !== id);
+      modalStore.close(true);
     } catch (error) {
       console.error("Delete failed:", error);
+      modalStore.setLoader(false);
       alert("Could not delete. Route may be in use by active flights.");
     }
   }

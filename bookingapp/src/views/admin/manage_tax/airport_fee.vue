@@ -367,6 +367,9 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import api from '@/services/admin/api'
+import { useModalStore } from '@/stores/modal'
+
+const modalStore = useModalStore()
 
 // State
 const fees = ref([])
@@ -549,16 +552,25 @@ const saveFee = async () => {
 }
 
 const deleteFee = async (id) => {
-  if (!confirm('Are you sure you want to delete this airport fee?')) return
+  const confirmed = await modalStore.confirm({
+    title: 'Purge Airport Fee?',
+    message: 'Are you sure you want to permanently delete this airport fee record?',
+    variant: 'danger',
+    confirmText: 'Purge',
+    loadingText: 'Purging...'
+  });
+
+  if (!confirmed) return;
   
+  modalStore.setLoader(true);
   try {
     await api.delete(`/airport-fees/${id}/`)
     fees.value = fees.value.filter(f => f.id !== id)
     calculateStats()
-    alert('Airport fee deleted successfully!')
+    modalStore.close(confirmed);
   } catch (err) {
     console.error('Delete error:', err)
-    alert('Failed to delete airport fee')
+    modalStore.setLoader(false);
   }
 }
 

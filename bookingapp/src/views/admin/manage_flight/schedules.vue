@@ -155,6 +155,9 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import api from '@/services/admin/api';
+import { useModalStore } from '@/stores/modal';
+
+const modalStore = useModalStore();
 
 const schedules = ref([]);
 const flightList = ref([]);
@@ -249,12 +252,23 @@ const openModal = () => {
 };
 
 const deleteSchedule = async (id) => {
-  if (confirm('Permanently remove this schedule?')) {
+  const confirmed = await modalStore.confirm({
+    title: 'Purge Schedule?',
+    message: 'Are you sure you want to permanently remove this schedule?',
+    variant: 'danger',
+    confirmText: 'Purge',
+    loadingText: 'Purging...'
+  });
+
+  if (confirmed) {
+    modalStore.setLoader(true);
     try {
       await api.delete(`/schedules/${id}/`);
       await fetchData();
+      modalStore.close(true);
     } catch (err) {
       console.error("Delete Error:", err);
+      modalStore.setLoader(false);
     }
   }
 };
