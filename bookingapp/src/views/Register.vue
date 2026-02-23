@@ -93,9 +93,14 @@
 <script>
 import bgImage from '@/assets/image/bg-cthm.svg'
 import { authService } from '@/services/auth/authService'
+import { useNotificationStore } from '@/stores/notification'
 
 export default {
   name: 'UnifiedRegister',
+  setup() {
+    const notificationStore = useNotificationStore()
+    return { notificationStore }
+  },
   data() {
     return {
       form: {
@@ -121,7 +126,7 @@ export default {
     async handleRegister() {
       // Basic validation
       if (!this.form.username || !this.form.password || !this.form.id_number) {
-        this.error = "Please fill in all required fields.";
+        this.notificationStore.warn("Please fill in all required fields.");
         return;
       }
 
@@ -130,13 +135,17 @@ export default {
 
       try {
         // This hits your fbs_instructor/views.py register_view
-        const response = await authService.register(this.form);
+        await authService.register(this.form);
         
-        alert("Account Created Successfully! Redirecting to login...");
-        this.$router.push('/login');
+        this.notificationStore.success("Account Created Successfully! Redirecting to login...");
+        setTimeout(() => {
+             this.$router.push('/login');
+        }, 1500);
+       
       } catch (err) {
         // Capture the error from Django (e.g., "Username already taken")
-        this.error = err.response?.data?.error || "Registration failed. Try a different username/ID.";
+        const msg = err.response?.data?.error || "Registration failed. Try a different username/ID.";
+        this.notificationStore.error(msg);
       } finally {
         this.loading = false;
       }

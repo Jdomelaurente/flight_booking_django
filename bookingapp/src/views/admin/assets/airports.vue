@@ -124,6 +124,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '@/services/admin/api';
+import { useModalStore } from '@/stores/modal';
+
+const modalStore = useModalStore();
 
 // State
 const airports = ref([]);
@@ -143,7 +146,7 @@ const form = ref({
 const fetchAirports = async () => {
   try {
     const res = await api.get('/airports/');
-    airports.value = res.data;
+    airports.value = res.data.results || res.data;
   } catch (err) {
     console.error("Fetch Error:", err.response?.data || err.message);
   }
@@ -167,12 +170,23 @@ const saveAirport = async () => {
 
 // Delete
 const deleteAirport = async (id) => {
-  if (confirm('Are you sure you want to delete this airport? This may affect existing routes.')) {
+  const confirmed = await modalStore.confirm({
+    title: 'Delete Airport?',
+    message: 'Are you sure you want to delete this airport? This may affect existing routes.',
+    variant: 'danger',
+    confirmText: 'Delete',
+    loadingText: 'Deleting...'
+  });
+
+  if (confirmed) {
+    modalStore.setLoader(true);
     try {
       await api.delete(`/airports/${id}/`);
       airports.value = airports.value.filter(a => a.id !== id);
+      modalStore.close(true);
     } catch (err) {
       console.error("Delete error:", err.response?.data);
+      modalStore.setLoader(false);
       alert("Delete failed. This airport might be in use.");
     }
   }

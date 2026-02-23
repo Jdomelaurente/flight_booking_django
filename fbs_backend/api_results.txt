@@ -1,0 +1,20 @@
+Testing URL: http://127.0.0.1:8000/api/tax-types/
+  Status Code: 200
+  Item Count: 4
+------------------------------
+Testing URL: http://127.0.0.1:8000/api/airline-taxes/
+  Status Code: 200
+  Item Count: 4
+------------------------------
+Testing URL: http://127.0.0.1:8000/api/passenger-tax-rates/
+  Status Code: 200
+  Item Count: 4
+------------------------------
+Testing URL: http://127.0.0.1:8000/api/airport-fees/
+  Status Code: 200
+  Item Count: 4
+------------------------------
+Testing URL: http://127.0.0.1:8000/api/airlines/
+  Status Code: 200
+  Item Count: 4
+------------------------------

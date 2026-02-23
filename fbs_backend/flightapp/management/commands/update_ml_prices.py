@@ -29,18 +29,18 @@ class Command(BaseCommand):
     
     def handle(self, *args, **options):
         # Force load the ML model before processing schedules
-        self.stdout.write("🔄 Loading ML model...")
+        self.stdout.write("? Loading ML model...")
         try:
             from flightapp.ml.predictor import predictor
             if not predictor.model:
                 predictor.load_model()
             if predictor.model:
-                self.stdout.write(self.style.SUCCESS("✅ ML Model loaded successfully!"))
+                self.stdout.write(self.style.SUCCESS("? ML Model loaded successfully!"))
             else:
-                self.stdout.write(self.style.ERROR("❌ Failed to load ML model"))
+                self.stdout.write(self.style.ERROR("? Failed to load ML model"))
                 return
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f"❌ Error loading ML model: {e}"))
+            self.stdout.write(self.style.ERROR(f"? Error loading ML model: {e}"))
             return
         
         # Base queryset
@@ -84,7 +84,7 @@ class Command(BaseCommand):
                 if schedule.departure_time < timezone.now():
                     skipped += 1
                     self.stdout.write(
-                        self.style.WARNING(f"  ⏭️  {schedule.flight.flight_number}: Departure in past, skipping")
+                        self.style.WARNING(f"  ??  {schedule.flight.flight_number}: Departure in past, skipping")
                     )
                     continue
                 
@@ -95,27 +95,27 @@ class Command(BaseCommand):
                     updated += 1
                     self.stdout.write(
                         self.style.SUCCESS(
-                            f"  ✓ {schedule.flight.flight_number}: "
-                            f"₱{price:,.2f} ({schedule.departure_time.strftime('%Y-%m-%d %H:%M')})"
+                            f"  ? {schedule.flight.flight_number}: "
+                            f"?{price:,.2f} ({schedule.departure_time.strftime('%Y-%m-%d %H:%M')})"
                         )
                     )
                 else:
                     failed += 1
                     self.stdout.write(
-                        self.style.ERROR(f"  ✗ {schedule.id}: Failed to update")
+                        self.style.ERROR(f"  ? {schedule.id}: Failed to update")
                     )
                     
             except Exception as e:
                 failed += 1
                 self.stdout.write(
-                    self.style.ERROR(f"  ✗ {schedule.id}: {str(e)[:100]}")
+                    self.style.ERROR(f"  ? {schedule.id}: {str(e)[:100]}")
                 )
         
         # Summary
         self.stdout.write("\n" + "=" * 60)
         self.stdout.write(
             self.style.SUCCESS(
-                f"✅ UPDATE COMPLETE\n"
+                f"? UPDATE COMPLETE\n"
                 f"   Total: {total}\n"
                 f"   Updated: {updated}\n"
                 f"   Failed: {failed}\n"

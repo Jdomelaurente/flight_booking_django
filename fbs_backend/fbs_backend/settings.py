@@ -27,14 +27,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-@uj@r0lnpe2q(syvnf4ou2ps5tbx4&tkl#ysznn4_w*@5ej7vi'
+SECRET_KEY = config('SECRET_KEY', default='')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
-CORS_ALLOW_ALL_ORIGINS = True    # Only in development
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=DEBUG, cast=bool)
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:5173').split(',')
 CORS_ALLOW_CREDENTIALS = True
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -70,6 +71,9 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
+
+# CSRF trusted origins for cross-site POSTs (development)
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='http://localhost:5173').split(',')
 
 # settings.py
 from decouple import config
@@ -121,7 +125,7 @@ DJOSER = {
     'SERIALIZERS': {
         'user_create': 'djoser.serializers.UserCreateSerializer',
         'user': 'djoser.serializers.UserSerializer',
-        'current_user': 'djoser.serializers.UserSerializer',
+        'current_user': 'fbs_instructor.serializers.UserSerializer',
         'token_create': 'djoser.serializers.TokenCreateSerializer',
     },
     'PERMISSIONS': {
@@ -239,6 +243,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 STATIC_URL = 'static/'
 
+# Media Configuration (for user uploads)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 
 
 # Email Configuration
@@ -246,15 +254,15 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'  # Or your SMTP server
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'solayaoflorence@gmail.com'  # Your email
-EMAIL_HOST_PASSWORD = 'ivrj sehi txqz zvwp'  # App-specific password
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = 'CTHM Flight Booking System <cthmfbs@gmail.com>'
 SERVER_EMAIL = 'cthmfbs@gmail.com'
 
 # Support Contact Info (used in emails)
 SUPPORT_EMAIL = 'support@philippineairlines.com'
 SUPPORT_PHONE = '(02) 8855-8888'
-WEBSITE_URL = 'http://localhost:5173/'
+WEBSITE_URL = config('WEBSITE_URL', default='http://localhost:5173/')
 # WEBSITE_URL = 'https://www.philippineairlines.com'
 
 # For development (prints emails to console instead of sending)

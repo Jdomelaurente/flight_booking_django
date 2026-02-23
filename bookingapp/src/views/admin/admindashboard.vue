@@ -128,6 +128,60 @@
       </div>
     </div>
 
+    <!-- Active Flight Map (NEW) -->
+    <div ref="mapCardRef" class="bg-white border border-gray-200 rounded-[1px] shadow-sm mb-8 overflow-hidden group relative" :class="{'h-screen w-screen !m-0 !fixed inset-0 z-[100] flex flex-col': isMapFullScreen}">
+      <div class="absolute top-0 left-0 w-1 h-full bg-[#002D1E] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+        <div>
+          <h3 class="text-lg font-black text-[#002D1E] poppins tracking-tight flex items-center gap-2">
+            <i class="ph ph-map-pin-line text-[#fe3787]"></i>
+            Live Global Operations
+          </h3>
+          <p class="text-[10px] text-gray-400 poppins uppercase tracking-wider font-bold">Real-time aircraft tracking & telemetry</p>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2 text-[10px] font-bold poppins text-gray-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            {{ activeFlights.length }} Flights Active
+          </div>
+          <button @click="fetchActiveFlights" class="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-[#fe3787]" title="Refresh Map">
+            <i class="ph ph-arrows-clockwise text-lg" :class="{'animate-spin': mapLoading}"></i>
+          </button>
+          <button @click="toggleFullScreen" class="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-[#fe3787]" :title="isMapFullScreen ? 'Exit Full Screen' : 'Full Screen'">
+            <i class="ph text-lg" :class="isMapFullScreen ? 'ph-corners-in' : 'ph-corners-out'"></i>
+          </button>
+        </div>
+      </div>
+      <div :class="isMapFullScreen ? 'flex-grow' : 'h-[400px]'" class="relative transition-all duration-300">
+        <div ref="mapContainer" class="absolute inset-0 z-0"></div>
+        
+        <!-- Map Overlay Stats -->
+        <div class="absolute bottom-6 left-6 z-[400] flex flex-col gap-2">
+          <div class="bg-white/90 backdrop-blur-md border border-gray-200 p-4 rounded-[1px] shadow-2xl">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-8 h-8 rounded-[1px] bg-[#fe3787] flex items-center justify-center">
+                <i class="ph ph-airplane-tilt text-white"></i>
+              </div>
+              <div>
+                <p class="text-[8px] text-gray-400 uppercase font-bold tracking-widest leading-none">Global Coverage</p>
+                <p class="text-xs text-[#002D1E] font-black poppins">Active Airspace</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <p class="text-[10px] text-emerald-400 font-black">98.4%</p>
+                <p class="text-[7px] text-gray-500 uppercase font-bold tracking-tighter">On-Time Perf</p>
+              </div>
+              <div>
+                <p class="text-[10px] text-[#fe3787] font-black">12</p>
+                <p class="text-[7px] text-gray-500 uppercase font-bold tracking-tighter">Planned (1h)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Enhanced Charts Section -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       <!-- Main Sales Chart -->
@@ -257,6 +311,76 @@
          </div>
        </div>
     </div>
+    <!-- Seat Class Distribution (NEW) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Doughnut Chart -->
+      <div class="lg:col-span-5 bg-white border border-gray-200 rounded-[1px] shadow-sm p-6 group relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-1 h-full bg-[#fe3787] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h3 class="text-sm font-black text-[#002D1E] poppins uppercase tracking-widest flex items-center gap-2">
+              <i class="ph ph-chart-donut text-[#fe3787]"></i>
+              Seat Class Distribution
+            </h3>
+            <p class="text-[10px] text-gray-400 poppins mt-0.5">Bookings by cabin class</p>
+          </div>
+          <span class="text-[10px] bg-gray-50 border border-gray-100 px-2 py-1 rounded-[1px] poppins font-bold text-gray-400 uppercase tracking-widest">
+            {{ seatclassDist.total }} total
+          </span>
+        </div>
+
+        <div class="flex items-center justify-center">
+          <div v-if="seatclassLoading" class="flex flex-col items-center justify-center h-48 gap-2 text-gray-200">
+            <i class="ph ph-spinner-gap text-4xl animate-spin"></i>
+            <p class="text-[10px] uppercase font-black tracking-widest poppins">Loading...</p>
+          </div>
+          <div v-else-if="seatclassDist.classes.length === 0" class="flex flex-col items-center justify-center h-48 gap-2 text-gray-200">
+            <i class="ph ph-chart-donut text-4xl"></i>
+            <p class="text-[10px] uppercase font-black tracking-widest poppins">No data available</p>
+          </div>
+          <div v-else class="relative h-52 w-52">
+            <canvas ref="seatClassChartRef"></canvas>
+            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span class="text-2xl font-black text-[#002D1E] poppins">{{ seatclassDist.total }}</span>
+              <span class="text-[8px] font-bold text-gray-400 uppercase tracking-widest poppins">Bookings</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Legend + Stats -->
+      <div class="lg:col-span-7 bg-white border border-gray-200 rounded-[1px] shadow-sm p-6">
+        <h3 class="text-sm font-black text-[#002D1E] poppins uppercase tracking-widest mb-6">Class Breakdown</h3>
+        <div v-if="seatclassDist.classes.length === 0" class="flex flex-col items-center justify-center h-48 gap-2 text-gray-200">
+          <i class="ph ph-list-dashes text-4xl"></i>
+          <p class="text-[10px] uppercase font-black tracking-widest poppins">No bookings yet</p>
+        </div>
+        <div v-else class="space-y-4">
+          <div v-for="cls in seatclassDist.classes" :key="cls.label" class="group/row">
+            <div class="flex items-center justify-between mb-1">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" :style="{ background: cls.color }"></span>
+                <span class="text-xs font-bold text-[#002D1E] poppins">{{ cls.label }}</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-[10px] text-gray-400 poppins font-bold">{{ cls.count }} pax</span>
+                <span class="text-[10px] font-black poppins" :style="{ color: cls.color }">{{ cls.percentage }}%</span>
+              </div>
+            </div>
+            <!-- Progress bar -->
+            <div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                class="h-full rounded-full transition-all duration-700"
+                :style="{ width: cls.percentage + '%', background: cls.color }"
+              ></div>
+            </div>
+            <div class="mt-1 text-[9px] text-gray-400 poppins font-medium">
+              Revenue: <span class="font-black text-gray-600">₱{{ formatNumber(cls.revenue) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Revenue & Operations Row (NEWLY ENHANCED) -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
@@ -352,6 +476,8 @@
 <script setup>
 import { ref, onMounted, computed, watch, onUnmounted, nextTick } from 'vue'
 import { Chart, registerables } from 'chart.js'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import api from '@/services/admin/api'
 
 Chart.register(...registerables)
@@ -364,8 +490,16 @@ const ticketChartRef = ref(null)
 const revenueChartRef = ref(null)
 const compositionChartRef = ref(null)
 const routesChartRef = ref(null)
+const seatClassChartRef = ref(null)
 const flightOpsChartRef = ref(null)
 const revenueByRouteChartRef = ref(null)
+const mapContainer = ref(null)
+const mapCardRef = ref(null)
+const mapLoading = ref(false)
+const isMapFullScreen = ref(false)
+const seatclassLoading = ref(false)
+const activeFlights = ref([])
+const seatclassDist = ref({ total: 0, classes: [] })
 
 // Stats
 const stats = ref({
@@ -419,8 +553,14 @@ let ticketChartInstance = null
 let revenueChartInstance = null
 let compositionChartInstance = null
 let routesChartInstance = null
+let seatClassChartInstance = null
 let flightOpsChartInstance = null
 let revenueByRouteChartInstance = null
+let mapInstance = null
+let flightMarkers = []
+let flightPolylines = []
+let animationInterval = null
+let mapRefreshInterval = null
 
 // Computed
 const currentDate = computed(() => {
@@ -514,6 +654,8 @@ const fetchDashboardData = async () => {
 
     // Fetch Extra Data in background
     fetchExtraStats()
+    fetchActiveFlights()
+    fetchSeatClassDistribution()
     fetchOpsStats()
     fetchRevenueStats()
 
@@ -911,6 +1053,20 @@ const formatNumber = (num) => {
   })
 }
 
+const calculateBearing = (startLat, startLng, endLat, endLng) => {
+  const startLatRad = startLat * Math.PI / 180
+  const startLngRad = startLng * Math.PI / 180
+  const endLatRad = endLat * Math.PI / 180
+  const endLngRad = endLng * Math.PI / 180
+
+  const y = Math.sin(endLngRad - startLngRad) * Math.cos(endLatRad)
+  const x = Math.cos(startLatRad) * Math.sin(endLatRad) -
+    Math.sin(startLatRad) * Math.cos(endLatRad) * Math.cos(endLngRad - startLngRad)
+  
+  let brng = Math.atan2(y, x) * 180 / Math.PI
+  return (brng + 360) % 360
+}
+
 const formatDate = (dateString) => {
   if (!dateString) return ''
   const date = new Date(dateString)
@@ -968,12 +1124,254 @@ const alertIconClass = (type) => {
   return classes[type] || 'ph-bell text-gray-600'
 }
 
+const initMap = () => {
+  if (!mapContainer.value || mapInstance) return
+
+  // Fix for default marker icons in Leaflet with Vite
+  delete L.Icon.Default.prototype._getIconUrl
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: new URL('leaflet/dist/images/marker-icon-2x.png', import.meta.url).href,
+    iconUrl: new URL('leaflet/dist/images/marker-icon.png', import.meta.url).href,
+    shadowUrl: new URL('leaflet/dist/images/marker-shadow.png', import.meta.url).href,
+  })
+
+  mapInstance = L.map(mapContainer.value, {
+    center: [12.8797, 121.7740], // Centered on Philippines
+    zoom: 5,
+    zoomControl: false,
+    attributionControl: false
+  })
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19
+  }).addTo(mapInstance)
+
+  L.control.zoom({ position: 'topright' }).addTo(mapInstance)
+  
+  updateMapMarkers()
+}
+
+const fetchActiveFlights = async () => {
+  mapLoading.value = true
+  try {
+    const res = await api.get('/dashboard/active_flights_map/')
+    activeFlights.value = res.data || []
+    if (mapInstance) {
+      updateMapMarkers()
+    } else {
+      await nextTick()
+      initMap()
+    }
+    startFlightAnimation()
+  } catch (err) {
+    console.error('Map data fetch error:', err)
+  } finally {
+    mapLoading.value = false
+  }
+}
+
+const toggleFullScreen = () => {
+  if (!mapCardRef.value) return
+  
+  if (!document.fullscreenElement) {
+    mapCardRef.value.requestFullscreen().catch(err => {
+      console.error(`Error attempting to enable full-screen mode: ${err.message}`)
+    })
+  } else {
+    document.exitFullscreen()
+  }
+}
+
+const handleFullScreenChange = () => {
+  isMapFullScreen.value = !!document.fullscreenElement
+  if (mapInstance) {
+    // Small delay to let the DOM settle before resizing Leaflet
+    setTimeout(() => {
+      mapInstance.invalidateSize()
+      // If entering full screen, maybe zoom in or adjust center
+      if (isMapFullScreen.value) {
+        mapInstance.setZoom(mapInstance.getZoom() + 1)
+      } else {
+        mapInstance.setZoom(mapInstance.getZoom() - 1)
+      }
+    }, 100)
+  }
+}
+
+const fetchSeatClassDistribution = async () => {
+  seatclassLoading.value = true
+  try {
+    const res = await api.get('/dashboard/seat_class_distribution/')
+    seatclassDist.value = res.data || { total: 0, classes: [] }
+    await nextTick()
+    initSeatClassChart()
+  } catch (err) {
+    console.error('Seat class distribution error:', err)
+  } finally {
+    seatclassLoading.value = false
+  }
+}
+
+const initSeatClassChart = () => {
+  if (!seatClassChartRef.value || seatclassDist.value.classes.length === 0) return
+  if (seatClassChartInstance) {
+    seatClassChartInstance.destroy()
+    seatClassChartInstance = null
+  }
+  const ctx = seatClassChartRef.value.getContext('2d')
+  const classes = seatclassDist.value.classes
+  seatClassChartInstance = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: classes.map(c => c.label),
+      datasets: [{
+        data: classes.map(c => c.count),
+        backgroundColor: classes.map(c => c.color),
+        borderWidth: 3,
+        borderColor: '#fff',
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '72%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const cls = classes[ctx.dataIndex]
+              return ` ${cls.label}: ${cls.count} pax (${cls.percentage}%)`
+            }
+          }
+        }
+      },
+      animation: { animateRotate: true, duration: 800 }
+    }
+  })
+}
+
+const getFlightProgress = (flight) => {
+  const now = Date.now()
+  const dep = new Date(flight.departure_time).getTime()
+  const arr = new Date(flight.arrival_time).getTime()
+  
+  if (now <= dep) return 0          // Not yet departed
+  if (now >= arr) return 1          // Already landed
+  return (now - dep) / (arr - dep)  // 0.0 - 1.0 progress
+}
+
+const updateMapMarkers = () => {
+  if (!mapInstance) return
+
+  // Clear existing
+  flightMarkers.forEach(m => m.remove())
+  flightPolylines.forEach(p => p.remove())
+  flightMarkers = []
+  flightPolylines = []
+
+  activeFlights.value.forEach(flight => {
+    const origin = [flight.origin.lat, flight.origin.lng]
+    const dest = [flight.destination.lat, flight.destination.lng]
+
+    // Draw Route Line
+    const polyline = L.polyline([origin, dest], {
+      color: '#fe3787',
+      weight: 3,
+      dashArray: '5, 12',
+      opacity: 0.6
+    }).addTo(mapInstance)
+    flightPolylines.push(polyline)
+
+    // Calculate actual position based on flight progress
+    const t = getFlightProgress(flight)
+    const aircraftPos = [
+      origin[0] + (dest[0] - origin[0]) * t,
+      origin[1] + (dest[1] - origin[1]) * t
+    ]
+
+    const bearing = calculateBearing(flight.origin.lat, flight.origin.lng, flight.destination.lat, flight.destination.lng)
+    const progressPct = Math.round(t * 100)
+    const isBoarding = flight.status === 'Closed'
+    const statusColor = isBoarding ? '#f59e0b' : '#22c55e'
+    const statusLabel = isBoarding ? 'Boarding' : 'In Flight'
+
+    const planeIcon = L.divIcon({
+      html: `<div class="relative" style="transform: rotate(${bearing - 45}deg)">
+               <i class="ph ph-airplane-tilt text-[#fe3787] text-2xl drop-shadow-lg"></i>
+               <div class="absolute -top-1 -right-1 w-2 h-2 rounded-full border border-white animate-pulse" style="background:${statusColor}"></div>
+             </div>`,
+      className: 'custom-plane-icon',
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
+    })
+
+    // Show progress on popup
+    const depStr = new Date(flight.departure_time).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })
+    const arrStr = new Date(flight.arrival_time).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })
+
+    const marker = L.marker(aircraftPos, { icon: planeIcon })
+      .addTo(mapInstance)
+      .bindPopup(`
+        <div class="poppins p-1">
+          <p class="font-black text-[#002D1E]">${flight.flight_number}</p>
+          <p class="text-[10px] text-gray-500 uppercase font-bold">${flight.airline}</p>
+          <span class="inline-block mt-1 px-2 py-0.5 text-[8px] font-bold uppercase rounded" style="background:${statusColor}22; color:${statusColor}">${statusLabel}</span>
+          <div class="mt-2 border-t pt-2 flex items-center justify-between gap-4">
+             <div>
+                <p class="text-[8px] text-gray-400">FROM</p>
+                <p class="text-[10px] font-bold">${flight.origin.code}</p>
+                <p class="text-[8px] text-gray-400">${depStr}</p>
+             </div>
+             <div class="flex flex-col items-center gap-1">
+               <i class="ph ph-arrow-right text-[#fe3787]"></i>
+               <p class="text-[8px] font-black text-[#fe3787]">${progressPct}%</p>
+             </div>
+             <div>
+                <p class="text-[8px] text-gray-400">TO</p>
+                <p class="text-[10px] font-bold">${flight.destination.code}</p>
+                <p class="text-[8px] text-gray-400">${arrStr}</p>
+             </div>
+          </div>
+        </div>
+      `, {
+        className: 'custom-leaflet-popup'
+      })
+    flightMarkers.push(marker)
+  })
+
+  if (flightMarkers.length > 0 && flightPolylines.length > 0) {
+    const allLayers = [...flightPolylines]
+    const group = new L.featureGroup(allLayers)
+    mapInstance.fitBounds(group.getBounds().pad(0.15))
+  }
+}
+
+const startFlightAnimation = () => {
+  // Clear existing intervals
+  if (animationInterval) clearInterval(animationInterval)
+  if (mapRefreshInterval) clearInterval(mapRefreshInterval)
+
+  // Re-draw marker positions every 30 seconds (smooth movement)
+  animationInterval = setInterval(() => {
+    updateMapMarkers()
+  }, 30000)
+
+  // Re-fetch from API every 60 seconds to catch status changes
+  mapRefreshInterval = setInterval(() => {
+    fetchActiveFlights()
+  }, 60000)
+}
+
 // Lifecycle
 onMounted(() => {
   fetchDashboardData()
+  document.addEventListener('fullscreenchange', handleFullScreenChange)
 })
 
 onUnmounted(() => {
+  document.removeEventListener('fullscreenchange', handleFullScreenChange)
   // Clean up charts to prevent memory leaks
   if (ticketChartInstance) {
     ticketChartInstance.destroy()
@@ -982,6 +1380,18 @@ onUnmounted(() => {
   if (revenueChartInstance) {
     revenueChartInstance.destroy()
     revenueChartInstance = null
+  }
+  if (mapInstance) {
+    mapInstance.remove()
+    mapInstance = null
+  }
+  if (animationInterval) {
+    clearInterval(animationInterval)
+    animationInterval = null
+  }
+  if (mapRefreshInterval) {
+    clearInterval(mapRefreshInterval)
+    mapRefreshInterval = null
   }
   if (compositionChartInstance) {
     compositionChartInstance.destroy()
@@ -998,6 +1408,10 @@ onUnmounted(() => {
   if (revenueByRouteChartInstance) {
     revenueByRouteChartInstance.destroy()
     revenueByRouteChartInstance = null
+  }
+  if (seatClassChartInstance) {
+    seatClassChartInstance.destroy()
+    seatClassChartInstance = null
   }
 })
 </script>

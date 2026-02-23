@@ -485,6 +485,9 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import api from '@/services/admin/api'
+import { useModalStore } from '@/stores/modal'
+
+const modalStore = useModalStore()
 
 // State
 const taxes = ref([])
@@ -597,7 +600,7 @@ const fetchTaxes = async () => {
   loading.value = true
   try {
     const response = await api.get('/tax-types/')
-    taxes.value = response.data
+    taxes.value = response.data.results || response.data
     calculateStats()
   } catch (err) {
     console.error('Fetch error:', err)
@@ -685,16 +688,25 @@ const toggleStatus = async (tax) => {
 }
 
 const deleteTax = async (id) => {
-  if (!confirm('Are you sure you want to delete this tax type? This may affect existing bookings.')) return
+  const confirmed = await modalStore.confirm({
+    title: 'Delete Tax Type?',
+    message: 'Are you sure you want to delete this tax type? This may affect existing bookings and calculations.',
+    variant: 'danger',
+    confirmText: 'Delete',
+    loadingText: 'Deleting...'
+  });
+
+  if (!confirmed) return;
   
+  modalStore.setLoader(true);
   try {
-    await api.delete(`/tax-types/${id}/`)
+    await api.delete(`/tax-types/${id}//`)
     taxes.value = taxes.value.filter(t => t.id !== id)
     calculateStats()
-    alert('Tax type deleted successfully!')
+    modalStore.close(confirmed);
   } catch (err) {
     console.error('Delete error:', err)
-    alert('Failed to delete tax type. It may be in use.')
+    modalStore.setLoader(false);
   }
 }
 

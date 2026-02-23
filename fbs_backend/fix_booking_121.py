@@ -21,33 +21,33 @@ try:
     booking = Booking.objects.get(id=121)
     print(f"Found: Booking #{booking.id}, current user={booking.user.username}, status={booking.status}")
 except Booking.DoesNotExist:
-    print("❌ Booking 121 not found!")
+    print("? Booking 121 not found!")
     exit()
 
 # 2. Get the real student user
 real_user = User.objects.filter(username='student').first()
 if not real_user:
-    print("❌ Real student user not found!")
+    print("? Real student user not found!")
     exit()
 print(f"Real student user: {real_user.username} (ID={real_user.id})")
 
 # 3. Reassign the booking
 booking.user = real_user
 booking.save()
-print(f"✅ Booking #{booking.id} reassigned to user '{real_user.username}'")
+print(f"? Booking #{booking.id} reassigned to user '{real_user.username}'")
 
 # 4. Re-trigger grading
 if booking.activity:
-    print(f"🎓 Re-triggering grading for activity: {booking.activity.title}")
+    print(f"? Re-triggering grading for activity: {booking.activity.title}")
     try:
         result = grade_booking(booking, booking.activity.id)
-        print(f"✅ Grading result: {result}")
+        print(f"? Grading result: {result}")
     except Exception as e:
         import traceback
-        print(f"❌ Grading error: {e}")
+        print(f"? Grading error: {e}")
         traceback.print_exc()
 else:
-    print("⚠️ No activity linked to this booking")
+    print("?? No activity linked to this booking")
 
 # 5. Check final state
 from fbs_instructor.models import ActivityStudentBinding

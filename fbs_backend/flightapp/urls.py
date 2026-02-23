@@ -2,6 +2,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
+from .insurance_views import TravelInsurancePlanViewSet
 
 router = DefaultRouter()
 router.register(r'countries', views.CountryViewSet)
@@ -12,6 +13,7 @@ router.register(r'meal-options', views.MealOptionViewSet)
 router.register(r'assistance-services', views.AssistanceServiceViewSet)
 router.register(r'baggage-options', views.BaggageOptionViewSet)
 router.register(r'bookings', views.BookingViewSet)  
+router.register(r'insurance-plans', TravelInsurancePlanViewSet, basename='insurance-plan')
 
 urlpatterns = [
     path('api/', include(router.urls)),

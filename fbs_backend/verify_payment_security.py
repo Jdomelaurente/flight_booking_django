@@ -26,7 +26,7 @@ def verify_payment_security():
     schedule = Schedule.objects.first()
     
     if not user or not schedule:
-        print("❌ Error: Need at least one user and one schedule in the database.")
+        print("? Error: Need at least one user and one schedule in the database.")
         return
     
     print(f"   User: {user.username}")
@@ -58,13 +58,13 @@ def verify_payment_security():
             'price': float(schedule.price),
             'class_type': 'Economy'
         },
-        'total_amount': float(malicious_total) # 🚨 ATTACK VECTOR
+        'total_amount': float(malicious_total) # ? ATTACK VECTOR
     }
     
     # Validate serializer (should pass now that total_amount is optional/ignored)
     serializer = CreateBookingSerializer(data=payload)
     if not serializer.is_valid():
-        print(f"❌ Serializer failed: {serializer.errors}")
+        print(f"? Serializer failed: {serializer.errors}")
         return
 
     # Simulate View Logic (which we modified)
@@ -81,11 +81,11 @@ def verify_payment_security():
         print(f"   Initial Total: {booking.total_amount}")
         
         if booking.total_amount == malicious_total:
-             print("❌ FAIL: Backend accepted malicious total amount!")
+             print("? FAIL: Backend accepted malicious total amount!")
         elif booking.total_amount == Decimal('0.00'):
-             print("✅ PASS: Backend ignored malicious total (set to 0.00 initially)")
+             print("? PASS: Backend ignored malicious total (set to 0.00 initially)")
         else:
-             print(f"⚠️ Warning: Unexpected initial total: {booking.total_amount}")
+             print(f"?? Warning: Unexpected initial total: {booking.total_amount}")
 
         # Step 2: Create details (should calculate real price)
         print("   Creating booking details...")
@@ -98,7 +98,7 @@ def verify_payment_security():
         detail = _create_booking_detail(booking, passenger, payload, passenger_data)
         
         if not detail:
-             print("❌ Error creating booking detail")
+             print("? Error creating booking detail")
              return
              
         print(f"   Detail created. Price: {detail.price}")
@@ -115,13 +115,13 @@ def verify_payment_security():
         expected_min = schedule.price
         
         if booking.total_amount >= expected_min:
-            print(f"✅ PASS: Final total ({booking.total_amount}) is >= base price ({expected_min})")
+            print(f"? PASS: Final total ({booking.total_amount}) is >= base price ({expected_min})")
             print("         Security Check Passed: Malicious total was overwritten.")
         else:
-            print(f"❌ FAIL: Final total ({booking.total_amount}) is less than base price!")
+            print(f"? FAIL: Final total ({booking.total_amount}) is less than base price!")
 
     except Exception as e:
-        print(f"❌ Exception during test: {e}")
+        print(f"? Exception during test: {e}")
         import traceback
         traceback.print_exc()
 

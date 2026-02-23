@@ -37,10 +37,10 @@ def validate_predictions():
         
         differences.append(percent_diff)
         
-        print(f"{booking.schedule.flight.flight_number}: ML=₱{ml_price:.0f}, Actual=₱{actual_price:.0f}, Diff={percent_diff:.1f}%")
+        print(f"{booking.schedule.flight.flight_number}: ML=?{ml_price:.0f}, Actual=?{actual_price:.0f}, Diff={percent_diff:.1f}%")
     
     if differences:
-        print(f"\n📊 Summary:")
+        print(f"\n? Summary:")
         print(f"   Average difference: {statistics.mean(differences):.1f}%")
         print(f"   Median difference: {statistics.median(differences):.1f}%")
         print(f"   Min difference: {min(differences):.1f}%")

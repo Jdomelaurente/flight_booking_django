@@ -32,6 +32,7 @@
         </button>
 
         <div v-if="dropdownOpen" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-100">
+           <button @click="router.push('/profile')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">My Profile</button>
            <button @click="handleLogout" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Logout</button>
         </div>
       </div>
@@ -190,9 +191,13 @@ import { useRouter } from 'vue-router'
 // Import the new API service
 import { instructorDashboardService } from '@/services/instructor/instructorDashboardService'
 import { useUserStore } from '@/stores/user'
+import { useNotificationStore } from '@/stores/notification'
+import { useModalStore } from '@/stores/modal'
 
 const router = useRouter()
 const userStore = useUserStore()
+const notificationStore = useNotificationStore()
+const modalStore = useModalStore()
 
 const sidebarOpen = ref(false) 
 const dropdownOpen = ref(false)
@@ -273,10 +278,10 @@ const submitSection = async () => {
     
     // Refresh the list immediately
     await fetchInstructorData();
-    alert("Section created successfully!");
+    notificationStore.success("Section created successfully!");
   } catch (error) {
     const serverMessage = error.response?.data?.error || "Check if Section Code is unique.";
-    alert("Backend Error: " + serverMessage);
+    notificationStore.error("Backend Error: " + serverMessage);
   }
 };
 
@@ -284,12 +289,20 @@ const submitSection = async () => {
  * Action: Delete a section
  */
 const deleteSection = async (id) => {
-  if (confirm("Are you sure you want to delete this section?")) {
+  const confirmed = await modalStore.confirm({
+    title: 'Delete Section?',
+    message: 'Are you sure you want to delete this section? This action cannot be undone and all associated students and activities will be lost.',
+    confirmText: 'Delete',
+    cancelText: 'Cancel'
+  })
+
+  if (confirmed) {
     try {
       await instructorDashboardService.deleteSection(id);
+      notificationStore.success("Section deleted successfully.");
       await fetchInstructorData(); // Refresh list
     } catch (error) {
-      alert("Failed to delete section.");
+      notificationStore.error("Failed to delete section.");
     }
   }
 }

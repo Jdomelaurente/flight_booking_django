@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { useNotificationStore } from '@/stores/notification';
 import router from '@/router';
+import AuthStorage from '@/utils/authStorage';
+import { getFriendlyErrorMessage } from '@/utils/errorMapper';
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/', // Use env variable with fallback
@@ -13,8 +15,7 @@ const api = axios.create({
 // Request Interceptor: Attach Auth Token
 api.interceptors.request.use(
     (config) => {
-        // Check both potential token names for compatibility
-        const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+        const token = AuthStorage.getToken();
         if (token) {
             config.headers.Authorization = `Token ${token}`;
         }
@@ -27,47 +28,31 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
+        // Skip global error handling for authentication endpoints 
+        // because the login component handles its own error feedback using the notification store.
+        if (error.config && error.config.url && error.config.url.includes('auth/login')) {
+            return Promise.reject(error);
+        }
+
         const notificationStore = useNotificationStore();
-        let message = 'An unexpected error occurred';
-        let type = 'error';
 
-        if (!error.response) {
-            // Network Error
-            message = 'Network error: Please check if the backend server is running.';
-            console.error('Network Error:', error);
-        } else {
-            const status = error.response.status;
-            const data = error.response.data;
+        // Use utility to get a friendly message
+        const message = getFriendlyErrorMessage(error);
+        const type = 'error';
 
-            switch (status) {
-                case 400:
-                    message = data.error || data.message || 'Invalid request';
-                    break;
-                case 401:
-                    message = 'Session expired. Please login again.';
-                    localStorage.removeItem('auth_token');
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                    localStorage.removeItem('user_data');
-                    if (router.currentRoute.value.path !== '/login') {
-                        router.push('/login');
-                    }
-                    break;
-                case 403:
-                    message = 'You do not have permission to perform this action.';
-                    break;
-                case 404:
-                    message = 'Resource not found.';
-                    break;
-                case 500:
-                    message = 'Internal server error. Please try again later.';
-                    break;
-                default:
-                    message = data.error || data.message || `Error ${status}: ${error.message}`;
+        // Check if the request wants to skip the global toast
+        if (!error.config.skipGlobalToast) {
+            notificationStore.addNotification({ message, type });
+        }
+
+        // Special handling for 401: clear session
+        if (error.response && error.response.status === 401) {
+            AuthStorage.clearCurrentSession();
+            if (router.currentRoute.value.path !== '/login') {
+                router.push('/login');
             }
         }
 
-        notificationStore.addNotification({ message, type });
         return Promise.reject(error);
     }
 );

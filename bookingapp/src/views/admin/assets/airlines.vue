@@ -86,6 +86,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '@/services/admin/api';
+import { useModalStore } from '@/stores/modal';
+
+const modalStore = useModalStore();
 
 const airlines = ref([]);
 const isModalOpen = ref(false);
@@ -96,7 +99,7 @@ const form = ref({ name: '', code: '' });
 const fetchAirlines = async () => {
   try {
     const res = await api.get('/airlines/');
-    airlines.value = res.data;
+    airlines.value = res.data.results || res.data;
   } catch (err) {
     console.error("Fetch Error:", err);
   }
@@ -115,13 +118,23 @@ const saveAirline = async () => {
 };
 
 const deleteAirline = async (id) => {
-  if (confirm('Delete airline?')) {
+  const confirmed = await modalStore.confirm({
+    title: 'Delete Airline?',
+    message: 'Are you sure you want to delete this airline? This cannot be undone.',
+    variant: 'danger',
+    confirmText: 'Delete',
+    loadingText: 'Deleting...'
+  });
+
+  if (confirmed) {
+    modalStore.setLoader(true);
     try {
       await api.delete(`/airlines/${id}/`);
       await fetchAirlines();
+      modalStore.close(true);
     } catch (err) {
       console.error("Delete Error:", err);
-      alert("Delete failed.");
+      modalStore.setLoader(false);
     }
   }
 };

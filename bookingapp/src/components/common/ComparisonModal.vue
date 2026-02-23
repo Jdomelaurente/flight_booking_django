@@ -128,8 +128,8 @@
             </div>
             <div class="grid grid-cols-2 gap-2 text-sm">
               <div><span class="text-gray-500">Name:</span> {{ detail.passenger?.first_name }} {{ detail.passenger?.last_name }}</div>
-              <div><span class="text-gray-500">Seat:</span> {{ detail.seat?.seat_number }} ({{ detail.seat_class?.name }})</div>
-              <div><span class="text-gray-500">Flight:</span> {{ detail.schedule?.flight?.flight_number }}</div>
+              <div><span class="text-gray-500">Seat:</span> {{ detail.seat?.seat_number }} ({{ detail.seat_class_name }})</div>
+              <div><span class="text-gray-500">Flight:</span> {{ detail.schedule?.flight_number }}</div>
               <div><span class="text-gray-500">Price:</span> ₱{{ formatAmount(detail.price) }}</div>
             </div>
           </div>
@@ -188,16 +188,15 @@ const formatAmount = (amt) => {
 
 // Comparison Logic
 const actualOrigin = computed(() => {
-  return props.booking?.details?.[0]?.schedule?.flight?.route?.origin?.code || 'N/A';
+  return props.booking?.details?.[0]?.schedule?.origin || 'N/A';
 });
 
 const actualDestination = computed(() => {
-  // For round trips, we might need to check the last leg, but usually, the first leg's destination is what matters for the requirement
-  return props.booking?.details?.[0]?.schedule?.flight?.route?.destination?.code || 'N/A';
+  return props.booking?.details?.[0]?.schedule?.destination || 'N/A';
 });
 
 const actualClass = computed(() => {
-  return props.booking?.details?.[0]?.seat_class?.name || 'N/A';
+  return props.booking?.details?.[0]?.seat_class_name || 'N/A';
 });
 
 const expectedPaxCount = computed(() => {

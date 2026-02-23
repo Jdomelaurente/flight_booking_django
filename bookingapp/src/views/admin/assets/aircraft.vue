@@ -99,6 +99,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '@/services/admin/api';
+import { useModalStore } from '@/stores/modal';
+
+const modalStore = useModalStore();
 
 const aircraftList = ref([]);
 const airlines = ref([]);
@@ -113,8 +116,8 @@ const fetchData = async () => {
       api.get('/aircraft/'),
       api.get('/airlines/')
     ]);
-    aircraftList.value = planeRes.data;
-    airlines.value = airlineRes.data;
+    aircraftList.value = planeRes.data.results || planeRes.data;
+    airlines.value = airlineRes.data.results || airlineRes.data;
   } catch (err) { 
     console.error("Fetch Error:", err); 
   }
@@ -133,13 +136,23 @@ const saveAircraft = async () => {
 };
 
 const deleteAircraft = async (id) => {
-  if (confirm('Remove this aircraft from fleet?')) {
+  const confirmed = await modalStore.confirm({
+    title: 'Decommission Aircraft?',
+    message: 'Are you sure you want to remove this aircraft from the fleet?',
+    variant: 'danger',
+    confirmText: 'Remove',
+    loadingText: 'Removing...'
+  });
+
+  if (confirmed) {
+    modalStore.setLoader(true);
     try {
       await api.delete(`/aircraft/${id}/`);
       await fetchData();
+      modalStore.close(true);
     } catch (err) {
       console.error("Delete Error:", err);
-      alert("Delete failed.");
+      modalStore.setLoader(false);
     }
   }
 };

@@ -4,10 +4,14 @@ import { useRoute, useRouter } from 'vue-router';
 import { useBookingStore } from '@/stores/booking';
 import { paymentPollingService } from '@/services/booking/paymentPollingService';
 import api from '@/services/booking/api';
+import { useNotificationStore } from '@/stores/notification';
+import { useModalStore } from '@/stores/modal';
 
 const route = useRoute();
 const router = useRouter();
 const bookingStore = useBookingStore();
+const notificationStore = useNotificationStore();
+const modalStore = useModalStore();
 
 const loading = ref(true);
 const errorMessage = ref('');
@@ -77,10 +81,12 @@ const pollPaymentStatus = async (bookingId) => {
         amount: amount
       });
       
-      // Clear the booking store
-      bookingStore.resetBooking();
-      localStorage.removeItem('current_booking');
-      localStorage.removeItem('payment_session');
+      // Defer clearing the booking store until the user leaves the success page
+      // This prevents the router guard from redirecting to dashboard prematurely
+      // bookingStore.clearActivityCodeValidation();
+      // bookingStore.resetBooking();
+      // localStorage.removeItem('current_booking');
+      // localStorage.removeItem('payment_session');
       
       // Navigate to success page
       router.push({
@@ -88,7 +94,8 @@ const pollPaymentStatus = async (bookingId) => {
         query: {
           ref: bookingReference,
           payment_id: paymentId,
-          amount: amount
+          amount: amount,
+          booking_id: bookingId
         }
       });
       
@@ -184,10 +191,11 @@ onMounted(async () => {
           
           console.log('Direct verification successful! Navigating to success page');
           
-          // Clear the booking store
-          bookingStore.resetBooking();
-          localStorage.removeItem('current_booking');
-          localStorage.removeItem('payment_session');
+          // Defer clearing the booking store until the user leaves the success page
+          // bookingStore.clearActivityCodeValidation();
+          // bookingStore.resetBooking();
+          // localStorage.removeItem('current_booking');
+          // localStorage.removeItem('payment_session');
           
           // Navigate to success page
           router.push({
@@ -195,7 +203,8 @@ onMounted(async () => {
             query: {
               ref: bookingReference,
               payment_id: paymentId,
-              amount: amount
+              amount: amount,
+              booking_id: bookingId
             }
           });
           
@@ -251,7 +260,14 @@ const retryPayment = () => {
 };
 
 const cancelBooking = async () => {
-  if (confirm('Are you sure you want to cancel this booking?')) {
+  const confirmed = await modalStore.confirm({
+    title: 'Cancel Booking?',
+    message: 'Are you sure you want to cancel this booking? This action cannot be undone.',
+    confirmText: 'Yes, Cancel',
+    cancelText: 'No, Keep'
+  });
+
+  if (confirmed) {
     try {
       await api.post(`cancel-booking/${bookingStore.booking_id}/`);
       bookingStore.resetBooking();
@@ -259,7 +275,7 @@ const cancelBooking = async () => {
       localStorage.removeItem('payment_session');
       router.push({ name: 'Home' });
     } catch (error) {
-      alert('Failed to cancel booking: ' + error.message);
+      notificationStore.error('Failed to cancel booking: ' + error.message);
     }
   }
 };
@@ -269,8 +285,8 @@ const cancelBooking = async () => {
   <div class="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 flex justify-center items-center p-5">
     
     <!-- Loading State - SHOWS WHILE POLLING -->
-    <div v-if="loading" class="bg-white border border-gray-300 rounded-sm p-8 md:p-10 text-center max-w-lg w-full">
-      <div class="w-12 h-12 border-4 border-gray-200 border-t-pink-500 rounded-full animate-spin mx-auto mb-6"
+    <div v-if="loading" class="bg-white border border-gray-300 rounded-[5px] p-8 md:p-10 text-center max-w-lg w-full">
+      <div class="w-12 h-12 border-4 border-gray-200 border-t-pink-500 rounded-[2px] animate-spin mx-auto mb-6"
            style="border-color: #e5e7eb; border-top-color: #FF5794;"></div>
       
       <p class="text-lg font-semibold text-gray-800 mb-2">{{ processingStatus }}</p>
@@ -294,7 +310,7 @@ const cancelBooking = async () => {
     </div>
 
     <!-- Incomplete Payment State -->
-    <div v-else-if="showIncompleteState" class="bg-white border border-gray-300 rounded-sm p-8 md:p-10 text-center max-w-2xl w-full">
+    <div v-else-if="showIncompleteState" class="bg-white border border-gray-300 rounded-[5px] p-8 md:p-10 text-center max-w-2xl w-full">
       <div class="text-6xl mb-4">🔄</div>
       
       <h1 class="text-3xl font-bold text-gray-800 mb-3">Payment Not Completed</h1>
@@ -303,7 +319,7 @@ const cancelBooking = async () => {
         It looks like you didn't complete the payment on PayMongo's checkout page.
       </p>
       
-      <div class="bg-gray-50 border border-gray-300 rounded-sm p-5 text-left mb-6">
+      <div class="bg-gray-50 border border-gray-300 rounded-[5px] p-5 text-left mb-6">
         <p class="font-semibold text-gray-800 mb-3">What happened:</p>
         <ul class="space-y-2 text-gray-600 ml-5">
           <li class="list-disc">You were redirected to PayMongo's secure payment page</li>
@@ -312,7 +328,7 @@ const cancelBooking = async () => {
         </ul>
       </div>
       
-      <div class="bg-amber-50 border border-amber-300 rounded-sm p-5 text-left mb-6">
+      <div class="bg-amber-50 border border-amber-300 rounded-[5px] p-5 text-left mb-6">
         <div class="space-y-2">
           <p class="text-gray-700">
             <strong class="font-semibold">Booking Reference:</strong> 
@@ -324,7 +340,7 @@ const cancelBooking = async () => {
           </p>
           <p class="text-gray-700">
             <strong class="font-semibold">Status:</strong> 
-            <span class="inline-block bg-yellow-100 border border-yellow-400 text-yellow-800 px-3 py-1 rounded-sm text-sm font-semibold ml-2">
+            <span class="inline-block bg-yellow-100 border border-yellow-400 text-yellow-800 px-3 py-1 rounded-[5px] text-sm font-semibold ml-2">
               Payment Pending
             </span>
           </p>
@@ -333,12 +349,12 @@ const cancelBooking = async () => {
       
       <div class="flex flex-col md:flex-row gap-3 mb-6">
         <button @click="retryPayment" 
-                class="flex-1 border border-gray-300 rounded-sm px-6 py-3 font-semibold text-white transition-colors"
+                class="flex-1 border border-gray-300 rounded-[5px] px-6 py-3 font-semibold text-white transition-colors"
                 style="background-color: #FF5794;">
           Complete Payment Now
         </button>
         <button @click="cancelBooking" 
-                class="flex-1 bg-white border border-gray-300 rounded-sm px-6 py-3 font-semibold text-red-600 hover:bg-red-50 transition-colors">
+                class="flex-1 bg-white border border-gray-300 rounded-[5px] px-6 py-3 font-semibold text-red-600 hover:bg-red-50 transition-colors">
           Cancel Booking
         </button>
       </div>
@@ -349,7 +365,7 @@ const cancelBooking = async () => {
     </div>
 
     <!-- Error State - NO SUCCESS STATE HERE -->
-    <div v-else class="bg-white border border-gray-300 rounded-sm p-8 md:p-10 text-center max-w-lg w-full">
+    <div v-else class="bg-white border border-gray-300 rounded-[5px] p-8 md:p-10 text-center max-w-lg w-full">
       <div class="text-6xl mb-4">❌</div>
       
       <h1 class="text-3xl font-bold text-gray-800 mb-3">Payment Unsuccessful</h1>
@@ -360,12 +376,12 @@ const cancelBooking = async () => {
       
       <div class="flex flex-col md:flex-row gap-3 mb-6">
         <button @click="retryPayment" 
-                class="flex-1 border border-gray-300 rounded-sm px-6 py-3 font-semibold text-white transition-colors"
+                class="flex-1 border border-gray-300 rounded-[5px] px-6 py-3 font-semibold text-white transition-colors"
                 style="background-color: #FF5794;">
           Try Payment Again
         </button>
         <button @click="goHome" 
-                class="flex-1 bg-white border border-gray-300 rounded-sm px-6 py-3 font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+                class="flex-1 bg-white border border-gray-300 rounded-[5px] px-6 py-3 font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
           Return to Home
         </button>
       </div>

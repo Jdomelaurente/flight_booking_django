@@ -26,20 +26,22 @@
           </div>
         </div>
 
-        <!-- Flight Segment Tabs for Round Trips -->
-        <div v-if="bookingStore.isRoundTrip" class="flight-segment-tabs">
-          <div 
-            v-for="segment in flightSegments" 
-            :key="segment.key"
-            @click="activeSegment = segment.key"
-            :class="['segment-tab', { active: activeSegment === segment.key }]"
-          >
-            <div class="segment-icon">
-              <span v-if="segment.key === 'depart'">✈️</span>
-              <span v-else>🔄</span>
+        <!-- Visual Roadmap Indicator -->
+        <div v-if="segmentRoadmap.length > 1" class="visual-roadmap">
+          <div v-for="(seg, idx) in segmentRoadmap" :key="seg.key" class="roadmap-item">
+            <div class="roadmap-dot" :class="{ 'done': seg.isComplete, 'active': activeSegment === seg.key }">
+              <span v-if="seg.isComplete">✅</span>
+              <span v-else>{{ idx + 1 }}</span>
             </div>
-            <div class="segment-label">{{ segment.label }}</div>
-            <div class="segment-flight">{{ segment.flight }}</div>
+            <div class="roadmap-info">
+              <div class="roadmap-label">{{ seg.label }}</div>
+              <div class="roadmap-status">
+                <span :class="{ 'check-done': seg.baggageDone }">🧳</span>
+                <span :class="{ 'check-done': seg.mealsDone }">🍱</span>
+                <span :class="{ 'check-done': seg.seatsDone }">💺</span>
+              </div>
+            </div>
+            <div v-if="idx < segmentRoadmap.length - 1" class="roadmap-connector"></div>
           </div>
         </div>
 
@@ -87,25 +89,100 @@
           </div>
 
           <template v-else>
+            <!-- Insurance Section (always visible above tabs content) -->
+            <div class="tab-pane insurance-pane">
+              <h3>Travel Insurance</h3>
+              <p class="insurance-intro">
+                Protect your trip with travel insurance. Covers medical emergencies, trip interruptions, and lost baggage.
+              </p>
+              <div v-if="insurancePlans && insurancePlans.length" class="insurance-grid">
+                <div
+                  v-for="plan in insurancePlans"
+                  :key="plan.id"
+                  class="insurance-card"
+                  :class="{ selected: selectedInsurancePlanId === plan.id }"
+                >
+                  <div class="insurance-header">
+                    <div>
+                      <h4>{{ plan.name }}</h4>
+                      <p class="insurance-provider">
+                        Provided by {{ plan.provider_name || 'Our Insurance Partner' }}
+                      </p>
+                    </div>
+                    <div class="insurance-price">
+                      ₱{{ parseFloat(plan.retail_price).toLocaleString() }}
+                    </div>
+                  </div>
+
+                  <p class="insurance-description">
+                    {{ plan.description || 'Recommended coverage for medical, baggage, and trip interruptions.' }}
+                  </p>
+
+                  <p v-if="plan.coverage_summary" class="insurance-coverage">
+                    {{ plan.coverage_summary }}
+                  </p>
+
+                  <div class="insurance-actions">
+                    <button
+                      v-if="selectedInsurancePlanId === plan.id"
+                      class="insurance-toggle-btn remove"
+                      @click="removeInsurance"
+                    >
+                      Remove
+                    </button>
+                    <button
+                      v-else
+                      class="insurance-toggle-btn"
+                      @click="selectInsurance(plan)"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <p v-else class="insurance-unavailable">
+                Travel insurance is not available for this itinerary.
+              </p>
+            </div>
+
             <!-- Baggage Tab - Card Layout -->
             <div v-if="currentTab === 'baggage'" class="tab-pane">
               <h3>Select Extra Baggage</h3>
-              <div class="segment-notice" v-if="bookingStore.isRoundTrip">
-                <span class="notice-icon">ℹ️</span>
-                <span>You are selecting baggage for the <strong>{{ activeSegmentLabel }}</strong> flight</span>
-              </div>
-              
-              <div v-for="p in bookingStore.passengers" :key="p.key" class="p-addon-row">
-                <div class="p-info"><strong>{{ p.firstName }} {{ p.lastName }}</strong> ({{ p.type }})</div>
-                <div class="option-grid">
-                  <div 
-                    v-for="opt in baggageOptions" 
-                    :key="opt.id"
-                    :class="['opt-card', { selected: getBaggageSelection(p.key)?.id === opt.id }]"
-                    @click="selectBaggageDirect(p, opt)"
-                  >
-                    <span class="weight">{{ opt.formatted_weight }}</span>
-                    <span class="price">₱{{ parseFloat(opt.price).toLocaleString() }}</span>
+
+              <div v-for="segment in flightSegments" :key="segment.key" class="segment-block">
+                <div class="segment-notice">
+                  <span class="notice-icon">
+                    <span v-if="segment.key === 'depart'">✈️</span>
+                    <span v-else-if="segment.key === 'return'">🔄</span>
+                    <span v-else>📍</span>
+                  </span>
+                  <span><strong>{{ segment.label }}</strong> ({{ segment.flight }})</span>
+                </div>
+                
+                <div v-for="p in bookingStore.passengers" :key="p.key" class="p-addon-row">
+                  <div class="p-info">
+                    <strong>{{ p.firstName }} {{ p.lastName }}</strong> ({{ p.type }})
+                    
+                    <button 
+                      v-if="getBaggageSelection(p.key, segment.key) && segmentRoadmap.length > 1"
+                      class="copy-addon-btn"
+                      @click="handleCopyAddon('baggage', p)"
+                      title="Copy this selection to all flights"
+                    >
+                      <span>🔄 Apply to all flights</span>
+                    </button>
+                  </div>
+                  <div class="option-grid">
+                    <div 
+                      v-for="opt in baggageOptions" 
+                      :key="opt.id"
+                      :class="['opt-card', { selected: getBaggageSelection(p.key, segment.key)?.id === opt.id }]"
+                      @click="selectBaggageDirect(p, opt, segment.key, $event)"
+                    >
+                      <span class="weight">{{ opt.formatted_weight }}</span>
+                      <span class="price">₱{{ parseFloat(opt.price).toLocaleString() }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -114,51 +191,68 @@
             <!-- Meals Tab - Card Layout -->
             <div v-if="currentTab === 'meals'" class="tab-pane">
               <h3>Select In-flight Meals</h3>
-              <div class="segment-notice" v-if="bookingStore.isRoundTrip">
-                <span class="notice-icon">ℹ️</span>
-                <span>You are selecting meals for the <strong>{{ activeSegmentLabel }}</strong> flight</span>
-              </div>
-              
-              <div v-for="p in bookingStore.passengers" :key="p.key" class="p-addon-row">
-                <div class="p-info"><strong>{{ p.firstName }} {{ p.lastName }}</strong></div>
-                <div class="meal-options-grid">
-                  <!-- No Meal Option -->
-                  <div 
-                    :class="['meal-card', { selected: !getMealSelection(p.key) }]"
-                    @click="selectMealDirect(p, null)"
-                  >
-                    <div class="meal-icon">🚫</div>
-                    <div class="meal-details">
-                      <div class="meal-name">No Meal</div>
-                      <div class="meal-price">No additional cost</div>
+
+              <div v-for="segment in flightSegments" :key="segment.key" class="segment-block">
+                <div class="segment-notice">
+                  <span class="notice-icon">
+                    <span v-if="segment.key === 'depart'">✈️</span>
+                    <span v-else-if="segment.key === 'return'">🔄</span>
+                    <span v-else>📍</span>
+                  </span>
+                  <span><strong>{{ segment.label }}</strong> ({{ segment.flight }})</span>
+                </div>
+                
+                <div v-for="p in bookingStore.passengers" :key="p.key" class="p-addon-row">
+                  <div class="p-info"><strong>{{ p.firstName }} {{ p.lastName }}</strong> ({{ p.type }})
+                    
+                    <button 
+                      v-if="getMealSelection(p.key, segment.key) && segmentRoadmap.length > 1"
+                      class="copy-addon-btn"
+                      @click="handleCopyAddon('meals', p)"
+                      title="Copy this selection to all flights"
+                    >
+                      <span>🔄 Apply to all flights</span>
+                    </button>
+</div>
+                  <div class="meal-options-grid">
+                    <!-- No Meal Option -->
+                    <div 
+                      :class="['meal-card', { selected: !getMealSelection(p.key, segment.key) }]"
+                      @click="selectMealDirect(p, null, segment.key, $event)"
+                    >
+                      <div class="meal-icon">🚫</div>
+                      <div class="meal-details">
+                        <div class="meal-name">No Meal</div>
+                        <div class="meal-price">No additional cost</div>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <!-- Meal Options -->
-                  <div 
-                    v-for="meal in mealOptions" 
-                    :key="meal.id"
-                    :class="['meal-card', { selected: getMealSelection(p.key)?.id === meal.id }]"
-                    @click="selectMealDirect(p, meal)"
-                  >
-                    <div class="meal-icon">
-                      <span v-if="meal.meal_type === 'vegetarian'">🥬</span>
-                      <span v-else-if="meal.meal_type === 'vegan'">🌱</span>
-                      <span v-else-if="meal.meal_type === 'halal'">☪️</span>
-                      <span v-else-if="meal.meal_type === 'kosher'">✡️</span>
-                      <span v-else-if="meal.meal_type === 'child'">👶</span>
-                      <span v-else-if="meal.meal_type === 'infant'">🍼</span>
-                      <span v-else>🍽️</span>
-                    </div>
-                    <div class="meal-details">
-                      <div class="meal-name">{{ meal.name }}</div>
-                      <div class="meal-type">{{ meal.get_meal_type_display }}</div>
-                      <div class="meal-description">{{ meal.description }}</div>
-                      <div v-if="meal.calories" class="meal-calories">{{ meal.calories }} calories</div>
-                      <div class="meal-price">₱{{ parseFloat(meal.price).toLocaleString() }}</div>
-                    </div>
-                    <div v-if="meal.allergens" class="meal-allergens">
-                      <small>⚠️ Contains: {{ meal.allergens }}</small>
+                    
+                    <!-- Meal Options -->
+                    <div 
+                      v-for="meal in mealOptions" 
+                      :key="meal.id"
+                      :class="['meal-card', { selected: getMealSelection(p.key, segment.key)?.id === meal.id }]"
+                      @click="selectMealDirect(p, meal, segment.key, $event)"
+                    >
+                      <div class="meal-icon">
+                        <span v-if="meal.meal_type === 'vegetarian'">🥬</span>
+                        <span v-else-if="meal.meal_type === 'vegan'">🌱</span>
+                        <span v-else-if="meal.meal_type === 'halal'">☪️</span>
+                        <span v-else-if="meal.meal_type === 'kosher'">✡️</span>
+                        <span v-else-if="meal.meal_type === 'child'">👶</span>
+                        <span v-else-if="meal.meal_type === 'infant'">🍼</span>
+                        <span v-else>🍽️</span>
+                      </div>
+                      <div class="meal-details">
+                        <div class="meal-name">{{ meal.name }}</div>
+                        <div class="meal-type">{{ meal.get_meal_type_display }}</div>
+                        <div class="meal-description">{{ meal.description }}</div>
+                        <div v-if="meal.calories" class="meal-calories">{{ meal.calories }} calories</div>
+                        <div class="meal-price">₱{{ parseFloat(meal.price).toLocaleString() }}</div>
+                      </div>
+                      <div v-if="meal.allergens" class="meal-allergens">
+                        <small>⚠️ Contains: {{ meal.allergens }}</small>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -168,52 +262,69 @@
             <!-- Assistance Tab - Card Layout -->
             <div v-if="currentTab === 'wheelchair'" class="tab-pane">
               <h3>Select Special Assistance</h3>
-              <div class="segment-notice" v-if="bookingStore.isRoundTrip">
-                <span class="notice-icon">ℹ️</span>
-                <span>You are selecting assistance for the <strong>{{ activeSegmentLabel }}</strong> flight</span>
-              </div>
-              
-              <div v-for="p in bookingStore.passengers" :key="p.key" class="p-addon-row">
-                <div class="p-info"><strong>{{ p.firstName }} {{ p.lastName }}</strong></div>
-                <div class="assistance-options-grid">
-                  <!-- No Assistance Option -->
-                  <div 
-                    :class="['assistance-card', { selected: !getAssistanceSelection(p.key) }]"
-                    @click="selectAssistanceDirect(p, null)"
-                  >
-                    <div class="assistance-icon">🚶</div>
-                    <div class="assistance-details">
-                      <div class="assistance-name">No Assistance Needed</div>
-                      <div class="assistance-description">I can manage without special assistance</div>
-                    </div>
-                  </div>
-                  
-                  <!-- Assistance Options -->
-                  <div 
-                    v-for="service in assistanceOptions" 
-                    :key="service.id"
-                    :class="['assistance-card', { selected: getAssistanceSelection(p.key) === service.id, free: service.price === 0 }]"
-                    @click="selectAssistanceDirect(p, service)"
-                  >
-                    <div class="assistance-icon">
-                      <span v-if="service.service_type === 'wheelchair'">♿</span>
-                      <span v-else-if="service.service_type === 'boarding'">👵</span>
-                      <span v-else-if="service.service_type === 'medical'">🏥</span>
-                      <span v-else-if="service.service_type === 'unaccompanied_minor'">👦</span>
-                      <span v-else-if="service.service_type === 'pet'">🐕</span>
-                      <span v-else>🛂</span>
-                    </div>
-                    <div class="assistance-details">
-                      <div class="assistance-name">{{ service.name }}</div>
-                      <div class="assistance-type">{{ service.get_service_type_display }}</div>
-                      <div class="assistance-description">{{ service.description }}</div>
-                      <div class="assistance-notice">{{ service.advance_notice_text }}</div>
-                      <div v-if="service.special_requirements" class="assistance-requirements">
-                        <small>📋 {{ service.special_requirements }}</small>
+
+              <div v-for="segment in flightSegments" :key="segment.key" class="segment-block">
+                <div class="segment-notice">
+                  <span class="notice-icon">
+                    <span v-if="segment.key === 'depart'">✈️</span>
+                    <span v-else-if="segment.key === 'return'">🔄</span>
+                    <span v-else>📍</span>
+                  </span>
+                  <span><strong>{{ segment.label }}</strong> ({{ segment.flight }})</span>
+                </div>
+                
+                <div v-for="p in bookingStore.passengers" :key="p.key" class="p-addon-row">
+                  <div class="p-info"><strong>{{ p.firstName }} {{ p.lastName }}</strong> ({{ p.type }})
+                    
+                    <button 
+                      v-if="getAssistanceSelection(p.key, segment.key) && segmentRoadmap.length > 1"
+                      class="copy-addon-btn"
+                      @click="handleCopyAddon('wheelchair', p)"
+                      title="Copy this selection to all flights"
+                    >
+                      <span>🔄 Apply to all flights</span>
+                    </button>
+</div>
+                  <div class="assistance-options-grid">
+                    <!-- No Assistance Option -->
+                    <div 
+                      :class="['assistance-card', { selected: !getAssistanceSelection(p.key, segment.key) }]"
+                      @click="selectAssistanceDirect(p, null, segment.key, $event)"
+                    >
+                      <div class="assistance-icon">🚶</div>
+                      <div class="assistance-details">
+                        <div class="assistance-name">No Assistance Needed</div>
+                        <div class="assistance-description">I can manage without special assistance</div>
                       </div>
-                      <div class="assistance-price">
-                        <span v-if="service.price > 0">₱{{ parseFloat(service.price).toLocaleString() }}</span>
-                        <span v-else>Free service</span>
+                    </div>
+                    
+                    <!-- Assistance Options -->
+                    <div 
+                      v-for="service in assistanceOptions" 
+                      :key="service.id"
+                      :class="['assistance-card', { selected: getAssistanceSelection(p.key, segment.key) === service.id, free: service.price === 0 }]"
+                      @click="selectAssistanceDirect(p, service, segment.key, $event)"
+                    >
+                      <div class="assistance-icon">
+                        <span v-if="service.service_type === 'wheelchair'">♿</span>
+                        <span v-else-if="service.service_type === 'boarding'">👵</span>
+                        <span v-else-if="service.service_type === 'medical'">🏥</span>
+                        <span v-else-if="service.service_type === 'unaccompanied_minor'">👦</span>
+                        <span v-else-if="service.service_type === 'pet'">🐕</span>
+                        <span v-else>🛂</span>
+                      </div>
+                      <div class="assistance-details">
+                        <div class="assistance-name">{{ service.name }}</div>
+                        <div class="assistance-type">{{ service.get_service_type_display }}</div>
+                        <div class="assistance-description">{{ service.description }}</div>
+                        <div class="assistance-notice">{{ service.advance_notice_text }}</div>
+                        <div v-if="service.special_requirements" class="assistance-requirements">
+                          <small>📋 {{ service.special_requirements }}</small>
+                        </div>
+                        <div class="assistance-price">
+                          <span v-if="service.price > 0">₱{{ parseFloat(service.price).toLocaleString() }}</span>
+                          <span v-else>Free service</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -230,49 +341,68 @@
       </main>
 
       <aside class="sidebar">
+        <BookingTimer variant="sidebar" />
         <div class="summary-card sticky">
           <div class="summary-header">Price Breakdown</div>
           <div class="summary-body">
             <!-- Show flight breakdown -->
             <div v-if="flightInfo.length > 0" class="flight-breakdown">
-              <div v-for="flight in flightInfo" :key="flight.type" class="price-line flight-line">
-                <span>{{ flight.type }}: {{ flight.flight }}</span> 
-                <span>₱{{ flight.price.toLocaleString() }}</span>
+              <!-- Adults Breakdown -->
+              <div class="price-line" v-if="bookingStore.passengerCount.adults > 0">
+                <span>{{ bookingStore.passengerCount.adults }} Adult(s) (Base Fare)</span> 
+                <span>₱{{ (bookingStore.combinedBasePrice * bookingStore.passengerCount.adults).toLocaleString() }}</span>
               </div>
               
-              <!-- Show passenger multiplier -->
-              <div class="price-line passenger-line">
-                <span>× {{ bookingStore.passengerCount.adults + bookingStore.passengerCount.children }} Passengers</span>
-                <span></span>
+              <!-- Children Breakdown -->
+              <div class="price-line" v-if="bookingStore.passengerCount.children > 0">
+                <span>{{ bookingStore.passengerCount.children }} Child(ren) (Base Fare)</span> 
+                <span>₱{{ (bookingStore.combinedBasePrice * bookingStore.passengerCount.children).toLocaleString() }}</span>
+              </div>
+
+              <!-- Infants Breakdown (50% Base Fare) -->
+              <div class="price-line infant-line" v-if="bookingStore.passengerCount.infants > 0">
+                <span>{{ bookingStore.passengerCount.infants }} Infant(s) (50% Base Fare)</span> 
+                <span>₱{{ ((bookingStore.combinedBasePrice * 0.5) * bookingStore.passengerCount.infants).toLocaleString() }}</span>
+              </div>
+
+              <div class="price-line taxes-line">
+                <span>Estimated Taxes & Fees (12%)</span>
+                <span>₱{{ (bookingStore.totalTaxes).toLocaleString() }}</span>
               </div>
             </div>
 
-            <!-- In your sidebar summary section -->
-            <div class="price-line" v-if="totalSeats > 0">
+            <div class="price-line" v-if="totalSeats > 0" id="sidebar-seats">
               <span>Seat Selection Fee</span> 
-              <span>₱{{ totalSeats.toLocaleString() }}</span>
+              <AnimatedNumber :value="totalSeats" prefix="₱" />
             </div>
 
-            <div class="price-line" v-if="totalBaggage > 0">
+            <div class="price-line" v-if="totalBaggage > 0" id="sidebar-baggage">
               <span>Baggage</span> 
-              <span>₱{{ totalBaggage.toLocaleString() }}</span>
+              <AnimatedNumber :value="totalBaggage" prefix="₱" />
             </div>
 
-            <div class="price-line" v-if="totalMeals > 0">
+            <div class="price-line" v-if="totalMeals > 0" id="sidebar-meals">
               <span>Meals</span> 
-              <span>₱{{ totalMeals.toLocaleString() }}</span>
+              <AnimatedNumber :value="totalMeals" prefix="₱" />
             </div>
 
-            <div class="price-line" v-if="totalAssistance > 0">
+            <div class="price-line" v-if="totalAssistance > 0" id="sidebar-assistance">
               <span>Assistance</span> 
-              <span>₱{{ totalAssistance.toLocaleString() }}</span>
+              <AnimatedNumber :value="totalAssistance" prefix="₱" />
+            </div>
+
+            <div class="price-line" v-if="insurancePrice > 0" id="sidebar-insurance">
+              <span>Travel Insurance</span> 
+              <AnimatedNumber :value="insurancePrice" prefix="₱" />
             </div>
 
             <hr>
 
-            <div class="total-row">
+            <div class="total-row" id="sidebar-total">
               <span>Total</span> 
-              <span class="final-amt">₱{{ grandTotal.toLocaleString() }}</span>
+              <span class="final-amt">
+                <AnimatedNumber :value="grandTotal" prefix="₱" />
+              </span>
             </div>
           </div>
         </div>
@@ -302,9 +432,9 @@
             </template>
           </div>
           
-          <div v-else-if="modalType === 'meal'">
+          <div v-if="modalType === 'meal'">
             <p><strong>Passenger:</strong> {{ modalData.passenger.firstName }} {{ modalData.passenger.lastName }}</p>
-            <p><strong>Flight:</strong> {{ activeSegmentLabel }}</p>
+            <p><strong>Flight:</strong> {{ modalData.segment === 'depart' ? 'Depart Flight' : 'Return Flight' }}</p>
             <template v-if="modalData.option">
               <p><strong>Meal:</strong> {{ modalData.option.name }}</p>
               <p><strong>Type:</strong> {{ modalData.option.get_meal_type_display }}</p>
@@ -322,7 +452,7 @@
           
           <div v-else-if="modalType === 'assistance'">
             <p><strong>Passenger:</strong> {{ modalData.passenger.firstName }} {{ modalData.passenger.lastName }}</p>
-            <p><strong>Flight:</strong> {{ activeSegmentLabel }}</p>
+            <p><strong>Flight:</strong> {{ modalData.segment === 'depart' ? 'Depart Flight' : 'Return Flight' }}</p>
             <template v-if="modalData.option">
               <p><strong>Service:</strong> {{ modalData.option.name }}</p>
               <p><strong>Type:</strong> {{ modalData.option.get_service_type_display }}</p>
@@ -350,6 +480,9 @@
         </div>
       </div>
     </div>
+    
+    <!-- Animation Component -->
+    <FlyingIcon ref="flyingIconRef" />
   </div>
 </template>
 <script setup>
@@ -357,13 +490,18 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { useBookingStore } from '@/stores/booking';
 import { useRouter, useRoute } from 'vue-router';
 import { addonService } from '@/services/booking/addonService';
+import api from '@/services/api/axios';
+import BookingTimer from '@/components/booking/BookingTimer.vue';
+import AnimatedNumber from '@/components/common/AnimatedNumber.vue';
+import FlyingIcon from '@/components/common/FlyingIcon.vue';
 
 const bookingStore = useBookingStore();
 const router = useRouter();
 const route = useRoute();
 
 const currentTab = ref('baggage');
-const activeSegment = ref('depart'); // 'depart' or 'return'
+// activeSegment is no longer used for tab UI, but we keep it for fallback if needed inside modal state.
+const activeSegment = ref('depart'); 
 const isLoading = ref(true);
 
 // Modal state
@@ -374,38 +512,75 @@ const modalData = ref({
   passenger: null,
   option: null,
   passengerKey: '',
-  isDeselecting: false
+  isDeselecting: false,
+  segment: 'depart'
 });
+
+const instance = ref(null);
+const flyingIconRef = ref(null);
 
 // API Data
 const baggageOptions = ref([]);
 const mealOptions = ref([]);
 const assistanceOptions = ref([]);
+const insurancePlans = ref([]);
 
 // Update selectedAddons structure to support both depart and return for round trips
 const selectedAddons = reactive({
-  baggage: {
-    depart: {},    // { passengerKey: baggageObject } for depart
-    return: {}     // { passengerKey: baggageObject } for return
-  },
-  meals: {
-    depart: {},    // { passengerKey: mealObject } for depart
-    return: {}     // { passengerKey: mealObject } for return
-  },
-  wheelchair: {
-    depart: {},    // { passengerKey: assistanceId } for depart
-    return: {}     // { passengerKey: assistanceId } for return
-  },
-  seats: bookingStore.addons?.seats || {}
+  baggage: {},
+  meals: {},
+  wheelchair: {},
+  seats: bookingStore.addons?.seats || {},
+  insurance: bookingStore.addons?.insurance || { selectedPlanId: null, price: 0 }
 });
+
+// Sync local state with store
+const syncSelectionsFromStore = () => {
+  const tripType = bookingStore.tripType;
+  const segments = [];
+  
+  if (tripType === 'multi_city' || tripType === 'multi-city') {
+    bookingStore.multiCitySegments.forEach((_, idx) => segments.push(idx.toString()));
+  } else {
+    segments.push('depart');
+    if (tripType === 'round_trip' || tripType === 'round-trip') segments.push('return');
+  }
+
+  segments.forEach(seg => {
+    if (!selectedAddons.baggage[seg]) selectedAddons.baggage[seg] = {};
+    if (!selectedAddons.meals[seg]) selectedAddons.meals[seg] = {};
+    if (!selectedAddons.wheelchair[seg]) selectedAddons.wheelchair[seg] = {};
+    
+    selectedAddons.baggage[seg] = { ...bookingStore.addons.baggage?.[seg] };
+    selectedAddons.meals[seg] = { ...bookingStore.addons.meals?.[seg] };
+    selectedAddons.wheelchair[seg] = { ...bookingStore.addons.wheelchair?.[seg] };
+  });
+
+  selectedAddons.seats = bookingStore.addons?.seats ? { ...bookingStore.addons.seats } : {};
+  selectedAddons.insurance = {
+    selectedPlanId: bookingStore.addons?.insurance?.selectedPlanId || null,
+    price: bookingStore.addons?.insurance?.price || 0
+  };
+};
 
 // Add trip type info
 const tripTypeInfo = computed(() => {
   return bookingStore.isRoundTrip ? 'Round Trip' : 'One Way';
 });
 
-// Flight segments for round trips
+// Flight segments for all trip types
 const flightSegments = computed(() => {
+  const tripType = bookingStore.tripType;
+  
+  if (tripType === 'multi_city' || tripType === 'multi-city') {
+    return bookingStore.multiCitySegments.map((seg, idx) => ({
+      key: idx.toString(),
+      label: `Flight ${idx + 1}`,
+      flight: seg.selectedFlight?.flight_number || 'N/A',
+      route: `${seg.origin} → ${seg.destination}`
+    }));
+  }
+
   const segments = [
     {
       key: 'depart',
@@ -431,9 +606,27 @@ const activeSegmentLabel = computed(() => {
   return segment ? segment.label : 'Flight';
 });
 
+// Sync local state with store
+// This helper was moved and is now defined above.
+
 // Flight info computed
 const flightInfo = computed(() => {
   const info = [];
+  const tripType = bookingStore.tripType;
+
+  if (tripType === 'multi_city' || tripType === 'multi-city') {
+    bookingStore.multiCitySegments.forEach((seg, idx) => {
+      if (seg.selectedFlight) {
+        info.push({
+          type: `Flight ${idx + 1}`,
+          flight: seg.selectedFlight.flight_number,
+          route: `${seg.selectedFlight.origin} → ${seg.selectedFlight.destination}`,
+          price: parseFloat(seg.selectedFlight.price || 0)
+        });
+      }
+    });
+    return info;
+  }
   
   if (bookingStore.selectedOutbound) {
     info.push({
@@ -457,16 +650,67 @@ const flightInfo = computed(() => {
 });
 
 // Helper to get selection for current segment
-const getBaggageSelection = (passengerKey) => {
-  return selectedAddons.baggage[activeSegment.value]?.[passengerKey] || null;
+const getBaggageSelection = (passengerKey, segment) => {
+  return selectedAddons.baggage[segment]?.[passengerKey] || null;
 };
 
-const getMealSelection = (passengerKey) => {
-  return selectedAddons.meals[activeSegment.value]?.[passengerKey] || null;
+const getMealSelection = (passengerKey, segment) => {
+  return selectedAddons.meals[segment]?.[passengerKey] || null;
 };
 
-const getAssistanceSelection = (passengerKey) => {
-  return selectedAddons.wheelchair[activeSegment.value]?.[passengerKey] || null;
+const getAssistanceSelection = (passengerKey, segment) => {
+  return selectedAddons.wheelchair[segment]?.[passengerKey] || null;
+};
+
+const selectedInsurancePlanId = computed(() => {
+  return bookingStore.addons?.insurance?.selectedPlanId || null;
+});
+
+const insurancePrice = computed(() => {
+  return bookingStore.addons?.insurance?.price || 0;
+});
+
+// Roadmap logic: track completion for each segment
+const segmentRoadmap = computed(() => {
+  const segments = flightSegments.value;
+  const pax = bookingStore.passengers;
+  
+  return segments.map(seg => {
+    const segKey = seg.key;
+    const baggageDone = pax.every(p => !!bookingStore.addons.baggage[segKey]?.[p.key]);
+    const mealsDone = pax.every(p => !!bookingStore.addons.meals[segKey]?.[p.key]);
+    const seatsDone = pax.every(p => !!bookingStore.addons.seats[segKey]?.[p.key]);
+    const assistanceDone = pax.every(p => !!bookingStore.addons.wheelchair[segKey]?.[p.key]);
+    
+    return {
+      ...seg,
+      baggageDone,
+      mealsDone,
+      seatsDone,
+      assistanceDone,
+      isComplete: baggageDone && mealsDone && seatsDone
+    };
+  });
+});
+
+const handleCopyAddon = (type, passenger) => {
+  bookingStore.copyAddonToAllSegments(type, passenger.key, activeSegment.value);
+  // Optional: show a mini toast or notification
+  console.log(`📋 Copied ${type} for ${passenger.firstName} to all segments`);
+};
+
+const selectInsurance = (plan) => {
+  if (!plan) return;
+  bookingStore.selectInsurancePlan(plan.id, plan.retail_price);
+  selectedAddons.insurance = {
+    selectedPlanId: plan.id,
+    price: parseFloat(plan.retail_price) || 0
+  };
+};
+
+const removeInsurance = () => {
+  bookingStore.clearInsurance();
+  selectedAddons.insurance = { selectedPlanId: null, price: 0 };
 };
 
 onMounted(async () => {
@@ -476,10 +720,11 @@ onMounted(async () => {
     
     const airlineId = bookingStore.selectedOutbound?.airline_id || bookingStore.selectedOutbound?.airline;
     
-    const [bagRes, mealRes, assistRes] = await Promise.all([
+    const [bagRes, mealRes, assistRes, insuranceRes] = await Promise.all([
       addonService.getBaggageOptions(airlineId),
       addonService.getMealOptions(airlineId),
-      addonService.getAssistanceServices(airlineId)
+      addonService.getAssistanceServices(airlineId),
+      api.get('/flightapp/api/insurance-plans/').catch(() => null)
     ]);
     
     // Handle paginated responses (response.data.results) or flat arrays (response.data)
@@ -487,30 +732,16 @@ onMounted(async () => {
     mealOptions.value = mealRes.data.results || mealRes.data || [];
     assistanceOptions.value = assistRes.data.results || assistRes.data || [];
 
+    if (insuranceRes && insuranceRes.data) {
+      const data = insuranceRes.data;
+      insurancePlans.value = Array.isArray(data) ? data : (data?.results || []);
+    } else {
+      insurancePlans.value = [];
+    }
+
     // Load existing selections from store if they exist
     console.log("📦 Loading existing add-ons from store...");
-    
-    // Directly use store data since it's already in new format
-    selectedAddons.baggage = {
-      depart: { ...bookingStore.addons.baggage.depart },
-      return: { ...bookingStore.addons.baggage.return }
-    };
-    
-    selectedAddons.meals = {
-      depart: { ...bookingStore.addons.meals.depart },
-      return: { ...bookingStore.addons.meals.return }
-    };
-    
-    selectedAddons.wheelchair = {
-      depart: { ...bookingStore.addons.wheelchair.depart },
-      return: { ...bookingStore.addons.wheelchair.return }
-    };
-    
-    // Handle seats
-    if (bookingStore.addons.seats) {
-      console.log("💺 Seats from store:", bookingStore.addons.seats);
-      selectedAddons.seats = { ...bookingStore.addons.seats };
-    }
+    syncSelectionsFromStore();
     
     console.log("✅ Final selectedAddons:", selectedAddons);
   } catch (error) {
@@ -531,16 +762,16 @@ const getOptionById = (list, id) => {
 };
 
 // Direct selection handlers for cards - UPDATED with store calls
-const selectBaggageDirect = (passenger, option) => {
+const selectBaggageDirect = (passenger, option, segment, event) => {
   const passengerKey = passenger.key;
-  const currentSelection = getBaggageSelection(passengerKey);
+  const currentSelection = getBaggageSelection(passengerKey, segment);
   
   // Check if already selected (compare by ID)
   if (currentSelection && currentSelection.id === option.id) {
     // Deselect
-    selectedAddons.baggage[activeSegment.value][passengerKey] = null;
-    bookingStore.removeBaggageAddon(passengerKey, activeSegment.value);
-    console.log(`❌ Removed baggage for passenger ${passengerKey} on ${activeSegmentLabel.value}`);
+    selectedAddons.baggage[segment][passengerKey] = null;
+    bookingStore.removeBaggageAddon(passengerKey, segment);
+    console.log(`❌ Removed baggage for passenger ${passengerKey} on ${segment}`);
   } else {
     // Select - store full object
     const baggageObj = {
@@ -549,28 +780,31 @@ const selectBaggageDirect = (passenger, option) => {
       formatted_weight: option.formatted_weight,
       name: option.formatted_weight
     };
-    selectedAddons.baggage[activeSegment.value][passengerKey] = baggageObj;
-    bookingStore.updateBaggageAddon(passengerKey, baggageObj, activeSegment.value);
-    console.log(`✅ Added ${option.formatted_weight} baggage for passenger ${passengerKey} on ${activeSegmentLabel.value}: ₱${option.price}`);
+    selectedAddons.baggage[segment][passengerKey] = baggageObj;
+    bookingStore.updateBaggageAddon(passengerKey, baggageObj, segment);
+    if (event && flyingIconRef.value) flyingIconRef.value.fly(event.currentTarget, '#sidebar-baggage', '🧳');
+    console.log(`✅ Added ${option.formatted_weight} baggage for passenger ${passengerKey} on ${segment}: ₱${option.price}`);
   }
+  // Phase 11: Background sync to preserve progress
+  bookingStore.snapshotToServer();
 };
 
-const selectMealDirect = (passenger, option) => {
+const selectMealDirect = (passenger, option, segment, event) => {
   const passengerKey = passenger.key;
-  const currentSelection = getMealSelection(passengerKey);
+  const currentSelection = getMealSelection(passengerKey, segment);
   
   if (!option) {
     // Select "No Meal"
-    selectedAddons.meals[activeSegment.value][passengerKey] = null;
-    bookingStore.removeMealAddon(passengerKey, activeSegment.value);
-    console.log(`❌ No meal for passenger ${passengerKey} on ${activeSegmentLabel.value}`);
+    selectedAddons.meals[segment][passengerKey] = null;
+    bookingStore.removeMealAddon(passengerKey, segment);
+    console.log(`❌ No meal for passenger ${passengerKey} on ${segment}`);
   } else {
     // Check if already selected (compare by ID)
     if (currentSelection && currentSelection.id === option.id) {
       // Deselect if already selected
-      selectedAddons.meals[activeSegment.value][passengerKey] = null;
-      bookingStore.removeMealAddon(passengerKey, activeSegment.value);
-      console.log(`❌ Removed meal for passenger ${passengerKey} on ${activeSegmentLabel.value}`);
+      selectedAddons.meals[segment][passengerKey] = null;
+      bookingStore.removeMealAddon(passengerKey, segment);
+      console.log(`❌ Removed meal for passenger ${passengerKey} on ${segment}`);
     } else {
       // Select new meal - store full object
       const mealObj = {
@@ -580,41 +814,47 @@ const selectMealDirect = (passenger, option) => {
         meal_type: option.meal_type,
         description: option.description
       };
-      selectedAddons.meals[activeSegment.value][passengerKey] = mealObj;
-      bookingStore.updateMealAddon(passengerKey, mealObj, activeSegment.value);
-      console.log(`✅ Added ${option.name} meal for passenger ${passengerKey} on ${activeSegmentLabel.value}: ₱${option.price}`);
+      selectedAddons.meals[segment][passengerKey] = mealObj;
+      bookingStore.updateMealAddon(passengerKey, mealObj, segment);
+      if (event && flyingIconRef.value && option) flyingIconRef.value.fly(event.currentTarget, '#sidebar-meals', '🍱');
+      console.log(`✅ Added ${option.name} meal for passenger ${passengerKey} on ${segment}: ₱${option.price}`);
     }
   }
+  // Phase 11: Background sync to preserve progress
+  bookingStore.snapshotToServer();
 };
 
-const selectAssistanceDirect = (passenger, option) => {
+const selectAssistanceDirect = (passenger, option, segment, event) => {
   const passengerKey = passenger.key;
   
   if (!option) {
     // Select "No Assistance"
-    selectedAddons.wheelchair[activeSegment.value][passengerKey] = null;
-    bookingStore.removeAssistanceAddon(passengerKey, activeSegment.value);
-    console.log(`❌ No assistance for passenger ${passengerKey} on ${activeSegmentLabel.value}`);
+    selectedAddons.wheelchair[segment][passengerKey] = null;
+    bookingStore.removeAssistanceAddon(passengerKey, segment);
+    console.log(`❌ No assistance for passenger ${passengerKey} on ${segment}`);
   } else {
     // Select assistance
-    if (getAssistanceSelection(passengerKey) === option.id) {
+    if (getAssistanceSelection(passengerKey, segment) === option.id) {
       // Deselect if already selected
-      selectedAddons.wheelchair[activeSegment.value][passengerKey] = null;
-      bookingStore.removeAssistanceAddon(passengerKey, activeSegment.value);
-      console.log(`❌ Removed assistance for passenger ${passengerKey} on ${activeSegmentLabel.value}`);
+      selectedAddons.wheelchair[segment][passengerKey] = null;
+      bookingStore.removeAssistanceAddon(passengerKey, segment);
+      console.log(`❌ Removed assistance for passenger ${passengerKey} on ${segment}`);
     } else {
       // Select new assistance - store ID only
-      selectedAddons.wheelchair[activeSegment.value][passengerKey] = option.id;
-      bookingStore.updateAssistanceAddon(passengerKey, option.id, activeSegment.value);
-      console.log(`✅ Added ${option.name} assistance for passenger ${passengerKey} on ${activeSegmentLabel.value}: ${option.price > 0 ? '₱' + option.price : 'Free'}`);
+      selectedAddons.wheelchair[segment][passengerKey] = option.id;
+      bookingStore.updateAssistanceAddon(passengerKey, option.id, segment);
+      if (event && flyingIconRef.value && option) flyingIconRef.value.fly(event.currentTarget, '#sidebar-assistance', '♿');
+      console.log(`✅ Added ${option.name} assistance for passenger ${passengerKey} on ${segment}: ${option.price > 0 ? '₱' + option.price : 'Free'}`);
     }
   }
+  // Phase 11: Background sync to preserve progress
+  bookingStore.snapshotToServer();
 };
 
 // Confirmation Modal Functions - UPDATED with store calls
-const showMealConfirmation = (passenger, option) => {
+const showMealConfirmation = (passenger, option, segment) => {
   const passengerKey = passenger.key;
-  const currentSelection = getMealSelection(passengerKey);
+  const currentSelection = getMealSelection(passengerKey, segment);
   let currentOption = null;
   
   if (currentSelection && typeof currentSelection === 'object') {
@@ -629,14 +869,15 @@ const showMealConfirmation = (passenger, option) => {
     passenger,
     option: option,
     passengerKey: passenger.key,
-    isDeselecting: !option && currentOption
+    isDeselecting: !option && currentOption,
+    segment: segment
   };
   showConfirmationModal.value = true;
 };
 
-const showAssistanceConfirmation = (passenger, option) => {
+const showAssistanceConfirmation = (passenger, option, segment) => {
   const passengerKey = passenger.key;
-  const currentOption = getOptionById(assistanceOptions.value, getAssistanceSelection(passengerKey));
+  const currentOption = getOptionById(assistanceOptions.value, getAssistanceSelection(passengerKey, segment));
   
   modalType.value = 'assistance';
   modalTitle.value = option ? 'Confirm Assistance Service' : 'Remove Assistance Service';
@@ -644,7 +885,8 @@ const showAssistanceConfirmation = (passenger, option) => {
     passenger,
     option: option,
     passengerKey: passenger.key,
-    isDeselecting: !option && currentOption
+    isDeselecting: !option && currentOption,
+    segment: segment
   };
   showConfirmationModal.value = true;
 };
@@ -653,20 +895,20 @@ const closeConfirmationModal = () => {
   showConfirmationModal.value = false;
   
   // Reset modal data
-  modalData.value = { passenger: null, option: null, passengerKey: '', isDeselecting: false };
+  modalData.value = { passenger: null, option: null, passengerKey: '', isDeselecting: false, segment: 'depart' };
   modalType.value = '';
   modalTitle.value = '';
 };
 
 const confirmSelection = () => {
-  const { passengerKey, option, isDeselecting } = modalData.value;
+  const { passengerKey, option, isDeselecting, segment } = modalData.value;
   
   if (modalType.value === 'meal') {
     if (!option) {
       // Remove meal selection
-      selectedAddons.meals[activeSegment.value][passengerKey] = null;
-      bookingStore.removeMealAddon(passengerKey, activeSegment.value);
-      console.log(`❌ Removed meal for passenger ${passengerKey} on ${activeSegmentLabel.value}`);
+      selectedAddons.meals[segment][passengerKey] = null;
+      bookingStore.removeMealAddon(passengerKey, segment);
+      console.log(`❌ Removed meal for passenger ${passengerKey} on ${segment}`);
     } else {
       // Select meal - store as object
       const mealObj = {
@@ -676,25 +918,27 @@ const confirmSelection = () => {
         meal_type: option.meal_type,
         description: option.description
       };
-      selectedAddons.meals[activeSegment.value][passengerKey] = mealObj;
-      bookingStore.updateMealAddon(passengerKey, mealObj, activeSegment.value);
-      console.log(`✅ Added ${option.name} meal for passenger ${passengerKey} on ${activeSegmentLabel.value}: ₱${option.price}`);
+      selectedAddons.meals[segment][passengerKey] = mealObj;
+      bookingStore.updateMealAddon(passengerKey, mealObj, segment);
+      console.log(`✅ Added ${option.name} meal for passenger ${passengerKey} on ${segment}: ₱${option.price}`);
     }
   }
   else if (modalType.value === 'assistance') {
     if (!option) {
       // Remove assistance selection
-      selectedAddons.wheelchair[activeSegment.value][passengerKey] = null;
-      bookingStore.removeAssistanceAddon(passengerKey, activeSegment.value);
-      console.log(`❌ Removed assistance for passenger ${passengerKey} on ${activeSegmentLabel.value}`);
+      selectedAddons.wheelchair[segment][passengerKey] = null;
+      bookingStore.removeAssistanceAddon(passengerKey, segment);
+      console.log(`❌ Removed assistance for passenger ${passengerKey} on ${segment}`);
     } else {
       // Select assistance
-      selectedAddons.wheelchair[activeSegment.value][passengerKey] = option.id;
-      bookingStore.updateAssistanceAddon(passengerKey, option.id, activeSegment.value);
-      console.log(`✅ Added ${option.name} assistance for passenger ${passengerKey} on ${activeSegmentLabel.value}: ${option.price > 0 ? '₱' + option.price : 'Free'}`);
+      selectedAddons.wheelchair[segment][passengerKey] = option.id;
+      bookingStore.updateAssistanceAddon(passengerKey, option.id, segment);
+      console.log(`✅ Added ${option.name} assistance for passenger ${passengerKey} on ${segment}: ${option.price > 0 ? '₱' + option.price : 'Free'}`);
     }
   }
   
+  // Phase 11: Background sync after modal confirmation
+  bookingStore.snapshotToServer();
   closeConfirmationModal();
 };
 
@@ -709,183 +953,102 @@ const indicatorStyle = computed(() => {
   };
 });
 
-// Updated Base Fare Calculation for Round Trips
-const baseFare = computed(() => {
-  let totalBasePrice = 0;
-  
-  // Add outbound flight price
-  if (bookingStore.selectedOutbound?.price) {
-    totalBasePrice += parseFloat(bookingStore.selectedOutbound.price);
-  }
-  
-  // Add return flight price if round trip
-  if (bookingStore.isRoundTrip && bookingStore.selectedReturn?.price) {
-    totalBasePrice += parseFloat(bookingStore.selectedReturn.price);
-  }
-  
-  // Multiply by number of paying passengers (adults + children)
-  const payingPassengerCount = bookingStore.passengerCount.adults + bookingStore.passengerCount.children;
-  return totalBasePrice * payingPassengerCount;
-});
+// Updated Base Fare Calculation for all trip types
+const baseFare = computed(() => bookingStore.combinedBasePriceTotal);
 
-// Updated totals to include both depart and return for round trips
-const totalBaggage = computed(() => {
-  let total = 0;
-  
-  // Sum baggage for depart
-  Object.values(selectedAddons.baggage.depart || {}).forEach(baggage => {
-    if (!baggage) return;
-    if (typeof baggage === 'object' && baggage.price !== undefined) {
-      total += parseFloat(baggage.price);
-    } else {
-      const option = baggageOptions.value.find(opt => opt.id == baggage);
-      total += (option ? parseFloat(option.price) : 0);
-    }
-  });
-  
-  // Sum baggage for return if round trip
-  if (bookingStore.isRoundTrip) {
-    Object.values(selectedAddons.baggage.return || {}).forEach(baggage => {
-      if (!baggage) return;
-      if (typeof baggage === 'object' && baggage.price !== undefined) {
-        total += parseFloat(baggage.price);
-      } else {
-        const option = baggageOptions.value.find(opt => opt.id == baggage);
-        total += (option ? parseFloat(option.price) : 0);
-      }
-    });
+// Updated totals to include all segments
+const totalBaggage = computed(() => bookingStore.totalBaggagePrice);
+const totalMeals = computed(() => bookingStore.totalMealsPrice);
+
+const totalAssistance = computed(() => bookingStore.totalAssistancePrice);
+
+// FIXED: Calculate seat total correctly using seat_price across all segments
+const totalSeats = computed(() => bookingStore.totalSeatsPrice);
+
+const taxesPrice = computed(() => {
+  // If backend provided taxes, use them. Otherwise estimate 12%
+  if (backendBreakdown.value && backendBreakdown.value.taxes) {
+    return parseFloat(backendBreakdown.value.taxes);
   }
-  
-  return total;
+  return bookingStore.totalTaxes;
 });
-
-const totalMeals = computed(() => {
-  let total = 0;
-  
-  // Sum meals for depart
-  Object.values(selectedAddons.meals.depart || {}).forEach(meal => {
-    if (!meal) return;
-    if (typeof meal === 'object' && meal.price !== undefined) {
-      total += parseFloat(meal.price);
-    } else {
-      const option = mealOptions.value.find(m => m.id == meal);
-      total += (option ? parseFloat(option.price) : 0);
-    }
-  });
-  
-  // Sum meals for return if round trip
-  if (bookingStore.isRoundTrip) {
-    Object.values(selectedAddons.meals.return || {}).forEach(meal => {
-      if (!meal) return;
-      if (typeof meal === 'object' && meal.price !== undefined) {
-        total += parseFloat(meal.price);
-      } else {
-        const option = mealOptions.value.find(m => m.id == meal);
-        total += (option ? parseFloat(option.price) : 0);
-      }
-    });
-  }
-  
-  return total;
-});
-
-const totalAssistance = computed(() => {
-  let total = 0;
-  
-  // Sum assistance for depart
-  Object.values(selectedAddons.wheelchair.depart || {}).forEach(assistanceId => {
-    if (!assistanceId) return;
-    total += findPrice(assistanceOptions.value, assistanceId);
-  });
-  
-  // Sum assistance for return if round trip
-  if (bookingStore.isRoundTrip) {
-    Object.values(selectedAddons.wheelchair.return || {}).forEach(assistanceId => {
-      if (!assistanceId) return;
-      total += findPrice(assistanceOptions.value, assistanceId);
-    });
-  }
-  
-  return total;
-});
-
-// FIXED: Calculate seat total correctly using seat_price
-const totalSeats = computed(() => {
-  const seats = Object.values(selectedAddons.seats || {});
-  
-  return seats.reduce((sum, seat) => {
-    // Use seat_price instead of final_price
-    const seatPrice = parseFloat(seat.seat_price) || 0;
-    return sum + seatPrice;
-  }, 0);
-});
-
 // Use bookingStore.grandTotal for consistency
-const grandTotal = computed(() => {
-  return bookingStore.grandTotal || (baseFare.value + totalSeats.value + totalBaggage.value + totalMeals.value + totalAssistance.value);
-});
+const grandTotal = computed(() => bookingStore.grandTotal);
 
 const saveAndContinue = () => {
-  // Save to Pinia - using the updated setAddons method
-  bookingStore.setAddons(JSON.parse(JSON.stringify(selectedAddons)));
+  // ...
 
   // --- DEBUG LOG START ---
   console.group("🛒 ADD-ONS PURCHASE SUMMARY");
   console.log("Trip Type:", tripTypeInfo.value);
-  
+
   // Show flight info
   console.log("✈️ FLIGHT DETAILS:");
   flightInfo.value.forEach(flight => {
     console.log(`  ${flight.type}: ${flight.flight} (${flight.route}) - ₱${flight.price.toLocaleString()}`);
   });
-  
+
   // Check seat data structure
   console.log("💺 SEAT SELECTIONS:");
-  const seats = Object.entries(selectedAddons.seats || {});
-  if (seats.length > 0) {
-    seats.forEach(([passengerKey, seat]) => {
-      console.log(`  Passenger ${passengerKey}:`, {
+  const seatsState = selectedAddons.seats || {};
+  const isSegmented = typeof seatsState === 'object' && (seatsState.depart || seatsState.return);
+
+  const logSeatEntries = (entries, segmentLabel) => {
+    if (!entries || entries.length === 0) return;
+    console.log(`  Segment: ${segmentLabel}`);
+    entries.forEach(([passengerKey, seat]) => {
+      if (!seat || typeof seat !== 'object') return;
+
+      console.log(`    Passenger ${passengerKey}:`, {
         seat_code: seat.seat_code,
         seat_price: seat.seat_price,
         seat_total_price: seat.seat_total_price,
         final_price: seat.final_price,
         seat_class: seat.seat_class?.name
       });
-      
-      // Debug price calculation
-      const basePrice = parseFloat(bookingStore.selectedOutbound?.price || 0);
-      const seatTotalPrice = parseFloat(seat.seat_total_price) || 0;
-      const seatOnlyPrice = parseFloat(seat.seat_price) || 0;
-      
-      console.log(`    Base flight price: ₱${basePrice}`);
-      console.log(`    Seat total price: ₱${seatTotalPrice}`);
-      console.log(`    Seat only price: ₱${seatOnlyPrice}`);
-      console.log(`    Difference: ₱${seatTotalPrice - basePrice}`);
     });
+  };
+
+  if (isSegmented) {
+    const departEntries = Object.entries(seatsState.depart || {});
+    const returnEntries = Object.entries(seatsState.return || {});
+    if (departEntries.length === 0 && returnEntries.length === 0) {
+      console.log("  No seats selected");
+    } else {
+      logSeatEntries(departEntries, 'depart');
+      logSeatEntries(returnEntries, 'return');
+    }
   } else {
-    console.log("  No seats selected");
+    const flatEntries = Object.entries(seatsState);
+    if (flatEntries.length === 0) {
+      console.log("  No seats selected");
+    } else {
+      logSeatEntries(flatEntries, 'all');
+    }
   }
-  
+
   // Calculate individual totals
   const baggageTotal = totalBaggage.value;
   const mealsTotal = totalMeals.value;
   const assistanceTotal = totalAssistance.value;
   const seatExtrasTotal = totalSeats.value; // This uses the fixed calculation
   const baseFareTotal = baseFare.value;
+  const insuranceTotal = insurancePrice.value;
   
   const receipt = {
     "Base Fare": `₱${baseFareTotal.toLocaleString()}`,
     "Seat Selection": `₱${seatExtrasTotal.toLocaleString()}`,
     "Baggage": `₱${baggageTotal.toLocaleString()}`,
     "Meals": `₱${mealsTotal.toLocaleString()}`,
-    "Assistance": `₱${assistanceTotal.toLocaleString()}`
+    "Assistance": `₱${assistanceTotal.toLocaleString()}`,
+    "Travel Insurance": `₱${insuranceTotal.toLocaleString()}`
   };
   
   console.table(receipt);
   
   // Summary of totals
   console.log("📊 TOTALS SUMMARY:");
-  console.log("Add-ons Total:", `₱${(baggageTotal + mealsTotal + assistanceTotal + seatExtrasTotal).toLocaleString()}`);
+  console.log("Add-ons Total:", `₱${(baggageTotal + mealsTotal + assistanceTotal + seatExtrasTotal + insuranceTotal).toLocaleString()}`);
   console.log("Flight Base Total:", `₱${baseFareTotal.toLocaleString()}`);
   console.log("Store Grand Total:", `₱${bookingStore.grandTotal.toLocaleString()}`);
   console.log("Calculated Grand Total:", `₱${grandTotal.value.toLocaleString()}`);
@@ -900,7 +1063,6 @@ const saveAndContinue = () => {
   router.push({ name: 'ReviewBooking' });
 };
 </script>
-
 
 <style scoped>
 /* Updated color theme to #FF579A */
@@ -921,6 +1083,102 @@ const saveAndContinue = () => {
 .loading-state { display: flex; align-items: center; justify-content: center; height: 200px; color: #666; }
 
 .tab-pane h3 { color: #FF579A; margin-bottom: 25px; font-size: 1.3rem; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0; }
+
+.insurance-pane {
+  margin-bottom: 25px;
+}
+
+.insurance-intro {
+  color: #666;
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+.insurance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.insurance-card {
+  border: 2px solid #e0e0e0;
+  padding: 18px;
+  border-radius: 10px;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.insurance-card.selected {
+  border-color: #FF579A;
+  background: #FFF0F7;
+}
+
+.insurance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.insurance-header h4 {
+  margin: 0;
+  color: #FF579A;
+  font-size: 1.05rem;
+}
+
+.insurance-provider {
+  margin: 6px 0 0 0;
+  color: #777;
+  font-size: 0.85rem;
+}
+
+.insurance-price {
+  font-weight: 800;
+  color: #FF579A;
+  white-space: nowrap;
+}
+
+.insurance-description {
+  color: #555;
+  margin: 10px 0;
+  line-height: 1.4;
+  font-size: 0.9rem;
+}
+
+.insurance-coverage {
+  margin: 0 0 12px 0;
+  color: #666;
+  font-size: 0.85rem;
+  background: #f8f9fa;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+
+.insurance-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.insurance-toggle-btn {
+  padding: 10px 14px;
+  background: #FF579A;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.insurance-toggle-btn.remove {
+  background: #666;
+}
+
+.insurance-unavailable {
+  color: #888;
+  font-style: italic;
+}
 
 /* Baggage Grid Styles */
 .option-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px; }
@@ -1260,6 +1518,127 @@ const saveAndContinue = () => {
 
 .notice-icon {
   font-size: 1.2rem;
+}
+
+/* Visual Roadmap Styles */
+.visual-roadmap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  border: 1px solid #eaeaea;
+}
+
+.roadmap-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.roadmap-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #888;
+  border: 2px solid #e0e0e0;
+  z-index: 2;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.roadmap-dot.active {
+  background: white;
+  border-color: #FF579A;
+  color: #FF579A;
+  box-shadow: 0 0 0 4px rgba(255, 87, 154, 0.1);
+}
+
+.roadmap-dot.done {
+  background: #FF579A;
+  border-color: #FF579A;
+  color: white;
+}
+
+.roadmap-info {
+  margin-left: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.roadmap-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #333;
+  white-space: nowrap;
+}
+
+.roadmap-status {
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.roadmap-status span {
+  font-size: 0.75rem;
+  opacity: 0.3;
+  filter: grayscale(1);
+}
+
+.roadmap-status span.check-done {
+  opacity: 1;
+  filter: grayscale(0);
+}
+
+.roadmap-connector {
+  flex: 1;
+  height: 2px;
+  background: #e0e0e0;
+  margin: 0 15px;
+  z-index: 1;
+}
+
+/* Copy Addon Button Styles */
+.copy-addon-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: #f0f7ff;
+  color: #007bff;
+  border: 1px solid #cce5ff;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  vertical-align: middle;
+}
+
+.copy-addon-btn:hover {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.copy-addon-btn span {
+  display: inline-block;
+}
+
+.p-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
 }
 
 /* Responsive adjustments */

@@ -22,7 +22,7 @@ def create_seats_for_aircraft(schedule, aircraft):
     
     # Skip if seat classes don't exist
     if not all(seat_classes.values()):
-        print(f"⚠️ Missing seat classes, skipping schedule {schedule.id}")
+        print(f"?? Missing seat classes, skipping schedule {schedule.id}")
         return 0
     
     seats_created = 0
@@ -155,7 +155,7 @@ def create_seats_for_aircraft(schedule, aircraft):
     return seats_created
 
 def main():
-    print("🪑 Starting Seat Seeding...")
+    print("? Starting Seat Seeding...")
     
     # Get all schedules without seats or with few seats
     schedules = Schedule.objects.all()
@@ -167,12 +167,12 @@ def main():
         existing_seats = Seat.objects.filter(schedule=schedule).count()
         
         if existing_seats > 0:
-            print(f"⏭️ Schedule {schedule.id} already has {existing_seats} seats, skipping...")
+            print(f"?? Schedule {schedule.id} already has {existing_seats} seats, skipping...")
             continue
         
         aircraft = schedule.flight.aircraft if schedule.flight else None
         
-        print(f"✈️ Creating seats for Schedule {schedule.id} ({schedule.flight.flight_number if schedule.flight else 'N/A'})")
+        print(f"?? Creating seats for Schedule {schedule.id} ({schedule.flight.flight_number if schedule.flight else 'N/A'})")
         print(f"   Aircraft: {aircraft.model if aircraft else 'Unknown'}")
         
         seats_created = create_seats_for_aircraft(schedule, aircraft)
@@ -180,11 +180,11 @@ def main():
         if seats_created > 0:
             total_seats += seats_created
             schedules_updated += 1
-            print(f"   ✅ Created {seats_created} seats")
+            print(f"   ? Created {seats_created} seats")
         else:
-            print(f"   ⚠️ No seats created")
+            print(f"   ?? No seats created")
     
-    print(f"\n🎉 Seat seeding completed!")
+    print(f"\n? Seat seeding completed!")
     print(f"   Schedules updated: {schedules_updated}")
     print(f"   Total seats created: {total_seats}")
 

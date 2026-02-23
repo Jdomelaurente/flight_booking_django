@@ -44,6 +44,7 @@ from .models import (
 )
 from .serializers import LoginSerializer, UserSerializer
 from .authentication import MultiSessionTokenAuthentication  # NEW: Our custom auth
+from .permissions import IsInstructor  # NEW: Custom permission
 
 import traceback
 from django.utils import timezone
@@ -77,25 +78,25 @@ def Login_view(request):
     Each login creates a unique session with its own token
     """
     print(f"\n{'='*60}")
-    print(f"🔐 LOGIN REQUEST")
+    print(f"? LOGIN REQUEST")
     print(f"{'='*60}")
     
     # 1. Validate Input
     serializer = LoginSerializer(data=request.data)
     if not serializer.is_valid():
-        print(f"❌ Validation failed: {serializer.errors}")
+        print(f"? Validation failed: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     # 2. Get the specific user who is trying to login
     user = serializer.validated_data['user']
-    print(f"✅ User authenticated: {user.username}")
+    print(f"? User authenticated: {user.username}")
 
     # 3. Check Role using UserProfile
     try:
         profile = UserProfile.objects.get(user=user)
-        print(f"✅ Profile found: {profile.role}")
+        print(f"? Profile found: {profile.role}")
     except UserProfile.DoesNotExist:
-        print(f"❌ No profile found for user")
+        print(f"? No profile found for user")
         return Response({"error": "Profile not found"}, status=status.HTTP_403_FORBIDDEN)
 
     # 4. Create a NEW session for this login (allows multiple simultaneous logins)
@@ -108,9 +109,9 @@ def Login_view(request):
             user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
             is_active=True
         )
-        print(f"✅ New session created: {session.session_token[:16]}... (Role: {session.role})")
+        print(f"? New session created: {session.session_token[:16]}... (Role: {session.role})")
     except Exception as e:
-        print(f"❌ Session creation failed: {str(e)}")
+        print(f"? Session creation failed: {str(e)}")
         traceback.print_exc()
         return Response({"error": "Failed to create session"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -123,7 +124,7 @@ def Login_view(request):
     elif profile.role == 'admin':
         dashboard_route = '/admin'
 
-    print(f"✅ Login successful - Redirecting to: {dashboard_route}")
+    print(f"? Login successful - Redirecting to: {dashboard_route}")
     print(f"{'='*60}\n")
 
     # 6. Return the UNIQUE session token (NOT the old DRF token)
@@ -142,16 +143,35 @@ def Login_view(request):
 def register_view(request):
     data = request.data
     role = data.get('role') 
+    username = data.get('username')
+    email = data.get('email')
+    id_number = data.get('id_number')
     
+    # Validation checks
+    if not username or not email or not data.get('password') or not id_number:
+        return Response({"error": "Missing required fields (username, email, password, ID number)"}, status=status.HTTP_400_BAD_REQUEST)
+
+    if User.objects.filter(username=username).exists():
+        return Response({"error": f"Username '{username}' is already taken."}, status=status.HTTP_400_BAD_REQUEST)
+    
+    if User.objects.filter(email=email).exists():
+        return Response({"error": f"Email '{email}' is already registered."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if role == 'student' and Students.objects.filter(student_number=id_number).exists():
+        return Response({"error": f"Student ID '{id_number}' is already registered."}, status=status.HTTP_400_BAD_REQUEST)
+    
+    if role == 'instructor' and Instructor.objects.filter(instructor_id=id_number).exists():
+        return Response({"error": f"Instructor ID '{id_number}' is already registered."}, status=status.HTTP_400_BAD_REQUEST)
+
     try:
         with transaction.atomic():
             # 1. Create the User (single source of truth)
             user = User.objects.create_user(
-                username=data['username'],
-                email=data['email'],
+                username=username,
+                email=email,
                 password=data['password'],
-                first_name=data['first_name'],
-                last_name=data['last_name']
+                first_name=data.get('first_name', ''),
+                last_name=data.get('last_name', '')
             )
 
             # 2. Assign Role in UserProfile (auto-created by signal)
@@ -163,21 +183,22 @@ def register_view(request):
             if role == 'student':
                 Students.objects.create(
                     user=user,
-                    student_number=data.get('id_number'),
-                    first_name=data['first_name'],
-                    last_name=data['last_name'],
-                    email=data['email'],
+                    student_number=id_number,
+                    first_name=data.get('first_name', ''),
+                    last_name=data.get('last_name', ''),
+                    email=email,
                     phone_number=data.get('phone_number', ''),
                     mi=data.get('mi', ''),
+                    gender=data.get('gender', ''),
                     password=''
                 )
             elif role == 'instructor':
                 Instructor.objects.create(
                     user=user,
-                    instructor_id=data.get('id_number'),
-                    first_name=data['first_name'],
-                    last_name=data['last_name'],
-                    email=data['email'],
+                    instructor_id=id_number,
+                    first_name=data.get('first_name', ''),
+                    last_name=data.get('last_name', ''),
+                    email=email,
                     middle_initial=data.get('mi', '')
                 )
 
@@ -188,6 +209,7 @@ def register_view(request):
             }, status=status.HTTP_201_CREATED)
             
     except Exception as e:
+        traceback.print_exc()
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -196,13 +218,13 @@ def register_view(request):
 # ==========================================
 @api_view(['GET', 'POST'])
 @authentication_classes([MultiSessionTokenAuthentication])  # NEW: Use custom auth
-@permission_classes([IsAuthenticated]) 
+@permission_classes([IsAuthenticated, IsInstructor]) 
 def instructor_dashboard(request):
     user = request.user 
     session_obj = request.session_obj  # Our UserSession object
     
     print(f"\n{'='*60}")
-    print(f"👨‍🏫 INSTRUCTOR DASHBOARD REQUEST")
+    print(f"??? INSTRUCTOR DASHBOARD REQUEST")
     print(f"{'='*60}")
     print(f"User: {user.username} (ID: {user.id})")
     print(f"Session Token: {session_obj.session_token[:16]}...")
@@ -212,7 +234,7 @@ def instructor_dashboard(request):
     # 1. Verification Logic - Check session role matches
     try:
         if session_obj.role != 'instructor':
-            print(f"❌ ERROR: Session role is '{session_obj.role}', not 'instructor'")
+            print(f"? ERROR: Session role is '{session_obj.role}', not 'instructor'")
             return Response({
                 "error": "Access denied. This session is not authorized for instructor access.",
                 "session_role": session_obj.role,
@@ -221,13 +243,13 @@ def instructor_dashboard(request):
         
         # Double-check with UserProfile
         if not hasattr(user, 'userprofile') or user.userprofile.role != 'instructor':
-            print(f"❌ ERROR: User profile role mismatch")
+            print(f"? ERROR: User profile role mismatch")
             return Response({"error": "Access denied."}, status=status.HTTP_403_FORBIDDEN)
         
-        print("✅ Session and profile verified as instructor")
+        print("? Session and profile verified as instructor")
             
     except Exception as e:
-        print(f"❌ ERROR during verification: {str(e)}")
+        print(f"? ERROR during verification: {str(e)}")
         traceback.print_exc()
         return Response({"error": "Profile verification failed."}, status=status.HTTP_403_FORBIDDEN)
 
@@ -243,13 +265,13 @@ def instructor_dashboard(request):
                 description=request.data.get('description', ''),
                 instructor=user
             )
-            print(f"✅ Section created: {request.data.get('section_name')}")
+            print(f"? Section created: {request.data.get('section_name')}")
             return Response({"message": "Section created successfully!"}, status=status.HTTP_201_CREATED)
         except IntegrityError:
-            print("❌ ERROR: Section code already exists")
+            print("? ERROR: Section code already exists")
             return Response({"error": "Section code already exists for your account."}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            print(f"❌ ERROR creating section: {str(e)}")
+            print(f"? ERROR creating section: {str(e)}")
             traceback.print_exc()
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
@@ -258,7 +280,7 @@ def instructor_dashboard(request):
         'id', 'section_name', 'section_code', 'semester', 'academic_year', 'schedule', 'description'
     ).order_by('-id') 
     
-    print(f"✅ Found {sections.count()} sections for instructor")
+    print(f"? Found {sections.count()} sections for instructor")
     print(f"{'='*60}\n")
     
     return Response({
@@ -283,7 +305,7 @@ def instructor_dashboard(request):
 
 @api_view(['GET'])
 @authentication_classes([MultiSessionTokenAuthentication])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsInstructor])
 def section_details(request, section_id):
     user = request.user
     
@@ -324,7 +346,7 @@ def section_details(request, section_id):
 
 @api_view(['DELETE'])
 @authentication_classes([MultiSessionTokenAuthentication])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsInstructor])
 def delete_activity(request, section_id, activity_id):
     user = request.user
     
@@ -348,7 +370,7 @@ def delete_activity(request, section_id, activity_id):
 
 class EnrollStudentView(APIView):
     authentication_classes = [MultiSessionTokenAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsInstructor]
     
     def post(self, request, section_id):
         student_num = request.data.get('student_number')
@@ -380,7 +402,7 @@ class EnrollStudentView(APIView):
 
 @api_view(['GET'])
 @authentication_classes([MultiSessionTokenAuthentication])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsInstructor])
 def Enroll_Student_list(request, section_id):
     section = get_object_or_404(Section, id=section_id, instructor=request.user)
     enrollments = section.enrollments.all().select_related('student')
@@ -400,7 +422,7 @@ def Enroll_Student_list(request, section_id):
 
 @api_view(['GET', 'POST'])
 @authentication_classes([MultiSessionTokenAuthentication])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsInstructor])
 def create_activity(request, section_id):
     instructor = request.user
     section = get_object_or_404(Section, id=section_id, instructor=instructor)
@@ -409,7 +431,7 @@ def create_activity(request, section_id):
         airports = Airport.objects.all().order_by('code')
         addons = AddOn.objects.select_related('type', 'airline').all()
         
-        # ✅ NEW: Fetch all students for randomization
+        # ? NEW: Fetch all students for randomization
         from app.models import Students  # Import your Students model
         students = Students.objects.all()
         
@@ -429,7 +451,7 @@ def create_activity(request, section_id):
                 } 
                 for ad in addons
             ],
-            # ✅ NEW: Send students data
+            # ? NEW: Send students data
             'students': [
                 {
                     'first_name': s.first_name,
@@ -526,7 +548,7 @@ def create_activity(request, section_id):
 
 @api_view(['GET'])
 @authentication_classes([MultiSessionTokenAuthentication])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsInstructor])
 def activity_details(request, activity_id):
     try:
         activity = get_object_or_404(
@@ -602,7 +624,7 @@ def activity_details(request, activity_id):
 
 @api_view(['POST'])
 @authentication_classes([MultiSessionTokenAuthentication])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsInstructor])
 def activate_activity(request, activity_id):
     try:
         activity = get_object_or_404(
@@ -688,7 +710,7 @@ def Activity_Student_Bind(activity):
 
 @api_view(['GET'])
 @authentication_classes([MultiSessionTokenAuthentication])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsInstructor])
 def get_activity_submissions(request, activity_id):
     """
     Get all student submissions for a specific activity.
@@ -744,7 +766,23 @@ def get_activity_submissions(request, activity_id):
                     "status": booking.status,
                     "is_practice": booking.is_practice,
                     "total_amount": float(booking.total_amount),
-                    "created_at": booking.created_at.isoformat()
+                    "trip_type": booking.get_trip_type_display(),
+                    "created_at": booking.created_at.isoformat(),
+                    "details": [
+                        {
+                            "origin": d.schedule.flight.route.origin_airport.code,
+                            "destination": d.schedule.flight.route.destination_airport.code,
+                            "departure": d.schedule.departure_time.isoformat(),
+                            "flight_number": d.schedule.flight.flight_number,
+                            "seat_class": d.seat_class.name if d.seat_class else "N/A"
+                        } for d in booking.details.all()
+                    ],
+                    "passengers": [
+                        {
+                            "name": p.get_full_name(),
+                            "type": p.passenger_type
+                        } for p in {d.passenger_id: d.passenger for d in booking.details.all()}.values()
+                    ]
                 }
                 
                 # If there's a confirmed booking but the binding is still 'assigned' or 'in_progress',
@@ -767,6 +805,39 @@ def get_activity_submissions(request, activity_id):
 
 
 # ==========================================
+# USER PROFILE MANAGEMENT
+# ==========================================
+@api_view(['GET', 'PATCH'])
+@authentication_classes([MultiSessionTokenAuthentication])
+@permission_classes([IsAuthenticated])
+def update_profile(request):
+    user = request.user
+    
+    if request.method == 'GET':
+        serializer = UserSerializer(user)
+        data = serializer.data
+        # Add avatar URL manually since it's on the profile
+        if hasattr(user, 'userprofile') and user.userprofile.avatar:
+            data['avatar'] = request.build_absolute_uri(user.userprofile.avatar.url)
+        else:
+            data['avatar'] = None
+        return Response(data)
+
+    elif request.method == 'PATCH':
+        # Use our new serializer
+        from .serializers import UserProfileUpdateSerializer
+        serializer = UserProfileUpdateSerializer(user, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            # Return updated data with full avatar URL
+            response_data = serializer.data
+            if hasattr(user, 'userprofile') and user.userprofile.avatar:
+                response_data['avatar'] = request.build_absolute_uri(user.userprofile.avatar.url)
+            return Response(response_data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ==========================================
 # LOGOUT VIEW
 # ==========================================
 @api_view(['POST'])
@@ -780,14 +851,14 @@ def logout_view(request):
         session_obj = request.session_obj
         session_obj.deactivate()
         
-        print(f"✅ Session {session_obj.id} deactivated for user {request.user.username}")
+        print(f"? Session {session_obj.id} deactivated for user {request.user.username}")
         
         return Response({
             "message": "Logged out successfully"
         }, status=status.HTTP_200_OK)
         
     except Exception as e:
-        print(f"❌ Error during logout: {str(e)}")
+        print(f"? Error during logout: {str(e)}")
         return Response({
             "error": "Logout failed"
         }, status=status.HTTP_400_BAD_REQUEST)
@@ -827,7 +898,7 @@ def validate_session(request):
         }, status=status.HTTP_200_OK)
         
     except Exception as e:
-        print(f"❌ Session validation error: {str(e)}")
+        print(f"? Session validation error: {str(e)}")
         return Response({
             "valid": False,
             "error": "Session invalid"
@@ -886,7 +957,7 @@ def student_dashboard(request):
     session_obj = request.session_obj  # Our UserSession object
     
     print(f"\n{'='*60}")
-    print(f"🎓 STUDENT DASHBOARD REQUEST")
+    print(f"? STUDENT DASHBOARD REQUEST")
     print(f"{'='*60}")
     print(f"User: {user.username} (ID: {user.id})")
     print(f"Session Token: {session_obj.session_token[:16]}...")
@@ -896,7 +967,7 @@ def student_dashboard(request):
     # 1. Verify session role
     try:
         if session_obj.role != 'student':
-            print(f"❌ ERROR: Session role is '{session_obj.role}', not 'student'")
+            print(f"? ERROR: Session role is '{session_obj.role}', not 'student'")
             return Response({
                 "error": "Access denied. This session is not authorized for student access.",
                 "session_role": session_obj.role,
@@ -905,13 +976,13 @@ def student_dashboard(request):
         
         # Double-check with UserProfile
         if not hasattr(user, 'userprofile') or user.userprofile.role != 'student':
-            print(f"❌ ERROR: User profile role mismatch")
+            print(f"? ERROR: User profile role mismatch")
             return Response({"error": "Access denied. Student access only."}, status=status.HTTP_403_FORBIDDEN)
         
-        print("✅ Session and profile verified as student")
+        print("? Session and profile verified as student")
             
     except Exception as e:
-        print(f"❌ ERROR during verification: {str(e)}")
+        print(f"? ERROR during verification: {str(e)}")
         traceback.print_exc()
         return Response({"error": "Profile verification failed."}, status=status.HTTP_403_FORBIDDEN)
 
@@ -921,28 +992,28 @@ def student_dashboard(request):
     # Try multiple methods
     if hasattr(user, 'student_profile'):
         student = user.student_profile
-        print(f"✅ Method 1: Found student via related_name")
+        print(f"? Method 1: Found student via related_name")
     
     if not student:
         try:
             student = Students.objects.get(user=user)
-            print(f"✅ Method 2: Found student via user FK")
+            print(f"? Method 2: Found student via user FK")
         except Students.DoesNotExist:
-            print("⚠️ Method 2: No Students record with user FK")
+            print("?? Method 2: No Students record with user FK")
         except Exception as e:
-            print(f"⚠️ Method 2 error: {str(e)}")
+            print(f"?? Method 2 error: {str(e)}")
     
     if not student:
         try:
             student = Students.objects.get(email=user.email)
-            print(f"✅ Method 3: Found student via email match")
+            print(f"? Method 3: Found student via email match")
         except Students.DoesNotExist:
-            print("⚠️ Method 3: No Students record with matching email")
+            print("?? Method 3: No Students record with matching email")
         except Exception as e:
-            print(f"⚠️ Method 3 error: {str(e)}")
+            print(f"?? Method 3 error: {str(e)}")
     
     if not student:
-        print("❌ FATAL: Could not find Students record!")
+        print("? FATAL: Could not find Students record!")
         return Response({
             "error": "Student record not found. Please contact your administrator.",
             "debug_info": {
@@ -952,13 +1023,13 @@ def student_dashboard(request):
             }
         }, status=status.HTTP_404_NOT_FOUND)
     
-    print(f"✅ Student record: {student.first_name} {student.last_name} (#{student.student_number})")
+    print(f"? Student record: {student.first_name} {student.last_name} (#{student.student_number})")
     
     # 3. Get enrolled section
     enrollment = SectionEnrollment.objects.filter(student=student).select_related('section').first()
     
     if not enrollment:
-        print("⚠️ Student not enrolled in any section")
+        print("?? Student not enrolled in any section")
         return Response({
             'user': {
                 'username': user.username,
@@ -980,7 +1051,7 @@ def student_dashboard(request):
         }, status=status.HTTP_200_OK)
     
     section = enrollment.section
-    print(f"📚 Enrolled in: {section.section_name} ({section.section_code})")
+    print(f"? Enrolled in: {section.section_name} ({section.section_code})")
     
     # 4. Get activities - either active OR already has progress (submitted/graded)
     from django.db.models import Q
@@ -1009,7 +1080,7 @@ def student_dashboard(request):
         )
         
         if created:
-            print(f"  ✨ Created binding: {activity.title}")
+            print(f"  ? Created binding: {activity.title}")
         
         # Search for a confirmed booking for this activity
         booking_obj = Booking.objects.filter(
@@ -1043,7 +1114,7 @@ def student_dashboard(request):
             'grade': float(binding.grade) if binding.grade is not None else None,
             'submitted_at': binding.submitted_at.isoformat() if binding.submitted_at else None,
             
-            # ✅ NEW: Add completion status and booking ID
+            # ? NEW: Add completion status and booking ID
             'completed': booking_obj is not None,
             'confirmed_booking_id': booking_obj.id if booking_obj else None
         })
@@ -1060,7 +1131,7 @@ def student_dashboard(request):
         'activities_count': len(activities_data)
     }
     
-    print(f"✅ Returning {len(activities_data)} activities")
+    print(f"? Returning {len(activities_data)} activities")
     print(f"{'='*60}\n")
     
     return Response({
@@ -1091,13 +1162,13 @@ def student_dashboard(request):
 def student_activity_details(request, activity_id):
     """
     Get detailed information about a specific activity for the authenticated student
-    ✅ UPDATED VERSION - Now includes activity_code for verification
+    ? UPDATED VERSION - Now includes activity_code for verification
     """
     user = request.user
     session_obj = request.session_obj
     
     print(f"\n{'='*60}")
-    print(f"📋 STUDENT ACTIVITY DETAILS REQUEST")
+    print(f"? STUDENT ACTIVITY DETAILS REQUEST")
     print(f"{'='*60}")
     print(f"User: {user.username} (ID: {user.id})")
     print(f"Activity ID: {activity_id}")
@@ -1106,7 +1177,7 @@ def student_activity_details(request, activity_id):
     # 1. Verify session role
     try:
         if session_obj.role != 'student':
-            print(f"❌ ERROR: Session role is '{session_obj.role}', not 'student'")
+            print(f"? ERROR: Session role is '{session_obj.role}', not 'student'")
             return Response({
                 "error": "Access denied. This session is not authorized for student access.",
                 "session_role": session_obj.role,
@@ -1115,15 +1186,15 @@ def student_activity_details(request, activity_id):
         
         # Double-check with UserProfile
         if not hasattr(user, 'userprofile') or user.userprofile.role != 'student':
-            print(f"❌ ERROR: User profile role mismatch")
+            print(f"? ERROR: User profile role mismatch")
             return Response({
                 "error": "Access denied. Student access only."
             }, status=status.HTTP_403_FORBIDDEN)
         
-        print("✅ Session and profile verified as student")
+        print("? Session and profile verified as student")
             
     except Exception as e:
-        print(f"❌ ERROR during verification: {str(e)}")
+        print(f"? ERROR during verification: {str(e)}")
         traceback.print_exc()
         return Response({
             "error": "Profile verification failed."
@@ -1134,28 +1205,28 @@ def student_activity_details(request, activity_id):
     
     if hasattr(user, 'student_profile'):
         student = user.student_profile
-        print(f"✅ Found student via related_name")
+        print(f"? Found student via related_name")
     
     if not student:
         try:
             student = Students.objects.get(user=user)
-            print(f"✅ Found student via user FK")
+            print(f"? Found student via user FK")
         except Students.DoesNotExist:
-            print("⚠️ No Students record with user FK")
+            print("?? No Students record with user FK")
         except Exception as e:
-            print(f"⚠️ Error: {str(e)}")
+            print(f"?? Error: {str(e)}")
     
     if not student:
         try:
             student = Students.objects.get(email=user.email)
-            print(f"✅ Found student via email match")
+            print(f"? Found student via email match")
         except Students.DoesNotExist:
-            print("⚠️ No Students record with matching email")
+            print("?? No Students record with matching email")
         except Exception as e:
-            print(f"⚠️ Error: {str(e)}")
+            print(f"?? Error: {str(e)}")
     
     if not student:
-        print("❌ FATAL: Could not find Students record!")
+        print("? FATAL: Could not find Students record!")
         return Response({
             "error": "Student record not found. Please contact your administrator.",
             "debug_info": {
@@ -1165,7 +1236,7 @@ def student_activity_details(request, activity_id):
             }
         }, status=status.HTTP_404_NOT_FOUND)
     
-    print(f"✅ Student record: {student.first_name} {student.last_name} (#{student.student_number})")
+    print(f"? Student record: {student.first_name} {student.last_name} (#{student.student_number})")
     
     # 3. Get the activity
     try:
@@ -1173,15 +1244,15 @@ def student_activity_details(request, activity_id):
             id=activity_id, 
             is_code_active=True
         )
-        print(f"✅ Activity found: {activity.title}")
-        print(f"🔑 Activity code: {activity.activity_code}")
+        print(f"? Activity found: {activity.title}")
+        print(f"? Activity code: {activity.activity_code}")
     except Activity.DoesNotExist:
-        print(f"❌ Activity {activity_id} not found or inactive")
+        print(f"? Activity {activity_id} not found or inactive")
         return Response({
             "error": "Activity not found or is no longer active."
         }, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        print(f"❌ Error fetching activity: {str(e)}")
+        print(f"? Error fetching activity: {str(e)}")
         traceback.print_exc()
         return Response({
             "error": "Failed to retrieve activity details.",
@@ -1196,15 +1267,15 @@ def student_activity_details(request, activity_id):
         ).first()
         
         if not enrollment:
-            print(f"❌ Student not enrolled in section: {activity.section.section_code}")
+            print(f"? Student not enrolled in section: {activity.section.section_code}")
             return Response({
                 "error": "Access denied. You are not enrolled in the section for this activity.",
                 "section_code": activity.section.section_code
             }, status=status.HTTP_403_FORBIDDEN)
         
-        print(f"✅ Student enrolled in section: {activity.section.section_code}")
+        print(f"? Student enrolled in section: {activity.section.section_code}")
     except Exception as e:
-        print(f"❌ Error checking enrollment: {str(e)}")
+        print(f"? Error checking enrollment: {str(e)}")
         traceback.print_exc()
         return Response({
             "error": "Failed to verify enrollment.",
@@ -1223,11 +1294,11 @@ def student_activity_details(request, activity_id):
         )
         
         if created:
-            print(f"✨ Created new activity binding")
+            print(f"? Created new activity binding")
         else:
-            print(f"📌 Using existing binding - Status: {binding.status}")
+            print(f"? Using existing binding - Status: {binding.status}")
     except Exception as e:
-        print(f"❌ Error with ActivityStudentBinding: {str(e)}")
+        print(f"? Error with ActivityStudentBinding: {str(e)}")
         traceback.print_exc()
         return Response({
             "error": "Failed to create or retrieve activity binding.",
@@ -1246,11 +1317,11 @@ def student_activity_details(request, activity_id):
                 'email': instructor.email,
                 'employee_id': instructor.employee_id if hasattr(instructor, 'employee_id') else None
             }
-            print(f"✅ Instructor: {instructor.first_name} {instructor.last_name}")
+            print(f"? Instructor: {instructor.first_name} {instructor.last_name}")
         else:
-            print("⚠️ No instructor assigned to this section")
+            print("?? No instructor assigned to this section")
     except Exception as e:
-        print(f"⚠️ Error fetching instructor: {str(e)}")
+        print(f"?? Error fetching instructor: {str(e)}")
         # Continue without instructor data
     
     # 7. Get passenger information from ActivityPassenger model
@@ -1286,10 +1357,10 @@ def student_activity_details(request, activity_id):
             
             passengers_data.append(passenger_dict)
         
-        print(f"✅ Found {len(passengers_data)} passengers from ActivityPassenger model")
+        print(f"? Found {len(passengers_data)} passengers from ActivityPassenger model")
         
     except Exception as e:
-        print(f"⚠️ Error fetching passengers: {str(e)}")
+        print(f"?? Error fetching passengers: {str(e)}")
         traceback.print_exc()
         # Continue without passenger data
     
@@ -1360,10 +1431,10 @@ def student_activity_details(request, activity_id):
             # Activity status
             'is_active': activity.is_code_active,
             
-            # 🔑 NEW: Activity code for verification
+            # ? NEW: Activity code for verification
             'activity_code': activity.activity_code or '',
             
-            # ✅ NEW: Add completion status and booking ID
+            # ? NEW: Add completion status and booking ID
             'completed': booking_obj is not None,
             'confirmed_booking_id': booking_obj.id if booking_obj else None
         }
@@ -1392,19 +1463,90 @@ def student_activity_details(request, activity_id):
         if passengers_data:
             response_data['passengers'] = passengers_data
         
-        print(f"✅ Returning activity details:")
+        print(f"? Returning activity details:")
         print(f"   - Title: {activity.title}")
         print(f"   - Code: {activity.activity_code}")
-        print(f"   - Origin: {activity.required_origin} → Destination: {activity.required_destination}")
+        print(f"   - Origin: {activity.required_origin} ? Destination: {activity.required_destination}")
         print(f"   - Passengers: {len(passengers_data)}")
         print(f"{'='*60}\n")
         
         return Response(response_data, status=status.HTTP_200_OK)
         
     except Exception as e:
-        print(f"❌ Error building response data: {str(e)}")
+        print(f"? Error building response data: {str(e)}")
         traceback.print_exc()
         return Response({
             "error": "Failed to build response data.",
             "details": str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+# ============================================================
+# NEW: GET PRACTICE BOOKINGS (STUDENT)
+# ============================================================
+@api_view(['GET'])
+@authentication_classes([MultiSessionTokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_student_practice_bookings(request):
+    """
+    Get all practice bookings for the authenticated student.
+    Returns status mapped to success/fail/pending.
+    """
+    try:
+        # Get user's practice bookings, newest first
+        bookings = Booking.objects.filter(
+            user=request.user, 
+            is_practice=True
+        ).prefetch_related(
+            'details',
+            'details__schedule__flight__route__origin_airport',
+            'details__schedule__flight__route__destination_airport'
+        ).order_by('-created_at')
+        
+        practice_bookings_data = []
+        
+        for booking in bookings:
+            # Map booking status to our UI categories
+            ui_status = 'pending'
+            if booking.status in ['Confirmed', 'Completed', 'checkin', 'boarding']:
+                ui_status = 'success'
+            elif booking.status in ['Cancelled', 'Failed']:
+                ui_status = 'fail'
+            
+            # Extract first route info as a summary
+            first_detail = booking.details.first()
+            route_summary = "Unknown Route"
+            departure_date = None
+            
+            if first_detail and first_detail.schedule and first_detail.schedule.flight:
+                origin = first_detail.schedule.flight.route.origin_airport.code
+                dest = first_detail.schedule.flight.route.destination_airport.code
+                route_summary = f"{origin} ✈ {dest}"
+                departure_date = first_detail.schedule.departure_time.isoformat()
+                
+                if booking.trip_type == 'round_trip':
+                    route_summary = f"{origin} ⇄ {dest}"
+                elif booking.trip_type == 'multi_city':
+                    route_summary += " (Multi-City)"
+
+            practice_bookings_data.append({
+                "id": booking.id,
+                "status": booking.status,
+                "ui_status": ui_status,
+                "total_amount": float(booking.total_amount),
+                "trip_type": booking.get_trip_type_display(),
+                "created_at": booking.created_at.isoformat(),
+                "activity_code_used": booking.activity_code_used,
+                "route_summary": route_summary,
+                "departure_date": departure_date,
+                "passenger_count": booking.details.count()
+            })
+            
+        return Response({
+            "practice_bookings": practice_bookings_data
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        traceback.print_exc()
+        return Response(
+            {"error": f"Failed to load practice bookings: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

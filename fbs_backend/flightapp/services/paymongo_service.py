@@ -12,14 +12,6 @@ class PayMongoService:
         self.api_url = config('PAYMONGO_API_URL', default='https://api.paymongo.com/v1')
         self.secret_key = config('PAYMONGO_SECRET_KEY', default='')
 
-        # Debug: Print configuration
-        print(f"=== PAYMONGO CONFIGURATION ===")
-        print(f"API URL: {self.api_url}")
-        print(f"Secret Key Available: {'Yes' if self.secret_key else 'No'}")
-        print(f"Secret Key Length: {len(self.secret_key) if self.secret_key else 0}")
-        print(f"Secret Key Starts with 'sk_': {self.secret_key.startswith('sk_') if self.secret_key else False}")
-        print(f"=================================")
-        
         if not self.secret_key:
             raise ValueError("PAYMONGO_SECRET_KEY is not configured in environment variables")
         
@@ -48,15 +40,15 @@ class PayMongoService:
             print(f"Response Headers: {dict(response.headers)}")
             
             if response.status_code == 200:
-                print("✅ PayMongo connection successful!")
+                print("? PayMongo connection successful!")
                 return True
             else:
-                print(f"❌ PayMongo connection failed: {response.status_code}")
+                print(f"? PayMongo connection failed: {response.status_code}")
                 print(f"Response Body: {response.text}")
                 return False
                 
         except Exception as e:
-            print(f"❌ Connection error: {str(e)}")
+            print(f"? Connection error: {str(e)}")
             return False
     # In flightapp/services/paymongo_service.py, update create_checkout_session:
 
@@ -68,7 +60,7 @@ class PayMongoService:
             amount_in_centavos = int(float(amount) * 100)
             url = f"{self.api_url}/checkout_sessions"
             
-            print(f"\n🛒 Creating checkout session for booking {booking_id}")
+            print(f"\n? Creating checkout session for booking {booking_id}")
             print(f"   Amount: {amount} PHP ({amount_in_centavos} centavos)")
             
             # IMPORTANT: Your webhook URL must be accessible from the internet
@@ -121,7 +113,7 @@ class PayMongoService:
                 except:
                     pass
                 
-                print(f"❌ PayMongo Error: {error_detail}")
+                print(f"? PayMongo Error: {error_detail}")
                 return {
                     "success": False,
                     "error": f"HTTP {response.status_code}: {error_detail}",
@@ -129,7 +121,7 @@ class PayMongoService:
                 }
                 
         except Exception as e:
-            print(f"❌ Exception: {str(e)}")
+            print(f"? Exception: {str(e)}")
             return {"success": False, "error": str(e)}
     
     def create_payment_intent(self, amount, description="Flight Booking Payment", metadata=None):

@@ -34,15 +34,39 @@
             
             <!-- Route -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              <div class="relative">
                 <label class="block text-sm font-medium text-gray-700 mb-2">From</label>
-                <input v-model="editSearchForm.origin" type="text" 
+                <input v-model="fromSearchInput" type="text" 
+                  @input="searchEditAirports(fromSearchInput, 'from')"
+                  @focus="fromSearchInput = ''; fromResults = []"
+                  placeholder="e.g. MNL"
                   class="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent">
+                
+                <ul v-if="fromResults.length" class="absolute left-0 top-full z-[60] max-h-48 w-full overflow-y-auto border border-gray-200 bg-white shadow-xl rounded-b-sm">
+                  <li v-for="a in fromResults" :key="a.code" @click="selectEditAirport(a, 'from')" class="cursor-pointer border-b border-gray-50 p-3 hover:bg-pink-50">
+                    <div class="flex items-center gap-2">
+                      <span class="font-bold text-pink-600">{{ a.code }}</span>
+                      <span class="text-xs text-gray-600">- {{ a.city }}</span>
+                    </div>
+                  </li>
+                </ul>
               </div>
-              <div>
+              <div class="relative">
                 <label class="block text-sm font-medium text-gray-700 mb-2">To</label>
-                <input v-model="editSearchForm.destination" type="text" 
+                <input v-model="toSearchInput" type="text" 
+                  @input="searchEditAirports(toSearchInput, 'to')"
+                  @focus="toSearchInput = ''; toResults = []"
+                  placeholder="e.g. CEB"
                   class="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent">
+                
+                <ul v-if="toResults.length" class="absolute left-0 top-full z-[60] max-h-48 w-full overflow-y-auto border border-gray-200 bg-white shadow-xl rounded-b-sm">
+                  <li v-for="a in toResults" :key="a.code" @click="selectEditAirport(a, 'to')" class="cursor-pointer border-b border-gray-50 p-3 hover:bg-pink-50">
+                    <div class="flex items-center gap-2">
+                      <span class="font-bold text-pink-600">{{ a.code }}</span>
+                      <span class="text-xs text-gray-600">- {{ a.city }}</span>
+                    </div>
+                  </li>
+                </ul>
               </div>
             </div>
             
@@ -50,12 +74,12 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Departure Date</label>
-                <input v-model="editSearchForm.departure" type="date" 
+                <input v-model="editSearchForm.departure" type="date" :min="todayDateString"
                   class="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent">
               </div>
               <div v-if="editSearchForm.tripType === 'round-trip'">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Return Date</label>
-                <input v-model="editSearchForm.returnDate" type="date" 
+                <input v-model="editSearchForm.returnDate" type="date" :min="editSearchForm.departure || todayDateString"
                   class="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent">
               </div>
             </div>
@@ -98,115 +122,13 @@
     </div>
     
     <!-- Seat Classes Modal -->
-    <div v-if="showSeatClassesModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div class="bg-white rounded-sm shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div class="p-6 border-b border-gray-200">
-          <div class="flex justify-between items-center">
-            <h2 class="text-2xl font-bold text-gray-800">Available Seat Classes</h2>
-            <button @click="cancelSeatClassSelection" class="text-gray-500 hover:text-gray-700">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          <div v-if="selectedFlightForSeats" class="mt-2 text-sm text-gray-600">
-            {{ selectedFlightForSeats.airline_name }} • {{ selectedFlightForSeats.flight_number }} • 
-            {{ selectedFlightForSeats.origin }} → {{ selectedFlightForSeats.destination }} • 
-            {{ formatDate(selectedFlightForSeats.departure_time) }}
-          </div>
-        </div>
-        
-        <div class="p-6">
-          <div class="mb-6 bg-pink-50 border border-pink-200 rounded-sm p-4">
-            <div class="flex items-center">
-              <svg class="w-5 h-5 text-pink-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-              </svg>
-              <div class="text-sm text-pink-700">
-                <p class="font-medium">Please select your preferred seat class</p>
-                <p class="mt-1">Choose from the available options below. The price varies depending on the class you select.</p>
-              </div>
-            </div>
-          </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div v-for="(seatClass, index) in availableSeatClasses" :key="index" 
-              @click="handleSeatClassSelection(seatClass)"
-              class="border-2 border-gray-200 hover:border-pink-500 rounded-sm p-6 cursor-pointer transition-all duration-200 hover:shadow-lg">
-              <div class="flex flex-col h-full">
-                <div class="mb-4">
-                  <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-lg font-bold text-gray-900">{{ seatClass.name }}</h3>
-                    <div class="text-pink-500">
-                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="seatClass.icon" />
-                      </svg>
-                    </div>
-                  </div>
-                  <p class="text-gray-600 text-sm mb-4">{{ seatClass.description }}</p>
-                </div>
-                
-                <div class="mt-auto">
-                  <div class="mb-4">
-                    <h4 class="text-sm font-semibold text-gray-700 mb-2">Key Features:</h4>
-                    <ul class="space-y-1">
-                      <li v-for="(feature, fIndex) in seatClass.features" :key="fIndex" 
-                        class="flex items-center text-sm text-gray-600">
-                        <svg class="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                        </svg>
-                        {{ feature }}
-                      </li>
-                    </ul>
-                  </div>
-                  
-                  <div class="pt-4 border-t border-gray-100">
-                    <div class="flex justify-between items-center">
-                      <div>
-                        <div class="text-2xl font-bold text-pink-500">₱{{ Number(seatClass.price).toLocaleString() }}</div>
-                        <div class="text-xs text-gray-500">per person</div>
-                      </div>
-                      <div class="text-pink-500">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- No Seat Classes Message -->
-          <div v-if="availableSeatClasses.length === 0" class="text-center py-12">
-            <div class="w-16 h-16 mx-auto mb-4 text-gray-300">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">No seat class information available</h3>
-            <p class="text-gray-600 mb-6">We couldn't retrieve seat class information for this flight.</p>
-            <button @click="cancelSeatClassSelection" 
-              class="px-6 py-2 border border-gray-300 rounded-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium">
-              Go Back
-            </button>
-          </div>
-        </div>
-        
-        <div class="px-3 py-2 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-          <div class="flex space-x-4 flex-col">
-            <button @click="cancelSeatClassSelection" 
-              class="flex-1 px-4 py-3 border bg-white border-gray-300 rounded-sm text-gray-700 hover:bg-gray-100 transition-colors font-medium">
-              Cancel
-            </button>
-            <div class="text-xs text-gray-500 text-center py-3">
-              Select a seat class to continue
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <SeatClassModal 
+      :show="showSeatClassesModal"
+      :flight="selectedFlightForSeats"
+      :seatClasses="availableSeatClasses"
+      @select-class="handleSeatClassSelection"
+      @close="cancelSeatClassSelection"
+    />
     
     <!-- Confirmation Modal -->
     <div v-if="showConfirmation" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -426,17 +348,28 @@
       <!-- Header -->
       <div class="bg-white rounded-sm shadow-sm border border-gray-200 p-6 mb-8">
         <!-- Step Indicator -->
-        <div v-if="isRoundTrip" class="mb-6">
-          <div class="flex items-center space-x-4">
-            <div :class="['flex-1 text-center py-2 rounded-sm', 
-                     selectionPhase === 'outbound' ? 'bg-pink-500 text-white' : 'bg-gray-100 text-gray-600']">
-              <div class="font-medium">1. Select Outbound</div>
-            </div>
-            <div class="w-8 h-px bg-gray-300"></div>
-            <div :class="['flex-1 text-center py-2 rounded-sm', 
-                     selectionPhase === 'return' ? 'bg-pink-500 text-white' : 'bg-gray-100 text-gray-600']">
-              <div class="font-medium">2. Select Return</div>
-            </div>
+        <div v-if="isRoundTrip || isMultiCity" class="mb-6">
+          <div class="flex items-center space-x-4 overflow-x-auto pb-2">
+            <template v-if="isRoundTrip">
+              <div :class="['flex-1 text-center py-2 rounded-sm min-w-[120px]', 
+                       selectionPhase === 'outbound' ? 'bg-pink-500 text-white' : 'bg-gray-100 text-gray-600']">
+                <div class="font-medium">1. Select Outbound</div>
+              </div>
+              <div class="w-8 h-px bg-gray-300 shrink-0"></div>
+              <div :class="['flex-1 text-center py-2 rounded-sm min-w-[120px]', 
+                       selectionPhase === 'return' ? 'bg-pink-500 text-white' : 'bg-gray-100 text-gray-600']">
+                <div class="font-medium">2. Select Return</div>
+              </div>
+            </template>
+            <template v-else-if="isMultiCity">
+              <div v-for="(seg, idx) in multiSegments" :key="idx" class="flex items-center flex-1">
+                <div :class="['flex-1 text-center py-2 rounded-sm min-w-[120px]', 
+                         currentSegmentIndex === idx ? 'bg-pink-500 text-white' : (idx < currentSegmentIndex ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600')]">
+                  <div class="font-medium">{{ idx + 1 }}. {{ seg.selectedFrom?.code || seg.origin }} → {{ seg.selectedTo?.code || seg.destination }}</div>
+                </div>
+                <div v-if="idx < multiSegments.length - 1" class="w-4 h-px bg-gray-300 mx-2 shrink-0"></div>
+              </div>
+            </template>
           </div>
         </div>
         
@@ -448,11 +381,11 @@
             <div class="flex flex-wrap items-center gap-2 mb-1 text-[9px] font-semibold ">
               <span
                 class="rounded-full px-2 py-0.5 "
-                :class="isRoundTrip
-                  ? 'bg-pink-100 text-pink-700'
-                  : 'bg-green-100 text-gray-700'"
+                :class="isMultiCity 
+                  ? 'bg-blue-100 text-blue-700' 
+                  : (isRoundTrip ? 'bg-pink-100 text-pink-700' : 'bg-green-100 text-gray-700')"
               >
-                {{ isRoundTrip ? 'ROUND TRIP' : 'ONE WAY' }}
+                {{ isMultiCity ? 'MULTI CITY' : (isRoundTrip ? 'ROUND TRIP' : 'ONE WAY') }}
               </span>
 
               <span class="rounded-full bg-green-100 px-2 py-0.5  text-gray-700">
@@ -490,7 +423,7 @@
                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
               />
             </svg>
-            Edit
+            Edit Search
           </button>
         </div>
         
@@ -621,257 +554,43 @@
       
       <div class="flex flex-col lg:flex-row gap-8">
         <!-- Filters Sidebar -->
-        <aside :class="['lg:w-70 flex-shrink-0', showFilters ? 'block' : 'hidden lg:block']">
-          <div class="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
-            <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
-              <h2 class="text-base font-bold text-gray-900">Filters & Sort</h2>
-              <button @click="resetFilters" 
-                class="text-xs bg-pink-500   p-1 cursor-pointer text-white hover:bg-pink-300  font-medium">
-                Reset
-              </button>
-            </div>
-            
-            <!-- Flight Stats -->
-            <div class="mb-3 p-2 bg-gray-50 rounded-sm">
-              <div class="space-y-2">
-                <div class="flex justify-between text-xs">
-                  <span class="text-gray-600">Showing:</span>
-                  <span class="font-medium text-gray-900">{{ filteredFlights.length }} of {{ flights.length }} flights</span>
-                </div>
-                <div class="flex justify-between text-xs">
-                  <span class="text-gray-600">Price Range:</span>
-                  <span class="font-medium text-pink-500">₱{{ flightStats.priceRange }}</span>
-                </div>
-                <div v-if="uniqueDates.length > 0" class="flex justify-between text-xs">
-                  <span class="text-gray-600">Available Dates:</span>
-                  <span class="font-medium text-gray-900">{{ uniqueDates.length }} days</span>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Sort -->
-            <div class="mb-3">
-              <h3 class="text-xs font-semibold text-gray-300 mb-1">Sort By</h3>
-              <select v-model="filters.sortBy" 
-                class="w-full px-2 py-1 border border-gray-300 rounded-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm">
-                <option v-for="option in filterOptions.sortOptions" :value="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
-            </div>
-            
-            <!-- Price Range -->
-            <div class="mb-3">
-              <h3 class="text-sm font-semibold text-gray-300 mb-1">Price Range</h3>
-              <div class="flex items-center space-x-1 mb-1">
-                <input v-model="filters.minPrice" type="number" placeholder="Min" 
-                  class="w-full px-1.5 py-1 border border-gray-300 rounded-sm text-xs focus:ring-2 focus:ring-pink-500 focus:border-transparent">
-                <span class="text-gray-400">–</span>
-                <input v-model="filters.maxPrice" type="number" placeholder="Max" 
-                  class="w-full px-1.5 py-1 border border-gray-300 rounded-sm text-xs focus:ring-2 focus:ring-pink-500 focus:border-transparent">
-              </div>
-              <p class="text-xs text-gray-400 bg-green-50 flex justify-between px-2 py-1 text-right">
-                Price:
-                <span class="text-sm text-black">
-                        ₱{{ priceRange.min.toLocaleString() }} - ₱{{ priceRange.max.toLocaleString() }}
-                </span>
-              </p>
-            </div>
-            
-            <!-- Departure Time -->
-            <div class="mb-3">
-              <h3 class="text-xs font-semibold text-gray-800 mb-1">Departure Time</h3>
-              <div class="space-y-1">
-                <label v-for="time in filterOptions.departureTimes" :key="time.value" 
-                  class="flex items-center space-x-1 cursor-pointer">
-                  <input type="radio" v-model="filters.departureTime" :value="time.value" 
-                    class="h-4 w-4 text-pink-500 focus:ring-pink-500 border-gray-300">
-                  <span class="text-sm text-gray-700">{{ time.label }}</span>
-                </label>
-              </div>
-            </div>
-            
-            <!-- Flight Type -->
-            <div class="mb-3">
-              <h3 class="text-sm font-semibold text-gray-800 mb-3">Flight Type</h3>
-              <div class="space-y-1">
-                <label v-for="type in filterOptions.flightTypes" :key="type.value" 
-                  class="flex items-center space-x-3 cursor-pointer">
-                  <input type="radio" v-model="filters.flightType" :value="type.value" 
-                    class="h-4 w-4 text-pink-500 focus:ring-pink-500 border-gray-300">
-                  <span class="text-sm text-gray-700">{{ type.label }}</span>
-                </label>
-              </div>
-            </div>
-            
-            <!-- Airline -->
-            <div v-if="filterOptions.airlines.length > 1" class="mb-3">
-              <h3 class="text-xs font-semibold text-gray-800 mb-1">Airline</h3>
-              <select v-model="filters.airline" 
-                class="w-full px-2 py-1 border border-gray-300 rounded-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm">
-                <option v-for="airline in filterOptions.airlines" :value="airline.value">
-                  {{ airline.label }}
-                </option>
-              </select>
-            </div>
-            
-            <!-- Seat Class -->
-            <div class="mb-3">
-              <h3 class="text-xs font-semibold text-gray-800 mb-3">Seat Class</h3>
-              <select v-model="filters.seatClass" 
-                class="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm">
-                <option v-for="seatClass in availableSeatClassOptions" :value="seatClass.value">
-                  {{ seatClass.label }}
-                </option>
-              </select>
-            </div>
-            
-            <!-- Available Seats -->
-            <div class="mb-3">
-              <label class="flex items-center space-x-1.5 cursor-pointer">
-                <input type="checkbox" v-model="filters.hasAvailableSeats" 
-                  class="h-3 w-3 text-pink-500 rounded focus:ring-pink-500 border-gray-300">
-                <span class="text-sm text-gray-700">Show only flights with available seats</span>
-              </label>
-            </div>
-            
-            <!-- Date Filter -->
-            <div class="mb-3">
-              <h3 class="text-xs font-semibold text-gray-800 mb-3">Date Filter</h3>
-              <div class="space-y-2">
-                <div>
-                  <label class="block text-xs text-gray-600 mb-2">Select Date</label>
-                  <select v-model="dateFilter.selectedDate" @change="applyFilters"
-                    class="w-full px-2 py-1 border border-gray-300 rounded-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm">
-                    <option v-for="date in uniqueDates" :value="date.value">
-                      {{ date.shortLabel }}
-                    </option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-xs text-gray-600 mb-2">Date Range</label>
-                  <select v-model="dateFilter.dateRange" @change="applyFilters"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm">
-                    <option v-for="range in filterOptions.dateRanges" :value="range.value">
-                      {{ range.label }}
-                    </option>
-                  </select>
-                </div>
-                <button v-if="isDateFilterActive" @click="resetDateFilter" 
-                  class="w-full text-sm text-pink-500 hover:text-pink-600 font-medium py-2 border border-pink-200 rounded-sm hover:bg-pink-50">
-                  Reset to Original Date
-                </button>
-              </div>
-            </div>
-            
-            <!-- Active Filters -->
-            <div v-if="Object.values(filters).some(f => f !== 'all' && f !== false && f !== null) || isDateFilterActive" 
-              class="pt-6 border-t border-gray-100">
-              <h3 class="text-xs font-semibold text-gray-800 mb-3">Active Filters</h3>
-              <div class="flex flex-wrap gap-2">
-                <span v-if="isDateFilterActive" 
-                  class="inline-flex items-center px-3 py-1 rounded-full  text-[9px] font-medium bg-pink-100 text-pink-700">
-                  Date: {{ dateFilterDisplay }}
-                </span>
-                <span v-if="filters.minPrice || filters.maxPrice" 
-                  class="inline-flex items-center px-3 py-1 rounded-full  text-[9px] font-medium bg-pink-100 text-pink-700">
-                  Price: ₱{{ filters.minPrice || priceRange.min }} - ₱{{ filters.maxPrice || priceRange.max }}
-                </span>
-                <span v-if="filters.departureTime !== 'all'" 
-                  class="inline-flex items-center px-3 py-1 rounded-full  text-[9px] font-medium bg-pink-100 text-pink-700">
-                  {{ filterOptions.departureTimes.find(t => t.value === filters.departureTime)?.label }}
-                </span>
-                <span v-if="filters.flightType !== 'all'" 
-                  class="inline-flex items-center px-3 py-1 rounded-full  text-[9px] font-medium bg-pink-100 text-pink-700">
-                  {{ filterOptions.flightTypes.find(t => t.value === filters.flightType)?.label }}
-                </span>
-                <span v-if="filters.airline !== 'all'" 
-                  class="inline-flex items-center px-3 py-1 rounded-full text-[9px]  font-medium bg-pink-100 text-pink-700">
-                  {{ filterOptions.airlines.find(a => a.value === filters.airline)?.label }}
-                </span>
-                <span v-if="filters.seatClass !== 'all'" 
-                  class="inline-flex items-center px-3 py-1 rounded-full  text-[9px] font-medium bg-pink-100 text-pink-700">
-                  {{ availableSeatClassOptions.find(s => s.value === filters.seatClass)?.label }}
-                </span>
-                <span v-if="filters.hasAvailableSeats" 
-                  class="inline-flex items-center px-3 py-1 rounded-full  text-[9px] font-medium bg-pink-100 text-pink-700">
-                  Available Seats Only
-                </span>
-              </div>
-            </div>
-          </div>
-        </aside>
+        <FlightFilterSidebar 
+          v-model:filters="filters"
+          v-model:dateFilter="dateFilter"
+          :showFilters="showFilters"
+          :filterOptions="filterOptions"
+          :totalCount="flights.length"
+          :filteredCount="filteredFlights.length"
+          :flightStats="flightStats"
+          :uniqueDates="uniqueDates"
+          :priceRange="priceRange"
+          :availableSeatClassOptions="availableSeatClassOptions"
+          :isDateFilterActive="isDateFilterActive"
+          :dateFilterDisplay="dateFilterDisplay"
+          @reset-filters="resetFilters"
+          @reset-date-filter="resetDateFilter"
+        />
         
         <!-- Main Content -->
         <main class="flex-1">
           <!-- 7-Day Date Selector -->
-          <div class="bg-white rounded-sm shadow-sm border border-gray-200 py-2 px-5 mb-4">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
-              <h2 class="text-xl font-bold text-gray-900">Select Date</h2>
-              <div class="flex items-center space-x-4">
-                <div class="flex items-center space-x-2">
-                  <button @click="prevWeek" 
-                    class="p-1 border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors">
-                    <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                  </button>
-                  <div class="text-sm font-medium text-gray-700">{{ formatWeekRange }}</div>
-                  <button @click="nextWeek" 
-                    class="p-1 border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors">
-                    <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-                <button @click="goToCurrentWeek" 
-                  :class="['px-2 py-1 rounded-sm text-sm font-medium transition-colors',
-                           currentWeekContainsSelectedDate ? 'bg-pink-500 hover:bg-pink-300 cursor-pointer text-white' : 'border border-pink-300 text-pink-500 hover:bg-pink-50']">
-                  This Week
-                </button>
-              </div>
+          <DateNavigator 
+            :weekDays="dateSelector.weekDays"
+            :weekRange="formatWeekRange"
+            :currentWeekContainsSelectedDate="currentWeekContainsSelectedDate"
+            :flights="flights"
+            @prev-week="prevWeek"
+            @next-week="nextWeek"
+            @go-to-current="goToCurrentWeek"
+            @select-day="selectDay"
+          />
+          
+          <div class="relative min-h-[400px]">
+            <!-- Transient Loading Overlay -->
+            <div v-if="isFiltering" class="absolute inset-0 bg-white/60 z-20 flex flex-col items-center justify-center backdrop-blur-[2px] transition-all duration-300">
+              <div class="w-12 h-12 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin mb-4"></div>
+              <p class="text-pink-600 font-bold text-sm tracking-widest uppercase animate-pulse">Updating Results...</p>
             </div>
-            
-            <!-- Date Grid -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 ">
-              <div v-for="day in dateSelector.weekDays" :key="day.dateString" 
-                @click="selectDay(day)"
-                :class="['p-4 rounded-sm border-2 cursor-pointer transition-all duration-200',
-                         day.isAvailable ? 'hover:border-pink-300 hover:shadow-sm' : 'cursor-not-allowed opacity-50',
-                         day.isSelected ? 'border-pink-500 bg-pink-50' : 'border-gray-200',
-                         day.isToday ? 'border-pink-300' : '',
-                         day.isSearchDate && !day.isToday ? 'border-pink-200' : '']">
-                <div class="flex justify-between items-start mb-2">
-                  <div class="text-sm font-medium" :class="day.isSelected ? 'text-pink-700' : 'text-gray-700'">
-                    {{ day.dayName }}
-                  </div>
-                  <div v-if="day.isToday" class="px-2 py-0.5 bg-pink-500 text-white text-xs rounded-full">
-                    Today
-                  </div>
-                  <div v-else-if="day.isSearchDate && !day.isToday" class="px-2 py-0.5 bg-pink-100 text-pink-700 text-xs rounded-full">
-                    Search
-                  </div>
-                </div>
-                <div class="text-center mb-2">
-                  <div class="text-2xl font-bold" :class="day.isSelected ? 'text-pink-600' : 'text-gray-900'">
-                    {{ day.dayNumber }}
-                  </div>
-                  <div class="text-sm" :class="day.isSelected ? 'text-pink-500' : 'text-gray-500'">
-                    {{ day.monthName }}
-                  </div>
-                </div>
-                <div class="text-center">
-                  <div v-if="day.isAvailable" class="text-xs font-medium text-green-600">
-                    {{ flights.filter(f => format(new Date(f.departure_time), 'yyyy-MM-dd') === day.dateString).length }} flights
-                  </div>
-                  <div v-else class="text-xs text-gray-400 italic">
-                    No flights
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-          </div>
           
           <!-- Loading State (Skeleton UI) -->
           <div v-if="loading && !showNoResults" class="space-y-4 animate-pulse">
@@ -984,128 +703,23 @@
             </div>
             
             <div class="space-y-3">
-              <div v-for="f in filteredFlights" :key="f.id" 
-                class="bg-white rounded-sm shadow-sm border border-gray-200 hover:border-pink-300 hover:shadow-md transition-all duration-200">
-                <div class="px-6 py-3">
-                  <!-- Flight Header -->
-                  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-6 border-b border-gray-100">
-                    <div class="flex items-center space-x-4">
-                      <div>
-                        <div class="font-bold text-pink-500">{{ f.airline_name }}</div>
-                        <div class="text-sm text-green-500">{{ f.flight_number }}</div>
-                      </div>
-                      <div v-if="f.is_domestic !== undefined" 
-                        :class="['px-3 py-1 rounded-full text-xs font-medium',
-                                 f.is_domestic ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700']">
-                        {{ f.is_domestic ? 'Domestic' : 'International' }}
-                      </div>
-                    </div>
-                    
-                    <div class="text-center">
-                      <div class="text-sm  text-gray-700">{{ formatDate(f.departure_time) }}</div>
-                      <div class="text-bold font-bold text-gray-500">{{ format(new Date(f.departure_time), 'EEEE') }}</div>
-                    </div>
-                    
-                    <div class="text-right">
-                      <div class="text-2xl font-bold text-pink-500">₱{{ Number(f.price).toLocaleString() }}</div>
-                      <div class="text-sm text-green-500">per person</div>
-                    </div>
-                  </div>
-                  
-                  <!-- Schedule Info -->
-                  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-6">
-                    <!-- Departure -->
-                    <div class="flex-1">
-                      <div class="text-3xl font-bold text-gray-900 mb-1">{{ formatTime(f.departure_time) }}</div>
-                      <div class="text-gray-700">{{ f.origin }}</div>
-                      <div class="text-sm text-green-500">{{ f.origin_airport_code }}</div>
-                    </div>
-                    
-                    <!-- Duration -->
-                    <div class="flex flex-col items-center">
-                      <div class="w-full h-px bg-gray-300 mb-2"></div>
-                      <div class="text-sm text-gray-600">{{ f.flight_duration || formatDuration(f.duration_minutes) }}</div>
-                      <div class="w-full h-px bg-gray-300 mt-2"></div>
-                    </div>
-                    
-                    <!-- Arrival -->
-                    <div class="flex-1 text-right">
-                      <div class="text-3xl font-bold text-gray-900 mb-1">{{ formatTime(f.arrival_time) }}</div>
-                      <div class="text-gray-700">{{ f.destination }}</div>
-                      <div class="text-sm text-green-500">{{ f.destination_airport_code }}</div>
-                    </div>
-                  </div>
-                  
-                  <!-- Flight Details -->
-                  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-2">
-                    <div class="space-y-2">
-                      <div v-if="f.available_seats !== undefined" class="flex items-center text-sm">
-                        <svg class="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                        </svg>
-                        <span class="text-gray-700">{{ f.available_seats }} seats available</span>
-                      </div>
-                      <!-- Display seat classes -->
-                      <div v-if="f.seat_classes && f.seat_classes.length" class="text-sm text-gray-600">
-                        Classes: {{ formatSeatClasses(f.seat_classes) }}
-                      </div>
-                      
-                      <!-- Show selected seat class if already chosen -->
-                      <div v-if="isRoundTrip && selectionPhase === 'outbound' && bookingStore.selectedOutbound?.flight_number === f.flight_number" 
-                           class="text-sm text-pink-600 font-medium mt-1">
-                        ✓ Selected: {{ bookingStore.selectedOutbound.selected_seat_class || bookingStore.selectedOutbound.seat_class || 'Not selected' }}
-                      </div>
-                      <div v-else-if="isRoundTrip && selectionPhase === 'return' && bookingStore.selectedReturn?.flight_number === f.flight_number" 
-                           class="text-sm text-pink-600 font-medium mt-1">
-                        ✓ Selected: {{ bookingStore.selectedReturn.selected_seat_class || bookingStore.selectedReturn.seat_class || 'Not selected' }}
-                      </div>
-                      <div v-else-if="!isRoundTrip && bookingStore.selectedOutbound?.flight_number === f.flight_number" 
-                           class="text-sm text-pink-600 font-medium mt-1">
-                        ✓ Selected: {{ bookingStore.selectedOutbound.selected_seat_class || bookingStore.selectedOutbound.seat_class || 'Not selected' }}
-                      </div>
-                    </div>
-                    
-                    <div class="flex space-x-2">
-                      <!-- Check if this flight is already selected -->
-                      <template v-if="isRoundTrip && selectionPhase === 'outbound' && bookingStore.selectedOutbound?.flight_number === f.flight_number">
-                        <button class="px-6 py-3 bg-green-500 text-white rounded-sm font-medium whitespace-nowrap">
-                          ✓ Outbound Selected
-                        </button>
-                        <button @click="handleSelectFlight(f)" 
-                          class="px-6 py-3 border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50 transition-colors font-medium whitespace-nowrap">
-                          Change Selection
-                        </button>
-                      </template>
-                      <template v-else-if="isRoundTrip && selectionPhase === 'return' && bookingStore.selectedReturn?.flight_number === f.flight_number">
-                        <button class="px-6 py-3 bg-green-500 text-white rounded-sm font-medium whitespace-nowrap">
-                          ✓ Return Selected
-                        </button>
-                        <button @click="handleSelectFlight(f)" 
-                          class="px-6 py-3 border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50 transition-colors font-medium whitespace-nowrap">
-                          Change Selection
-                        </button>
-                      </template>
-                      <template v-else-if="!isRoundTrip && bookingStore.selectedOutbound?.flight_number === f.flight_number">
-                        <button class="px-6 py-3 bg-green-500 text-white rounded-sm font-medium whitespace-nowrap">
-                          ✓ Flight Selected
-                        </button>
-                        <button @click="handleSelectFlight(f)" 
-                          class="px-6 py-3 border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50 transition-colors font-medium whitespace-nowrap">
-                          Change Selection
-                        </button>
-                      </template>
-                      <template v-else>
-                        <!-- Select Flight Button -->
-                        <button @click="handleSelectFlight(f)" 
-                          class="px-6 py-3 bg-pink-500 text-white rounded-sm hover:bg-pink-600 transition-colors font-medium whitespace-nowrap">
-                          {{ selectButtonText }}
-                        </button>
-                      </template>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <FlightCard 
+                v-for="f in filteredFlights" 
+                :key="f.id"
+                :flight="f"
+                :isRoundTrip="isRoundTrip"
+                :selectionPhase="selectionPhase"
+                :selectedOutbound="bookingStore.selectedOutbound"
+                :selectedReturn="bookingStore.selectedReturn"
+                :selectButtonText="selectButtonText"
+                :mlPricingEnabled="mlPricingEnabled"
+                :showPricingDetails="showPricingDetails"
+                :selectedPriceId="selectedPriceId"
+                @view-pricing="togglePricingDetails"
+                @select-flight="handleSelectFlight"
+              />
             </div>
+          </div>
           </div>
         </main>
       </div>
@@ -1118,19 +732,33 @@
 <script setup>
 import { ref, onMounted, computed, watch, onUnmounted } from 'vue';
 import { useBookingStore } from '@/stores/booking';
+import { useNotificationStore } from '@/stores/notification';
 import { useRoute, useRouter } from 'vue-router';
 import flightService from '@/services/booking/flightService';
+import airportService from '@/services/booking/airportService';
 import { format, parseISO, isSameDay, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
+
+// Components
+import FlightFilterSidebar from '@/components/booking/FlightFilterSidebar.vue';
+import DateNavigator from '@/components/booking/DateNavigator.vue';
+import FlightCard from '@/components/booking/FlightCard.vue';
+import SeatClassModal from '@/components/booking/SeatClassModal.vue';
 
 const route = useRoute();
 const router = useRouter();
 const bookingStore = useBookingStore();
+const notificationStore = useNotificationStore();
 
 const flights = ref([]);
 const filteredFlights = ref([]);
 const loading = ref(true);
+const isFiltering = ref(false); // New: for transient "jumping" feedback
 const showFilters = ref(false);
 const showNoResults = ref(false);
+
+const todayDateString = computed(() => {
+  return format(new Date(), 'yyyy-MM-dd');
+});
 
 // ============ NEW: ML PRICING STATE ============
 const mlPricingEnabled = ref(true); // Toggle ML pricing on/off
@@ -1140,7 +768,7 @@ const selectedPriceId = ref(null); // Track which flight's pricing details to sh
 
 // Timeout handling
 const fetchTimeout = ref(null);
-const timeoutCountdown = ref(5);
+const timeoutCountdown = ref(15);
 const countdownInterval = ref(null);
 
 // Search Edit Feature State
@@ -1156,8 +784,30 @@ const editSearchForm = ref({
   tripType: 'one-way'
 });
 
+// Airport Autocomplete State for Edit Search
+const fromResults = ref([]);
+const toResults = ref([]);
+const fromSearchInput = ref('');
+const toSearchInput = ref('');
+const selectedFromAirport = ref(null);
+const selectedToAirport = ref(null);
+
 // Multi-step selection
 const selectionPhase = ref('outbound');
+const currentSegmentIndex = ref(0);
+const multiCitySegments = ref([]);
+
+// Parse segments from query if multi-city
+onMounted(() => {
+  if (route.query.tripType === 'multi-city' && route.query.segments) {
+    try {
+      multiCitySegments.value = JSON.parse(route.query.segments);
+      console.log('🌍 Multi-city segments parsed:', multiCitySegments.value);
+    } catch (e) {
+      console.error('❌ Failed to parse segments:', e);
+    }
+  }
+});
 
 // Confirmation modal
 const showConfirmation = ref(false);
@@ -1198,6 +848,22 @@ const dateSelector = ref({
   currentWeekStart: null,
   weekDays: [],
   selectedDay: null
+});
+
+// Click outside handler for autocomplete
+const handleSearchResultsClick = (e) => {
+  if (!e.target.closest('.relative')) {
+    fromResults.value = [];
+    toResults.value = [];
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('click', handleSearchResultsClick);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('click', handleSearchResultsClick);
 });
 
 // Filter options
@@ -1315,19 +981,11 @@ const togglePricingDetails = (flightId) => {
 
 // Format price with ML indicator
 const formatPrice = (flight) => {
-  if (flight.ml_predicted) {
-    return {
-      price: `₱${Number(flight.price).toLocaleString()}`,
-      label: 'ML Predicted Price',
-      tooltip: 'This price is dynamically adjusted based on demand, time, and availability',
-      class: 'text-pink-500'
-    };
-  }
   return {
     price: `₱${Number(flight.price).toLocaleString()}`,
-    label: 'Base Price',
-    tooltip: 'Standard fare',
-    class: 'text-gray-900'
+    label: 'Price',
+    tooltip: flight.ml_predicted ? 'This price is dynamically adjusted based on demand, time, and availability' : 'Standard fare',
+    class: flight.ml_predicted ? 'text-pink-500' : 'text-gray-900'
   };
 };
 
@@ -1389,6 +1047,7 @@ const updateSeatClassFilterOptions = () => {
 // Use trip type from Pinia store
 const tripType = computed(() => bookingStore.tripType || route.query.tripType);
 const isRoundTrip = computed(() => tripType.value === 'round_trip' || tripType.value === 'round-trip');
+const isMultiCity = computed(() => tripType.value === 'multi_city' || tripType.value === 'multi-city');
 
 // Check if outbound is already selected
 const hasOutboundSelected = computed(() => {
@@ -1402,7 +1061,7 @@ const hasReturnSelected = computed(() => {
 
 // Computed for current search date
 const currentSearchDate = computed(() => {
-  return selectionPhase.value === 'outbound' ? route.query.departure : route.query.returnDate;
+  return phaseRouteInfo.value.date;
 });
 
 // Initialize edit search form with current route values
@@ -1422,9 +1081,61 @@ const initializeEditSearch = () => {
     adults: parseInt(route.query.adults) || 1,
     children: parseInt(route.query.children) || 0,
     infants: parseInt(route.query.infants) || 0,
-    tripType: route.query.tripType || 'one-way'
+    tripType: (route.query.tripType === 'round_trip' || route.query.tripType === 'round-trip') ? 'round-trip' : 'one-way'
   };
+  
+  // Set initial search strings for autocomplete
+  fromSearchInput.value = route.query.origin || '';
+  toSearchInput.value = route.query.destination || '';
+  
+  // Attempt to load full airport names if possible, but fallback to code
+  selectedFromAirport.value = { code: route.query.origin };
+  selectedToAirport.value = { code: route.query.destination };
+  
   showEditSearch.value = true;
+};
+
+// Search airports for autocomplete
+const searchEditAirports = async (query, target) => {
+  if (query.includes(' - ')) return;
+
+  const searchQuery = query.toUpperCase().trim();
+  if (searchQuery.length < 3) {
+    if (target === 'from') fromResults.value = [];
+    else toResults.value = [];
+    return;
+  }
+
+  try {
+    const response = await airportService.searchAirports(searchQuery);
+    const airports = response.data.results || response.data;
+    
+    // Filter out opposite selected airport
+    const oppositeCode = target === 'from' ? selectedToAirport.value?.code : selectedFromAirport.value?.code;
+    const filtered = airports.filter(a => a.code !== oppositeCode);
+
+    if (target === 'from') fromResults.value = filtered;
+    else toResults.value = filtered;
+  } catch (error) {
+    console.error("Airport search error:", error);
+  }
+};
+
+// Select airport from results
+const selectEditAirport = (airport, target) => {
+  const displayString = `${airport.code} - ${airport.city}`;
+
+  if (target === 'from') {
+    selectedFromAirport.value = airport;
+    fromSearchInput.value = displayString;
+    fromResults.value = [];
+    editSearchForm.value.origin = airport.code;
+  } else {
+    selectedToAirport.value = airport;
+    toSearchInput.value = displayString;
+    toResults.value = [];
+    editSearchForm.value.destination = airport.code;
+  }
 };
 
 // Submit edited search
@@ -1444,6 +1155,11 @@ const submitEditedSearch = () => {
     name: 'SearchResults',
     query: searchParams
   });
+  
+  // NEW: Clear previous selections when search is updated
+  bookingStore.selectedOutbound = null;
+  bookingStore.selectedReturn = null;
+  selectionPhase.value = 'outbound';
   
   showEditSearch.value = false;
   
@@ -1466,6 +1182,24 @@ const showSessionExpiredModal = () => {
 
 // Handle showing seat classes for a flight
 const showSeatClasses = (flight) => {
+  // NEW: Minimum Connecting Time (MCT) Validation for Multi-City
+  if (bookingStore.isMultiCity) {
+    const validation = bookingStore.validateMultiCityConnection(
+      bookingStore.currentSegmentIndex, 
+      flight
+    );
+    
+    if (!validation.valid) {
+      console.warn('❌ MCT Validation Failed:', validation.message);
+      notificationStore.showNotification(
+        validation.message,
+        'error',
+        5000
+      );
+      return; // Stop the process, don't show the modal
+    }
+  }
+
   selectedFlightForSeats.value = flight;
   
   // Extract seat classes from flight data
@@ -1838,7 +1572,11 @@ const extractAvailableDates = (flightsList) => {
 // Initialize 7-day date selector
 const initializeDateSelector = () => {
   const searchDate = new Date(currentSearchDate.value);
-  dateSelector.value.currentWeekStart = startOfWeek(searchDate, { weekStartsOn: 0 });
+  
+  // Only set week start if it hasn't been set by navigation yet
+  if (!dateSelector.value.currentWeekStart) {
+    dateSelector.value.currentWeekStart = startOfWeek(searchDate, { weekStartsOn: 0 });
+  }
   
   // Generate 7 days starting from week start
   dateSelector.value.weekDays = eachDayOfInterval({
@@ -1865,12 +1603,14 @@ const initializeDateSelector = () => {
 const prevWeek = () => {
   dateSelector.value.currentWeekStart = subDays(dateSelector.value.currentWeekStart, 7);
   updateWeekDays();
+  fetchFlights(); // Re-fetch for the new week
 };
 
 // Navigate to next week
 const nextWeek = () => {
   dateSelector.value.currentWeekStart = addDays(dateSelector.value.currentWeekStart, 7);
   updateWeekDays();
+  fetchFlights(); // Re-fetch for the new week
 };
 
 // Navigate to current week
@@ -1882,6 +1622,8 @@ const goToCurrentWeek = () => {
   // Also reset date filter to search date
   dateFilter.value.selectedDate = currentSearchDate.value;
   dateFilter.value.dateRange = 'exact';
+  
+  fetchFlights(); // Re-fetch original week
   applyFilters();
 };
 
@@ -1905,12 +1647,21 @@ const updateWeekDays = () => {
 };
 
 // Select a day from the 7-day selector
-const selectDay = (day) => {
+const selectDay = async (day) => {
   if (day.isAvailable) {
+    isFiltering.value = true;
     dateSelector.value.selectedDay = day.dateString;
     dateFilter.value.selectedDate = day.dateString;
     dateFilter.value.dateRange = 'exact';
+    
+    // NEW: Update week days immediately so the indicator shows up instantly
+    updateWeekDays();
+    
+    // Artificial delay to show the "jump" indicator
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
     applyFilters();
+    isFiltering.value = false;
   }
 };
 
@@ -2052,11 +1803,19 @@ const resetFilters = () => {
 };
 
 // Reset date filter only
-const resetDateFilter = () => {
+const resetDateFilter = async () => {
+  isFiltering.value = true;
   dateFilter.value.selectedDate = currentSearchDate.value;
   dateFilter.value.dateRange = 'exact';
   goToCurrentWeek();
+  
+  // NEW: Update week days immediately
+  updateWeekDays();
+  
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
   applyFilters();
+  isFiltering.value = false;
 };
 
 // Get unique airlines from flights
@@ -2116,7 +1875,7 @@ const proceedToPassengerDetails = () => {
   // Validate both flights are selected
   if (!hasOutboundSelected.value || (isRoundTrip.value && !hasReturnSelected.value)) {
     console.error('❌ Cannot proceed: Missing flight selections');
-    alert('Please select both outbound and return flights before proceeding.');
+    notificationStore.warn('Please select both outbound and return flights before proceeding.');
     return;
   }
   
@@ -2181,11 +1940,35 @@ const confirmSelection = () => {
   // Log complete booking details
   logCompleteBookingDetails();
   
-  if (isRoundTrip.value) {
+  if (isMultiCity.value) {
+    console.log(`✅ CONFIRMING FLIGHT FOR SEGMENT ${currentSegmentIndex.value + 1}`);
+    
+    // Save to store
+    bookingStore.selectSegmentFlight(currentSegmentIndex.value, selectedFlight.value);
+    
+    if (currentSegmentIndex.value < multiCitySegments.value.length - 1) {
+      console.log('🔄 Moving to next segment search...');
+      currentSegmentIndex.value++;
+      
+      // Close confirmation modal
+      showConfirmation.value = false;
+      selectedFlight.value = null;
+      
+      // Reset week start for next leg
+      dateSelector.value.currentWeekStart = null;
+      
+      // Fetch flights for next segment
+      fetchFlights();
+      window.scrollTo(0, 0);
+    } else {
+      console.log('🏁 All multi-city segments selected, proceeding...');
+      router.push({ name: 'PassengerDetails' });
+    }
+  } else if (isRoundTrip.value) {
     if (selectionPhase.value === 'outbound') {
       console.log('✅ CONFIRMING OUTBOUND FLIGHT FOR ROUND-TRIP');
       
-      // Log flight selection
+      // Log flight selection (already stored by handleSeatClassSelection)
       logFlightSelection(selectedFlight.value, 'outbound');
       
       // AUTO-SWITCH TO RETURN PHASE
@@ -2301,7 +2084,7 @@ const logCompleteBooking = () => {
 const fetchFlights = async () => {
   loading.value = true;
   showNoResults.value = false;
-  timeoutCountdown.value = 5;
+  timeoutCountdown.value = 15;
   
   // Clear any existing timeout and interval
   if (fetchTimeout.value) {
@@ -2320,7 +2103,7 @@ const fetchFlights = async () => {
     }
   }, 1000);
   
-  // Set timeout to show no results after 5 seconds
+  // Set timeout to show no results after 15 seconds
   fetchTimeout.value = setTimeout(() => {
     if (loading.value) {
       console.log('⏰ Timeout reached - showing no flights message');
@@ -2330,25 +2113,36 @@ const fetchFlights = async () => {
       filteredFlights.value = [];
       clearInterval(countdownInterval.value);
     }
-  }, 5000);
+  }, 15000);
 
   try {
-    const isReturnPhase = selectionPhase.value === 'return';
+    const searchDateStr = phaseRouteInfo.value.date;
+    const searchDate = new Date(searchDateStr);
+    
+    // Use currentWeekStart if it exists for the range, otherwise fallback to search date
+    // This allows re-fetching when navigating via prev/next week
+    const rangeAnchorDate = dateSelector.value.currentWeekStart || startOfWeek(searchDate, { weekStartsOn: 0 });
+    
+    const startDate = format(rangeAnchorDate, 'yyyy-MM-dd');
+    const endDate = format(addDays(rangeAnchorDate, 6), 'yyyy-MM-dd'); // Fetch full 7 days of the current view
     
     const params = {
-      origin: isReturnPhase ? route.query.destination : route.query.origin,
-      destination: isReturnPhase ? route.query.origin : route.query.destination,
-      departure: isReturnPhase ? route.query.returnDate : route.query.departure
+      origin: phaseRouteInfo.value.origin,
+      destination: phaseRouteInfo.value.destination,
+      start_date: startDate,
+      end_date: endDate
     };
 
-    console.log('📡 Fetching flights:', {
-      phase: selectionPhase.value,
-      tripType: bookingStore.tripType,
-      params: params
-    });
+    console.log('📡 Fetching flights for date range:', startDate, 'to', endDate);
 
     const response = await flightService.getSchedules(params);
     
+    console.log('📥 Raw API Response:', {
+      status: response.status,
+      data: response.data,
+      dataType: typeof response.data
+    });
+
     // Clear timeout and interval since we got a response
     clearInterval(countdownInterval.value);
     clearTimeout(fetchTimeout.value);
@@ -2361,23 +2155,15 @@ const fetchFlights = async () => {
       fetchedFlights = response.data;
     }
     
-    // ============ NEW: Enhance flights with ML predictions ============
-    if (mlPricingEnabled.value && fetchedFlights.length > 0) {
-      console.log('🧠 Enhancing flights with ML price predictions...');
-      const enhancedFlights = [];
-      
-      for (const flight of fetchedFlights) {
-        const enhancedFlight = await getMLPricePrediction(flight);
-        enhancedFlights.push(enhancedFlight);
-      }
-      
-      flights.value = enhancedFlights;
-      console.log('✅ ML price predictions applied to all flights');
-    } else {
-      flights.value = fetchedFlights;
-    }
-    // ================================================================
+    // Filter out flights that have already departed
+    const now = new Date();
+    fetchedFlights = fetchedFlights.filter(f => {
+      if (!f.departure_time) return false;
+      return new Date(f.departure_time) >= now;
+    });
     
+    // Use directly - backend now provides ML-enhanced data
+    flights.value = fetchedFlights;
     filteredFlights.value = [...flights.value];
     
     // DEBUG: Log flight data structure
@@ -2392,7 +2178,7 @@ const fetchFlights = async () => {
     }
     
     // Check if response has data
-    if (!response.data || response.data.length === 0) {
+    if (!fetchedFlights || fetchedFlights.length === 0) {
       showNoResults.value = true;
     } else {
       showNoResults.value = false;
@@ -2501,10 +2287,28 @@ const formatDuration = (minutes) => {
 const selectedFlightsSummary = computed(() => {
   const summary = [];
   
+  if (isMultiCity.value) {
+    bookingStore.multiCitySegments.forEach((seg, idx) => {
+      if (seg.selectedFlight) {
+        summary.push({
+          type: `Flight ${idx + 1}`,
+          flight: seg.selectedFlight.flight_number,
+          route: `${seg.selectedFlight.origin} → ${seg.selectedFlight.destination}`,
+          time: formatTime(seg.selectedFlight.departure_time),
+          date: formatDate(seg.selectedFlight.departure_time),
+          price: Number(seg.selectedFlight.price || 0).toLocaleString(),
+          selected_seat_class: seg.selectedFlight.selected_seat_class || seg.selectedFlight.seat_class,
+          seat_class_price: seg.selectedFlight.price,
+          base_price: seg.selectedFlight.original_price || seg.selectedFlight.base_price || seg.selectedFlight.price,
+          ml_predicted: seg.selectedFlight.ml_predicted
+        });
+      }
+    });
+    return summary;
+  }
+
   if (bookingStore.selectedOutbound) {
-    // For one-way trips, don't show "Outbound" label
     const typeLabel = isRoundTrip.value ? 'Outbound' : 'Flight';
-    
     summary.push({
       type: typeLabel,
       flight: bookingStore.selectedOutbound.flight_number,
@@ -2551,6 +2355,9 @@ const totalPrice = computed(() => {
 
 // Get modal title based on trip type and phase
 const modalTitle = computed(() => {
+  if (isMultiCity.value) {
+    return `Confirm Flight ${currentSegmentIndex.value + 1}`;
+  }
   if (isRoundTrip.value) {
     if (selectionPhase.value === 'outbound') {
       return 'Confirm Outbound Flight';
@@ -2563,6 +2370,11 @@ const modalTitle = computed(() => {
 
 // Get confirm button text
 const confirmButtonText = computed(() => {
+  if (isMultiCity.value) {
+    return currentSegmentIndex.value < multiCitySegments.value.length - 1 
+      ? 'Confirm & Next Flight' 
+      : 'Confirm & Continue';
+  }
   if (isRoundTrip.value) {
     if (selectionPhase.value === 'outbound') {
       return 'Confirm Outbound';
@@ -2575,6 +2387,11 @@ const confirmButtonText = computed(() => {
 
 // Get modal action description
 const modalActionDescription = computed(() => {
+  if (isMultiCity.value) {
+    return currentSegmentIndex.value < multiCitySegments.value.length - 1
+      ? `After confirming, you will select Flight ${currentSegmentIndex.value + 2}.`
+      : 'After confirming, click "Proceed to Passenger Details" to continue.';
+  }
   if (isRoundTrip.value && selectionPhase.value === 'outbound') {
     return 'After confirming, click "Continue to Return Flight" to select your return flight.';
   } else if (isRoundTrip.value && selectionPhase.value === 'return') {
@@ -2628,6 +2445,15 @@ const currentWeekContainsSelectedDate = computed(() => {
 
 // Get phase-specific route info
 const phaseRouteInfo = computed(() => {
+  if (isMultiCity.value && multiCitySegments.value[currentSegmentIndex.value]) {
+    const seg = multiCitySegments.value[currentSegmentIndex.value];
+    return {
+      origin: seg.origin,
+      destination: seg.destination,
+      date: seg.date
+    };
+  }
+
   if (selectionPhase.value === 'outbound') {
     return {
       origin: route.query.origin,
@@ -2645,6 +2471,9 @@ const phaseRouteInfo = computed(() => {
 
 // Get phase-specific button text
 const selectButtonText = computed(() => {
+  if (isMultiCity.value) {
+    return `Select Flight ${currentSegmentIndex.value + 1}`;
+  }
   if (isRoundTrip.value) {
     return selectionPhase.value === 'outbound' ? 'Select Outbound' : 'Select Return';
   }

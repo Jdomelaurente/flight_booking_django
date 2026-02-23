@@ -26,7 +26,7 @@
           <tr v-for="req in requirements" :key="req.id" class="hover:bg-gray-50/50 transition-colors text-[12px] font-medium">
             <td class="px-6 py-4">
               <div class="w-10 h-10 bg-gray-50 border border-gray-100 rounded-[1px] flex items-center justify-center">
-                <i :class="[req.icon || 'ph ph-star', 'text-[#fe3787] text-xl']"></i>
+                <i :class="[formatIcon(req.icon), 'text-[#fe3787] text-xl']"></i>
               </div>
             </td>
             <td class="px-6 py-4">
@@ -91,9 +91,9 @@
             <div>
               <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 poppins">Icon (Phospor Class)</label>
               <div class="flex gap-2">
-                <input v-model="form.icon" type="text" class="flex-1 border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px]" placeholder="ph ph-stars">
+                <input v-model="form.icon" type="text" class="flex-1 border p-2 text-sm outline-none focus:border-[#fe3787] transition-all rounded-[1px]" placeholder="ph ph-star">
                 <div class="w-10 h-10 bg-gray-50 border border-gray-200 flex items-center justify-center rounded-[1px]">
-                  <i :class="[form.icon || 'ph ph-star', 'text-[#fe3787]']"></i>
+                  <i :class="[formatIcon(form.icon), 'text-[#fe3787]']"></i>
                 </div>
               </div>
             </div>
@@ -113,13 +113,18 @@
         </form>
       </div>
     </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '@/services/admin/api';
+import { useModalStore } from '@/stores/modal';
 
+const modalStore = useModalStore();
+
+// Requirements state
 const requirements = ref([]);
 const isModalOpen = ref(false);
 const isEditing = ref(false);
@@ -157,13 +162,24 @@ const saveRequirement = async () => {
 };
 
 const deleteRequirement = async (id) => {
-  if (confirm('Are you sure you want to delete this seat requirement? This might affect existing seat configurations.')) {
+  const confirmed = await modalStore.confirm({
+    title: 'Delete Requirement?',
+    message: 'Are you sure you want to delete this seat requirement? This might affect existing seat configurations.',
+    variant: 'danger',
+    confirmText: 'Delete',
+    loadingText: 'Deleting...'
+  });
+
+  if (confirmed) {
+    modalStore.setLoader(true);
     try {
       await api.delete(`/seat-requirements/${id}/`);
       await fetchRequirements();
+      modalStore.close(true);
     } catch (err) {
       console.error("Delete Error:", err);
       alert("Error deleting: " + JSON.stringify(err.response?.data || err.message));
+      modalStore.setLoader(false);
     }
   }
 };
@@ -183,6 +199,14 @@ const openModal = (req = null) => {
 
 const formatPrice = (price) => {
   return parseFloat(price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+const formatIcon = (iconClass) => {
+  if (!iconClass) return 'ph ph-star';
+  if (iconClass.startsWith('ph-') && !iconClass.includes(' ')) {
+    return `ph ${iconClass}`;
+  }
+  return iconClass;
 };
 
 onMounted(fetchRequirements);

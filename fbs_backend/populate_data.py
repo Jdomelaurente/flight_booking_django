@@ -7,8 +7,12 @@ from decimal import Decimal
 import random
 
 # Setup Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'your_project.settings')
-django.setup()
+# Setup Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'fbs_backend.settings')
+try:
+    django.setup()
+except Exception:
+    pass
 
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -20,7 +24,11 @@ from app.models import (
     InsuranceProvider, InsuranceCoverageType, InsuranceBenefit,
     TravelInsurancePlan, PlanCoverage,
     Booking, BookingContact, BookingDetail, Payment,
-    CheckInDetail, TrackLog
+    CheckInDetail, TrackLog, PricingConfiguration, Students
+)
+from fbs_instructor.models import (
+    Instructor, Section, SectionEnrollment, Activity, 
+    ActivityPassenger, ActivityAddOn, ActivityStudentBinding
 )
 
 def create_countries():
@@ -147,6 +155,12 @@ def create_airports(countries):
          'country_code': 'PH', 'airport_type': 'domestic'},
         {'name': 'Kalibo International Airport', 'code': 'KLO', 'city': 'Kalibo',
          'country_code': 'PH', 'airport_type': 'international'},
+        {'name': 'Puerto Princesa International Airport', 'code': 'PPS', 'city': 'Puerto Princesa',
+         'country_code': 'PH', 'airport_type': 'domestic'},
+        {'name': 'Caticlan (Boracay) Airport', 'code': 'MPH', 'city': 'Malay',
+         'country_code': 'PH', 'airport_type': 'domestic'},
+        {'name': 'Iloilo International Airport', 'code': 'ILO', 'city': 'Iloilo',
+         'country_code': 'PH', 'airport_type': 'domestic'},
         {'name': 'New York John F. Kennedy Airport', 'code': 'JFK', 'city': 'New York',
          'country_code': 'US', 'airport_type': 'international'},
         {'name': 'Tokyo Narita International Airport', 'code': 'NRT', 'city': 'Tokyo',
@@ -185,12 +199,17 @@ def create_routes(airports):
         {'origin': 'MNL', 'destination': 'DVO', 'base_price': Decimal('3500.00')},
         {'origin': 'MNL', 'destination': 'CRK', 'base_price': Decimal('1500.00')},
         {'origin': 'CEB', 'destination': 'MNL', 'base_price': Decimal('2000.00')},
+        {'origin': 'MNL', 'destination': 'PPS', 'base_price': Decimal('2800.00')},
+        {'origin': 'MNL', 'destination': 'MPH', 'base_price': Decimal('3200.00')},
+        {'origin': 'MPH', 'destination': 'CEB', 'base_price': Decimal('2500.00')},
+        {'origin': 'ILO', 'destination': 'MNL', 'base_price': Decimal('1800.00')},
         {'origin': 'MNL', 'destination': 'SIN', 'base_price': Decimal('8000.00')},
         {'origin': 'MNL', 'destination': 'NRT', 'base_price': Decimal('15000.00')},
         {'origin': 'MNL', 'destination': 'DXB', 'base_price': Decimal('20000.00')},
         {'origin': 'MNL', 'destination': 'JFK', 'base_price': Decimal('40000.00')},
-        {'origin': 'CEB', 'destination': 'ICN', 'base_price': Decimal('12000.00')},
+        {'origin': 'CEB', 'destination': 'ICN', 'base_price': Decimal('1200.00')},
         {'origin': 'CRK', 'destination': 'KLO', 'base_price': Decimal('2500.00')},
+        {'origin': 'DVO', 'destination': 'JFK', 'base_price': Decimal('60000.00')},
     ]
     
     routes = []
@@ -201,7 +220,7 @@ def create_routes(airports):
             defaults={'base_price': data['base_price']}
         )
         routes.append(route)
-        print(f"Created route: {route.origin_airport.code} → {route.destination_airport.code}")
+        print(f"Created route: {route.origin_airport.code} ? {route.destination_airport.code}")
     
     return routes
 
@@ -215,8 +234,12 @@ def create_flights(airlines, aircrafts, routes):
         {'flight_number': 'PR890', 'airline_code': 'PR', 'aircraft_key': 'PR_Airbus_A330-300', 'route_idx': 6},
         {'flight_number': '5J901', 'airline_code': '5J', 'aircraft_key': '5J_Airbus_A321', 'route_idx': 3},
         {'flight_number': 'PR234', 'airline_code': 'PR', 'aircraft_key': 'PR_Airbus_A321neo', 'route_idx': 4},
+        {'flight_number': 'PR999', 'airline_code': 'PR', 'aircraft_key': 'PR_Airbus_A321neo', 'route_idx': 14}, # DVO-JFK
         {'flight_number': 'Z2123', 'airline_code': 'Z2', 'aircraft_key': 'Z2_Airbus_A320', 'route_idx': 7},
         {'flight_number': 'QR456', 'airline_code': 'QR', 'aircraft_key': 'QR_Airbus_A350-900', 'route_idx': 8},
+        {'flight_number': 'PR456', 'airline_code': 'PR', 'aircraft_key': 'PR_Airbus_A321neo', 'route_idx': 10}, # MNL-PPS
+        {'flight_number': '5J789', 'airline_code': '5J', 'aircraft_key': '5J_Airbus_A320', 'route_idx': 11},   # MNL-MPH
+        {'flight_number': 'Z2456', 'airline_code': 'Z2', 'aircraft_key': 'Z2_Airbus_A320', 'route_idx': 13},  # ILO-MNL
     ]
     
     flights = {}
@@ -225,7 +248,7 @@ def create_flights(airlines, aircrafts, routes):
         aircraft = aircrafts[data['aircraft_key']]
         route = routes[data['route_idx']]
         
-        flight, created = Flight.objects.get_or_create(
+        flight, created = Flight.objects.update_or_create(
             flight_number=data['flight_number'],
             defaults={
                 'airline': airline,
@@ -234,7 +257,7 @@ def create_flights(airlines, aircrafts, routes):
             }
         )
         flights[data['flight_number']] = flight
-        print(f"Created flight: {flight.flight_number}")
+        print(f"{'Created' if created else 'Updated'} flight: {flight.flight_number}")
     
     return flights
 
@@ -244,9 +267,13 @@ def create_schedules(flights):
     today = timezone.now()
     
     schedule_configs = [
+        {'flight_number': 'PR999', 'fixed_date': '2026-03-11', 'hour': 21, 'minute': 0, 'duration_hours': 18},
         {'flight_number': 'PR123', 'days_from_now': 2, 'hour': 8, 'minute': 0, 'duration_hours': 1.5},
         {'flight_number': '5J456', 'days_from_now': 3, 'hour': 14, 'minute': 30, 'duration_hours': 2},
         {'flight_number': 'Z2789', 'days_from_now': 1, 'hour': 10, 'minute': 15, 'duration_hours': 0.75},
+        {'flight_number': 'PR456', 'days_from_now': 2, 'hour': 9, 'minute': 30, 'duration_hours': 1.25},
+        {'flight_number': '5J789', 'days_from_now': 3, 'hour': 7, 'minute': 45, 'duration_hours': 1},
+        {'flight_number': 'Z2456', 'days_from_now': 1, 'hour': 16, 'minute': 20, 'duration_hours': 1.15},
         {'flight_number': 'QR789', 'days_from_now': 5, 'hour': 22, 'minute': 0, 'duration_hours': 8},
         {'flight_number': 'PR890', 'days_from_now': 4, 'hour': 1, 'minute': 30, 'duration_hours': 10},
         {'flight_number': '5J901', 'days_from_now': 6, 'hour': 16, 'minute': 45, 'duration_hours': 1.25},
@@ -258,10 +285,22 @@ def create_schedules(flights):
     for config in schedule_configs:
         flight = flights[config['flight_number']]
         
-        # Create multiple schedules for the same flight
-        for day_offset in range(0, 30, 7):  # Every week for a month
-            departure_time = today + timedelta(days=config['days_from_now'] + day_offset, hours=config['hour'], minutes=config['minute'])
-            arrival_time = departure_time + timedelta(hours=config['duration_hours'])
+        # Handle fixed date or multiple schedules
+        if 'fixed_date' in config:
+            from datetime import datetime
+            dt = datetime.strptime(config['fixed_date'], '%Y-%m-%d')
+            departure_time = timezone.make_aware(dt.replace(hour=config['hour'], minute=config['minute']))
+            offsets = [0]
+        else:
+            offsets = range(0, 30, 7) # Every week for a month
+
+        for day_offset in offsets:
+            if 'fixed_date' not in config:
+                departure_time = (today + timezone.timedelta(days=config['days_from_now'] + day_offset)).replace(
+                    hour=config['hour'], minute=config['minute'], second=0, microsecond=0
+                )
+            
+            arrival_time = departure_time + timezone.timedelta(hours=config['duration_hours'])
             
             schedule, created = Schedule.objects.get_or_create(
                 flight=flight,
@@ -273,9 +312,11 @@ def create_schedules(flights):
                 }
             )
             
+            schedules.append(schedule)
             if created:
-                schedules.append(schedule)
                 print(f"Created schedule: {schedule.flight.flight_number} on {departure_time.date()}")
+            else:
+                print(f"Existing schedule found: {schedule.flight.flight_number} on {departure_time.date()}")
     
     return schedules
 
@@ -1147,7 +1188,9 @@ def create_bookings_and_payments(users, passengers, schedules, seats, addons):
         )
         
         # Update seats as occupied
-        available_seats.update(is_available=False)
+        for s in available_seats:
+            s.is_available = False
+            s.save()
         
         # Update booking totals
         booking.base_fare_total = booking_detail1.price + booking_detail2.price
@@ -1170,6 +1213,110 @@ def create_bookings_and_payments(users, passengers, schedules, seats, addons):
     
     return bookings
 
+def create_pricing_config():
+    """Create singleton pricing configuration"""
+    config = PricingConfiguration.load()
+    print("Created/Loaded pricing configuration")
+    return config
+
+def create_instructor_and_students(users):
+    """Create instructor and student profiles for users"""
+    # Create an instructor
+    instructor_user, created = User.objects.get_or_create(
+        username='instructor1',
+        defaults={
+            'email': 'instructor@example.com',
+            'first_name': 'Prof.',
+            'last_name': 'Smith'
+        }
+    )
+    if created:
+        instructor_user.set_password('password123')
+        instructor_user.save()
+    
+    instructor, created = Instructor.objects.get_or_create(
+        user=instructor_user,
+        defaults={
+            'instructor_id': 'INST001',
+            'first_name': instructor_user.first_name,
+            'last_name': instructor_user.last_name,
+            'email': instructor_user.email
+        }
+    )
+    print(f"Created instructor: {instructor.get_full_name()}")
+
+    # Create some students
+    students = []
+    for i in range(1, 6):
+        student_user, created = User.objects.get_or_create(
+            username=f'student{i}',
+            defaults={
+                'email': f'student{i}@example.com',
+                'first_name': f'Student{i}',
+                'last_name': 'Test'
+            }
+        )
+        if created:
+            student_user.set_password('password123')
+            student_user.save()
+        
+        student, created = Students.objects.get_or_create(
+            user=student_user,
+            defaults={
+                'student_number': f'STUD202400{i}',
+                'first_name': student_user.first_name,
+                'last_name': student_user.last_name,
+                'email': student_user.email,
+                'gender': 'male' if i % 2 == 0 else 'female'
+            }
+        )
+        students.append(student)
+        print(f"Created student: {student.first_name} {student.last_name}")
+    
+    return instructor, students
+
+def create_sections_and_activities(instructor, students):
+    """Create sections, enrollments, and activities"""
+    section, created = Section.objects.get_or_create(
+        section_code='CS101-A',
+        instructor=instructor.user,
+        defaults={
+            'section_name': 'Introduction to Computer Science',
+            'semester': '1st Semester',
+            'academic_year': '2024-2025',
+            'schedule': 'MWF 08:00 AM - 10:00 AM'
+        }
+    )
+    print(f"Created section: {section.section_name}")
+
+    # Enroll students
+    for student in students:
+        SectionEnrollment.objects.get_or_create(section=section, student=student)
+    print(f"Enrolled {len(students)} students in section {section.section_code}")
+
+    # Create an activity
+    activity, created = Activity.objects.get_or_create(
+        title='Final Booking Project',
+        section=section,
+        defaults={
+            'description': 'Book a flight from Manila to Singapore.',
+            'due_date': timezone.now() + timezone.timedelta(days=14),
+            'total_points': Decimal('100.00'),
+            'status': 'published',
+            'activity_code': 'FLY2024',
+            'is_code_active': True,
+            'instructions': 'Please follow the steps in the manual.'
+        }
+    )
+    print(f"Created activity: {activity.title}")
+
+    # Create student bindings
+    for student in students:
+        ActivityStudentBinding.objects.get_or_create(activity=activity, student=student)
+    print(f"Created student bindings for activity {activity.title}")
+
+    return section, activity
+
 def create_sample_data():
     """Main function to create all sample data"""
     print("Starting data population...")
@@ -1183,6 +1330,13 @@ def create_sample_data():
     routes = create_routes(airports)
     flights = create_flights(airlines, aircrafts, routes)
     schedules = create_schedules(flights)
+    
+    # Create pricing config
+    create_pricing_config()
+    
+    # Create instructor and student data
+    instructor, students = create_instructor_and_students([])
+    create_sections_and_activities(instructor, students)
     
     # Create seats for all schedules
     for schedule in schedules:
@@ -1219,7 +1373,7 @@ def create_sample_data():
     # Create bookings (with test user)
     create_bookings_and_payments([], passengers, schedules, all_seats, addons)
     
-    print("\n✅ Data population completed successfully!")
+    print("\n? Data population completed successfully!")
     print("\nSummary of created data:")
     print(f"- Countries: {Country.objects.count()}")
     print(f"- Airlines: {Airline.objects.count()}")
@@ -1231,6 +1385,10 @@ def create_sample_data():
     print(f"- Insurance Plans: {TravelInsurancePlan.objects.count()}")
     print(f"- Add-ons: {AddOn.objects.count()}")
     print(f"- Bookings: {Booking.objects.count()}")
+    print(f"- Instructors: {Instructor.objects.count()}")
+    print(f"- Students: {Students.objects.count()}")
+    print(f"- Sections: {Section.objects.count()}")
+    print(f"- Activities: {Activity.objects.count()}")
 
 if __name__ == '__main__':
     create_sample_data()

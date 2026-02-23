@@ -66,18 +66,18 @@ def test_pricing_engine():
         # Get test data
         schedule = Schedule.objects.first()
         if not schedule:
-            print("✗ No schedules found in database")
+            print("? No schedules found in database")
             return
         
         seat_class = SeatClass.objects.filter(airline=schedule.flight.airline).first()
         if not seat_class:
-            print("✗ No seat classes found")
+            print("? No seat classes found")
             return
         
         print(f"\nTesting with: {schedule.flight.flight_number}")
         print(f"Route: {schedule.flight.route}")
         print(f"Departure: {schedule.departure_time}")
-        print(f"Base price: ₱{schedule.flight.route.base_price}")
+        print(f"Base price: ?{schedule.flight.route.base_price}")
         
         # Test dynamic pricing
         engine = PHDynamicPricingEngine()
@@ -85,15 +85,15 @@ def test_pricing_engine():
         for ptype in ['Adult', 'Child', 'Infant']:
             result = engine.get_price(schedule, seat_class, ptype)
             print(f"\n  {ptype}:")
-            print(f"    Base fare: ₱{result['base_fare']}")
-            print(f"    Total: ₱{result['total_with_taxes']}")
+            print(f"    Base fare: ?{result['base_fare']}")
+            print(f"    Total: ?{result['total_with_taxes']}")
             print(f"    Lead time: {result['factors']['lead_time']}")
             print(f"    Demand level: {result['factors']['demand_level']}")
         
-        print("\n✓ Pricing engine working!")
+        print("\n? Pricing engine working!")
         
     except Exception as e:
-        print(f"\n✗ Error: {e}")
+        print(f"\n? Error: {e}")
         import traceback
         traceback.print_exc()
 
@@ -109,21 +109,21 @@ def test_csv_export():
         print(f"Found {count} booking records")
         
         if count < 5:
-            print("✗ Not enough data for export (need at least 5)")
+            print("? Not enough data for export (need at least 5)")
             return
         
         filepath = export_ph_pricing_csv('test_export.csv')
-        print(f"✓ CSV exported to: {filepath}")
+        print(f"? CSV exported to: {filepath}")
         
         # Verify file exists
         if os.path.exists(filepath):
             import pandas as pd
             df = pd.read_csv(filepath)
-            print(f"✓ File contains {len(df)} rows")
+            print(f"? File contains {len(df)} rows")
             print(f"Columns: {list(df.columns)}")
         
     except Exception as e:
-        print(f"\n✗ Error: {e}")
+        print(f"\n? Error: {e}")
         import traceback
         traceback.print_exc()
 
@@ -141,7 +141,7 @@ def test_fiesta_pricing():
         ).first()
         
         if not cebu_route:
-            print("✗ No Cebu routes found")
+            print("? No Cebu routes found")
             return
         
         # Get schedule around Sinulog (Jan 15)
@@ -168,7 +168,7 @@ def test_fiesta_pricing():
             print(f"Fiesta factor: {PhilippineCalendar.get_route_fiesta_factor('MNL', 'CEB', sinulog_date)}")
         
     except Exception as e:
-        print(f"\n✗ Error: {e}")
+        print(f"\n? Error: {e}")
         import traceback
         traceback.print_exc()
 
@@ -182,7 +182,7 @@ def test_schedule_methods():
     try:
         schedule = Schedule.objects.first()
         if not schedule:
-            print("✗ No schedules found")
+            print("? No schedules found")
             return
         
         print(f"\nSchedule: {schedule}")
@@ -200,10 +200,10 @@ def test_schedule_methods():
         holiday_impact = schedule.ph_holiday_impact
         print(f"Holiday impact: {holiday_impact.get('holiday_name', 'None')}")
         
-        print("\n✓ Schedule methods working!")
+        print("\n? Schedule methods working!")
         
     except Exception as e:
-        print(f"\n✗ Error: {e}")
+        print(f"\n? Error: {e}")
         import traceback
         traceback.print_exc()
 

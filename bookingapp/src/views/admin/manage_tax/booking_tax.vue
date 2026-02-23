@@ -441,6 +441,9 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import api from '@/services/admin/api'
+import { useModalStore } from '@/stores/modal'
+
+const modalStore = useModalStore()
 
 // State
 const taxes = ref([])
@@ -576,9 +579,9 @@ const fetchData = async () => {
       api.get('/tax-types/')
     ])
     
-    taxes.value = taxesRes.data
-    bookings.value = bookingsRes.data
-    taxTypes.value = taxTypesRes.data
+    taxes.value = taxesRes.data.results || taxesRes.data
+    bookings.value = bookingsRes.data.results || bookingsRes.data
+    taxTypes.value = taxTypesRes.data.results || taxTypesRes.data
     
     calculateStats()
     calculateSummaries()
@@ -673,17 +676,26 @@ const saveTax = async () => {
 }
 
 const deleteTax = async (id) => {
-  if (!confirm('Are you sure you want to delete this booking tax record?')) return
+  const confirmed = await modalStore.confirm({
+    title: 'Delete Booking Tax?',
+    message: 'Are you sure you want to delete this booking tax record?',
+    variant: 'danger',
+    confirmText: 'Delete',
+    loadingText: 'Deleting...'
+  });
+
+  if (!confirmed) return;
   
+  modalStore.setLoader(true);
   try {
     await api.delete(`/booking-taxes/${id}/`)
     taxes.value = taxes.value.filter(t => t.id !== id)
     calculateStats()
     calculateSummaries()
-    alert('Booking tax deleted successfully!')
+    modalStore.close(confirmed);
   } catch (err) {
     console.error('Delete error:', err)
-    alert('Failed to delete booking tax')
+    modalStore.setLoader(false);
   }
 }
 

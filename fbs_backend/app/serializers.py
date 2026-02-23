@@ -1,9 +1,68 @@
-# serializers.py
-from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import AirlineTax, AirportFee, Booking, BookingDetail, BookingTax, CheckInDetail, PassengerInfo, PassengerTypeTaxRate, Route, Airline, SeatClass, Aircraft, Airport, AddOnType, Flight, Schedule, Seat, TaxType, TrackLog, SeatRequirement
+from rest_framework import serializers
+from .models import AirlineTax, AirportFee, Booking, BookingDetail, BookingTax, CheckInDetail, PassengerInfo, Students, PassengerTypeTaxRate, Route, Airline, SeatClass, Aircraft, Airport, AddOnType, Flight, Schedule, Seat, TaxType, TrackLog, SeatRequirement, Payment
+from fbs_instructor.models import Instructor
+
+# ==========================================
+# USER SERIALIZER
+# ==========================================
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        # Added first_name and last_name to the fields
+        fields = ['id', 'username', 'email', 'first_name', 'last_name']
 
 
+# ==========================================
+# STUDENT SERIALIZER
+# ==========================================
+class StudentsSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Students
+        fields = [
+            'id', 
+            'student_number', 
+            'first_name', 
+            'last_name', 
+            'mi', 
+            'full_name',
+            'email', 
+            'phone_number', 
+            'gender', 
+            'date_enrolled'
+        ]
+        read_only_fields = ['date_enrolled']
+
+    def get_full_name(self, obj):
+        if obj.mi:
+            return f"{obj.first_name} {obj.mi}. {obj.last_name}"
+        return f"{obj.first_name} {obj.last_name}"
+
+
+# ==========================================
+# INSTRUCTOR SERIALIZER
+# ==========================================
+class InstructorsSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Instructor
+        fields = [
+            'id', 
+            'instructor_id', 
+            'first_name', 
+            'last_name', 
+            'middle_initial', 
+            'full_name',
+            'email', 
+            'phone'
+        ]
+
+    def get_full_name(self, obj):
+        parts = [obj.first_name, f"{obj.middle_initial}." if obj.middle_initial else None, obj.last_name]
+        return " ".join([p for p in parts if p])
 # ==========================================
 # MANAGE FLIGHT
 # ==========================================
@@ -165,6 +224,11 @@ class AddOnTypeSerializer(serializers.ModelSerializer):
         model = AddOnType
         fields = ['id', 'name', 'description']
 
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = '__all__'
+
 
 # ==========================================
 # BOOKING MANAGEMENT SERIALIZERS
@@ -181,7 +245,8 @@ class BookingDetailSerializer(serializers.ModelSerializer):
     departure_time = serializers.ReadOnlyField(source='schedule.departure_time')
     arrival_time = serializers.ReadOnlyField(source='schedule.arrival_time')
     seat_number = serializers.ReadOnlyField(source='seat.seat_number')
-    seat_class = serializers.ReadOnlyField(source='seat_class.name')
+    seat_class_name = serializers.ReadOnlyField(source='seat_class.name')
+    airline_name = serializers.ReadOnlyField(source='schedule.flight.airline.name')
     
     class Meta:
         model = BookingDetail
@@ -193,21 +258,17 @@ class BookingDetailSerializer(serializers.ModelSerializer):
             'passenger_type',
             'schedule',
             'flight_number',
+            'airline_name',
             'route_display',
             'departure_time',
             'arrival_time',
             'seat',
             'seat_number',
-            'seat_class',
+            'seat_class_name',
             'booking_date',
             'price',
             'tax_amount',
             'status',
-            # Check-in related fields (if available)
-            'check_in_time',
-            'boarding_pass',
-            'baggage_count',
-            'baggage_weight',
         ]
     
     def get_passenger_name(self, obj):
@@ -465,16 +526,15 @@ class AirportFeeSerializer(serializers.ModelSerializer):
         return instance
 
 class AirlineTaxSerializer(serializers.ModelSerializer):
-    airline_detail = AirlineSerializer(source='airline', read_only=True)
-    tax_type_detail = TaxTypeSerializer(source='tax_type', read_only=True)
-    
     class Meta:
         model = AirlineTax
-        fields = ['id', 'airline', 'tax_type', 'airline_detail', 'tax_type_detail', 'amount']
-        extra_kwargs = {
-            'airline': {'write_only': True},
-            'tax_type': {'write_only': True}
-        }
+        fields = ['id', 'airline', 'tax_type', 'amount']
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['airline'] = AirlineSerializer(instance.airline).data if instance.airline else None
+        rep['tax_type'] = TaxTypeSerializer(instance.tax_type).data if instance.tax_type else None
+        return rep
 
 class PassengerTypeTaxRateSerializer(serializers.ModelSerializer):
     tax_type = TaxTypeSerializer(read_only=True)
@@ -513,9 +573,3 @@ class BookingTaxSerializer(serializers.ModelSerializer):
     class Meta:
         model = BookingTax
         fields = ['id', 'booking', 'tax_type', 'amount', 'passenger_type', 'created_at']
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        # Added first_name and last_name to the fields
-        fields = ['id', 'username', 'email', 'first_name', 'last_name']

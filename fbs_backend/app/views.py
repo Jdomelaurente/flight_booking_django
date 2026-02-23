@@ -19,8 +19,9 @@ from .models import (
     AirlineTax, Booking, BookingDetail, BookingTax, CheckInDetail, 
     PassengerTypeTaxRate, Route, TrackLog, AirportFee, TaxType,
     Airline, Airport, Aircraft, SeatClass, AddOnType, Flight, Schedule, 
-    Seat, PassengerInfo, SeatRequirement
+    Seat, PassengerInfo, SeatRequirement, Students, Payment
 )
+from fbs_instructor.models import Instructor
 from .serializers import (
     AirlineSerializer, AirlineTaxSerializer, AirportSerializer, 
     AircraftSerializer, BookingDetailSerializer, BookingTaxSerializer,
@@ -28,7 +29,8 @@ from .serializers import (
     AddOnTypeSerializer, RouteSerializer, FlightSerializer, ScheduleSerializer,
     SeatSerializer, PassengerInfoSerializer, TrackLogSerializer,
     AirportFeeSerializer, TaxTypeSerializer, PassengerTypeTaxRateSerializer,
-    BookingSerializer, SeatRequirementSerializer
+    BookingSerializer, SeatRequirementSerializer, StudentsSerializer, InstructorsSerializer,
+    PaymentSerializer
 )
 
 
@@ -45,10 +47,35 @@ class AdminLoginView(APIView):
         user = authenticate(username=username, password=password)
         
         if user and user.is_staff:
-            token, created = Token.objects.get_or_create(user=user)
+            # 1. Get or create DRF token (for legacy support)
+            token, _ = Token.objects.get_or_create(user=user)
+            
+            # 2. Get UserProfile for role
+            try:
+                profile = UserProfile.objects.get(user=user)
+                role = profile.role
+            except UserProfile.DoesNotExist:
+                role = 'admin' # Fallback
+                
+            # 3. Create a UserSession (Multi-session support)
+            from fbs_instructor.models import UserSession
+            from fbs_instructor.views import get_client_ip
+            
+            session = UserSession.objects.create(
+                user=user,
+                session_token=UserSession.generate_token(),
+                role=role,
+                ip_address=get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
+                is_active=True
+            )
+            
             return Response({
                 'success': True,
-                'token': token.key,
+                'token': session.session_token,
+                'session_id': session.id,
+                'role': role,
+                'dashboard_route': '/admin/dashboard',
                 'user': {
                     'username': user.username,
                     'email': user.email
@@ -79,6 +106,12 @@ class FlightViewSet(viewsets.ModelViewSet):
 class SeatRequirementViewSet(viewsets.ModelViewSet):
     queryset = SeatRequirement.objects.all()
     serializer_class = SeatRequirementSerializer
+    permission_classes = [AllowAny]
+
+
+class PaymentViewSet(viewsets.ModelViewSet):
+    queryset = Payment.objects.all().order_by('-payment_date')
+    serializer_class = PaymentSerializer
     permission_classes = [AllowAny]
 
 
@@ -135,6 +168,8 @@ class ScheduleViewSet(viewsets.ModelViewSet):
                 created_count = 0
                 updated_count = 0
                 
+                processed_seat_ids = []
+                
                 for sc_config in seat_classes:
                     class_id = sc_config.get('class_id')
                     rows = sc_config.get('rows', 0)
@@ -179,20 +214,29 @@ class ScheduleViewSet(viewsets.ModelViewSet):
                             if seat_key in existing_map:
                                 # Update existing seat class if changed
                                 seat = existing_map[seat_key]
+                                processed_seat_ids.append(seat.id)
                                 if seat.seat_class_id != class_id:
                                     seat.seat_class = seat_class
                                     seat.save()
                                     updated_count += 1
                             else:
                                 # Create new seat
-                                Seat.objects.create(**seat_data)
+                                seat = Seat.objects.create(**seat_data)
                                 created_count += 1
-                                
+                                processed_seat_ids.append(seat.id)
+
+                
+                # Delete seats that are no longer in the layout
+                seats_to_delete = Seat.objects.filter(schedule=schedule).exclude(id__in=processed_seat_ids)
+                deleted_count = seats_to_delete.count()
+                seats_to_delete.delete()
+
                 return Response({
                     'success': True,
-                    'message': f'Generated {created_count} new seats, updated {updated_count} seats',
+                    'message': f'Generated {created_count} new seats, updated {updated_count} seats, deleted {deleted_count} obsolete seats',
                     'created': created_count,
-                    'updated': updated_count
+                    'updated': updated_count,
+                    'deleted': deleted_count
                 })
                 
         except Exception as e:
@@ -206,6 +250,9 @@ class SeatViewSet(viewsets.ModelViewSet):
     queryset = Seat.objects.all()
     serializer_class = SeatSerializer
     permission_classes = [AllowAny]
+    pagination_class = None
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['schedule', 'seat_class']
 
     @action(detail=False, methods=['post'], url_path='bulk-reset')
     def bulk_reset(self, request):
@@ -430,7 +477,7 @@ class BookingDetailViewSet(viewsets.ModelViewSet):
                 Q(schedule__flight__flight_number__icontains=search)
             )
         
-        return queryset
+        return queryset.order_by('id')
 
     @action(detail=False, methods=['get'])
     def today_checkins(self, request):
@@ -514,7 +561,7 @@ class PassengerInfoViewSet(viewsets.ModelViewSet):
             passenger_ids = BookingDetail.objects.values_list('passenger_id', flat=True).distinct()
             queryset = queryset.exclude(id__in=passenger_ids)
         
-        return queryset.select_related('linked_adult')
+        return queryset.select_related('linked_adult').order_by('id')
 
     @action(detail=False, methods=['get'])
     def stats(self, request):
@@ -567,6 +614,61 @@ class PassengerInfoViewSet(viewsets.ModelViewSet):
             ])
         
         return response
+
+
+# ==========================================
+# STUDENTS VIEWSET
+# ==========================================
+class StudentsViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for managing student information.
+    """
+    queryset = Students.objects.all().order_by('id')
+    serializer_class = StudentsSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        search = self.request.query_params.get('search')
+        gender = self.request.query_params.get('gender')
+        
+        if search:
+            queryset = queryset.filter(
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(student_number__icontains=search) |
+                Q(email__icontains=search)
+            )
+            
+        if gender:
+            queryset = queryset.filter(gender=gender)
+            
+        return queryset
+
+
+
+# ==========================================
+# INSTRUCTORS VIEWSET
+# ==========================================
+class InstructorsViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for managing instructor information.
+    """
+    queryset = Instructor.objects.all().order_by('id')
+    serializer_class = InstructorsSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        search = self.request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(instructor_id__icontains=search) |
+                Q(email__icontains=search)
+            )
+        return queryset
 
 
 # ==========================================
@@ -1133,6 +1235,7 @@ class DashboardViewSet(viewsets.ViewSet):
                 'alerts',
                 'passenger_composition',
                 'popular_routes',
+                'active_flights_map',
                 'flight_operations_stats',
                 'aircraft_utilization',
                 'revenue_by_route'
@@ -1222,11 +1325,21 @@ class DashboardViewSet(viewsets.ViewSet):
         try:
             completed_bookings = Booking.objects.filter(status='Completed')
             
-            total = completed_bookings.aggregate(total=Sum('total_amount'))['total'] or 0
+            total = completed_bookings.aggregate(sum=Sum('total_amount'))['sum'] or 0
             tickets = completed_bookings.aggregate(sum=Sum('base_fare_total'))['sum'] or 0
             addons = completed_bookings.aggregate(sum=Sum('insurance_total'))['sum'] or 0
             taxes = completed_bookings.aggregate(sum=Sum('tax_total'))['sum'] or 0
             
+            # Fallback: If sub-totals are zero but total is not (e.g. legacy or partially migrated data)
+            # Try to aggregate from BookingDetail and BookingTax
+            if total > 0 and tickets == 0 and taxes == 0:
+                from .models import BookingDetail
+                # Standard tax is roughly 12% in PH, but we can aggregate actual fields
+                details = BookingDetail.objects.filter(booking__in=completed_bookings)
+                tickets = details.aggregate(sum=Sum('price'))['sum'] or 0
+                taxes = details.aggregate(sum=Sum('tax_amount'))['sum'] or 0
+                # Insurance/Addons are usually separate but for now we aggregate what we have
+                
             return Response({
                 'total': float(total),
                 'breakdown': {
@@ -1324,7 +1437,100 @@ class DashboardViewSet(viewsets.ViewSet):
         except Exception as e:
             print(f"Recent bookings error: {str(e)}")
             return Response([], status=200)
-    
+
+    @action(detail=False, methods=['get'])
+    def active_flights_map(self, request):
+        """Returns active flights with coordinates for the map"""
+        try:
+            from django.utils import timezone as tz
+            now = tz.now()
+            
+            # Get flights that are 'On Flight' or 'Closed' (boarding)
+            # AND whose arrival time is still in the future (not yet landed)
+            active_schedules = Schedule.objects.filter(
+                status__in=['On Flight', 'Closed'],
+                arrival_time__gt=now
+            ).select_related(
+                'flight__route__origin_airport',
+                'flight__route__destination_airport',
+                'flight__airline'
+            )
+            
+            data = []
+            for s in active_schedules:
+                origin = s.flight.route.origin_airport
+                dest = s.flight.route.destination_airport
+                
+                # Only include if coordinates are available
+                if origin.latitude and origin.longitude and dest.latitude and dest.longitude:
+                    data.append({
+                        'id': s.id,
+                        'flight_number': s.flight.flight_number,
+                        'airline': s.flight.airline.name,
+                        'status': s.status,
+                        'origin': {
+                            'code': origin.code,
+                            'city': origin.city,
+                            'lat': float(origin.latitude),
+                            'lng': float(origin.longitude)
+                        },
+                        'destination': {
+                            'code': dest.code,
+                            'city': dest.city,
+                            'lat': float(dest.latitude),
+                            'lng': float(dest.longitude)
+                        },
+                        'departure_time': s.departure_time,
+                        'arrival_time': s.arrival_time
+                    })
+            
+            return Response(data)
+        except Exception as e:
+            print(f"Active flights map error: {str(e)}")
+            return Response([], status=200)
+
+    @action(detail=False, methods=['get'])
+    def seat_class_distribution(self, request):
+        """Returns booking counts and revenue grouped by seat class"""
+        try:
+            from app.models import BookingDetail, SeatClass
+            from django.db.models import Count, Sum
+
+            # Aggregate by seat class
+            distribution = (
+                BookingDetail.objects
+                .filter(seat_class__isnull=False)
+                .values('seat_class__name', 'seat_class__color')
+                .annotate(
+                    count=Count('id'),
+                    revenue=Sum('price')
+                )
+                .order_by('-count')
+            )
+
+            total = sum(item['count'] for item in distribution)
+
+            data = []
+            palette = ['#fe3787', '#002D1E', '#6366f1', '#f59e0b', '#22c55e', '#0ea5e9', '#ec4899', '#84cc16']
+            for i, item in enumerate(distribution):
+                count = item['count']
+                color = item['seat_class__color'] or palette[i % len(palette)]
+                data.append({
+                    'label': item['seat_class__name'],
+                    'count': count,
+                    'revenue': float(item['revenue'] or 0),
+                    'percentage': round((count / total * 100), 1) if total else 0,
+                    'color': color,
+                })
+
+            return Response({
+                'total': total,
+                'classes': data
+            })
+        except Exception as e:
+            print(f"Seat class distribution error: {str(e)}")
+            return Response({'total': 0, 'classes': []}, status=200)
+
     @action(detail=False, methods=['get'])
     def alerts(self, request):
         try:

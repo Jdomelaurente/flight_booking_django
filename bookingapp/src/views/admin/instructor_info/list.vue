@@ -51,25 +51,9 @@
           />
         </div>
         
-        <select 
-          v-model="selectedType" 
-          class="border border-gray-200 px-3 py-2 rounded-[1px] outline-none focus:border-[#fe3787] transition-all poppins text-sm bg-white min-w-[140px]"
-          @change="fetchInstructors"
-        >
-          <option value="">All Categories</option>
-          <option value="Adult">Adult Instructor</option>
-          <option value="Child">Junior Staff</option>
-        </select>
-
-        <select 
-          v-model="bookingFilter" 
-          class="border border-gray-200 px-3 py-2 rounded-[1px] outline-none focus:border-[#fe3787] transition-all poppins text-sm bg-white min-w-[140px]"
-          @change="fetchInstructors"
-        >
-          <option value="">All Statuses</option>
-          <option value="yes">Active Bookings</option>
-          <option value="no">No Bookings</option>
-        </select>
+        <div class="flex items-center gap-2 border border-gray-100 bg-gray-50/50 px-3 py-1.5 rounded-[1px]">
+          <span class="text-[10px] font-bold text-gray-400 capitalize underline">Active Directory</span>
+        </div>
 
         <button 
           @click="clearFilters" 
@@ -85,10 +69,9 @@
       <table class="w-full text-left">
         <thead class="bg-gray-50 border-b border-gray-100">
           <tr>
-            <th class="px-6 py-4 text-[11px] uppercase tracking-widest font-bold text-gray-400 poppins">Instructor/Personnel</th>
-            <th class="px-6 py-4 text-[11px] uppercase tracking-widest font-bold text-gray-400 poppins">Identification</th>
-            <th class="px-6 py-4 text-[11px] uppercase tracking-widest font-bold text-gray-400 poppins">Classification</th>
-            <th class="px-6 py-4 text-[11px] uppercase tracking-widest font-bold text-gray-400 poppins">Status</th>
+            <th class="px-6 py-4 text-[11px] uppercase tracking-widest font-bold text-gray-400 poppins">Instructor Name</th>
+            <th class="px-6 py-4 text-[11px] uppercase tracking-widest font-bold text-gray-400 poppins">Instructor ID</th>
+            <th class="px-6 py-4 text-[11px] uppercase tracking-widest font-bold text-gray-400 poppins">Contact Details</th>
             <th class="px-6 py-4 text-right text-[11px] uppercase tracking-widest font-bold text-gray-400 poppins">Management</th>
           </tr>
         </thead>
@@ -108,25 +91,15 @@
             <td class="px-6 py-4">
               <div class="flex items-center gap-2 mb-1">
                 <i class="ph ph-identification-card text-[#fe3787] text-sm"></i>
-                <span class="text-[13px] font-semibold text-gray-700 poppins">{{ instructor.passport_number || 'PENDING' }}</span>
+                <span class="text-[13px] font-semibold text-gray-700 poppins">{{ instructor.instructor_id || 'PENDING' }}</span>
               </div>
-              <div class="text-[11px] font-bold text-gray-400 uppercase poppins">{{ instructor.nationality || 'NON-RESIDENT' }}</div>
             </td>
             <td class="px-6 py-4">
-              <span :class="typeClass(instructor.passenger_type)" class="px-2 py-1 rounded-[1px] font-bold uppercase poppins text-[10px] tracking-widest">
-                {{ instructor.passenger_type }}
-              </span>
-              <div class="text-[11px] font-semibold text-gray-400 mt-1 poppins">Vat Reg: {{ instructor.age ? instructor.age + 'Y' : 'N/A' }}</div>
-            </td>
-            <td class="px-6 py-4">
-              <div class="flex items-center gap-2">
-                <span :class="bookingClass(instructor.booking_count)" class="px-2 py-1 rounded-[1px] font-bold poppins text-[10px] uppercase tracking-widest">
-                  {{ instructor.booking_count }} Assignments
-                </span>
+              <div class="flex items-center gap-2 mb-1">
+                <i class="ph ph-envelope text-gray-400"></i>
+                <span class="text-[12px] font-semibold text-gray-700 poppins">{{ instructor.email || 'No Email' }}</span>
               </div>
-              <div v-if="instructor.last_booking" class="text-[10px] font-bold text-gray-400 mt-1 uppercase poppins">
-                Active Since: {{ formatDate(instructor.last_booking) }}
-              </div>
+              <div class="text-[10px] font-bold text-gray-400 uppercase poppins">{{ instructor.phone || 'No Phone' }}</div>
             </td>
             <td class="px-6 py-4 text-right">
               <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -207,7 +180,7 @@
             <div class="w-8 h-8 rounded-full bg-[#fe3787]/10 flex items-center justify-center">
               <i class="ph ph-chalkboard-teacher text-[#fe3787]"></i>
             </div>
-            <h2 class="text-sm font-bold text-[#002D1E] uppercase tracking-widest poppins">{{ isEditing ? 'Modify Personnel' : 'Add Personnel' }}</h2>
+            <h2 class="text-sm font-bold text-[#002D1E] uppercase tracking-widest poppins">{{ isEditing ? 'Modify Personnel' : 'Register Instructor' }}</h2>
           </div>
           <button @click="closeModal" class="text-gray-400 hover:text-red-500 transition-colors">
             <i class="ph ph-x text-xl"></i>
@@ -215,51 +188,61 @@
         </div>
         
         <form @submit.prevent="saveInstructor" class="p-6 space-y-5">
+          <!-- Account credentials (only shown when adding) -->
+          <template v-if="!isEditing">
+            <div class="bg-blue-50 border border-blue-100 rounded-[1px] p-3 mb-2">
+              <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest poppins">Account Credentials</p>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 poppins">Username *</label>
+                <input v-model="form.username" type="text" class="w-full border border-gray-200 p-2.5 rounded-[1px] outline-none focus:border-[#fe3787] poppins text-sm bg-gray-50/50" required placeholder="e.g. jdoe">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 poppins">Password *</label>
+                <input v-model="form.password" type="password" class="w-full border border-gray-200 p-2.5 rounded-[1px] outline-none focus:border-[#fe3787] poppins text-sm bg-gray-50/50" required placeholder="••••••••">
+              </div>
+            </div>
+          </template>
+
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 poppins">First Name</label>
+              <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 poppins">First Name *</label>
               <input v-model="form.first_name" type="text" class="w-full border border-gray-200 p-2.5 rounded-[1px] outline-none focus:border-[#fe3787] poppins text-sm bg-gray-50/50" required>
             </div>
             <div>
-              <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 poppins">Last Name</label>
+              <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 poppins">Last Name *</label>
               <input v-model="form.last_name" type="text" class="w-full border border-gray-200 p-2.5 rounded-[1px] outline-none focus:border-[#fe3787] poppins text-sm bg-gray-50/50" required>
             </div>
           </div>
 
           <div>
-            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 poppins">Middle Name</label>
-            <input v-model="form.middle_name" type="text" class="w-full border border-gray-200 p-2.5 rounded-[1px] outline-none focus:border-[#fe3787] poppins text-sm bg-gray-50/50">
+            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 poppins">Middle Initial</label>
+            <input v-model="form.mi" type="text" class="w-full border border-gray-200 p-2.5 rounded-[1px] outline-none focus:border-[#fe3787] poppins text-sm bg-gray-50/50" maxlength="1" placeholder="M">
           </div>
           
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 poppins">Category</label>
-              <select v-model="form.passenger_type" class="w-full border border-gray-200 p-2.5 rounded-[1px] outline-none focus:border-[#fe3787] poppins text-sm bg-gray-50/50" required>
-                <option value="Adult">Adult Personnel</option>
-                <option value="Child">Junior Staff</option>
-              </select>
+              <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 poppins">Instructor ID *</label>
+              <input v-model="form.id_number" type="text" class="w-full border border-gray-200 p-2.5 rounded-[1px] outline-none focus:border-[#fe3787] poppins text-sm bg-gray-50/50" required placeholder="INST-001">
             </div>
             <div>
-              <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 poppins">Date of Birth</label>
-              <input v-model="form.date_of_birth" type="date" class="w-full border border-gray-200 p-2.5 rounded-[1px] outline-none focus:border-[#fe3787] poppins text-sm bg-gray-50/50">
+              <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 poppins">Phone Number</label>
+              <input v-model="form.phone" type="text" class="w-full border border-gray-200 p-2.5 rounded-[1px] outline-none focus:border-[#fe3787] poppins text-sm bg-gray-50/50" placeholder="09xxxxxxxxx">
             </div>
           </div>
           
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 poppins">ID/Passport</label>
-              <input v-model="form.passport_number" type="text" class="w-full border border-gray-200 p-2.5 rounded-[1px] outline-none focus:border-[#fe3787] poppins text-sm bg-gray-50/50">
-            </div>
-            <div>
-              <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 poppins">Nationality</label>
-              <input v-model="form.nationality" type="text" class="w-full border border-gray-200 p-2.5 rounded-[1px] outline-none focus:border-[#fe3787] poppins text-sm bg-gray-50/50">
-            </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 poppins">Email Address *</label>
+            <input v-model="form.email" type="email" class="w-full border border-gray-200 p-2.5 rounded-[1px] outline-none focus:border-[#fe3787] poppins text-sm bg-gray-50/50" required>
           </div>
+
+          <p v-if="formError" class="text-red-500 text-xs poppins font-semibold">{{ formError }}</p>
 
           <div class="flex justify-end gap-3 pt-6 border-t border-gray-50 mt-4">
             <button type="button" @click="closeModal" class="px-6 py-2.5 text-xs font-bold uppercase text-gray-400 hover:text-gray-600 transition-colors poppins">Cancel</button>
-            <button type="submit" class="px-8 py-2.5 bg-[#002D1E] text-white rounded-[1px] text-xs font-bold uppercase tracking-widest hover:bg-black transition-all shadow-lg poppins">
-              {{ isEditing ? 'Update Registry' : 'Commit Record' }}
+            <button type="submit" :disabled="saving" class="px-8 py-2.5 bg-[#002D1E] text-white rounded-[1px] text-xs font-bold uppercase tracking-widest hover:bg-black transition-all shadow-lg poppins disabled:opacity-60">
+              {{ saving ? 'Saving...' : (isEditing ? 'Update Registry' : 'Register Instructor') }}
             </button>
           </div>
         </form>
@@ -293,33 +276,26 @@
           <div class="grid grid-cols-2 gap-8 border-y border-gray-50 py-6">
             <div class="space-y-4">
               <div>
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 poppins">Credentials</p>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 poppins">Instructor ID</p>
                 <div class="flex items-center gap-2 text-sm font-bold text-[#002D1E] poppins">
                   <i class="ph ph-identification-card text-gray-300"></i>
-                  {{ selectedInstructor.passport_number || 'UNVERIFIED' }}
+                  {{ selectedInstructor.instructor_id || 'UNVERIFIED' }}
                 </div>
               </div>
               <div>
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 poppins">Provenance</p>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 poppins">Email Address</p>
                 <div class="flex items-center gap-2 text-sm font-bold text-[#002D1E] poppins">
-                  <i class="ph ph-globe text-gray-300"></i>
-                  {{ selectedInstructor.nationality || 'UNKNOWN' }}
+                  <i class="ph ph-envelope text-gray-300"></i>
+                  {{ selectedInstructor.email || 'N/A' }}
                 </div>
               </div>
             </div>
             <div class="space-y-4">
               <div>
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 poppins">Audit Age</p>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 poppins">Phone Number</p>
                 <div class="flex items-center gap-2 text-sm font-bold text-[#002D1E] poppins">
-                  <i class="ph ph-calendar-blank text-gray-300"></i>
-                  {{ selectedInstructor.age || 'N/A' }} Years
-                </div>
-              </div>
-              <div>
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 poppins">Ops Scale</p>
-                <div class="flex items-center gap-2 text-sm font-bold text-[#fe3787] poppins">
-                  <i class="ph ph-chart-line-up"></i>
-                  {{ selectedInstructor.booking_count }} Assignments
+                  <i class="ph ph-phone text-gray-300"></i>
+                  {{ selectedInstructor.phone || 'N/A' }}
                 </div>
               </div>
             </div>
@@ -344,6 +320,9 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import api from '@/services/admin/api'
+import { useModalStore } from '@/stores/modal'
+
+const modalStore = useModalStore()
 
 // Reactive state
 const instructors = ref([])
@@ -363,18 +342,17 @@ const itemsPerPage = 10
 
 // Form data
 const form = ref({
-  first_name: '', last_name: '', middle_name: '', passenger_type: '', 
-  date_of_birth: '', passport_number: '', nationality: '', title: ''
+  username: '', password: '', first_name: '', last_name: '', mi: '',
+  id_number: '', email: '', phone: ''
 })
+const formError = ref('')
+const saving = ref(false)
 
 // Stats
 const stats = ref({ total: 0, active: 0, withBookings: 0, avgBookings: 0 })
 
 const statsItems = computed(() => ({
-  'Global Instructors': { value: stats.value.total, icon: 'ph ph-chalkboard-teacher', iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
-  'Active Personnel': { value: stats.value.active, icon: 'ph ph-user-check', iconBg: 'bg-green-100', iconColor: 'text-green-600' },
-  'Mission Loaded': { value: stats.value.withBookings, icon: 'ph ph-ticket', iconBg: 'bg-[#fe3787]/10', iconColor: 'text-[#fe3787]' },
-  'Ops Efficiency': { value: stats.value.avgBookings, icon: 'ph ph-chart-pie', iconBg: 'bg-purple-100', iconColor: 'text-purple-600' }
+  'Total Instructors': { value: stats.value.total, icon: 'ph ph-chalkboard-teacher', iconBg: 'bg-blue-100', iconColor: 'text-blue-600' }
 }))
 
 // Computed properties
@@ -382,9 +360,12 @@ const filteredInstructors = computed(() => {
   let f = instructors.value
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase()
-    f = f.filter(i => i.full_name?.toLowerCase().includes(q) || i.passport_number?.toLowerCase().includes(q) || String(i.id).includes(q))
+    f = f.filter(i => 
+      i.full_name?.toLowerCase().includes(q) || 
+      i.instructor_id?.toLowerCase().includes(q) || 
+      i.email?.toLowerCase().includes(q)
+    )
   }
-  if (selectedType.value) f = f.filter(i => i.passenger_type === selectedType.value)
   return f
 })
 
@@ -413,10 +394,8 @@ const fetchInstructors = async () => {
   loading.value = true
   try {
     const params = {}
-    if (selectedType.value) params.type = selectedType.value
     if (searchQuery.value) params.search = searchQuery.value
-    if (bookingFilter.value) params.has_booking = bookingFilter.value
-    const response = await api.get('/passengers/', { params })
+    const response = await api.get('/instructors/', { params })
     instructors.value = response.data.results || response.data
     calculateStats()
   } catch (err) { console.error(err) } finally { loading.value = false }
@@ -424,49 +403,91 @@ const fetchInstructors = async () => {
 
 const calculateStats = () => {
   const total = instructors.value.length
-  const withBookings = instructors.value.filter(i => i.booking_count > 0).length
-  const active = instructors.value.filter(i => i.booking_count > 0 || !i.date_of_birth).length
-  const totalBookings = instructors.value.reduce((sum, i) => sum + (i.booking_count || 0), 0)
-  const avgBookings = total > 0 ? (totalBookings / total).toFixed(1) : 0
-  stats.value = { total, active, withBookings, avgBookings }
+  stats.value = { ...stats.value, total }
 }
 
 const openAddModal = () => {
   isEditing.value = false; currentId.value = null;
-  form.value = { first_name: '', last_name: '', middle_name: '', passenger_type: '', date_of_birth: '', passport_number: '', nationality: '', title: '' }
+  form.value = { username: '', password: '', first_name: '', last_name: '', mi: '', id_number: '', email: '', phone: '' }
+  formError.value = ''
   showModal.value = true
 }
 
 const editInstructor = (i) => {
   isEditing.value = true; currentId.value = i.id;
-  form.value = { ...i, date_of_birth: i.date_of_birth ? i.date_of_birth.split('T')[0] : '' }
+  form.value = { username: '', password: '', first_name: i.first_name || '', last_name: i.last_name || '', mi: i.middle_initial || '', id_number: i.instructor_id || '', email: i.email || '', phone: i.phone || '' }
+  formError.value = ''
   showModal.value = true
 }
 
 const viewDetails = (i) => { selectedInstructor.value = i; showDetailsModal.value = true }
 
 const saveInstructor = async () => {
+  saving.value = true
+  formError.value = ''
   try {
-    if (isEditing.value) await api.put(`/passengers/${currentId.value}/`, form.value)
-    else await api.post('/passengers/', form.value)
-    await fetchInstructors(); closeModal()
-  } catch (err) { console.error(err) }
-}
-
-const deleteInstructor = async (id) => {
-  if (confirm('Permanently redact instructor record?')) {
-    try {
-      await api.delete(`/passengers/${id}/`)
-      instructors.value = instructors.value.filter(i => i.id !== id); calculateStats()
-    } catch (err) { console.error(err) }
+    if (isEditing.value) {
+      await api.put(`/instructors/${currentId.value}/`, {
+        first_name: form.value.first_name,
+        last_name: form.value.last_name,
+        middle_initial: form.value.mi,
+        instructor_id: form.value.id_number,
+        email: form.value.email,
+        phone: form.value.phone
+      })
+      alert('Instructor updated successfully!')
+    } else {
+      // Use the same registration endpoint as Register.vue
+      await api.post('auth/register/', {
+        role: 'instructor',
+        username: form.value.username,
+        password: form.value.password,
+        first_name: form.value.first_name,
+        last_name: form.value.last_name,
+        mi: form.value.mi,
+        id_number: form.value.id_number,
+        email: form.value.email
+      })
+      alert('Instructor account created successfully!')
+    }
+    await fetchInstructors()
+    closeModal()
+  } catch (err) {
+    console.error('Save error:', err)
+    formError.value = err.response?.data?.error || 'Failed to save. Please check the details and try again.'
+  } finally {
+    saving.value = false
   }
 }
 
-const closeModal = () => { showModal.value = false; showDetailsModal.value = false; isEditing.value = false; currentId.value = null }
+const deleteInstructor = async (id) => {
+  const confirmed = await modalStore.confirm({
+    title: 'Purge Personnel Record?',
+    message: 'Are you sure you want to permanently delete this instructor record? This action cannot be undone.',
+    variant: 'danger',
+    confirmText: 'Delete',
+    loadingText: 'Purging...'
+  });
+
+  if (confirmed) {
+    modalStore.setLoader(true);
+    try {
+      await api.delete(`/instructors/${id}/`)
+      instructors.value = instructors.value.filter(i => i.id !== id);
+      calculateStats()
+      modalStore.close(true);
+    } catch (err) {
+      console.error(err);
+      modalStore.setLoader(false);
+    }
+  }
+}
+
+const closeModal = () => { showModal.value = false; showDetailsModal.value = false; isEditing.value = false; currentId.value = null; formError.value = ''; saving.value = false }
 
 const exportInstructors = async () => {
   try {
-    const response = await api.get('/passengers/export/', { responseType: 'blob' })
+    const response = await api.get('/instructors/export/', { responseType: 'blob' })
     const url = window.URL.createObjectURL(new Blob([response.data]))
     const link = document.createElement('a')
     link.href = url
@@ -500,7 +521,7 @@ const prevPage = () => { if (currentPage.value > 1) currentPage.value-- }
 const nextPage = () => { if (currentPage.value < totalPages.value) currentPage.value++ }
 const goToPage = (p) => { if (p !== '...') currentPage.value = p }
 
-watch([searchQuery, selectedType, bookingFilter], () => currentPage.value = 1)
+watch([searchQuery], () => currentPage.value = 1)
 onMounted(fetchInstructors)
 </script>
 

@@ -5,7 +5,7 @@ def test_model():
     """Test the ML model with sample flight data"""
     
     print("=" * 60)
-    print("🧪 TESTING FLIGHT PRICE PREDICTION MODEL")
+    print("? TESTING FLIGHT PRICE PREDICTION MODEL")
     print("=" * 60)
     
     # Test Case 1: Cebu Pacific, Manila to Cebu, Domestic
@@ -65,13 +65,13 @@ def test_model():
     }
     
     test_cases = [
-        ("Cebu Pacific - MNL→CEB (14 days out)", test_flight_1),
-        ("Philippine Airlines - MNL→DVO (7 days out)", test_flight_2),
-        ("Cebu Pacific - MNL→MPH (3 days out, 1 stop)", test_flight_3),
-        ("Philippine Airlines - CEB→MNL (2 days out, weekend)", test_flight_4),
+        ("Cebu Pacific - MNL?CEB (14 days out)", test_flight_1),
+        ("Philippine Airlines - MNL?DVO (7 days out)", test_flight_2),
+        ("Cebu Pacific - MNL?MPH (3 days out, 1 stop)", test_flight_3),
+        ("Philippine Airlines - CEB?MNL (2 days out, weekend)", test_flight_4),
     ]
     
-    print("\n📊 PREDICTION RESULTS:")
+    print("\n? PREDICTION RESULTS:")
     print("-" * 60)
     
     for name, flight_data in test_cases:
@@ -82,17 +82,17 @@ def test_model():
         business_price = predictor.predict_seat_class_price(price, 'Business')
         first_price = predictor.predict_seat_class_price(price, 'First')
         
-        print(f"\n✈️  {name}")
-        print(f"   Route: {flight_data['origin']} → {flight_data['destination']}")
+        print(f"\n??  {name}")
+        print(f"   Route: {flight_data['origin']} ? {flight_data['destination']}")
         print(f"   Airline: {flight_data['airline_name']}")
         print(f"   Departure: {flight_data['departure_time'][:10]}")
-        print(f"   Base Price: ₱{price:,.2f}")
-        print(f"   Economy: ₱{economy_price:,.2f}")
-        print(f"   Business: ₱{business_price:,.2f}")
-        print(f"   First Class: ₱{first_price:,.2f}")
+        print(f"   Base Price: ?{price:,.2f}")
+        print(f"   Economy: ?{economy_price:,.2f}")
+        print(f"   Business: ?{business_price:,.2f}")
+        print(f"   First Class: ?{first_price:,.2f}")
     
     print("\n" + "=" * 60)
-    print("✅ Test complete!")
+    print("? Test complete!")
     print("=" * 60)
 
 if __name__ == "__main__":

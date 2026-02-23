@@ -62,10 +62,10 @@
               <div v-if="infantCount > 0" class="infant-status">
                 <div class="infant-status-text">
                   <span v-if="allInfantsAssigned">
-                    ✅ All infants assigned to adults
+                    All infants assigned to adults
                   </span>
                   <span v-else class="infant-warning">
-                    ⚠️ {{ unassignedInfantsCount }} infant(s) need adult assignment
+                    {{ unassignedInfantsCount }} infant(s) need adult assignment
                   </span>
                 </div>
               </div>
@@ -184,7 +184,7 @@
                            :class="{ 'error': showValidation && !isValidPhone(contact.phone) }">
                   </div>
                   <span v-if="showValidation && !isValidPhone(contact.phone)" class="field-error">
-                    Valid phone number is required (minimum 7 digits)
+                    Valid phone number is required (10 digits)
                   </span>
                 </div>
               </div>
@@ -228,6 +228,7 @@
 
       <!-- Right Sidebar - Booking Summary -->
       <aside class="summary-sidebar">
+        <BookingTimer variant="sidebar" />
         <div class="summary-card">
           <div class="summary-header">
             <h3 class="summary-title">Booking Summary</h3>
@@ -235,31 +236,49 @@
           
           <!-- Flight Summary -->
           <div class="summary-section">
-            <div class="flight-summary">
-              <div class="flight-header">
-                <span class="flight-label">Departure</span>
-                <span class="flight-price">₱{{ Number(selectedFlight?.price || 0).toLocaleString() }}</span>
+            <template v-if="bookingStore.isMultiCity">
+              <div v-for="(segment, index) in bookingStore.multiCitySegments" :key="index" class="flight-summary">
+                <div class="flight-header">
+                  <span class="flight-label">Flight {{ index + 1 }}</span>
+                  <span class="flight-price">₱{{ Number(segment.selectedFlight?.price || 0).toLocaleString() }}</span>
+                </div>
+                <div class="route" v-if="segment.selectedFlight">
+                  <span class="city">{{ segment.selectedFlight.origin }}</span>
+                  <span class="arrow">→</span>
+                  <span class="city">{{ segment.selectedFlight.destination }}</span>
+                </div>
+                <div class="flight-date" v-if="segment.selectedFlight">
+                  {{ segment.selectedFlight.departure_date }}
+                </div>
               </div>
-              <div class="route">
-                <span class="city">{{ selectedFlight?.origin }}</span>
-                <span class="arrow">→</span>
-                <span class="city">{{ selectedFlight?.destination }}</span>
+            </template>
+            <template v-else>
+              <div class="flight-summary">
+                <div class="flight-header">
+                  <span class="flight-label">Departure</span>
+                  <span class="flight-price">₱{{ Number(selectedFlight?.price || 0).toLocaleString() }}</span>
+                </div>
+                <div class="route" v-if="selectedFlight">
+                  <span class="city">{{ selectedFlight.origin }}</span>
+                  <span class="arrow">→</span>
+                  <span class="city">{{ selectedFlight.destination }}</span>
+                </div>
+                <div class="flight-date" v-if="selectedFlight">{{ selectedFlight.departure_date }}</div>
               </div>
-              <div class="flight-date">{{ selectedFlight?.departure_date }}</div>
-            </div>
 
-            <div v-if="isRoundTrip && selectedReturn" class="flight-summary">
-              <div class="flight-header">
-                <span class="flight-label">Return</span>
-                <span class="flight-price">₱{{ Number(selectedReturn?.price || 0).toLocaleString() }}</span>
+              <div v-if="isRoundTrip && selectedReturn" class="flight-summary">
+                <div class="flight-header">
+                  <span class="flight-label">Return</span>
+                  <span class="flight-price">₱{{ Number(selectedReturn?.price || 0).toLocaleString() }}</span>
+                </div>
+                <div class="route">
+                  <span class="city">{{ selectedReturn.origin }}</span>
+                  <span class="arrow">→</span>
+                  <span class="city">{{ selectedReturn.destination }}</span>
+                </div>
+                <div class="flight-date">{{ selectedReturn.departure_date }}</div>
               </div>
-              <div class="route">
-                <span class="city">{{ selectedReturn?.origin }}</span>
-                <span class="arrow">→</span>
-                <span class="city">{{ selectedReturn?.destination }}</span>
-              </div>
-              <div class="flight-date">{{ selectedReturn?.departure_date }}</div>
-            </div>
+            </template>
           </div>
 
           <!-- Travelers Summary -->
@@ -267,23 +286,22 @@
             <div class="travelers-breakdown">
               <div class="breakdown-item">
                 <span class="breakdown-label">Adults ({{ adultCount }})</span>
-                <span class="breakdown-price">₱{{ (bookingStore.grandTotalForAdults).toLocaleString() }}</span>
+                <span class="breakdown-price">₱{{ (bookingStore.grandTotalForAdults || 0).toLocaleString() }}</span>
               </div>
               
               <div v-if="childCount > 0" class="breakdown-item">
                 <span class="breakdown-label">Children ({{ childCount }})</span>
-                <span class="breakdown-price">₱{{ (bookingStore.grandTotalForChildren).toLocaleString() }}</span>
+                <span class="breakdown-price">₱{{ (bookingStore.grandTotalForChildren || 0).toLocaleString() }}</span>
               </div>
               
               <div v-if="infantCount > 0" class="breakdown-item">
                 <span class="breakdown-label">Infants ({{ infantCount }})</span>
-                <span class="breakdown-price">₱{{ (bookingStore.grandTotalForInfants).toLocaleString() }}</span>
+                <span class="breakdown-price">₱{{ (bookingStore.grandTotalForInfants || 0).toLocaleString() }}</span>
               </div>
             </div>
             
             <!-- Infant Assignment Note -->
             <div v-if="infantCount > 0" class="infant-note">
-              <span class="note-icon">ℹ️</span>
               <span class="note-text">Infants will sit on an adult's lap</span>
             </div>
           </div>
@@ -292,7 +310,7 @@
           <div class="total-section">
             <div class="total-row">
               <span class="total-label">Total Amount</span>
-              <span class="total-amount">₱{{ calculateTotal().toLocaleString() }}</span>
+              <span class="total-amount">₱{{ (calculateTotal() || 0).toLocaleString() }}</span>
             </div>
             <div class="tax-note">Inclusive of all taxes and fees</div>
           </div>
@@ -305,10 +323,13 @@
 <script setup>
 import { ref, computed, reactive, onMounted, watch, nextTick } from 'vue';
 import { useBookingStore } from '@/stores/booking';
+import { useNotificationStore } from '@/stores/notification';
 import { useRouter } from 'vue-router';
 import PassengerForm from '@/components/booking/PassengerForm.vue';
+import BookingTimer from '@/components/booking/BookingTimer.vue';
 
 const bookingStore = useBookingStore();
+const notificationStore = useNotificationStore();
 const router = useRouter();
 
 // --- STATE ---
@@ -320,7 +341,7 @@ const isSaving = ref(false);
 const passengerValidation = ref({});
 
 const contact = reactive({ 
-  title: bookingStore.contactInfo.title || 'MR',
+  title: bookingStore.contactInfo.title || '',
   firstName: bookingStore.contactInfo.firstName || '', 
   middleName: bookingStore.contactInfo.middleName || '',
   lastName: bookingStore.contactInfo.lastName || '', 
@@ -331,7 +352,7 @@ const contact = reactive({
 // --- COMPUTED ---
 const selectedFlight = computed(() => bookingStore.selectedOutbound);
 const selectedReturn = computed(() => bookingStore.selectedReturn); 
-const isRoundTrip = computed(() => bookingStore.tripType === 'round_trip'); 
+const isRoundTrip = computed(() => bookingStore.isRoundTrip); 
 const adultCount = computed(() => bookingStore.passengerCount.adults || 1);
 const childCount = computed(() => bookingStore.passengerCount.children || 0);
 const infantCount = computed(() => bookingStore.passengerCount.infants || 0);
@@ -363,13 +384,13 @@ const unassignedInfantsCount = computed(() => {
 
 // Validation helpers
 const isValidEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   return emailRegex.test(email);
 };
 
 const isValidPhone = (phone) => {
   const digitsOnly = phone.replace(/\D/g, '');
-  return digitsOnly.length >= 7;
+  return digitsOnly.length === 10; // Exactly 10 digits after +63
 };
 
 // Completion tracking
@@ -527,7 +548,12 @@ const handlePassengerValidation = ({ index, isValid }) => {
 };
 
 const calculateTotal = () => {
-  return bookingStore.grandTotal;
+  // Passengers step shows base fare summary only (add-ons are selected on the next step)
+  return (
+    (bookingStore.grandTotalForAdults || 0) +
+    (bookingStore.grandTotalForChildren || 0) +
+    (bookingStore.grandTotalForInfants || 0)
+  );
 };
 
 // FIXED: Enhanced passenger completion check
@@ -632,9 +658,9 @@ const validateCurrentTab = () => {
     
     const passengerType = getPassengerType(activeIndex.value);
     if (passengerType === 'Infant' && !infantAdultMapping.value[`pax_${activeIndex.value}`]) {
-      alert(`Please select which adult the infant will sit with for Passenger ${activeIndex.value} before continuing.`);
+      notificationStore.warn(`Please select which adult the infant will sit with for Passenger ${activeIndex.value} before continuing.`);
     } else {
-      alert(`Please complete all required fields for Passenger ${activeIndex.value} before continuing.`);
+      notificationStore.warn(`Please complete all required fields for Passenger ${activeIndex.value} before continuing.`);
     }
     return false;
   }
@@ -661,9 +687,9 @@ const handleTabChange = (n) => {
       
       const passengerType = getPassengerType(activeIndex.value);
       if (passengerType === 'Infant' && !infantAdultMapping.value[`pax_${activeIndex.value}`]) {
-        alert(`Please select which adult the infant will sit with for Passenger ${activeIndex.value} before continuing.`);
+        notificationStore.warn(`Please select which adult the infant will sit with for Passenger ${activeIndex.value} before continuing.`);
       } else {
-        alert(`Please complete all required fields for Passenger ${activeIndex.value} before continuing.`);
+        notificationStore.warn(`Please complete all required fields for Passenger ${activeIndex.value} before continuing.`);
       }
     }
   } else {
@@ -734,7 +760,7 @@ const saveAllPassengersToStore = async () => {
     const validatedPassengers = passengers.value.map(passenger => {
       const passengerData = {
         ...passenger,
-        title: passenger.title || (passenger.type === 'Infant' ? 'CHD' : 'MR'),
+        title: passenger.title || '',
         nationality: passenger.nationality || 'Philippines'
       };
       
@@ -757,7 +783,7 @@ const saveAllPassengersToStore = async () => {
     console.log('💾 Saving contact info to store:', contact);
     bookingStore.setContactInfo({
       ...contact,
-      title: contact.title || 'MR'
+      title: contact.title || ''
     });
     
     // Verify save was successful
@@ -770,7 +796,7 @@ const saveAllPassengersToStore = async () => {
     return true;
   } catch (error) {
     console.error('❌ Error saving passengers:', error);
-    alert(`Save failed: ${error.message}`);
+    // Let global axios interceptor handle user feedback
     return false;
   } finally {
     isSaving.value = false;
@@ -789,7 +815,7 @@ const handleContinueToAddons = async () => {
   }
   
   if (incompletePassengers.length > 0) {
-    alert(`Passengers ${incompletePassengers.join(', ')} information is incomplete. Please complete all required fields.`);
+    notificationStore.warn(`Passengers ${incompletePassengers.join(', ')} information is incomplete. Please complete all required fields.`);
     
     activeIndex.value = incompletePassengers[0];
     
@@ -815,7 +841,7 @@ const handleContinueToAddons = async () => {
       const infantNumbers = unassignedInfants.map(infant => 
         parseInt(infant.key.replace('pax_', ''))
       );
-      alert(`Infant(s) ${infantNumbers.join(', ')} must be assigned to an adult before continuing.`);
+      notificationStore.warn(`Infant(s) ${infantNumbers.join(', ')} must be assigned to an adult before continuing.`);
       
       activeIndex.value = infantNumbers[0];
       
@@ -840,34 +866,34 @@ const handleContinueToAddons = async () => {
       .map(([adultKey]) => adultKey.replace('pax_', ''));
     
     if (adultsWithMultipleInfants.length > 0) {
-      alert(`Adult(s) ${adultsWithMultipleInfants.join(', ')} cannot have more than 1 infant. Please reassign infants.`);
+      notificationStore.warn(`Adult(s) ${adultsWithMultipleInfants.join(', ')} cannot have more than 1 infant. Please reassign infants.`);
       return;
     }
   }
 
   // Validate contact info
   if (!contact.firstName.trim() || !contact.lastName.trim()) {
-    alert("Please provide your first and last name.");
+    notificationStore.warn("Please provide your first and last name.");
     return;
   }
   
   if (!isValidEmail(contact.email)) {
-    alert("Please provide a valid email address.");
+    notificationStore.warn("Please provide a valid email address.");
     return;
   }
   
   if (!isValidPhone(contact.phone)) {
-    alert("Please provide a valid phone number (minimum 7 digits).");
+    notificationStore.warn("Please provide a valid phone number (minimum 7 digits).");
     return;
   }
 
   if (!contact.title) {
-    contact.title = 'MR';
+    contact.title = '';
   }
 
   // Final validation
   if (passengers.value.length === 0) {
-    alert('No passenger data found. Please fill in all passenger details.');
+    notificationStore.warn('No passenger data found. Please fill in all passenger details.');
     return;
   }
   
@@ -877,6 +903,10 @@ const handleContinueToAddons = async () => {
   if (!saveSuccess) {
     return;
   }
+
+  // CREATE DRAFT ON SERVER (Phase 11: Data Resilience)
+  // We do this in the background/async, but wait just enough to ensure it's ongoing
+  bookingStore.snapshotToServer();
   
   // Add a small delay for visual feedback
   setTimeout(() => {
@@ -1222,7 +1252,7 @@ onMounted(() => {
 }
 
 .infant-warning {
-  color: #dc3545;
+  color: #ef4444;
   font-weight: 500;
 }
 
@@ -1406,7 +1436,6 @@ onMounted(() => {
 }
 
 .field-error:before {
-  content: "⚠️";
   margin-right: 5px;
   font-size: 0.7rem;
 }
@@ -1511,7 +1540,7 @@ onMounted(() => {
 
 .summary-card {
   background: white;
-  border-radius: 8px;
+  border-radius: 5px;
   border: 1px solid #e5e5e5;
   overflow: hidden;
 }
@@ -1625,7 +1654,7 @@ onMounted(() => {
   margin-top: 12px;
   padding: 8px;
   background: #FFF3CD;
-  border-radius: 4px;
+  border-radius: 2px;
   display: flex;
   align-items: center;
   gap: 8px;

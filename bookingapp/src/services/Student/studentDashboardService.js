@@ -26,6 +26,14 @@ export const studentDashboardService = {
     },
 
     /**
+     * Get practice bookings for the student
+     * URL: GET /api/student/practice-bookings/
+     */
+    getPracticeBookings() {
+        return api.get('api/student/practice-bookings/');
+    },
+
+    /**
      * Submit activity work
      * URL: POST /api/student/activity/{id}/submit/
      */

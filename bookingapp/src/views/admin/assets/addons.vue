@@ -80,6 +80,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '@/services/admin/api';
+import { useModalStore } from '@/stores/modal';
+
+const modalStore = useModalStore();
 
 const addOns = ref([]);
 const isModalOpen = ref(false);
@@ -90,7 +93,7 @@ const form = ref({ name: '', description: '' });
 const fetchAddOns = async () => {
   try {
     const res = await api.get('/add-ons/');
-    addOns.value = res.data;
+    addOns.value = res.data.results || res.data;
   } catch (err) {
     console.error("Fetch Error:", err);
   }
@@ -109,13 +112,23 @@ const saveAddOn = async () => {
 };
 
 const deleteAddOn = async (id) => {
-  if (confirm('Delete this service type?')) {
+  const confirmed = await modalStore.confirm({
+    title: 'Delete Service Type?',
+    message: 'Are you sure you want to delete this service type?',
+    variant: 'danger',
+    confirmText: 'Delete',
+    loadingText: 'Deleting...'
+  });
+
+  if (confirmed) {
+    modalStore.setLoader(true);
     try {
       await api.delete(`/add-ons/${id}/`);
       await fetchAddOns();
+      modalStore.close(true);
     } catch (err) {
       console.error("Delete Error:", err);
-      alert("Delete failed.");
+      modalStore.setLoader(false);
     }
   }
 };

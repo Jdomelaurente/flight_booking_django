@@ -101,6 +101,24 @@ export const bookingService = {
       seats: {}
     };
 
+    // Initialize returnAddons early to avoid ReferenceError
+    let returnAddons = null;
+    if (bookingStore.isRoundTrip) {
+      returnAddons = {
+        baggage: {},
+        meals: {},
+        wheelchair: {},
+        seats: {}
+      };
+    }
+
+    // Helper to get airport code
+    const getAirportCode = (airport) => {
+      if (!airport) return '';
+      if (typeof airport === 'string') return airport;
+      return airport.code || '';
+    };
+
     // Extract baggage addons for depart flight
     if (bookingStore.addons?.baggage?.depart) {
       Object.entries(bookingStore.addons.baggage.depart).forEach(([key, baggage]) => {
@@ -128,95 +146,140 @@ export const bookingService = {
       });
     }
 
-    // Extract seats (not segmented)
-    if (bookingStore.addons?.seats) {
-      Object.entries(bookingStore.addons.seats).forEach(([key, seat]) => {
+    // Extract seats (segmented) for depart
+    if (bookingStore.addons?.seats?.depart) {
+      Object.entries(bookingStore.addons.seats.depart).forEach(([key, seat]) => {
         if (seat && seat.id) {
           formattedAddons.seats[key] = seat.id;
         }
       });
     }
 
-    console.log('Formatted addons (depart flight only):', formattedAddons);
-
-    // If round trip, need to handle return flight add-ons separately
-    let returnAddons = null;
+    // Extract addons for return flight if applicable
     if (bookingStore.isRoundTrip) {
-      returnAddons = {
-        baggage: {},
-        meals: {},
-        wheelchair: {}
-      };
-
-      // Extract return baggage addons
+      // Return baggage
       if (bookingStore.addons?.baggage?.return) {
         Object.entries(bookingStore.addons.baggage.return).forEach(([key, baggage]) => {
-          if (baggage && baggage.id) {
-            returnAddons.baggage[key] = baggage.id;
-          }
+          if (baggage && baggage.id) returnAddons.baggage[key] = baggage.id;
         });
       }
-
-      // Extract return meal addons
+      // Return meals
       if (bookingStore.addons?.meals?.return) {
         Object.entries(bookingStore.addons.meals.return).forEach(([key, meal]) => {
-          if (meal && meal.id) {
-            returnAddons.meals[key] = meal.id;
-          }
+          if (meal && meal.id) returnAddons.meals[key] = meal.id;
         });
       }
-
-      // Extract return assistance addons
+      // Return assistance
       if (bookingStore.addons?.wheelchair?.return) {
         Object.entries(bookingStore.addons.wheelchair.return).forEach(([key, serviceId]) => {
-          if (serviceId) {
-            returnAddons.wheelchair[key] = serviceId;
-          }
+          if (serviceId) returnAddons.wheelchair[key] = serviceId;
         });
       }
-
-      console.log('Return flight addons:', returnAddons);
+      // Return seats
+      if (bookingStore.addons?.seats?.return) {
+        Object.entries(bookingStore.addons.seats.return).forEach(([key, seat]) => {
+          if (seat && seat.id) returnAddons.seats[key] = seat.id;
+        });
+      }
     }
 
     // Build complete booking data
+    const tripType = bookingStore.tripType;
+    const isMultiCity = tripType === 'multi_city' || tripType === 'multi-city';
+
     const bookingData = {
-      trip_type: bookingStore.selectedReturn ? 'round_trip' : 'one_way',
+      trip_type: isMultiCity ? 'multi_city' : (bookingStore.isRoundTrip ? 'round_trip' : 'one_way'),
       passengers: formattedPassengers,
       contact_info: contactInfo,
-      selectedOutbound: bookingStore.selectedOutbound ? {
-        id: bookingStore.selectedOutbound.id,
-        schedule_id: bookingStore.selectedOutbound.schedule_id || bookingStore.selectedOutbound.id,
-        flight_number: bookingStore.selectedOutbound.flight_number,
-        price: parseFloat(bookingStore.selectedOutbound.price) || 0,
-        class_type: bookingStore.selectedOutbound.class_type || 'Economy',
-        origin: bookingStore.selectedOutbound.origin,
-        destination: bookingStore.selectedOutbound.destination,
-        departure_time: bookingStore.selectedOutbound.departure_time,
-        airline: bookingStore.selectedOutbound.airline,
-        airline_code: bookingStore.selectedOutbound.airline_code
-      } : null,
-      selectedReturn: bookingStore.selectedReturn ? {
-        id: bookingStore.selectedReturn.id,
-        schedule_id: bookingStore.selectedReturn.schedule_id || bookingStore.selectedReturn.id,
-        flight_number: bookingStore.selectedReturn.flight_number,
-        price: parseFloat(bookingStore.selectedReturn.price) || 0,
-        class_type: bookingStore.selectedReturn.class_type || 'Economy',
-        origin: bookingStore.selectedReturn.origin,
-        destination: bookingStore.selectedReturn.destination,
-        departure_time: bookingStore.selectedReturn.departure_time
-      } : null,
-      addons: formattedAddons, // Depart flight add-ons only
-      return_addons: returnAddons, // Return flight add-ons
       passengerCount: {
         adult: parseInt(bookingStore.passengerCount?.adults) || 1,
         children: parseInt(bookingStore.passengerCount?.children) || 0,
         infant: parseInt(bookingStore.passengerCount?.infants) || 0
       },
-      // ✅ FIX: Include activity code & practice mode so the booking is linked to the activity
+      insurance_plan_id: bookingStore.addons?.insurance?.selectedPlanId || null,
       activity_code: bookingStore.activityCode || null,
       is_practice: bookingStore.isPractice || false
-      // NOTE: total_amount is intentionally omitted — the backend calculates it server-side
     };
+
+    if (isMultiCity) {
+      // Multi-city: Send as segments array
+      bookingData.segments = bookingStore.multiCitySegments.map((seg, idx) => {
+        const segKey = idx.toString();
+        const segAddons = {
+          baggage: {},
+          meals: {},
+          wheelchair: {},
+          seats: {}
+        };
+
+        // Extract addons for this segment
+        if (bookingStore.addons?.baggage?.[segKey]) {
+          Object.entries(bookingStore.addons.baggage[segKey]).forEach(([paxKey, baggage]) => {
+            if (baggage && baggage.id) segAddons.baggage[paxKey] = baggage.id;
+          });
+        }
+        if (bookingStore.addons?.meals?.[segKey]) {
+          Object.entries(bookingStore.addons.meals[segKey]).forEach(([paxKey, meal]) => {
+            if (meal && meal.id) segAddons.meals[paxKey] = meal.id;
+          });
+        }
+        if (bookingStore.addons?.wheelchair?.[segKey]) {
+          Object.entries(bookingStore.addons.wheelchair[segKey]).forEach(([paxKey, svcId]) => {
+            if (svcId) segAddons.wheelchair[paxKey] = svcId;
+          });
+        }
+        if (bookingStore.addons?.seats?.[segKey]) {
+          Object.entries(bookingStore.addons.seats[segKey]).forEach(([paxKey, seat]) => {
+            if (seat && seat.id) segAddons.seats[paxKey] = seat.id;
+          });
+        }
+
+        return {
+          selectedFlight: {
+            id: seg.selectedFlight?.id,
+            schedule_id: seg.selectedFlight?.id,
+            flight_number: seg.selectedFlight?.flight_number,
+            origin: getAirportCode(seg.origin),
+            destination: getAirportCode(seg.destination),
+            departure_time: seg.selectedFlight?.departure_time,
+            class_type: seg.selectedFlight?.class_type || 'Economy',
+            price: parseFloat(seg.selectedFlight?.price) || 0,
+            airline: seg.selectedFlight?.airline,
+            airline_code: seg.selectedFlight?.airline_code
+          },
+          addons: segAddons
+        };
+      });
+    }
+    else {
+      // One-way or Round-trip: Maintain existing structure for backward compatibility
+      bookingData.selectedOutbound = bookingStore.selectedOutbound ? {
+        id: bookingStore.selectedOutbound.id,
+        schedule_id: bookingStore.selectedOutbound.schedule_id || bookingStore.selectedOutbound.id,
+        flight_number: bookingStore.selectedOutbound.flight_number,
+        price: parseFloat(bookingStore.selectedOutbound.price) || 0,
+        class_type: bookingStore.selectedOutbound.class_type || 'Economy',
+        origin: getAirportCode(bookingStore.selectedOutbound.origin),
+        destination: getAirportCode(bookingStore.selectedOutbound.destination),
+        departure_time: bookingStore.selectedOutbound.departure_time,
+        airline: bookingStore.selectedOutbound.airline,
+        airline_code: bookingStore.selectedOutbound.airline_code
+      } : null;
+
+      bookingData.selectedReturn = bookingStore.selectedReturn ? {
+        id: bookingStore.selectedReturn.id,
+        schedule_id: bookingStore.selectedReturn.schedule_id || bookingStore.selectedReturn.id,
+        flight_number: bookingStore.selectedReturn.flight_number,
+        price: parseFloat(bookingStore.selectedReturn.price) || 0,
+        class_type: bookingStore.selectedReturn.class_type || 'Economy',
+        origin: getAirportCode(bookingStore.selectedReturn.origin),
+        destination: getAirportCode(bookingStore.selectedReturn.destination),
+        departure_time: bookingStore.selectedReturn.departure_time
+      } : null;
+
+      bookingData.addons = formattedAddons;
+      bookingData.return_addons = returnAddons;
+    }
 
     console.log('✅ Final formatted booking data:', JSON.stringify(bookingData, null, 2));
     return bookingData;

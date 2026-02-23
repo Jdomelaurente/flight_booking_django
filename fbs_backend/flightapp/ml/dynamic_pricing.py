@@ -34,7 +34,7 @@ class DynamicPricingService:
                 if self._predictor and self._predictor.model:
                     # Only log once at startup
                     if not hasattr(self, '_logged_connected'):
-                        print("✅ DynamicPricing: ML model connected")
+                        print("? DynamicPricing: ML model connected")
                         self._logged_connected = True
             except ImportError:
                 self._predictor = None
@@ -49,53 +49,60 @@ class DynamicPricingService:
             return None
 
 
-    def get_price_for_user(self, flight_data, user=None, session_id=None):
+    def get_price_for_user(self, flight_data, user=None, session_id=None, context=None):
         """
         Generate different prices for different users/sessions
+        'context' can contain pre-fetched factors to avoid DB lookups:
+        {
+            'config': PricingConfiguration object,
+            'user_factor': float,
+            'occupancy_factor': float,
+            'base_price': float (if already predicted)
+        }
         """
-        # 1. Get base ML prediction
-        base_price = self.get_base_ml_price(flight_data)
+        context = context or {}
+        
+        # 1. Get base ML prediction (use pre-computed if available)
+        base_price = context.get('base_price')
+        if base_price is None:
+            base_price = self.get_base_ml_price(flight_data)
         
         # 2. Apply dynamic factors
         price = base_price
         
-        # DEBUG: Print base price
-        print(f"📊 Base price: ₱{base_price:.2f}")
+        # DEBUG: Print base price (commented for performance)
+        # print(f"? Base price: ?{base_price:.2f}")
         
         # User-specific factors
-        user_factor = self.get_user_factor(user, flight_data)
+        user_factor = context.get('user_factor')
+        if user_factor is None:
+            user_factor = self.get_user_factor(user, flight_data)
         price *= user_factor
-        print(f"👤 User factor: {user_factor:.3f} → ₱{price:.2f}")
         
         # Session-specific factors
         session_factor = self.get_session_factor(session_id, flight_data)
         price *= session_factor
-        print(f"🆔 Session factor: {session_factor:.3f} → ₱{price:.2f}")
         
         # Real-time demand factor
         demand_factor = self.get_demand_factor(flight_data)
         price *= demand_factor
-        print(f"📈 Demand factor: {demand_factor:.3f} → ₱{price:.2f}")
         
         # Time-based factor
         time_factor = self.get_time_factor(flight_data)
         price *= time_factor
-        print(f"⏰ Time factor: {time_factor:.3f} → ₱{price:.2f}")
         
         # Inventory factor
-        inventory_factor = self.get_inventory_factor(flight_data)
+        inventory_factor = context.get('occupancy_factor')
+        if inventory_factor is None:
+            inventory_factor = self.get_inventory_factor(flight_data)
         price *= inventory_factor
-        print(f"💺 Inventory factor: {inventory_factor:.3f} → ₱{price:.2f}")
         
         # Randomization
         random_factor = self.get_randomization_factor(session_id)
         price *= random_factor
-        print(f"🎲 Random factor: {random_factor:.3f} → ₱{price:.2f}")
         
         # 4. Round to nice number
         final_price = self.round_price(price)
-        
-        print(f"💰 FINAL PRICE: ₱{final_price:.2f}\n")
         
         return {
             'base_price': float(base_price),
@@ -117,7 +124,7 @@ class DynamicPricingService:
                 return self.predictor.predict_price(flight_data)
             except Exception:
                 pass
-        return 0.0  # ← Return 0 instead of fallback price
+        return 0.0  # ? Return 0 instead of fallback price
 
     def _fallback_base_price(self, flight_data):
         """Fallback base price calculation - now returns 0"""

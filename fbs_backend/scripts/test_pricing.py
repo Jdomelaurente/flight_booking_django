@@ -18,7 +18,7 @@ print("\n=== Testing Dynamic Pricing ===")
 try:
     # 1. Load configuration
     config = PricingConfiguration.load()
-    print(f"✅ Loaded config: {config}")
+    print(f"? Loaded config: {config}")
     
     # 2. Get a real schedule if possible, or create mock flight data
     schedule = Schedule.objects.first()
@@ -49,9 +49,9 @@ try:
     for k, v in factors.items():
         print(f"  {k}: {v:.4f}")
 
-    print("\n✅ Verification SUCCESSFUL")
+    print("\n? Verification SUCCESSFUL")
 
 except Exception as e:
-    print(f"\n❌ Verification FAILED: {e}")
+    print(f"\n? Verification FAILED: {e}")
     import traceback
     traceback.print_exc()

@@ -168,10 +168,12 @@ import { sectionDetailsService } from '@/services/instructor/sectionDetailsServi
 import { instructorDashboardService } from '@/services/instructor/instructorDashboardService'
 import { sectionPeopleListService } from '@/services/instructor/sectionPeopleListService'
 import { useUserStore } from '@/stores/user'
+import { useNotificationStore } from '@/stores/notification'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const notificationStore = useNotificationStore()
 
 // Data State
 const section = ref(null)
@@ -192,7 +194,10 @@ const openEnrollModal = () => {
 }
 
 const submitEnrollment = async () => {
-  if (!studentNumberInput.value) return alert("Please enter a student number")
+  if (!studentNumberInput.value) {
+    notificationStore.warn("Please enter a student number")
+    return
+  }
   
   loading.value = true
   try {
@@ -203,11 +208,11 @@ const submitEnrollment = async () => {
       { student_number: studentNumberInput.value }
     )
     
-    alert(response.data.message)
+    notificationStore.success(response.data.message)
     isModalOpen.value = false
     await fetchAllData() // Refresh student list
   } catch (error) {
-    alert(error.response?.data?.error || "Failed to enroll student")
+    notificationStore.error(error.response?.data?.error || "Failed to enroll student")
   } finally {
     loading.value = false
   }

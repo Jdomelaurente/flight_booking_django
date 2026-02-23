@@ -1190,6 +1190,9 @@
 <script setup>
 import { ref, onMounted, computed, watch, nextTick } from 'vue';
 import api from '@/services/admin/api';
+import { useModalStore } from '@/stores/modal';
+
+const modalStore = useModalStore();
 
 // ----- State -----
 const debugMode = ref(false);
@@ -1496,7 +1499,15 @@ const fixAirlineReference = async (newAirlineId) => {
     return;
   }
 
-  if (!confirm(`This will attempt to update the aircraft to use Airline ID ${newAirlineId}. Continue?`)) {
+  const confirmed = await modalStore.confirm({
+    title: 'Update Airline Reference?',
+    message: `This will attempt to update the aircraft to use Airline ID ${newAirlineId}. Continue?`,
+    variant: 'danger',
+    confirmText: 'Update',
+    loadingText: 'Updating...'
+  });
+
+  if (!confirmed) {
     return;
   }
 
@@ -1648,7 +1659,10 @@ const loadLayoutFromSeats = (fetchedSeats) => {
     const numericClassId = parseInt(classId);
     if (isNaN(numericClassId)) return;
     
-    const rows = Math.max(...classSeats.map(s => s.row || 1));
+    const maxRow = Math.max(...classSeats.map(s => s.row || 1));
+    const minRow = Math.min(...classSeats.map(s => s.row || 1));
+    const rows = maxRow - minRow + 1;
+    
     const cols = Math.max(...classSeats.map(s => {
       const col = s.column;
       return typeof col === 'string' ? col.charCodeAt(0) - 64 : parseInt(col) || 1;
@@ -1746,7 +1760,15 @@ const saveSeatClass = async () => {
 };
 
 const deleteSeatClass = async (id) => {
-  if (!confirm('Delete this seat class?')) return;
+  const confirmed = await modalStore.confirm({
+    title: 'Delete Seat Class?',
+    message: 'Are you sure you want to delete this seat class? This will also remove its layout configuration.',
+    variant: 'danger',
+    confirmText: 'Delete',
+    loadingText: 'Deleting...'
+  });
+
+  if (!confirmed) return;
   
   try {
     await api.delete(`/seat-classes/${id}/`);
