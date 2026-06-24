@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-serif: "Merriweather", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ==============================
+   IRONCLAD GLOBAL PRINT STYLES
+   Ensures absolute layout reset for reports
+   ============================== */
+@media print {
+  /* 1. Aggressive UI Deletion (Including DevTools/Inspector) */
+  nav, aside, header, footer, 
+  .sidebar, .no-print, .print\:hidden,
+  .sticky, .fixed, button, .period-selector,
+  .ph, .ph-fill, [class*="ph-"],
+  .module-switcher,
+  [id^="vue-inspector"], [id*="vue-inspector"],
+  [class^="vue-inspector"], [class*="vue-inspector"],
+  [id^="vite-"], [class^="vite-"],
+  #vite-error-overlay, vite-dev-toolbar,
+  .vue-inspector-container,
+  #__vue-devtools-container__ {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    position: absolute !important;
+    left: -9999px !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* 2. Absolute Margin Pivot */
+  html, body, #app, .h-screen, main, .flex-1, .container {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    display: block !important;
+    position: static !important;
+    left: 0 !important;
+    right: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+    color: black !important;
+    -webkit-box-shadow: none !important;
+    box-shadow: none !important;
+  }
+
+  /* 3. Margin Clobbering for Sidebar Gaps */
+  [class*="ml-"], [class*="pl-"], 
+  .ml-16, .ml-48, .ml-64, .pl-16, .pl-48 {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  /* 4. Document Flow */
+  @page {
+    size: auto;
+    margin: 1cm;
+  }
+
+  /* 5. Chart & Table Scaling */
+  canvas {
+    max-width: 100% !important;
+    height: 450px !important;
+    display: block !important;
+    page-break-inside: avoid;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  .shadow-sm, .shadow-xl, .shadow-2xl {
+    box-shadow: none !important;
+    border: 1px solid #eee !important;
+  }
+
+  /* 6. Color Restoration */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

@@ -1,0 +1,59 @@
+# Capstone Project: Flight Booking System Technical Guide
+
+This document outlines the core technical concepts and implementation details of the flight booking process. Use this as a reference for your panelist presentation.
+
+## 1. Core Architecture & Workflow
+Explain the sequential flow of data from search to payment:
+- **Search & Filter**: Real-time flight availability.
+- **Flight Selection**: Multi-fare support (Basic vs. Premium).
+- **State Management (Pinia)**: Using a segmented state structure in `bookingStore.js` to manage data across One-way, Round-trip, and Multi-city trips.
+- **Authoritative Backend**: Why we use a "Snapshot" strategy where the backend recalculates everything (Authoritative Source) instead of trusting the frontend total (for security).
+
+## 2. Hybrid ML-Dynamic Pricing Engine
+The system uses a sophisticated, two-stage pricing architecture to simulate real-world airline revenue management:
+
+### Stage 1: Machine Learning Base (XGBoost)
+The "Fair Market Value" is first calculated by an **XGBoost Regression Model** ([predictor.py](file:///c:/Users/Crissaunt/Documents/GitHub/fbs-vue/fbs_backend/flightapp/ml/predictor.py)).
+- **Input Features**: The model analyzes 20+ features, including:
+    - **Temporal Data**: Day of week, month, and "Red-eye" (late night) status.
+    - **Route Logic**: Differentiates between popular "Golden Routes" (e.g., MNL-CEB) and long-haul connections.
+    - **Historical Trends**: Uses pre-trained weights to understand how duration and stops affect the baseline cost.
+- **Advance Booking Logic**: The model calculates the `advance_booking_days` to penalize last-minute bookings.
+
+### Stage 2: Real-time Dynamic Overlays ([dynamic_pricing.py](file:///c:/Users/Crissaunt/Documents/GitHub/fbs-vue/fbs_backend/flightapp/ml/dynamic_pricing.py))
+After the ML model sets the base, the system applies **real-time multipliers** based on the current context:
+- **2026 Philippine Holiday Calendar**: The system has a hardcoded calendar of major peaks (Holy Week x1.50, Christmas x1.60) and regional festivals (Sinulog in Cebu x1.35, MassKara in Bacolod x1.25).
+- **Inventory/Occupancy Control**: As the flight fills up (Supply & Demand), the [inventory_factor](file:///c:/Users/Crissaunt/Documents/GitHub/fbs-vue/fbs_backend/flightapp/ml/dynamic_pricing.py#488-528) increases price exponentially (Surge pricing for the last 10% of seats).
+- **Session-Based Urgency**: If a user views the same flight multiple times in a single session, the system applies a tiny "Urgency Markup" (+1% per view) to encourage immediate booking.
+- **User Loyalty Rewards**: The system tracks booking history. New users might get a small "First-time" markup, while loyal users (5+ bookings) receive a "Loyalty Discount" (0.92x multiplier).
+- **Search Volume Demand**: Reacts to high search volume for specific flights using Redis caching to detect viral demand.
+
+## 3. Dynamic Add-on System
+The most complex part of the system. Explain how we handle:
+- **Segmented Management**: Add-ons (Seats, Meals, Baggage) are stored per-passenger per-segment. This allows a user on a Multi-city trip to have different meals for each flight.
+- **Multi-Meal Selection**: Implementation of an array-based selection system allowing multiple meals per person (Mirroring real-world airline flexibility).
+- **Intelligent Seat Mapping**: Integration with [Seat](file:///c:/Users/Crissaunt/Documents/GitHub/fbs-vue/fbs_backend/app/models.py#615-871) models that handle soft-locks (session-based) during the booking process to prevent double-booking.
+
+## 3. Fare Family Logic (Business Rules)
+Highlight the automation behind the pricing:
+- **Premium Inclusions**: The system automatically detects the `fare_family`. If "Premium" is selected, the logic in both Pinia (frontend) and Django (backend) dynamically zeroes out the cost of standard seats and the first 20kg of baggage.
+- **Real-world Parity**: Implementation of the 1x 7kg Carry-on standard, clearly distinguished from checked baggage in the UI.
+
+## 4. Authoritative Pricing & Taxation
+Explain how we ensure the price is always correct:
+- **Single Source of Truth**: The backend [calculate_booking_price](file:///c:/Users/Crissaunt/Documents/GitHub/fbs-vue/fbs_backend/flightapp/views.py#4212-4559) is the authoritative source. The frontend provides a "lived-updated" estimate, but the final booking price is calculated on the server using only IDs.
+- **Dynamic Tax Calculation**: VAT (12%) and Terminal Fees (₱200) are programmatically applied based on:
+    - Passenger Type (Adult, Child, Infant).
+    - Discounts (Senior/PWD VAT exemptions).
+    - Segment origin/destination.
+
+## 5. Data Normalization
+Explain the "Universal Segment" pattern:
+- The system normalizes all trip types (One-way, Round-trip, Multi-city) into a flat list of segments.
+- This allows the same pricing and booking logic to work regardless of how many flights the passenger is taking.
+
+## 6. Key Technical Challenges Solved
+Prepare to answer "What was the hardest part?":
+1. **Pricing Consistency**: Ensuring that the price shown on the Review page matches the Payment page exactly by aligning the rounding (Math.ceil) and tax logic loops between Vue and Python.
+2. **State Persistence**: Using [snapshotToServer](file:///c:/Users/Crissaunt/Documents/GitHub/fbs-vue/bookingapp/src/stores/booking.js#1246-1276) to save progress in the background so a booking record is already created by the time they reach payment.
+3. **Complex UI Logic**: Implementing the [getBaggageBreakdown](file:///c:/Users/Crissaunt/Documents/GitHub/fbs-vue/bookingapp/src/views/booking/ReviewBookingView.vue#442-474) to show a professional "Professional Passenger Manifest" during the review stage.

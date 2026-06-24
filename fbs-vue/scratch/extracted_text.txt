@@ -1,0 +1,226 @@
+ctors to monitor cross-sectional performance and make informed, data-driven decisions regarding their teaching load.
+
+
+
+
+
+4.4 Testing Results
+Following the evaluation approach described in Chapter 3, the system testing used both quantitative and qualitative methods. User Acceptance Testing (UAT) collected data through surveys based on the ISO/IEC 25010 software quality model and feedback from students and instructors.
+ 4.5.1 Technical Verification
+   Controlled testing validated core functions. Table 4.3 summarises the functionality,   performance, and reliability.
+    Table 4.3: Test Summary
+Test Case
+Description
+Result
+Start → Student Login
+User enters valid credentials to access system
+Passed
+Student Dashboard
+System displays dashboard after login
+Passed
+Available Activities
+System shows list of activities
+Passed
+Select Activity
+User selects flight booking simulation
+Passed
+Instructions
+System displays activity instructions
+Passed
+Enter Activity Code
+User inputs correct activity code
+Passed
+Search Flight
+User searches for available flights
+Passed
+Search Result
+System displays available flight options
+Passed
+Select Flight
+User selects preferred flight
+Passed
+Passenger Details
+User inputs passenger information
+Passed
+Add-ons Selection
+User selects optional services (e.g., baggage)
+Passed
+Review Booking
+System displays booking summary
+Passed
+Payment Process
+User completes simulated payment
+Passed
+Booking Success
+System confirms successful booking
+Passed
+Check-in
+User proceeds to check-in process
+Passed
+Select Flight Manifest
+System retrieves booking for check-in
+Passed
+Verify Passenger Details
+System validates passenger info
+Passed
+Baggage & Boarding Info
+System processes baggage and seat assignment
+Passed
+Issue Boarding Pass
+System generates boarding pass
+Passed
+End
+Process completes successfully
+Passed
+Start → Instructor Login
+User enters valid credentials to access system
+Passed
+Instructor Dashboard
+System displays instructor dashboard after login
+Passed
+View Instructor Logs
+View system logs and activity history
+Passed
+Section Selection
+Select course section to manage
+Passed
+Section Overview
+View overview of selected section
+Passed
+Activity Management
+Manage activities for the course
+Passed
+Create New Activity
+Create new simulation activity
+Passed
+Select Existing Activity
+Select from existing activities
+Passed
+Enter Activity Details
+Enter activity details and instructions
+Passed
+View Student List
+View list of enrolled students
+Passed
+Enroll Students
+Enroll students into course/activity
+Passed
+Enter Student ID
+Input student ID for enrollment
+Passed
+Course Settings
+Configure course settings
+Passed
+Create/Update Sections
+Create new or update existing sections
+Passed
+Activate Activity
+Activate activity for student access
+Passed
+Activity Details Page
+View detailed activity information
+Passed
+View Student Work
+Review student work and submissions
+Passed
+Release Student Score
+Release grades to students
+Passed
+View Student Grade
+View individual student grades
+Passed
+Generate Grade Report
+Generate comprehensive grade reports
+Passed
+Confirm and Print
+Confirm before printing reports
+Passed
+Print Grade Report
+Print or export grade reports
+Passed
+End
+Complete instructor workflow
+Passed
+Start → Admin Login
+User enters valid credentials to access system
+Passed
+Admin Dashboard
+System displays admin dashboard with system overview
+Passed
+Flight Management
+Manage flight-related configurations
+Passed
+Manage Flights
+Create, update, delete flight records
+Passed
+Manage Routes
+Manage flight routes and destinations
+Passed
+Manage Schedules
+Configure flight schedules and timings
+Passed
+Manage Seats
+Manage seat configurations and availability
+Passed
+Pricing & Add-ons
+Configure pricing and additional services
+Passed
+Manage Taxes
+Set up and manage tax rates
+Passed
+Pricing Config
+Configure pricing rules and structures
+Passed
+Manage Insurance
+Manage insurance options and policies
+Passed
+Manage Add-ons
+Configure additional services
+Passed
+User Management
+Manage all user accounts in the system
+Passed
+Instructor Directory
+View and manage instructor accounts
+Passed
+Student Overview / LMS
+Access student overview and LMS data
+Passed
+Passenger Info
+View passenger information records
+Passed
+Update User Records
+Update user account information
+Passed
+Track User Logs
+Track and monitor user activity logs
+Passed
+Check User Status
+Check user account status and permissions
+Passed
+Monitoring & Operations
+Monitor system operations in real-time
+Passed
+Live Flight Monitor
+Monitor live flight status and operations
+Passed
+DCS Check-in Counter
+Access DCS check-in counter interface
+Passed
+DCS Manifest
+View and manage DCS flight manifests
+Passed
+System Security
+Implement system-wide security protocols
+Passed
+Error Handling
+Display error messages for invalid credentials
+Passed
+End
+Complete admin workflow
+Passed
+
+4.5.2 User Acceptance Testing
+Evaluation Setup
+User Acceptance Testing (UAT) was conducted with selected CTHM students and instructors. Participants were asked to perform booking tasks and evaluate the system.
+Table 4.4 presents the UAT protocol used in this study. A total of 15 participants were evaluated, consisting of group admin (n=1), CTHM instructor (n=4), and CTHM students (n=10). Group sessions lasted approximately 2 hours each to allow for in-depth system demonstration and discussion, while admin sessions lasted 30 minutes, focusing on the flight schedules, user accounts management, managing overall data, and operational data oversigh

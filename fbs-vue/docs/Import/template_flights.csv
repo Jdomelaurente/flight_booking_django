@@ -1,0 +1,6 @@
+Flight number,Airline,Aircraft,Route,Total stops,Layovers data
+PR-112,PR,Airbus A321neo,MNL-CEB,0,[]
+5J-553,5J,Airbus A320neo,MNL-CEB,0,[]
+Z2-771,Z2,Airbus A320ceo,MNL-CEB,0,[]
+PR-410,PR,Airbus A350-900,MNL-DVO,1,"[{'airport': 'CEB', 'city': 'Cebu', 'duration': '1h 30m'}]"
+5J-108,5J,Airbus A330-900neo,MNL-ILO,0,[]

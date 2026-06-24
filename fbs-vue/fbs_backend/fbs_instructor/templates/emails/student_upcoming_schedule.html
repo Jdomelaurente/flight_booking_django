@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLIGHT BOOKING - Session Reminder</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        .letter-container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .decor-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #FF579A, #db2777);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .university-name {
+            font-size: 20px;
+            font-weight: 800;
+            color: #db2777;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0;
+        }
+
+        .urgency-badge {
+            display: inline-block;
+            background-color: #be185d;
+            color: white;
+            padding: 6px 16px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 24px;
+            animation: pulse-red 2s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(190, 24, 93, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(190, 24, 93, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(190, 24, 93, 0); }
+        }
+
+        .date {
+            text-align: right;
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 24px;
+        }
+
+        .letter-body {
+            font-size: 16px;
+        }
+
+        .greeting {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 12px;
+        }
+
+        .alert-box {
+            margin: 30px 0;
+            padding: 30px;
+            background-color: #fff1f2;
+            border: 2px dashed #db2777;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .alert-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #be185d;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .alert-time {
+            font-size: 42px;
+            font-weight: 900;
+            color: #9d174d;
+            margin: 10px 0;
+            line-height: 1;
+        }
+
+        .alert-section {
+            font-size: 20px;
+            font-weight: 700;
+            color: #334155;
+            margin-top: 10px;
+        }
+
+        .instructor-info {
+            font-size: 14px;
+            color: #64748b;
+            margin-top: 5px;
+        }
+
+        .action-button {
+            display: block;
+            text-align: center;
+            margin-top: 32px;
+            padding: 16px 24px;
+            background-color: #FF579A;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 15px;
+            box-shadow: 0 4px 6px -1px rgba(255, 87, 154, 0.3);
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            font-size: 12px;
+            color: #94a3b8;
+            text-align: center;
+            border-top: 1px solid #f1f5f9;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="letter-container">
+        <div class="decor-bar"></div>
+
+        <div class="header">
+            <h1 class="university-name">FLIGHT BOOKING</h1>
+            <div style="font-size: 11px; color: #94a3b8; font-weight: 600;">CSU AVIATION PROGRAM | URGENT ALERT</div>
+        </div>
+
+        <div class="date">{{ formal_date }}</div>
+
+        <div class="urgency-badge">Session Starting Soon</div>
+
+        <div class="letter-body">
+            <p class="greeting">Hello, {{ student_name }}!</p>
+
+            <p>This is a priority reminder that your flight simulation session is starting in <strong>5 minutes</strong>. Please ensure you are logged in and ready to begin.</p>
+
+            <div class="alert-box">
+                <div class="alert-label">T-Minus 5 Minutes To:</div>
+                <div class="alert-time">{{ start_time }}</div>
+                <div class="alert-section">{{ section_name }} ({{ section_code }})</div>
+                <div class="instructor-info">Lead Instructor: Prof. {{ instructor_name }}</div>
+            </div>
+
+            <p>Class attendance and participation in live simulations are mandatory. Late logins may affect your activity performance results.</p>
+            
+            <a href="{{ dashboard_url }}" class="action-button">JOIN SESSION NOW</a>
+        </div>
+
+        <div class="footer">
+            <p>&copy; {{ current_year }} CSU Flight Booking Management</p>
+            <p style="font-size: 10px; margin-top: 5px;">This is an automated system dispatch based on your section enrollment. No reply required.</p>
+        </div>
+    </div>
+</body>
+
+</html>

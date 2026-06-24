@@ -1,0 +1,80 @@
+# Flight Booking System: Process Documentation & RRL
+
+This document outlines the end-to-end booking flow implemented in the system, details the core algorithms driving pricing and concurrency control, and provides a Review of Related Literature (RRL) suitable for a capstone project.
+
+---
+
+## 1. Booking Process Documentation
+
+The booking process follows a modern e-commerce and Passenger Service System (PSS) architecture flow, moving from search to fulfillment.
+
+### Phase 1: Search & Pricing Engine
+1. **Flight Search**: The user inputs origin, destination, dates, and passenger demographics (Adults, Children, Infants, Senior/PWD).
+2. **Dynamic Pricing Generation**: Before flights are returned, the backend invokes the Dynamic Pricing Engine (Machine Learning model). The algorithm calculates a unique base fare using parameters such as `advance_booking_days`, `is_weekend`, seasonality, and passenger demographics.
+3. **Fare Families (Basic vs. Premium)**: The front-end dynamically splits identical economy seats into two tiers. "Premium" adds a markup (e.g., +₱1,200) but automatically applies an overriding logic that sets baggage (up to 20kg) and seat selection prices to ₱0 in the store.
+
+### Phase 2: Passenger Data & Add-ons Registration
+1. **Demographic Validation**: Users input passport and ID details. The system parses age requirements for Infants vs Adults and strictly enforces validity formats.
+2. **Ancillary Services (Add-ons)**: Passengers select baggage, meals, and assistance. The system checks the `fareFamily` state variable; if 'premium' is detected, standard baggage fees are waived programmatically.
+
+### Phase 3: Seat Availability & Synchronization
+1. **Interactive Seat Map**: The UI maps the aircraft layout based on backend configuration arrays.
+2. **Short-Polling Sync**: The frontend polls the server every 5 seconds to get the latest `is_available` and `is_locked` status of each seat, providing a live mapping of inventory.
+
+### Phase 4: Reservation & Concurrency Management
+1. **Selection & Soft-Locking**: When User A selects Seat 12A, the backend creates a temporary "Soft Lock" using a `booking_session_id` and an expiration timestamp (e.g., 15 minutes). If User B clicks Seat 12A, they receive a `423 Locked` error immediately.
+2. **Checkout Validation**: During the final submission, the `create_booking` API endpoint initiates a database transaction.
+3. **Hard-Locking (Pessimistic Concurrency)**: The database executes a `select_for_update()` on the exact seat rows. This prevents any other server instance from altering the seat concurrently. Once validated, the temporary soft-lock is cleared, and the seat is permanently attached to the specific passenger's `BookingDetail` record.
+4. **Final PNR Generation**: The Passenger Name Record (PNR) is generated and linked to an "Awaiting Payment" status till fulfillment is complete.
+
+---
+
+## 2. Core Algorithms Implemented
+
+### A. Pessimistic Concurrency Control (Row-Level Locking)
+**Problem:** In high-traffic ticketing environments, two users hitting checkout at the exact same millisecond can create a "Double Booking" (Dirty Read/Write).
+**Algorithm Detail:**
+- The system employs a "Soft-Lock -> Hard-Lock" heuristic algorithm.
+- **Frontend Layer (Soft-Lock):** Generates a time-bound reservation associated with a UUID. Reduces immediate contention.
+- **Database Layer (Pessimistic Hard-Lock):** Uses Django's `select_for_update()`. When the transaction block begins in `create_booking`, the database places a lock directly on the SQL row corresponding to that seat. Any concurrent query attempting to modify that row is forced to wait until the current transaction commits or rolls back, ensuring strict ACID compliance.
+
+### B. Machine Learning Dynamic Pricing Model
+**Problem:** Static pricing limits airline revenue potential. Prices must reflect lead time and demand.
+**Algorithm Detail:**
+- The system utilizes a regression-based Supervised Machine Learning algorithm (e.g., Random Forest/Gradient Boosting implemented via `joblib`).
+- **Feature Extraction:** The algorithm extracts independent variables: lead time (days until departure), day of the week, flight distance, and historical capacity data.
+- **Prediction:** The model processes these inputs to output a continuous dependent variable (the predicted base fare). The system then applies multiplier algorithms based on the selected `SeatClass` (Economy vs. First Class) and business logic discounts (Senior/PWD statutory math logic).
+
+---
+
+## 3. Review of Related Literature (RRL)
+
+### Dynamic Pricing & Machine Learning in Aviation
+The airline industry has historically relied on revenue management systems grounded in static, rule-based logic. However, recent academic studies emphasize the shift towards machine learning (ML) models for dynamic pricing. According to research, regression algorithms—particularly Gradient Boosting Regressors and Random Forest models—are highly effective at forecasting ticket prices by analyzing multi-dimensional features such as advance booking days, route popularity, and seasonal fluctuations. These predictive models allow airlines to optimize yield management in volatile markets, shifting from reactive historical analysis to proactive price adjustments based on real-time willingness-to-pay estimations. Furthermore, modern PSS implementations extend these ML pricing models beyond base airfares to encompass ancillary services (e.g., baggage and seat selection), enabling personalized, context-based bundling strategies akin to the "Fare Families" approach used in modern e-commerce platforms.
+
+### Concurrency Control in High-Demand Reservation Systems
+Preventing overbooking and maintaining data consistency is a critical challenge in distributed travel reservation architectures. Academic literature frequently examines the trade-offs between optimistic and pessimistic concurrency control mechanisms for inventory management (seat locking). While optimistic locking yields higher throughput in low-contention environments, pessimistic locking is the preferred standard for reservation systems where double-booking must be strictly prevented. Pessimistic control operates by assuming conflicts will occur; thus, it enforces a lock on the resource (e.g., via `SELECT ... FOR UPDATE` in SQL databases) before the transaction begins. To mitigate the performance bottlenecks inherent in blocking transactions, modern architectures often hybridize the approach: employing transient "soft locks" or distributed caching mechanisms (like Redis) during the user's browsing phase, and falling back to stringent pessimistic row-level database locks only during final checkout. This dual-layer algorithm ensures both a fluid user experience and strict backend data integrity.
+
+### Sources & References for Defense
+1. Studies on Machine Learning in Revenue Management (predicting airline ticket prices using regression algorithms).
+2. Advanced Database System concepts on Transactional Locking (Pessimistic vs Optimistic Control, ACID properties).
+3. Industry standards on Airline Check-in, PNR Generation, and the Passenger Service System (PSS) architecture.
+
+---
+
+## 4. Departure Control System (DCS) & Check-in Flow
+
+The DCS manages the transition from reserved seat to authorized passenger boarding. The system enforces a rigorous multi-step security and operational protocol.
+
+### Phase 5: The 6-Step Check-in Protocol
+1. **Presence (Party Verification)**: The agent identifies which members of a booking party are physically present at the counter using the PNR manifest link.
+2. **Dossier (Dossier Review)**: Physical inspection of travel credentials (Passports, Visas, IDs). The agent must verify that the physical documents match the system's identity vault.
+3. **Clearance (Security Sync)**: Individual security authorization for each passenger. Each member must be cleared individually before the system allows synchronization with the central manifest.
+4. **Measured Load (Aggregate Load)**: Combined weight measurement for aircraft trim optimization. The system calculates total pool allowance and handles excess fee collection revenue protocols if necessary.
+5. **Slot Assign (Slot Assignment)**: Operational cabin position designation. Selecting a slot (seat) updates the central manifest in real-time, locking the inventory for the flight.
+6. **Audit (Final Summary)**: A final system handshake that validates all previous steps. Upon execution, the manifest slot is locked, and digital boarding passes are dispatched for bulk output.
+
+### System Integration
+- **Manifest Link**: The DCS is directly linked to the flight manifest, ensuring that check-in status is instantly reflected on the Flight Dashboard and Manifest Views.
+- **Real-time Sync**: Transitions between steps (e.g., from Dossier to Clearance) are gated by system checks, preventing protocol violations.
+- **Operational Optimization**: The "Aggregate Load" step feeds directly into the airline's weight and balance calculations for fuel efficiency.

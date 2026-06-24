@@ -1,0 +1,13 @@
+ID: 1 | Name: Business Class
+ID: 2 | Name: Premium Economy
+ID: 3 | Name: Economy Class
+ID: 4 | Name: Premium Seat
+ID: 5 | Name: Standard Seat
+ID: 6 | Name: Basic Seat
+ID: 7 | Name: Hot Seat
+ID: 8 | Name: Standard Seat
+ID: 9 | Name: Value Seat
+ID: 10 | Name: First Class
+ID: 11 | Name: Business Class
+ID: 12 | Name: Economy Class
+ID: 13 | Name: Business

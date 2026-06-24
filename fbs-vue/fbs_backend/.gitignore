@@ -1,0 +1,55 @@
+# -------------------
+# Python / Backend
+# -------------------
+
+# Virtual environment
+fbs_backend/venv/
+venv/
+
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables / secrets
+.env
+*.env
+
+# Logs and databases
+*.log
+*.sqlite3
+
+# Test / coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# -------------------
+# Node / Frontend (Vue)
+# -------------------
+
+# Node modules
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# -------------------
+# OS / IDE
+# -------------------
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# VSCode / IDE settings
+.vscode/
+.idea/

@@ -1,0 +1,101 @@
+Airline,Meal Name,Meal Type,Category,Price,Is Included
+Philippine Airlines,Chicken Adobo with Rice,Hot Meal,Filipino Favorites,0,True
+Philippine Airlines,Beef Tapa Breakfast,Hot Meal,Filipino Favorites,0,True
+Philippine Airlines,Arroz Caldo,Hot Meal,Comfort Food,0,True
+Philippine Airlines,Pansit Guisado,Hot Meal,Snacks,0,True
+Philippine Airlines,Bicol Express,Hot Meal,Spicy,350,False
+Philippine Airlines,Vegetable Pinakbet,Hot Meal,Vegetarian,320,False
+Philippine Airlines,Tuyo Flakes Spaghetti,Hot Meal,Fusion,280,False
+Philippine Airlines,Mango Crepe,Dessert,Sweet Treats,150,False
+Philippine Airlines,Halo-Halo Cup,Dessert,Sweet Treats,180,False
+Philippine Airlines,Barako Coffee,Beverage,Drinks,0,True
+Cebu Pacific,Chicken Sisig Rice,Hot Meal,Santan Combo,250,False
+Cebu Pacific,Beef Caldereta,Hot Meal,Santan Combo,270,False
+Cebu Pacific,Sinigang Pork Rice,Hot Meal,Santan Combo,260,False
+Cebu Pacific,Adobo Rice Sandwich,Sandwich,Light Bites,180,False
+Cebu Pacific,Tuna Paella Roll,Sandwich,Light Bites,160,False
+Cebu Pacific,Baked Macaroni,Hot Meal,Kids Meal,220,False
+Cebu Pacific,Lechon Paksiw Rice,Hot Meal,Premium,290,False
+Cebu Pacific,Ube Cheese Pancake,Snack,Breakfast,140,False
+Cebu Pacific,Calamansi Juice Cane,Beverage,Drinks,70,False
+Cebu Pacific,Mineral Water 350ml,Beverage,Drinks,50,False
+AirAsia Philippines,Pak Nasser Lemak Local,Hot Meal,AirAsia Signatures,230,False
+AirAsia Philippines,Chicken Inasal Rice,Hot Meal,Local Hits,240,False
+AirAsia Philippines,Pork Tocino Rice,Hot Meal,Breakfast,220,False
+AirAsia Philippines,Chicken Teriyaki,Hot Meal,International,250,False
+AirAsia Philippines,Vegetable Lasagna,Hot Meal,Vegetarian,230,False
+AirAsia Philippines,Club Sandwich,Sandwich,Light Bites,150,False
+AirAsia Philippines,Chocolate Moist Cake,Dessert,Sweets,90,False
+AirAsia Philippines,Iced Calamansi Tea,Beverage,Drinks,80,False
+AirAsia Philippines,Hot Barako Blend,Beverage,Drinks,75,False
+AirAsia Philippines,Soda Can,Beverage,Drinks,70,False
+PAL Express,Chicken Adobo Rice,Hot Meal,Standard,0,True
+PAL Express,Beef Tapa Pack,Hot Meal,Standard,0,True
+PAL Express,Pansit Bihon,Hot Meal,Snacks,0,True
+PAL Express,Arroz Caldo Cup,Hot Meal,Comfort Food,0,True
+PAL Express,Pork Menudo,Hot Meal,Specialty,280,False
+PAL Express,Ginataang Sitaw,Hot Meal,Vegetarian,250,False
+PAL Express,Macaroni Salad,Snack,Side,120,False
+PAL Express,Leche Flan Small,Dessert,Sweets,100,False
+PAL Express,Barako Drip Coffee,Beverage,Drinks,0,True
+PAL Express,Calamansi Juice,Beverage,Drinks,0,True
+Cebgo,Chicken Sisig Roll,Sandwich,Quick Snacks,160,False
+Cebgo,Tuna Mayo Sandwich,Sandwich,Quick Snacks,140,False
+Cebgo,Cheese Pimiento Bun,Sandwich,Quick Snacks,120,False
+Cebgo,Ube Ensaymada,Snack,Pastry,90,False
+Cebgo,Otap Biscuit Pack,Snack,Local Delicacy,60,False
+Cebgo,Dried Mangoes Pocket,Snack,Local Delicacy,80,False
+Cebgo,Hot Chocolate,Beverage,Drinks,75,False
+Cebgo,Calamansi Soda,Beverage,Drinks,70,False
+Cebgo,Bottled Water,Beverage,Drinks,50,False
+Cebgo,Instant Brew Coffee,Beverage,Drinks,60,False
+Sunlight Air,Complimentary Pastry Box,Snack,Light Bites,0,True
+Sunlight Air,Gourmet Chicken Inasal,Hot Meal,Preorder Premium,350,False
+Sunlight Air,Gourmet Beef Mechado,Hot Meal,Preorder Premium,380,False
+Sunlight Air,Prawn Garlic Pasta,Hot Meal,Preorder Premium,400,False
+Sunlight Air,Garden Salad Bowl,Snack,Healthy,280,False
+Sunlight Air,Cassava Cake Gourmet,Dessert,Sweets,150,False
+Sunlight Air,Fresh Mango Shake,Beverage,Drinks,180,False
+Sunlight Air,Brewed Coffee Premium,Beverage,Drinks,0,True
+Sunlight Air,Buko Juice Bottled,Beverage,Drinks,120,False
+Sunlight Air,Premium Red Wine,Beverage,Alcoholic,450,False
+Air Juan,Island Trail Mix,Snack,Dry Snacks,80,False
+Air Juan,Banana Chips Pack,Snack,Dry Snacks,60,False
+Air Juan,Peanut Kisses,Snack,Dry Snacks,50,False
+Air Juan,Calamansi Juice Bottle,Beverage,Drinks,70,False
+Air Juan,Purified Water,Beverage,Drinks,45,False
+Air Juan,Hot Tea Blend,Beverage,Drinks,60,False
+Air Juan,Sky Flakes Crackers,Snack,Dry Snacks,30,False
+Air Juan,Fudge Barr Cake,Snack,Sweets,40,False
+Air Juan,Coke Zero Can,Beverage,Drinks,85,False
+Air Juan,San Miguel Light,Beverage,Alcoholic,150,False
+SkyJet Airlines,Sky Gourmet Sandwich,Sandwich,Complimentary,0,True
+SkyJet Airlines,Premium Pork Humba,Hot Meal,Sky Gourmet,320,False
+SkyJet Airlines,Chicken Pastel Rice,Hot Meal,Sky Gourmet,300,False
+SkyJet Airlines,Spanish Sardines Pasta,Hot Meal,Sky Gourmet,290,False
+SkyJet Airlines,Chocnut Cheesecake,Dessert,Sweets,140,False
+SkyJet Airlines,Brewed Benguet Coffee,Beverage,Drinks,0,True
+SkyJet Airlines,Four Seasons Juice,Beverage,Drinks,80,False
+SkyJet Airlines,San Miguel Pale Pilsen,Beverage,Alcoholic,140,False
+SkyJet Airlines,Pretzels Pack,Snack,Munchies,70,False
+SkyJet Airlines,Club Soda,Beverage,Drinks,75,False
+Royal Air Philippines,Royal Beef Caldereta,Hot Meal,Royal Combo,260,False
+Royal Air Philippines,Royal Sweet Pork Adobo,Hot Meal,Royal Combo,250,False
+Royal Air Philippines,Sweet Style Spaghetti,Hot Meal,Kids Choice,200,False
+Royal Air Philippines,Ham and Cheese Panini,Sandwich,Light Bites,170,False
+Royal Air Philippines,Chicken Salad Wrap,Sandwich,Light Bites,180,False
+Royal Air Philippines,Egg Tart Single,Dessert,Pastry,80,False
+Royal Air Philippines,Ube Halaya Cup,Dessert,Sweets,110,False
+Royal Air Philippines,Iced Lemon Tea Can,Beverage,Drinks,75,False
+Royal Air Philippines,Hot Nescafe Blend,Beverage,Drinks,65,False
+Royal Air Philippines,Distilled Water,Beverage,Drinks,45,False
+Philippine Airlines,KBL (Kadyos Baboy Langka),Hot Meal,Regional Special,380,False
+Cebu Pacific,Pancit Malabon,Hot Meal,Santan Combo,240,False
+AirAsia Philippines,Garlic Longganisa Rice,Hot Meal,Breakfast,210,False
+PAL Express,Chicken Tinola Rice,Hot Meal,Comfort Food,270,False
+Cebgo,Maling and Egg Bun,Sandwich,Quick Snacks,130,False
+Sunlight Air,Grilled Salmon Rice,Hot Meal,Preorder Premium,450,False
+Air Juan,Cornik Crunch Pack,Snack,Dry Snacks,40,False
+SkyJet Airlines,Pork Dinuguan Rice,Hot Meal,Sky Gourmet,310,False
+Royal Air Philippines,Crispy KangKong Chips,Snack,Munchies,95,False
+Philippine Airlines,Turon Turon Skewers,Dessert,Sweet Treats,120,False

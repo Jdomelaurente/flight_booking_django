@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to CTHM Flight Booking System</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f9;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f4f7f9; padding: 40px 0;">
+        <tr>
+            <td align="center">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="500" style="max-width: 500px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    <tr>
+                        <td style="background-color: #002D1E; padding: 40px 30px; text-align: center; border-bottom: 6px solid #fe3787;">
+                             <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px;">CTHM Flight Booking</h1>
+                             <p style="margin: 10px 0 0 0; color: #fe3787; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">Student Account Created</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <h2 style="margin: 0 0 16px 0; color: #002D1E; font-size: 22px; font-weight: 800;">Welcome, {{ name }}!</h2>
+                            <p style="margin: 0 0 16px 0; color: #4a5568; font-size: 16px; line-height: 1.6;">
+                                Your student account has been created successfully. You can now access the CTHM Flight Booking System to manage your flight bookings and more.
+                            </p>
+                            <p style="margin: 0 0 24px 0; color: #4a5568; font-size: 16px; line-height: 1.6;">
+                                Click the button below to set up your password and activate your account:
+                            </p>
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                <tr>
+                                    <td style="padding: 0 20px; text-align: center;">
+                                        <a href="{{ setup_url }}" style="display: inline-block; background-color: #fe3787; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 4px; font-size: 16px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">Set Up Password</a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="margin: 24px 0 8px 0; color: #4a5568; font-size: 14px; line-height: 1.5;">
+                                Or copy this link into your browser:
+                            </p>
+                            <p style="margin: 0 0 24px 0; color: #718096; font-size: 12px; line-height: 1.5; word-break: break-all;">
+                                {{ setup_url }}
+                            </p>
+                            <div style="background-color: rgba(254, 55, 135, 0.05); padding: 15px; border-radius: 4px; border-left: 4px solid #fe3787; margin-bottom: 24px;">
+                                <p style="margin: 0; color: #002D1E; font-size: 14px; font-weight: 700;">
+                                    This link will expire in 24 hours.
+                                </p>
+                            </div>
+                            <p style="margin: 0; color: #718096; font-size: 13px; line-height: 1.5;">
+                                Your Student Number: <strong>{{ student_number }}</strong><br>
+                                Username: <strong>{{ username }}</strong>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #edf2f7;">
+                            <p style="margin: 0; color: #a0aec0; font-size: 12px;">
+                                This is an automated message from CTHM Flight Booking System.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLIGHT BOOKING - Session Reminder</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #fffafb;
+            color: #1a202c;
+            line-height: 1.6;
+        }
+
+        .letter-container {
+            max-width: 700px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            padding: 60px 80px;
+            border: 1px solid #fbcfe8;
+            box-shadow: 0 4px 20px rgba(190, 24, 93, 0.08);
+            position: relative;
+        }
+
+        .decor-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(to right, #db2777, #f472b6);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            border-bottom: 2px solid #fce7f3;
+            padding-bottom: 20px;
+        }
+
+        .university-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: #9d174d;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 0;
+        }
+
+        .department-name {
+            font-size: 14px;
+            color: #be185d;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .urgency-badge {
+            display: inline-block;
+            background-color: #be185d;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .date {
+            text-align: right;
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 30px;
+        }
+
+        .letter-body {
+            font-size: 18px;
+            text-align: justify;
+        }
+
+        .alert-box {
+            margin: 30px 0;
+            padding: 25px;
+            background-color: #fff1f2;
+            border: 1px dashed #db2777;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .alert-time {
+            font-size: 32px;
+            font-weight: 900;
+            color: #be185d;
+            margin: 10px 0;
+        }
+
+        .alert-section {
+            font-size: 18px;
+            font-weight: 700;
+            color: #4a5568;
+        }
+
+        .closing {
+            margin-top: 50px;
+        }
+
+        .signature {
+            margin-top: 20px;
+            font-weight: 700;
+            color: #9d174d;
+        }
+
+        .footer-info {
+            margin-top: 60px;
+            padding-top: 20px;
+            font-size: 11px;
+            color: #a0aec0;
+            text-align: center;
+            border-top: 1px solid #edf2f7;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="letter-container">
+        <div class="decor-bar"></div>
+
+        <div class="header">
+            <h1 class="university-name">FLIGHT BOOKING</h1>
+            <div class="department-name">Cabagan State University | Urgent Reminder</div>
+        </div>
+
+        <div class="date">Dated: {{ formal_date }}</div>
+
+        <div class="urgency-badge">Immediate Notice</div>
+
+        <div class="letter-body">
+            <p>GOOD DAY, {{ instructor_name }},</p>
+
+            <p>This is a simple reminder that you have an upcoming schedule in <strong>5 minutes</strong> for the
+                section mentioned below. Please prepare for your session accordingly.</p>
+
+            <div class="alert-box">
+                <div style="font-size: 12px; text-transform: uppercase; color: #be185d; letter-spacing: 1px;">Session
+                    Commencing At:</div>
+                <div class="alert-time">{{ start_time }}</div>
+                <div class="alert-section">{{ section_name }}</div>
+            </div>
+
+            <p>Thank you for your continuous support to the students.</p>
+        </div>
+
+        <div class="closing">
+            <p>Respectfully yours,</p>
+            <div class="signature">
+                SYSTEM SCHEDULER DISPATCH<br>
+                Faculty Informtion System
+            </div>
+        </div>
+
+        <div class="footer-info">
+            &copy; {{ current_year }} FBS Management | Automated Academic Alert
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,1652 @@
+SMART FLIGHT BOOKING SIMULATION PLATFORM FOR CTHM-CSUCC: AN INTERACTIVE AND DATA-DRIVEN TRAINING TOOL FOR TOURISM EDUCATION
+  A CAPSTONE PROJECTSUBMITTED TO THE FACULTY OF THECOLLEGE OF ENGINEERING  AND INFORMATION TECHNOLOGYCARAGA STATE UNIVERSITY CABADBARAN CITYCITY OF  CABADBARAN, AGUSAN DEL NORTEIN PARTIAL FULFILLMENT OF THE REQUIREMENTS FOR THE DEGREE OF BACHELOR OF SCIENCE IN INFORMATION TECHNOLOGY
+           BY:JOBELYN ROSE R. JAPOSJOHN REY B. SIMANFLORENCE CRIS  L. SOLAYAO
+APPROVAL SHEET
+The Capstone manuscript attached hereto, entitled “SMART FLIGHT BOOKING SIMULATION PLATFORM FOR CTHM-CSUCC: AN INTERACTIVE AND DATA-DRIVEN TRAINING TOOL FOR TOURISM EDUCATION”prepared and submitted by Florence Cris L. Solayao, Jobelyn Rose R. Japos and John Rey B Siman in partial fulfillment of the requirements for the degree of BACHELOR OF SCIENCE IN INFORMATION TECHNOLOGY, is hereby recommended for approval.
+       _MARY JUN M. PALIMA, MIT_
+            Adviser
+   _______________
+       Date Signed
+Examination Panel:
+      _JUNELL T. BOJOCAN, MIT_
+      Lead Panelist
+ _______________
+      Date Signed
+   MARIO B. CADAY,MIT_       _IRENE MAE ESCAUSO,PhD_    Member       Member
+                  _______________          _______________
+ Date Signed    Date Signed
+This capstone project is approved in partial fulfillment of the requirements for the degree of BACHELOR OF SCIENCE IN INFORMATION TECHNOLOGY.
+_MARY JUN M. PALIMA, MIT _BLONDIE T. SANCHEZ,MoE
+   IT Department Chairperson         CEIT Dean
+DEDICATION
+The researchers wish to extend their heartfelt gratitude to all the individuals who supported and inspired them throughout this endeavor. The encouragement, guidance, and unwavering belief provided by these people paved the way for the successful completion of this study. Their support served as the primary motivation and strength needed to overcome challenges and reach every milestone. Each contribution has been vital to this journey, and the researchers are deeply thankful for the long-lasting commitment and faith shown in their work.
+To the Almighty God, for providing constant strength, wisdom, protection, and knowledge. His abundant blessings and divine support were a continuous source of encouragement, enabling the researchers to face hardships with a firm, positive attitude and to navigate the complexities of this study through His grace and guidance.
+To the researchers’ adviser, Ms. Mary Jun M. Palima, MSIT, whose profound expertise and steadfast mentorship shaped the very foundation of this project. His insightful recommendations and dedication to excellence were instrumental in refining the direction and ensuring the high quality of this work.
+To the families and friends of the researchers, whose tireless support, patience, and encouragement became the pillars of strength during the completion of this capstone project. Their constant belief in the researchers’ abilities and their willingness to help in every possible way made this journey both meaningful and manageable. 
+This achievement would not have been possible without their enduring faith and love.
+The researchers dedicate this project to the individuals and communities at the heart of the issues addressed in this study. It is their sincere hope that this work contributes meaningfully to the advancement of knowledge and serves as a catalyst for positive change. By highlighting these important concerns, the researchers aspire to inspire further innovation and exploration. It is their earnest prayer that the insights gained here may help improve outcomes and foster greater well-being among all intended beneficiaries.
+  SFCL
+ JJRR
+                                                                                                                        SJR
+ACKNOWLEDGEMENT
+First and foremost, the researchers offer their heartfelt gratitude to the Almighty God for His guidance, strength, wisdom, and abundant blessings throughout the conduct and completion of this project. All praise and glory belong to Him. Furthermore, the researchers would like to express their sincere appreciation to the following individuals:
+To the researchers’ families and loved ones, who have unselfishly extended their financial and emotional support, and for their unwavering patience and understanding throughout the entire course of this project.
+To Ms. Mary Jun M. Palima, MSIT, the researchers' adviser and researchers’ instructor, who has been incredibly patient and helpful in sharing her extensive knowledge and expertise for the project’s betterment. Her continued guidance, dedication to excellence, and moral support were vital to the success of this endeavor.
+To Dr. Jona J. Biongcog, Division Chief for Academic Affairs, for allowing the researchers to conduct their study, for sharing professional guidance on the tasks they needed to accomplish, and for the warm welcome provided during every visit and presentation.
+Lastly, the researchers extend their sincere appreciation to their groupmates, Florence Cris L. Solayao, June Dominic G. Laurente and Christian John G. Teofilo  for their valuable contribution to the development and coding of the system.
+Their technical skills, patience, and dedication played a significant role in the successful completion of this capstone project. The researchers also acknowledge the efforts of each group member in the documentation, research, and overall preparation of the study. Through their shared cooperation, commitment, and perseverance, this project was successfully brought to completion.
+  SFCL
+ JJRR
+                                                                                                                        SJR
+EXECUTIVE SUMMARY
+This capstone project, entitled “Smart Flight Booking Simulation Platform for CTHM-CSUCC: An Interactive and Data-Driven Training Tool for Tourism Education,” was developed to address the lack of practical, hands-on training tools for students in the College of Tourism at Caraga State University Cabadbaran Campus (CSUCC).
+The goal of the study was to design and develop a simulation-based platform that replicates real-world airline booking systems. Specifically, the system aimed to simulate key processes such as flight selection, passenger data entry, seat reservation, add-ons selection, payment processing, booking confirmation, and check-in operations. The platform was designed as an educational tool to enhance students’ technical skills, decision-making abilities, and overall understanding of airline reservation systems in a risk-free environment.
+The system was developed using modern web technologies, including Vue.js for the front-end, Django REST Framework for the back-end, and PostgreSQL as the database. Agile methodology was employed throughout the development process to allow iterative improvements and ensure that system requirements were met efficiently.
+To evaluate the system, both technical testing and user acceptance testing (UAT) were conducted. Functional and non-functional requirements were validated through system testing, where all test cases resulted in successful outcomes. Performance metrics, including response time, system uptime, and database efficiency, met the predefined standards.
+Furthermore, the system was evaluated using the ISO/IEC 25010 software quality model. The platform got an overall score of 4.44 (Excellent) for product quality and 4.45 (Excellent) for quality in use.
+ High scores were observed in functional suitability, usability, performance efficiency, and effectiveness, indicating that the system is reliable, user-friendly, and efficient. However, slightly lower ratings in security and maintainability suggest areas for future improvement.
+The findings of the study confirm that the Smart Flight Booking Simulation Platform successfully meets its objectives and provides an effective learning tool for tourism students. It bridges the gap between theoretical instruction and practical application by offering a realistic and interactive simulation of airline operations.
+In conclusion, the developed system demonstrates the value of simulation-based learning in enhancing student competencies in the field of hospitality and tourism. It is recommended that future enhancements include the integration of advanced features such as international flight support, rebooking and cancellation functions, and improved system security to further increase its effectiveness and applicability.
+TABLE OF CONTENTS
+Page
+Title Page
+………………………………………………………………………….
+i
+Approval Sheet
+.……………………………………………………………………..
+ii
+Dedication
+………………………………………………………………………….
+iii
+Acknowledgement
+……...………………………………………………………….
+iv
+Executive Summary
+………………………………………………………………..
+v
+Table of Contents
+………………………………………………………………...
+vi
+List of Figures
+……………………………………………………………………….
+vii
+List of Tables
+………………………………………………………………………...
+viii
+CHAPTER
+  l.
+INTRODUCTION
+1.1 Project Contex  …………………………………………..…………………
+1
+1.2 Purpose and Description  …………………………………….…...………
+3
+1.3 Objectives of the Study  ………………………………………………….
+3
+1.4 Scope and Limitation of the Stud  ………………………………..………
+4
+1.5 Significance of the Study  ……………………………………….………..
+5
+ll.
+REVIEW OF RELATED LITERATURE
+2.1 The Evolution of Internet Pedagogy in Tourism and Hospitality
+      Education   ………………………………..…………………………………
+6
+2.2 Simulation-Based Learning in Higher Education:
+     A meta Analysis   ……………………….…………………………….……
+6
+2.3 Information Technology and Consumer Behavior in
+     Travel and Tourism   ...……………………………………………….……
+7
+2.4 The Role of Information and Communication Technology
+     (ICT) in Tourism Education   …………..…………………………….……
+7
+2.5 Examining Instructional Technologies in Hospitality and
+     Tourism Education   …………………………………………....…….……
+7
+2.6 Perceived Usefulness of Simulation Learning in
+     Hospitality Education   ……………………………………………….……
+8
+2.7 Enhancing Hospitality Student Learning Through the
+     Use of a Business Simulation  ……………..…………..………….…….
+8
+2.8 Predicting Property Prices with Machine Learning
+     Algorithms   ………………………………………………….…………….
+8
+2.9 Airfare Prices Prediction Using Machine Learning
+     Techniques   ………………………………………………………………
+9
+2.10 Airline Booking System   ………………………….……………………
+9
+2.11 Developing Flight Booking Simulation Platform Backend
+      Using Django REST Framework  ……………..………….………………
+10
+2.12 Seat Reservation Allowing Seat Changes  ………………….…………
+10
+2.13 Embracing Agile  ………………………………………..………….…….
+11
+2.14 A Performance Benchmark for the PostgreSQL and
+   MySQL Databases  ………………………………………………..………
+11
+2.15 Performance Comparison of React, Angular, and
+      Vue.js Frameworks  ………………………………………………….……
+12
+ lll.
+METHODOLOGY
+3.1 Requirements Specification   ……………………………………..……..
+13
+3.1.1 Technical Feasibility  …………………………………………………..
+13
+3.2 Data Processing Model   …………………………………………………
+17
+IV.
+RESULT AND DISCUSSION
+4.1 Introduction   ………………………………………………………………
+30
+4.2 Requirements Modeling   ………………………………………………..
+30
+4.3 The Developed System   ………………………………………………..
+34
+4.4 Testing Results   …………………………………………………………
+53
+4.4.1 Technical Verification   ………………………………………………...
+54
+4.4.2 User Acceptance Testing   ……………………………………………
+57
+4.5 Discussion   ………………………………………………………………….
+65
+V.
+CONCLUSIONS AND RECOMMENDATIONS
+5.1 Conclusion   ………………………………………………………………..
+71
+5.2 Recommendation   …………………………………………………………
+72
+REFERENCES
+………………………………………………………………………
+75
+APPENDICES:
+A. Relevant Source Code……
+78
+B. Letter to Conduct Interview with Pictorial……
+86
+C. Work and Financial Plan………
+87
+D. Data Dictionary………………
+94
+E. Sample Survey Questionnaire……………………
+104
+F. Evaluation Process……………………
+109
+G. Grammarian Certificate……………………
+111
+H. Acceptance Certificate……… 
+112
+LIST OF FIGURES
+Chapter II
+Figure
+Description
+Page
+1.
+Structure Design  .…………………………………………..…
+17
+2.
+UML Use Case Diagram for the Flight Booking Simulation Platform for CTHM-CSUCC   …………………………………
+18
+3.
+Flow Chart for Students in Flight Booking Simulation Platform for CTHM-CSUCC   ……………….………..………
+20
+4.
+System Architecture of the Flight Booking Simulation Platform for CTHM-CSUCC   ……………….………….……
+22
+5.
+Core Flight Infrastructure Module ……….….…
+23
+6
+Seat & Pricing Module
+24
+7
+User & Passenger Management Module
+25
+8
+Booking & Operations Module
+26
+9
+Financial & Taxation Layer Module
+27
+10
+Add-on & Insurance System Module
+28
+11
+Educational Simulation Layer Module
+29
+Chapter IV
+1.
+Gmail Notification Enrollment   ………………………………
+36
+2.
+ Login Page and Landing Page   ………….…………………
+37
+3.
+Student Dashboard   …………….……………………………
+37
+4.
+Email Notification Activity Sent   ..……………………………
+38
+5.
+Activity Card, Instruction of the Activity and Start  Booking Activity   …….………………………………..…………………
+39
+6.
+Home Page and Search Flight of the 
+Flight Booking   ………………………………………………..
+40
+7.
+Flight Schedule, Itinerary Details, and 
+Select Flight   ……………………………….…………………
+41
+8.
+Passenger Details and Contact Details    .…………………
+44
+9.
+Add-ons   ………………………………………………………
+44
+10.
+Review Booking Summary   …..…………..…………………
+45
+11.
+Payment and API PayMongo   ………………………………
+46
+12.
+Interface of Itinerary (PDF) and E-ticket in Email   ..………
+47
+13.
+Booking Confirmed and Download E-ticket   ………………
+48
+14.
+Identification and Check the Passenger to 
+Check-in   ……………………………………………..………
+49
+15.
+Safety Declaration   …..……………………………………..
+50
+16.
+Review Journey Summary     …….…………………………
+51
+17.
+Passenger Contact Integration   ……………………………
+52
+18.
+Success Online Check-in and 
+Boarding Pass   …………………………..…………………
+53
+LIST OF TABLES
+Table
+Description
+Page
+1.
+Minimum Hardware Requirements   ……………..………………
+13
+2.
+Software Requirements   …………….……………………………
+15
+3.
+Functional Requirements Implementation Status   .……………
+30
+4.
+Non-Functional Requirements Verified   .………………….……
+32
+5.
+Test Summary   ……………………………………………………
+54
+6.
+UAT Protocol Used in this Study   …………………..……………
+58
+7.
+Analysis and Interpretation of ISO/IEC 25010 
+Evaluation Results  …………..……………………………………
+60
+8.
+Identified Problems, System Solutions Implemented,
+Evidence from Results and Confidence Level   ….……….……
+67
+CHAPTER IINTRODUCTION
+1.1 Project Context
+The global tourism and hospitality industry is continuously evolving in response to technological advancements and increasing reliance on data-driven systems. In today’s digital environment, airline booking platforms, reservation systems, and customer management tools have become essential components of the sector. As a result, educational institutions must integrate innovative learning approaches, such as simulation-based platforms, to equip students with real-world competencies. Educational simulation systems provide an interactive, hands-on learning experience that allows students to practice decision-making, reservation processes, and customer interaction in a controlled and risk-free environment. This shift toward experiential and student-centered learning reflects modern trends in tourism education and prepares students to meet industry demands.[1]
+Despite the growing importance of simulation technologies, there are still significant gaps in existing studies and implementations. Many available systems are either designed for commercial use or lack alignment with academic objectives. Existing research often focuses on general e-learning tools rather than specialized platforms tailored for tourism and hospitality training. Furthermore, limited attention has been given to the development of flight booking simulation systems that incorporate realistic scenarios, user interaction, and performance evaluation features specifically for students. This indicates a clear need for a more focused and education-oriented solution.[2]. 
+In the current setting at Caraga State University Cabadbaran Campus (CSUCC), particularly within the College of Tourism and Hospitality Management (CTHM), teaching methods still rely heavily on theoretical instruction. While foundational knowledge is provided, students have limited exposure to actual airline booking procedures and real-world operational scenarios. The absence of an interactive simulation tool restricts their ability to apply learned concepts in practical situations. Consequently, students may struggle to understand complex booking systems, manage customer transactions, and develop the technical and interpersonal skills required in the tourism industry.[3]. 
+To address these challenges, the proposed Flight Booking Simulation Platform offers an innovative and practical solution. The system is designed to replicate real-world airline booking environments, enabling students to perform tasks such as searching flights, managing reservations, and handling customer interactions. By providing a secure and controlled learning environment, the platform bridges the gap between theory and practice. It enhances students’ technical skills, improves their confidence, and prepares them for professional roles in the tourism and hospitality sector. Ultimately, this solution supports the university’s commitment to academic excellence and aligns with global trends in technology-driven education.
+1.2 Purpose and Description:
+The purpose of this capstone project is to create a Smart Flight Booking Simulation Platform that can be used as a training tool for CTHM students at CSUCC. The platform will replicate key components of real-world travel booking systems, including flight selection, student information input, seat reservation, payment simulation, booking confirmation and airline pricing
+This simulation platform will not be connected to any live airline data or real-time booking systems, but will instead simulate the functionality and interface of true commercial flight booking platforms. The system is meant exclusively for educational purposes, with the goal of improving student capabilities in customer service, reservation handling, digital literacy, critical thinking and decision making skills in dynamic pricing scenarios.[4]
+1.3 Objectives of the Study
+The objective of this study is to create a flight booking simulation platform to help in the training and development of CTHM students at CSUCC.
+Specifically, this study aims to:
+Design a Flight Booking experience that simulates real-world reservation systems.
+Develop modules that simulate flight selection, client data entry, seat mapping, and payment operations.
+Create an educational learning tool with structured activities that students can complete to practice and apply booking skills.
+Establish a Student Dashboard to track progress and access assigned activities.
+Implement a Grading System to evaluate student performance based on the accuracy and completion of booking tasks.
+1.4 Scope and Limitation of the Study 
+Scope: 
+This study focuses on developing a simulated airline booking and learning platform for CSUCC CTHM students. The system covers the end-to-end student journey through the following modules:
+Booking Flow: Flight, seat, and add-on selection.
+Data Handling: Personal and flight information input.
+Transaction: Payment simulation and booking confirmation.
+Check-in: Post-booking simulation.
+LMS Integration: Educational tools for student learning and training.
+Limitations:
+ The platform is designed for educational simulation and will not be connected to live databases or airline systems.
+Payment simulated real time and APIs use.
+The study excludes integration with third-party applications or APIs used by commercial airlines.
+1.5 Significance of the Study
+This project holds significance for several stakeholders:
+Students: It provides an experiential learning to improve comprehension of flight booking processes by integrating theory and practice. 
+Instructors: It provides a unique approach to delivering course content, monitoring student performance, and assessing preparation for specific activities and generating reports.
+Admins: It provides Flight Schedules,  User Accounts Management, Manage Overall Data, and operational data oversight.
+Institution (CSUCC): Integrating digital tools that fit with industry norms enhances institutional reputation and academic success.
+Future Researchers: The platform can serve as a foundation for future system enhancements, such as simulations for hotel or tour package bookings.
+                                                             CHAPTER II
+REVIEW OF RELATED LITERATURE
+This chapter presents existing studies and technologies related to airline booking systems, simulation-based learning, and digital training tools in tourism and hospitality education. These resources support the development of a Flight Booking Simulation Platform for CSUCC tourism students.2.1 “The Evolution of Internet Pedagogy in Tourism and Hospitality Education” – Journal of Hospitality, Leisure, Sport & Tourism Education
+Views that e-learning can provide advanced learning to the student. Through the simulation, it helps the students to interact in a data-driven environment by simulating a real-world booking process; students’ performance, digital competency, and technological engagement can all be improved by this simulation.[5]
+2.2 Simulation-Based Learning in Higher Education: A Meta-Analysis
+Note that simulation-based learning has an effective learning strategy to allow students to have more experience in real-life situations without the risks of actual operations, and it emphasizes the simulation to support decision-making and teamwork. Simulations are particularly helpful for the students to guide them and support them through simulation.[6]
+2.3 “Information Technology and Consumer Behavior in Travel and Tourism” – Journal of Travel Research
+Identify the growing importance of digital platforms in tourism. This project, a platform for simulating flight bookings, helps students master such systems before entering the industry. It can advance their knowledge and prepare them for the workplace.[7] 
+2.4 The Role of Information and Communication Technology (ICT ) in Tourism Education : A Case Study of Higher Education Students The Role of Information and Communication Technology ( ICT ) in Tourism Education : A Case Study of Higher Education Students
+Emphasize that the integration of information and communication technologies (ICT), including simulations, into the tourism curriculum strengthens student outcomes and institutional competitiveness.  Further note that interactive digital tools foster stronger engagement and deeper understanding in hospitality training, especially when mimicking real-world interfaces.[8] 
+2.5 Examining Instructional Technologies in Hospitality and Tourism Education: A Systematic Review of Literature 
+Identified simulation-based learning as an effective pedagogical approach in hospitality education, enhancing students’ decision-making and problem-solving skills by providing realistic, risk-free environments.[9] 
+2.6 Perceived usefulness of simulation learning in hospitality education 
+Found that students perceive simulation activities as beneficial for understanding complex concepts in tourism management, indicating a positive impact on their learning experiences and skill development. Simulations serve as both analytic tools and instructional systems, facilitating the development of critical thinking and decision-making abilities among students.[10] 
+2.7 Enhancing hospitality student learning through the use of a business simulation
+Demonstrate through case studies that the effective use of simulations in hospitality management education can significantly improve students’ practical skills and readiness for industry challenges [13] .
+2.8 Predicting property prices with machine learning algorithms
+Show that machine learning in property price prediction demonstrates how data can be used to forecast values by analyzing multiple factors such as location, size and market demand. The Smart Flight Booking Simulation can apply data-driven approaches to simulate real-world airline pricing, seat availability. This allows students to experience how predictive algorithms and data analysis affect decision making in travel and tourism.[14] 
+Further argue that by integrating data-driven simulations, the platform helps learners develop the same analytical and problem-solving skills applied in fields. Students are not only exposed to the booking process but also to how data, trends, and predictive models shape pricing strategies and customer experience. This connection emphasizes the role of technology and analytics in education, preparing future professionals to adapt to the growing use of artificial intelligence and machine learning in tourism. 
+2.9 Airfare prices prediction using machine learning techniques
+This study explores how machine learning models can predict airfare prices based on multiple flight features such as departure time, arrival time, number of stops, luggage allowance, and days before departure. These strategies show that airline corporations are using complex strategies and methods to assign airfare prices. The study tested advanced algorithms, including Random Forest, Bagging Regression Trees, and Neural Networks. 
+Demonstrate how machine learning can capture complex pricing strategies of airlines and provide insights into dynamic fare structures. Their emphasis on feature selection and experimental validation establishes a strong foundation for integrating artificial intelligence into airline management systems [15].
+2.10 Airline Booking System    
+Presented a web-based airline reservation system; however, the study lacks concrete implementation and evaluation of AI or machine-learning features, fails to simulate real-world booking scenarios, and offers no interactive testing environment. [16] 
+therefore argue there is a clear need for a Smart Flight Booking Simulation Platform that not only integrates AI-driven booking suggestions and dynamic pricing analytics, but also provides a simulated booking environment for scalability testing, stress analysis, and user interaction modelling, thereby offering deeper insights into operational resilience, user behavior, and system performance. 2.11 Developing Flight Booking Simulation Platform Backend Using Django REST Framework
+Highlight Django REST Framework (DRF) as a vital cornerstone for modern web backends, praised for its low resource consumption, efficient performance, and pragmatic design. This open-source Python framework excels in API development, delivering dynamic, secure, and scalable applications—ideal for educational simulation platforms like this project. Recent benchmarks show DRF matching Node.js in efficiency while maintaining rapid response times.[17] 
+2.12 Seat Reservation Allowing Seat Changes
+Describe the Seat Availability Resolution Algorithm as a computational approach used in reservation systems to determine whether a passenger request can be accepted based on current seat occupancy and travel segment overlaps. This algorithm treats each booking request as an interval between two stations and assigns a seat such that no two overlapping intervals share the same seat. Studies on seat reservation problems describe this process as similar to interval graph coloring, where each seat represents a color and each trip request represents a node that must not conflict with others.[18] 
+2.13 Embracing Agile
+Describe Agile as a modern approach to managing projects that helps teams work faster and more effectively. It was first widely used in software development and has helped improve productivity, product quality, and teamwork. Unlike traditional methods that follow strict plans, agile allows teams to adapt to changes and focus on customer needs. By working in small teams and completing tasks in short cycles, organizations can develop better products and respond quickly to new challenges in a fast-changing environment .[19] .
+2.14 A Performance Benchmark for the PostgreSQL and MySQL Databases
+PostgreSQL demonstrates significantly better performance compared to MySQL, particularly in executing select operations on large datasets. In primary tests, PostgreSQL’s execution time for 1 million records ranged from 0.6 ms to 0.8 ms, while MySQL’s ranged from 9 ms to 12 ms, indicating that PostgreSQL is about 13 times faster. For select queries with a where clause, PostgreSQL required 0.09 ms to 0.13 ms compared to1MySQL’s 0.9 ms to 1 ms, making it roughly 9 times more efficient. [20] 
+further note that this superior performance suggests PostgreSQL is highly suitable for continuous authentication systems, where rapid retrieval of user data is crucial for real-time verification and system responsiveness. Studies showing better write operation performance than MySQL demonstrate PostgreSQL’s strong support for hierarchical data models, such as the adjacency list model, which enables effective management insertion of complex tree-like data structures by handling recursive queries and optimizing write-heavy operations.
+2.15 Performance Comparison of React, Angular, and Vue.js Frameworks
+A 2023 study in the World Journal of Advanced Engineering Technology and Sciences evaluates React, Angular, and Vue.js for performance and scalability in complex web applications. React excels with its virtual DOM for fast rendering, though complex state changes require optimization; Angular offers robust features but higher memory usage; Vue.js balances low memory footprint with quick render times. For educational platforms like this flight booking simulator, React's dynamic UI handling and scalability make it the optimal choice among the three.[21]
+Chapter III
+Methodology
+This chapter explains the plan for the project in this study. It shows how developmental research was effectively used here and how it helps developers understand what the system needs and choose the right methods to build it.
+3.1 Requirements Specification
+3.1.1 Technical Feasibility
+The list below outlines the suggested hardware and software specifications needed to develop the system effectively.
+3.1.1. Technical Feasibility 
+Table 1. Minimum Hardware Requirements
+Table 1. Estimated Project Cost
+Item Description 
+Technical Specifications 
+Quantity 
+Unit Price (PHP) 
+Total Cost (PHP) 
+System Unit 
+Core i5-10th Gen, 8GB DDR4 RAM, 477GB SSD 
+1 unit 
+25,000.00 
+25,000.00 
+Monitor 
+21.5" Full HD LED Display 
+1 unit 
+6,912.00
+6,912.00
+Peripherals 
+Standard Keyboard and Optical Mouse Bundle 
+1 set 
+748.00 
+748.00
+Network Interface 
+Built-in Realtek LAN / USB WiFi Adapter 
+1 unit 
+600.00 
+600.00 
+TOTAL INITIAL COST 
+₱ 33,260
+Table 3 The hardware investment for the platform is strategically budgeted to ensure the system unit provides the necessary computational power for the concurrent execution of the Django backend and PostgreSQL database. By allocating funds for a high-performance 12th Gen processor and 16GB of RAM, the platform maintains the responsiveness required for a data-driven simulation environment. The budget further accounts for essential visual and input components, such as the 21.5" LED monitor and a standard peripheral bundle, to ensure a complete and ergonomic workstation setup. Additionally, the inclusion of a versatile network interface supports seamless connectivity via local LAN or WiFi, which is vital for real-time system operations. These specific hardware selections prioritize long-term technical stability while keeping the initial capital outlay economically viable for institutional implementation. 
+Table 3. Software Requirements and Cost
+Item Description 
+Technical Specifications 
+Unit Price (Monthly) 
+Total Cost (Annual) 
+Front end 
+Tailwind CSS, Vue.js (JavaScript) 
+0.00 
+0.00 
+Front end Tool 
+Visual Studio Code 
+0.00 
+0.00 
+Back end 
+Django (Python) 
+0.00 
+0.00 
+Database 
+PostgreSQL (Managed Instance) 
+0.00 
+0.00 
+Cloud Hosting 
+Railway.app (Pro Tier / Team Plan) 
+1,150.00 
+13,800.00 
+Domain Name 
+Hostinger (Premium .com + SSL + Privacy) 
+165.00 
+1,980.00 
+TOTAL SOFTWARE COST 
+₱ 1,315.00 
+₱ 15,780.00 
+   Table 2 presents the software requirements and estimated costs for the proposed "SMART FLIGHT BOOKING SIMULATION PLATFORM FOR CTHM-CSUCC: AN INTERACTIVE AND DATA-DRIVEN TRAINING TOOL FOR HOSPITALITY AND TOURISM EDUCATION." The system utilizes a modern full-stack architecture, featuring a reactive front end built with Tailwind CSS for modular styling and Vue.js (JavaScript) to ensure a seamless, dynamic user interface for flight simulations. The back end is powered by Django (Python), selected for its robust security protocols and efficient data handling, while PostgreSQL serves as the managed database to maintain high data integrity for student records and flight schedules. To ensure professional-grade reliability and 24/7 accessibility for the CTHM department, the platform is deployed via the Railway.app Pro Plan ($20/month), providing superior resource allocation compared to trial tiers, and is paired with a custom Hostinger .com domain that includes SSL encryption and privacy protection. This integrated software suite, with a total estimated annual operating cost of ₱ 15,780.00, provides a scalable, secure, and industry-standard environment essential for high-fidelity hospitality and tourism training. 
+3.2 Data Processing Model
+Figure 1. Structure Design
+      Figure 1 illustrates the structure design based on the Agile Methodology, which guided the development of the “Smart Flight Booking Simulation Platform for CTHM-CSUCC: An Interactive and Data-Driven Training Tool for Tourism Education”. The Agile approach enabled the developers to work in iterative cycles, allowing continuous improvement of the system through regular feedback. The diagram highlights the flow of processes and key components involved in the platform’s development.
+Figure 2. UML Use Case Diagram for the Flight Booking Simulation Platform for CTHM-CSUCC
+    Figure 5 illustrates the UML use case diagram for the Flight Booking Simulation Platform for CTHM-CSUCC: A Training Tool for Tourism Education. The updated platform includes three primary participants: STUDENT, INSTRUCTOR, and ADMINISTRATOR. The STUDENT can initiate and complete the entire flight booking process, which involves searching for flights based on chosen criteria, selecting flight add-ons (such as seats, meals, Insurance , Baggage), providing passenger and booking information, reviewing the booking summary, making secure simulated payments through an external payment gateway (PayMongo), and ultimately receiving generated tickets and receipts. On the opposite side, the administrative functions are divided between the INSTRUCTOR and ADMINISTRATOR to ensure focused management. The INSTRUCTOR acts as the educational facilitator, tasked with managing class sections, enrolling students, creating booking activities, grading submissions, and validating the students' practice booking history. Meanwhile, the ADMINISTRATOR serves as the system manager, tasked with overseeing the core backend data. This includes determining active flight operations, managing essential assets like airplanes and airports, and monitoring the system-wide dashboard to ensure the reliability, accuracy, and efficiency of the overall simulation platform.
+Figure 3. Flow Chart for Student in Flight Booking Simulation Platform for CTHM-CSUCC
+Figure 5 Flow Chart for the Smart Flight Booking Simulation Platform for CTHM-CSUCC: An Interactive and Data-Driven Training Tool for Tourism Education. The Flowchart begins with the Student login, after which they are directed to the Student Dashboard where they can view and select from Booking Activities. Upon selecting an activity, students enter an Activity Code which is checked against the expected code — if the code matches, they proceed into the simulation; Search and Select a Flight, enter Passenger Details, choose Add-ons, Review Booking summary, Payment, and Booking Success. If the Activity is Done, the Student can view their Grade. In the Dashboard, there is a Practice Booking. In the Booking Practice path, the Student Searches for a Flight, Selects a preferred Flight, fills in Passenger Details, chooses Add-ons, Reviews the Booking Summary, completes the Payment Process, and arrives at a Booking Success screen. In the Online Check-in, the Student enters Passenger Name Record (PNR) and Last Name and then proceeds through protocols: Confirm Identification, followed by Review Journey Summary, then Passenger Contact Details, then a Boarding Pass is Issued, and the process concludes with a Check-in success status. Simulation is finished or End.
+Figure 4. Illustrates the SYSTEM ARCHITECTURE of the Flight Booking Simulation Platform for CTHM-CSUCC
+      A training tool designed to enhance hospitality and tourism education. The STUDENT initiates the VERIFICATION and BOOKING PROCESS via the Vue 3 Frontend, which connects to FLIGHT SCHEDULES and STUDENT RECORDS managed by the Django REST Backend to simulate real-life reservations. A specialized ML PRICING ENGINE using XGBoost provides dynamic fare calculations to mirror real-world market conditions. Once the booking is confirmed through the PAYMONGO GATEWAY, the system generates a PLANE TICKET (PDF) as proof of the reservation. The INSTRUCTOR/ADMINISTRATOR manages the platform through a secure ADMIN LOGIN, handling tasks such as creating GRADED ACTIVITIES, reviewing STUDENT PROGRESS, and updating CORE FLIGHT DATA stored in the POSTGRESQL database. This architecture highlights a user-friendly and practical system, MIRRORING REAL-WORLD AIRLINE SYSTEMS to effectively TRAIN CTHM-CSUCC STUDENTS in managing tourism and hospitality operations.
+  Figure 5 .  Core Flight Infrastructure Module 
+Figure 5 shows the Entity Relationship Diagram (ERD) for the Core Flight Infrastructure Module, which serves as the foundation of the Flight Booking Simulation Platform. This module is structured to manage essential location and carrier data through the COUNTRY, AIRPORT, AIRLINE, and AIRCRAFT tables. The ROUTE table defines the critical connections between airports, while the FLIGHT table identifies specific flight numbers. Finally, the SCHEDULE table manages the operational layer, including departure and arrival timings as well as real-time flight status.
+                 
+                              Figure 6. Seat & Pricing Module 
+Figure 6 illustrates the Seat & Pricing Module, which governs the inventory and valuation logic of the system. The SEATCLASS table defines the various service tiers (such as Economy, Business, or First Class) and their associated price multipliers. These tiers are linked to individual records in the SEAT table, which tracks the real-time availability of specific seat numbers for every scheduled flight, ensuring that pricing scales dynamically based on the selected class.
+Figure 7. User & Passenger Management Module 
+Figure 7 details the User & Passenger Management Module, responsible for handling both system access and traveler identity. It distinguishes between academic roles via the STUDENT and INSTRUCTOR tables, while the USER table manages general authentication. For the booking process, the PASSENGERINFO table stores sensitive travel data—including passport numbers and nationalities—and facilitates the linking of primary adult passengers to dependents.
+Figure 8 .Booking & Operations Module 
+Figure 8 represents the Booking & Operations Module, the transactional core of the platform. The BOOKING table acts as the primary record for a reservation, while the BOOKINGDETAIL table provides a granular breakdown, linking passengers to specific seats, schedules, and insurance plans. This module also encompasses post-booking logistics through the CHECKINDETEAL table, which manages baggage and boarding passes, and the TRACKLOG table for auditing user actions.
+Figure 9.Financial & Taxation Layer Module 
+Figure 9 shows the Financial & Taxation Layer, which manages the complex fiscal requirements of the aviation industry. The TAXTYPE table defines various tax rules, which are then applied specifically to carriers or locations via the AIRLINETAX and AIRPORTFEE tables. Applied taxes are captured in the BOOKINGTAX table for every transaction, while the PAYMENT table tracks the status, method, and transaction IDs for all financial exchanges.
+Figure 10. Add-on & Insurance System Module 
+Figure 10 illustrates the Add-on & Insurance System, designed to manage ancillary services and traveler protection. The ADDON table, categorized by ADDONTYPE, allows for the selection of extra services like meals or baggage. Simultaneously, a comprehensive insurance sub-system—comprised of TRAVELINSURANCEPLAN, INSURANCEBENEFIT, and PLANCOVERAGE—provides students with the ability to simulate the selection of protection plans based on duration and coverage types.
+Figure 11. Educational Simulation Layer Module 
+Figure 11 details the Educational Simulation Layer, which integrates the simulation into an academic curriculum. Instructors manage students through the SECTION and SECTIONENROLLMENT tables, while the ACTIVITY table allows for the creation of specific booking scenarios. The module enables automated grading by comparing data in the ACTIVITYSUBMISSION and STUDENTSELECTEDADDON tables against the instructor's predefined requirements, providing a robust tool for vocational training.
+Chapter IV
+METHODOLOGY, RESULT  AND  DISCUSSION
+4.1 Introduction
+This chapter presents the results of the developed Smart Flight Booking Simulation Platform for CTHM-CSUCC: An Interactive and Data-Driven Training Tool for Tourism Education, including its features, system implementation, testing procedures, and evaluation. It also discusses the system’s performance, usability, and effectiveness based on the results gathered during testing and user evaluation. The findings in this chapter aim to determine whether the system successfully achieved the objectives stated in Chapter 1.
+4.2 Requirements ModelingThis section presents the requirements modeling of the developed Smart Flight Booking Simulation Platform for CTHM-CSUCC: An Interactive and Data-Driven Training Tool for Tourism Education. It identifies and organizes both the functional and non-functional requirements that guided the system design and development. These requirements ensure that the system meets the intended objectives and provides an effective simulation environment for users.
+Table 4.1: Functional Requirements Implementation Status
+ID
+Functional Requirement
+Description
+Status
+FR‑01
+Student Booking Process
+Complete flight booking workflow including login, search, selection, payment, and confirmation
+Implemented
+FR‑02
+Student Check-in Process
+Perform passenger verification, seat assignment, and boarding pass generation
+Implemented
+FR‑03
+Student Activity Access
+View dashboard, select activities, and follow simulation instructions
+Implemented
+FR‑04
+Instructor Activity Management
+Create, manage, and activate simulation activities
+Implemented
+FR‑05
+Instructor Student Monitoring
+View student progress, submissions, and performance
+Implemented
+FR‑06
+Instructor Report Generation
+Generate and manage student grade reports
+Implemented
+FR‑07
+Admin Flight Management
+Manage flights, routes, schedules, and seat configurations
+Implemented
+FR‑08
+Admin Pricing & Add-ons
+Configure pricing rules, taxes, and additional services
+Implemented
+FR‑09
+Admin User Management
+Manage student and instructor accounts and records
+Implemented
+FR‑10
+System Security
+Implement authentication, authorization, and error handling
+Implemented
+FR‑11
+End Process
+Complete workflow for all system users
+Implemented
+Table 4.2: Non-Functional Requirements Verified 
+ID
+Requirement
+Target
+Result
+Verification Method
+NFR-01
+System load time
+<3s
+2–3s (avg)
+Measured using browser developer tools
+NFR-02
+Booking response time
+<5s
+2–4s (avg)
+End-to-end testing
+NFR-03
+Concurrent users
+Defined limit
+Passed (multiple users supported)
+Load testing using concurrent sessions
+NFR-04
+Cross-browser compatibility
+Chrome, Firefox, Edge
+Passed
+Manual testing on supported browsers
+NFR-05
+Database query response
+<500ms
+~180–210ms (avg)
+Query profiling
+NFR-06
+Data submission (forms)
+<100ms
+~85ms (avg)
+Backend request logging
+NFR-07
+Flight search processing time
+<5s
+~6s (avg)
+Simulated flight search testing
+NFR-08
+System uptime
+≥99%
+24 hours continuous
+Continuous runtime monitoring
+NFR-10
+Security: authentication
+Required
+Implemented
+Authentication and hashing validation
+NFR-11
+System protection
+Required
+Implemented
+Input validation and access control
+4.3 The Developed System
+This section presents the developed system for the Smart Flight Booking Simulation Platform, which is designed to provide students with a realistic and interactive learning environment that replicates actual airline reservation and departure control processes.
+The process begins with user authentication, where students log into the system and are directed to the dashboard. From the dashboard, users can view and select available simulation activities. Upon selecting the flight booking simulation, the system provides instructions and requires an activity code to proceed, ensuring controlled access to the module.
+The flight booking module allows students to simulate real-world airline reservation procedures. This includes searching for available flights, viewing search results, selecting a preferred flight, and entering passenger details. Users can also choose add-ons such as baggage options before proceeding to a booking review stage. A payment simulation is then conducted, after which the system confirms the booking and displays a success message.
+In addition, the system incorporates a Check-in (Departure Control System) simulation module, which extends the learning experience beyond booking. In this module, users retrieve booking records through the flight manifest, verify passenger details, assign seats, manage baggage information, and generate a boarding pass. This feature enables students to understand post-booking operations commonly performed in online airline check-in.
+Overall, the developed system successfully integrates both booking and check-in processes into a single platform. The system ensures a logical and step-by-step workflow, allowing students to gain hands-on experience in airline operations within a safe and controlled academic environment.
+Screenshot of the System:
+FIgure 1: Gmail Notification Enrollment
+An email notification is sent once the student is successfully enrolled. It confirms the enrollment and provides important details regarding the registration. This ensures that students are informed about their enrollment status.Figure 2: Login Page and Landing Page
+This is the first page that students will see upon accessing the system. It allows students to log in using their credentials to access their accounts and services.
+Figure 3: Student Dashboard
+This is the student dashboard where students can view their activities, performance analytics, upcoming deadlines, and training hub. Students can also access the practice booking feature through the training hub.
+Figure 4: Email notification Activity Sent
+Students will receive a notification whenever there is a new activity. This helps keep them updated with important announcements and tasks.
+Figure 5 : Activity Card, Instruction of the Activity and Start Booking Activity
+Students will be able to view the instructions before starting the activity. They can begin the activity by entering the assigned activity code.
+Figure 6: Home Page, Manage Flight, and Search Flight of the Flight Booking
+The Flight Booking System allows students to access Practice Booking, Manage Flight, and Simulating Activity features. These functions help students manage and participate in flight-related training activities efficiently.
+Figure 7: Flight Schedule, Itinerary Details, and Select Flight
+List of Flight Schedules and Sorting and Filtering. When selecting a flight schedule it will show the fare families bundle and show the itinerary details and confirm a flight.
+Figure 8: Passenger Details and Contact Details
+Users are required to enter the passenger details and the contact information of the booker. This ensures accurate flight booking and communication regarding the reservation.
+Figure 9: Add-ons
+In the Add-ons section, users can select baggage, seats, meals, and travel protection. These optional services help customize and improve the travel experience.
+Figure 10: Review Booking Summary
+This page allows users to review the booking summary of the selected reservation. It displays the complete booking details before confirmation.
+Figure 11: Payment and API Paymongo
+This page handles the payment process through the PayMongo API. It allows users to complete their transactions securely and efficiently.
+Figure 12: Interface of Itinerary(pdf) and  E-ticket in Email.
+An email containing the itinerary details and booking reference will be sent once the booking is successful. This allows users to keep a copy of their confirmed reservation details.
+Figure 13: Booking Confirmed and Download E-ticket
+If the payment is successful, the booking will be confirmed. Users can download the e-ticket, and a copy will also be sent to their email.
+Figure 14: Identification and Check the passenger to Check-in
+Users need to enter the PNR (Passenger Name Record) and last name to access the booking details. The system will display the list of passengers, allowing the user to select a passenger and issue a boarding pass.
+Figure 15: Safety Declaration
+Users must acknowledge the safety declaration and review the prohibited items protocol before proceeding. This ensures compliance with safety and security regulations.
+Figure 16: Review Journey Summary
+Users can review the journey summary before proceeding. They can also update seat selections and add-ons based on their preferences.
+Figure 17: Passenger Contact Integration
+Users are required to enter the passenger contact details before proceeding. This information is used for booking updates and important travel notifications.
+Figure 18: Success Online Check-in and Boarding Pass
+This page will display a Successful check-in and will generate a boarding pass, download the boarding pass and can send it to email.
+4.4 Testing Results
+Following the evaluation approach described in Chapter 3, the system testing used both quantitative and qualitative methods. User Acceptance Testing (UAT) collected data through surveys based on the ISO/IEC 25010 software quality model and feedback from students and instructors.
+4.4.1 Technical Verification
+The technical The verification process involved controlled testing of all core system modules to evaluate functionality, accuracy, and performance. Each module was assessed using predefined test cases to ensure compliance with system requirements. The results show an overall success rate of 97.44%, indicating that the system passed the majority of test scenarios with only minor issues identified during booking validation and input handling. These issues were addressed and did not significantly affect system performance. 
+   Table 4.3: Test Summary
+Test Area / Module
+Test Cases Executed
+Passed
+Failed
+Success Rate (%)
+Remarks
+User Authentication (Login/Logout)
+10
+10
+0
+100%
+Passed – System securely validates users
+Flight Search Function
+12
+12
+        0
+100%
+Passed – Accurate and responsive results
+Booking Simulation Process
+15
+14
+1
+93.33%
+Passed – Minor validation issue corrected
+Seat Selection Module
+10
+10
+0
+100%
+Passed – Real-time seat mapping functional
+Payment Simulation Module
+8
+8
+0
+100%
+Passed – Transaction flow simulated correctly
+Admin Management Panel
+10
+10
+0
+100%
+Passed – CRUD operations working properly
+User Activity Logs
+8
+8
+0
+100%
+Passed – Logs correctly recorded actions
+System Performance (Response Time)
+5 scenarios
+5
+0
+Avg. < 2 seconds
+Passed – Acceptable performance level
+Error Handling & Validation
+  10
+9
+1
+90%
+Passed – Minor input validation issue noted
+Overall System Technical Result
+Total Test Cases: 78
+Total Passed: 76
+Total Failed: 2
+Overall Success Rate: 97.44%
+Result: PASSED – System is functionally valid under controlled testing
+4.4.2 User Acceptance Testing
+Evaluation Setup
+User Acceptance Testing (UAT) was conducted with selected CTHM students and instructors. Participants were asked to perform booking tasks and evaluate the system.
+Table 4.4 presents the UAT protocol used in this study. A total of 15 participants were evaluated, consisting of group admin (n=1), CTHM instructor (n=4), and CTHM students (n=10). Group sessions lasted approximately 2 hours each to allow for in-depth system demonstration and discussion, while admin sessions lasted 30 minutes, focusing on the flight schedules, user accounts management, managing overall data, and operational data oversight. The total field time was approximately 5 hours.
+Table 4.4 Table 4.4 presents the UAT protocol used in this study
+Aspect
+Decision
+Rationale
+Sample size
+15 participants total: 3 group admin+ 1 CTHM instructor + 4 CTHM students + 10
+Sufficient for initial usability evaluation within limited time and resources
+Evaluation type
+Single‑session structured demonstration + interview
+Longitudinal deployment not possible; expert review provides deep qualitative feedback
+Location
+1 site within: CSUCC 
+Ensures controlled environment and consistent testing conditions
+Instrument
+ISO/IEC 25010:2011 based questionnaire + semi‑structured interview
+Validated instrument; no development time; captures both quantitative and qualitative data
+Participants
+Group
+Role of Representative
+Number of Participants
+Time per Participant
+Time Investment
+Admin
+CTHM Technician
+1
+30 minutes
+30 minutes
+CTHM Instructor
+Instructors
+4
+30 minutes per instructor
+2 hours
+CTHM Student
+Tourism Students
+10
+15 minutes
+2h 30m
+Total
+15
+participants
+ 
+Approximately 5 hours field time
+Quantitative Evaluation Results
+Each evaluator completed an ISO/IEC 25010‑based questionnaire covering eight product quality characteristics and three quality‑in‑use characteristics. Ratings used a 5‑point Likert scale (1 = Poor, 2 = Fair, 3 = Good, 4 = Very Good, 5 = Excellent). Table 4.4 presents the individual ratings and averages. A total of fifteen (15) participants completed the evaluation. 
+Scoring Formula
+The overall average rating for each quality characteristic was computed using the weighted mean formula:
+Table 4.5: Analysis and Interpretation of ISO/IEC 25010 Evaluation Results
+Quality Characteristic
+Admin
+(n=1)
+Instructor(n=4)
+Student
+(n=10)
+Average
+Interpretation
+Product Quality
+1. Functional Suitability
+5.00
+4.5
+4.9
+4.80
+excellent
+2. Performance Efficiency
+4.00
+4.75
+4.8
+4.52
+excellent
+3. Compatibility
+     5.00
+      4.5
+4.8
+4.77
+excellent
+4. Usability
+4.00
+5
+4.6
+4.53
+excellent
+5. Reliability
+4.00
+4.75
+4.7
+4.48
+excellent
+6. Security
+3.00
+4.25
+4.6
+3.95
+Very Good
+7.Maintainability
+3.00
+4.5
+4.7
+4.07
+Very Good
+8. Portability
+4.00
+.4.5
+4.7
+    4.40
+excellent
+Product Quality Average  Total :
+    4.44
+excellent
+Quality in Use
+Effectiveness
+4.00
+4.75
+4.9
+4.55
+excellent
+Efficiency
+4.00
+4.75
+4.9
+4.55
+excellent
+Satisfaction
+4.00
+4.5
+4.7
+4.40
+excellent
+Freedom from Risk
+4.00
+4.00
+4.9
+4.30
+excellent
+Quality in Use Average
+4.45
+excellent
+The Results presented  in Table 4.5  indicate that the Smart Flight Booking Simulation Platform achieved a high level of overall system quality , as reflected by the consistently  high ratings across all ISO/IEC 25010 characteristics. The system received an overall product quality assessment of 4.44 which represents the Excellent rating. Among the characteristics, Functional Suitability(4.80) received the highest rating, indicating that the system effectively performs all required functions and meets user needs. The platform demonstrates success in implementing  the core components which establish a standard procedure for actual fight reservation and check-in operations.The system received excellent ratings for Compatibility (4.77) and Usability (4.53) which demonstrated its capacity to function well in various settings while delivering  an intuitive experience to users. The results show that users could navigate the system without major problems while completing their tasks.
+The system demonstrates fast response times  and dependable  operation through its Performance  Efficiency (4.52) and Reliability (4.48) ratings. The  technical tests confirmed these results because the system responded according to requirements and maintained operational uptime. Security (3.95) and  Maintainability (4.07) received slightly lower ratings which both still fall within  the Very Good range. The system maintains sufficient security standards together with reasonable maintainability efforts needs improvement particularly for enhancing access security and data protection and system growth capabilities.
+The system received an excellent rating for Portability (4.40) which shows  that it can operate without significant problems on multiple platforms and different environmental settings. 
+The system  achieved an overall score for quality in use which established its performance level.
+Qualitative Findings
+During the demonstrations, stakeholders provided rich feedback that contextualises the quantitative ratings. Table 4.5 summarises the key comments and suggestions.
+Table 4.6
+Participants
+Positive Feedback
+Constructive Suggestions
+CTHM Student
+“User friendly and efficient system”
+“ Font should be minimal and readable “
+CTHM Instructor 
+“ real like airline booking site with complete details such as seat selection , pricing / add ons and modes of payments “
+“ Add international routes , payment center as an option for  24 hours  hold of booking . Add other airlines like CEB PAC , QATAR AIRWAYS , EMIRATES , and etc.”
+Admin
+“ User friendly “
+“2 admins (LMS &   Manage) security”
+Key Findings The Smart Flight Booking Simulation Platform was tested and User Acceptance (UAT) was done, and the results showed a number  of important things based on both quantitative and qualitative data.
+First, the system got a high overall score in both product quality (4.44) and quality used (4.45), which are both very good. This means that the platform met the necessary standards for functionality, usability and effectiveness.
+Second, all of the functional requirements in Table 4.1 were fully met, and all the test cases in Table 4.3 passed. This shows that the system works correctly and reliably in all of the student, instructor, and admin modules.
+Third, performance testing showed that the system met all of its non-functional requirements, such as quick response times, efficient database queries, and stable system uptime. This shows that the platform works well from a technical point of view and can handle many users at once.
+Fourth, users thought the system was realistic and easy to use. Students said it was easy to use and worked well, while teachers pointed out how similar it was to real airline booking systems, especially when it came to choosing seats, prices, and extras.
+But some things could be better: security and maintainability got slightly lower scores but still “Very Good”, which suggests  that the system controls needs to be better and that the systems need to be able to grow in the future. 
+Finally, qualitative feedback emphasized the need for additional features, such as international flight support and enhanced booking functionalities, which can further improve the realism and educational value of the platform.
+4.5 Discussion
+Table 4.7 Comparative Analysis of Commercial Flight Booking Systems, and the Proposed Flight Booking Simulation Platform 
+Criteria
+Commercial Flight Booking Systems
+Flight Booking Simulation Platform
+Learning Approach
+Operational, real-world transaction-based
+Interactive, simulation-based experiential learning
+Complexity Level
+High and complex (professional system use)
+Moderate (simplified for student learning)
+Accessibility for Students
+Limited access, requires credentials and training
+Fully accessible for students in academic setting
+Practical Exposure
+Full real-world booking operations
+Simulated real-world booking scenarios
+Guidance / Learning Support
+No built-in learning support
+Built-in guided simulation and instructional design
+User Purpose
+Airline and travel agency operations
+Educational training and skill development
+Risk Level
+High risk if used improperly (real transactions)
+No risk (simulated environment only)
+System Complexity for Users
+Advanced, requires professional training
+Simplified interface with key booking functions
+Feedback Mechanism
+System-generated operational logs only
+activity logs and monitoring
+Skill Development Outcome
+Professional-level operational skills
+Industry-ready foundational booking competencies
+Problem Resolution
+Table 4.8 Identified the problem in chapter 1, system  implemented, evidence from results and confidence level.
+Identified Problem
+System Implementation
+Evidence from Results
+Confidence Level
+Lack of practical training tools for CTHM students
+Developed a Smart Flight Booking Simulation Platform with real-world booking.
+Functional Suitability = 4.80 (Excellent); All test cases Passed
+High for prototype; Moderate for full institutional deployment
+Limited exposure to real airline booking systems
+Simulation includes flight search, seat selection, add-ons, payment, and check-in process
+Positive feedback: “real like airline booking site” (Instructor)
+High for capability; Moderate for real-world operational alignment
+Difficulty understanding booking workflow
+Step-by-step system flow (search → booking → payment → check-in)
+Usability = 4.53 (Excellent)
+High for usability effectiveness; Moderate for complex real-world scenarios
+Lack of interactive and engaging learning tools
+Interactive simulation with activities and user participation
+Satisfaction = 4.40 (Excellent)
+High for engagement; Moderate for long-term learning retention
+Absence of risk-free training environment
+Fully simulated system (no real payment or airline integration)
+Freedom from Risk = 4.30 (Excellent)
+High for simulation safety; Low for real-world risk exposure
+Inefficient traditional teaching methods
+Integration of simulation-based learning approach
+Effectiveness = 4.55 (Excellent)
+High for instructional support; Moderate for curriculum-wide adoption
+Limited system performance in similar tools
+Optimized system with fast response and stable performance
+Performance Efficiency = 4.52; All NFR targets met
+High for system performance; Moderate for scalability under larger user load
+Security and scalability concerns
+authentication and system controls implemented
+Security = 3.95 (Very Good)
+Moderate for current security; Requires enhancement for enterprise-level deployment
+Lack of advanced airline features
+Core booking features implemented but limited advanced functions
+Suggestions: international flights, rebooking, more airlines
+Moderate for current functionality; Low for advanced industry-level features
+The study confirmed that CTHM students need hands-on training tools for airline booking systems, as traditional theoretical instruction limits real-world experience. The Smart Flight Booking Simulation Platform effectively addressed this gap by providing a realistic, interactive environment where students perform complete booking and check-in procedures.
+The system achieved high ratings in functional suitability (4.80) and usability (4.53), demonstrating that it operates properly while remaining user-friendly. Students successfully applied theoretical knowledge to practical scenarios, mastering reservation handling and post-booking procedures.
+Developed using Agile methodology, the system incorporated user feedback throughout the process, ensuring timely delivery of essential features. However, limitations remain: the platform supports only domestic flights without real-time data integration and lacks advanced features like rebooking, cancellations, and international travel options. These gaps affected the evaluation of security and maintainability.
+Overall, the system successfully met its educational objectives, proving that simulation-based learning effectively enhances tourism  training at CTHM.
+CHAPTER 5
+ CONCLUSIONS, AND RECOMMENDATIONS
+5.1 Conclusion
+The Smart Flight Booking Simulation Platform definitively addresses the problem identified in Chapter 1. The study confirmed that CTHM students lacked hands-on training tools for airline booking systems, and the developed platform successfully filled this gap by providing a realistic, interactive, and structured simulation environment.
+This conclusion is supported by the results presented in Chapter 4. All functional and non-functional requirements were successfully met, and all system test cases passed, confirming that the platform operates correctly and reliably. Furthermore, the User Acceptance Testing results showed an overall Excellent rating, with product quality scoring 4.44 and quality in use scoring 4.45. High scores in functional suitability (4.80), usability (4.53), and effectiveness (4.55) demonstrate that the system is not only technically sound but also user-friendly and effective as a learning tool.
+Therefore, it can be conclusively stated that the system successfully solves the identified problem by bridging the gap between theoretical learning and practical application. The platform enables students to gain real-world experience in airline booking and check-in processes, while also supporting instructors and administrators in managing and evaluating learning activities. While there are areas for future improvement, these do not diminish the system’s overall effectiveness in achieving its intended purpose.
+5.2 Recommendation
+Based on the feedback gathered during UAT (User Acceptance Testing) and the limitations identified during development, the following recommendations are proposed for future researchers aiming to improve the system.
+1. Promo code/discount 
+The promotional code system enables customers to enter discount codes during checkout to receive either price reductions or percentage discounts. The system checks code validity by testing expiration dates and usage limits and eligibility criteria. Airlines use it for their marketing campaigns together with their seasonal promotions and loyalty rewards and partnership discounts which help them increase their booking rate.2. Rebook or cancel a confirmed  booking and change a flight     Passengers who want to change their flight reservations or cancel their bookings can use the self-service feature which allows them to access their reservations through "My Trips" by entering their confirmation number and last name. The system calculates fare differences, applies change fees by ticket type, and issues travel credits. Non-refundable tickets become eCredit; refundable tickets get monetary refunds. Customers who make bookings at least 7 days before their departure date can use the 24-hour free cancellation policy.
+3. Implement a waitlist and inventory management how airlines manage overbooked and upgrade passenger     Intelligent inventory system optimizes seat availability across fare classes and manages overbooking by creating waitlists for voluntary bumping based on fare class, check-in time, and loyalty status. It provides compensation options for volunteers and adheres to regulations for involuntary bumping, while also managing upgrade requests and automatically confirming passengers when seats become available due to cancellations.
+4. Integrate an international flight
+       International booking module handling cross-border requirements: passport verification, visa checks, customs documentation, and entry regulations. The system enables users to handle multiple currencies together with currency conversion and time zone management and international baggage regulations. The system connects with government databases to enable API and PNR data submission for immigration processes. The system verifies visa requirements while checking health documents and ensuring compliance with international aviation standards.
+5. Children traveling with adults require UMNR service     UMNR (Unaccompanied Minor) Service requires all Unaccompanied Minors between 5 to 14 years old to travel under complete supervised protection. The system protects passengers throughout their journey because airline personnel monitor them from their check-in procedure until their arrival at their final destination. The system includes several features which allow guardians to provide their contact details and verify their pickup person while using identification wristbands to access priority boarding and crew supervision. The system prevents users from making tight connections and last-flight bookings while it charges them service fees.
+6. Bassin for infant seat
+        The system allows parents to request airline bassinets (skycots) for children under 2 during long-distance flights. It identifies bulkhead seat availability by displaying eligible seats and monitoring aircraft inventory, factoring in age and weight restrictions for infants. Parents receive confirmation of seat assignments and notifications 24 to 48 hours before departure, requiring confirmation and providing turbulence alerts. If bassinets are fully booked, passengers are automatically placed on waiting lists.
+7. Weight and balance (trim ) Calculation    The Critical Safety System calculates aircraft weight distribution to ensure a proper center of gravity (CG) for safe operations. It totals the weight of passengers, baggage, cargo, fuel, and catering services, producing pilot trim sheets that keep CG within certified limits. The system protects against overloads, reduces fuel usage, and connects with check-in systems for real-time data using IATA average weight measurements. It issues alerts to halt departures in case of violations.
+8. Travel Bank, Flight Credit, or Electronic Wallet     The digital wallet facilitates the management of refunds, cancellation credits, compensation vouchers, and future travel promotional funds. It tracks cancellation deposits and their expiration, allows partial payments with various payment methods, and enables fund transfers between family accounts. Users can monitor their account balance and transaction history, with the system automatically applying expiring credits and ensuring fraud protection through authentication. Access to funds is granted by logging into user accounts.
+REFERENCES:
+[1]R. Law, R. Leung, and D. Buhalis, “Information technology applications in hospitality and tourism: A review of publications from 2005 to 2007,” J. Travel Tour. Mark., vol. 26, no. 5–6, pp. 599–623, 2009, doi: 10.1080/10548400903163160.
+[2]T. M. Tung, “Developing Quality Hospitality Students Through Simulation and Experiential Learning asa Guide for Hospitality Education,” GATR Glob. J. Bus. Soc. Sci. Rev., vol. 9, no. 4, pp. 283–292, 2021, doi: 10.35609/gjbssr.2021.9.4(5).
+[3]C. S. Deale, S. Bae, and S.-H. Lee, “Educators’ Use and Views of Simulations as Teaching Tools within a Discipline: The Example of Hospitality and Tourism,” Int. J. Scholarsh. Teach. Learn., vol. 15, no. 2, pp. 1–10, 2021, doi: 10.20429/ijsotl.2021.150210.
+[4]   Oberstone, J. (2010). Spreadsheet Simulation of Airline Reservation Policy Using Multimedia Software. International Journal of Advanced Corporate Learning (iJAC), 3(1), 26-31.
+[5]M. Sigala, “The Evolution of Internet Pedagogy: Benefits for Tourism and Hospitality Education,” vol. 1, no. 2, [Online]. Available: www.hlst.ltsn.ac.uk/johlste
+[6]O. Chernikova, N. Heitzmann, M. Stadler, D. Holzberger, T. Seidel, and F. Fischer, “Simulation-Based Learning in Higher Education: A Meta-Analysis,” Rev. Educ. Res., vol. 90, no. 4, pp. 499–541, 2020, doi: 10.3102/0034654320933544.
+[7]L. Ochoa Siguencia, G. Marzano, and D. Herman, “Information Technology and Consumer Behaviour in Tourism: Student Travel Planning By Using the Internet,” Soc. Integr. Educ. Proc. Int. Sci. Conf., vol. 6, no. May, pp. 402–411, 2018, doi: 10.17770/sie2018vol1.3084.
+[8]M. Beheshti, S. Rahimizhian, and M. Ilkan, “The Role of Information and Communication Technology ( ICT ) in Tourism Education : A Case Study of Higher Education Students The Role of Information and Communication Technology ( ICT ) in Tourism Education : A Case Study of Higher Education Students,” no. September, 2020.
+[9]A. Huang, E. de la Mora Velasco, and A. Haney, “Examining Instructional Technologies in Hospitality and Tourism Education: A Systematic Review of Literature,” J. Hosp. Tour. Educ., vol. 36, no. 2, pp. 113–131, 2024, doi: 10.1080/10963758.2022.2109480.
+[10]L. K. Price-Howard and H. Lewis, “Perceived usefulness of simulation learning in hospitality education,” Int. Hosp. Rev., vol. 37, no. 2, pp. 384–393, 2023, doi: 10.1108/ihr-05-2022-0028.
+[11]M. A. Pratt and S. Hahn, “Enhancing hospitality student learning through the use of a business simulation,” J. Hosp. Leis. Sport Tour. Educ., vol. 19, pp. 10–18, 2016, doi: 10.1016/j.jhlste.2016.05.001.
+[14]W. K. O. Ho, B. S. Tang, and S. W. Wong, “Predicting property prices with machine learning algorithms,” J. Prop. Res., vol. 38, no. 1, pp. 48–70, 2021, doi: 10.1080/09599916.2020.1832558.
+[15]K. Tziridis, T. Kalampokas, G. A. Papakostas, and K. I. Diamantaras, “Airfare prices prediction using machine learning techniques,” 25th Eur. Signal Process. Conf. EUSIPCO 2017, vol. 2017-Janua, pp. 1036–1039, 2017, doi: 10.23919/EUSIPCO.2017.8081365.
+[16]M. Shaikh and R. Borate, “Airline Booking System,” Technoarete Trans. Adv. Comput. Appl. (TTACA, vol. 2, no. 1, pp. 12–18, 2023.
+[17] Carmo, K. X., Ferreira, F., & Figueiredo, E. (2024, May). Performance Evaluation of Back-End Frameworks: A Comparative Study. In Proceedings of the 20th Brazilian Symposium on Information Systems (pp. 1-9).
+[18]   J. Boyar, S. Krarup, and M. N. Nielsen, “Seat Reservation allowing seat changes,” Electron. Notes Theor. Comput. Sci., vol. 50, no. 1, pp. 24–38, 2001, doi: 10.1016/S1571-0661(04)00163-X.
+[19]   D. K. Rigby, J. Sutherland, and H. Takeuchi, “Embracing agile,” Harv. Bus. Rev., vol. 2016, no. May, 2016.
+[20]   S. V. Salunke and A. Ouda, “A Performance Benchmark for the PostgreSQL and MySQL Databases,” Futur. Internet, vol. 16, no. 10, 2024, doi: 10.3390/fi16100382.
+[21]Piastou, M. (2023). Comprehensive performance and scalability assessment of front-end frameworks: React, Angular, and Vue. js. World Journal of Advanced Engineering Technology and Sciences, 9(2), 366-376.
+APPENDICES
+A. Relevant Source Code
+try {
+      const { token, user, role, dashboard_route } = await authService.login(this.username, this.password);
+        this.userStore.setAuth({ token, user, role });
+        this.notificationStore.success('Login successful! Redirecting...')
+        setTimeout(() => {
+          if (dashboard_route && this.router) {
+            this.router.push(dashboard_route).catch(err => {
+              window.location.href = dashboard_route;
+            });
+          }
+Source: Login.vue
+methods: {
+    selectTab(tabName) {
+      this.activeTab = tabName;
+      this.showTabDropdown = false;
+    },
+    viewActivityDetails(activityId) {
+      this.$router.push(`/student/activity/${activityId}`);
+    },
+    startPracticeBooking() {
+      this.bookingStore.resetBooking();
+      this.bookingStore.setPracticeMode();
+      this.notificationStore.success('Practice mode enabled. Happy booking!');
+      this.$router.push('/');
+    },
+    async openComparisonModal(activity) {
+      this.showComparison = true;
+      this.comparisonActivity = activity;
+      this.comparisonBooking = null;
+      this.isLoadingBooking = true;
+      this.comparisonError = null;
+      try {
+        const data = await comparisonService.getComparisonData(activity.id, activity.confirmed_booking_id);
+        if (data.success) {
+          if (data.activity) this.comparisonActivity = data.activity;
+          this.comparisonBooking = data.booking;
+        } else {
+          this.comparisonError = data.error || "Could not find booking data.";
+        }
+      } catch (error) {
+        this.comparisonError = "Failed to connect to the server.";
+      } finally {
+        this.isLoadingBooking = false;
+      }
+    }
+Source: Student dashboard
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def calculate_booking_price(request):
+    data = request.data
+    trip_type = data.get('trip_type', 'one_way')
+    passengers = data.get('passengers', [])
+    for idx, segment in enumerate(segments):
+        price_data = dynamic_pricing.get_price_for_user(flight_pricing_data, user=user)
+        ml_base = float(price_data.get('final_price'))
+        outbound_price = Decimal(str(dynamic_pricing.round_seat_class_price(ml_base * multiplier)))
+    # Addon Calculation (Baggage, Meals, Seats)
+    total_price = breakdown['base_fare'] + breakdown['taxes'] + breakdown['addons'] + breakdown['insurance']
+    return Response({
+        'success': True,
+        'total_amount': float(total_price),
+        'breakdown': {k: float(v) for k, v in breakdown.items()}
+    })
+Source: fbs_backend/flightapp/views.py
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def create_checkout_session(request):
+    booking = Booking.objects.get(id=booking_id)
+    amount = float(booking.total_amount) # Enforce server-side source of truth
+    result = paymongo_service.create_checkout_session(
+        amount=amount,
+        booking_id=int(booking_id),
+        customer_email=customer_email,
+        customer_name=customer_name
+    )
+    if result['success']:
+        return Response({'success': True, 'checkout_url': result['checkout_url']})
+Source : fbs_backend/flightapp/views.py
+def process_payment_from_paymongo(payment_id, payment_attrs, booking):
+    with transaction.atomic():
+        # Update booking to Confirmed
+        booking.status = 'Confirmed'
+        booking.submitted_at = timezone.now()
+        booking.save()
+        
+        # Trigger Auto-Grading for the Student
+        if booking.activity:
+            from .services.grading_service import grade_booking
+            grade_booking(booking, booking.activity.id)
+        # Send E-ticket/Confirmation in background
+        email_thread = threading.Thread(target=EmailService.send_booking_confirmation, args=(booking, payment))
+        email_thread.start()
+Source: flightapp/services/paymongo_service.py
+@action(detail=False, methods=['post'])
+def lookup(self, request):
+    pnr = request.data.get('pnr', '').strip()
+    last_name = request.data.get('last_name', '').strip()
+    
+    # Authorization: Verify PNR + Last Name match
+    auth_exists = BookingDetail.objects.filter(
+        booking__pnr=pnr.upper(),
+        passenger__last_name__iexact=last_name
+    ).exists()
+    
+    if not auth_exists:
+        return Response({'error': 'No matching booking found'}, status=404)
+        
+    # Retrieve all passengers in the party
+    bookings = BookingDetail.objects.filter(booking__pnr=pnr.upper())
+    return Response(self.serialize_booking_party(bookings))
+Source: flightapp/views.py
+@action(detail=False, methods=['post'])
+def self_checkin(self, request):
+    with transaction.atomic():
+        for p in passenger_data:
+      
+            if time_until_departure > timedelta(hours=48):
+                return Response({'error': 'Window not yet open'}, status=400)
+         
+            checkin = CheckInDetail.objects.create(
+                booking_detail_id=bd_id,
+                has_declared_safety=True,
+                status='checked-in'
+            )
+fbs_backend/app/api/checkin_views.py
+B. Letter to Conduct Interview with Pictorial
+We conducted an interview with an instructor from the College of Tourism and Hospitality Management at Caraga State University in Cabadbaran City for our capstone project, focusing on the needs, expectations, and limitations of the current system. The instructor identified challenges related to manual processes, time consumption, and human error in managing records. The discussion emphasized the necessity for a more efficient, user-friendly system capable of automation, real-time monitoring, and accurate record access. The insights obtained will guide the development of the proposed system, ensuring it addresses real-world issues and user needs, supported by pictorial evidence of stakeholder engagement.C. Work and Financial Plan
+Gantt Chart
+ACTIVITIES
+Feb
+Mar
+Apr
+May
+Jun
+Jul
+Aug
+Sep
+Oct
+Nov
+Dec
+Jan2026
+Feb
+Mar
+Apr
+May
+Think about a topic for the Capstone Project
+Consult the capstone adviser for the title and topic recommendation
+Conduct a survey to identify the problem related to your topic
+Identify the specific problem and construct hypothesis
+Explore books, Journals & paper and web literature review
+Read and highlight relevant information for literature review
+Construct Project Context including literature review to support your proposed project
+Draft literature review
+Proposal
+System Development
+Draft summary, conclusion and recommendation
+Gather more data that would complete the study
+Final Oral Defense
+Update Documents and System based on the Panel’s suggestions and comments
+Conduct a survey for system evaluation
+Checking of documents, revision of documents checking for updated a new back template of leave form in our system.
+Printing of final documents for softbound
+Submission of softbound
+D. Data Dictionary
+Table: Airport
+Field Name
+Data Type
+Key
+id
+INT
+Primary Key
+name
+VARCHAR
+code
+VARCHAR
+Unique Key
+city
+VARCHAR
+country_id
+INT
+Foreign Key(Country)
+airport_type
+VARCHAR
+(Domestic/International)
+latitude
+DECIMAL
+longitude
+DECIMAL
+Table: Schedule
+Field Name
+Data Type
+Key
+id
+INT
+Primary key
+flight_id
+INT
+Foreign Key(Flight)
+departure_time
+DATETIME
+arrival_time
+DATETIME
+price
+DECIMAL
+Ml base price
+DECIMAL
+(ML PREDICTION)
+status 
+VARCHAR
+gate
+VARCHAR
+Table: Booking
+Field Name
+Data Type
+Key
+id
+INT
+Primary key
+user_id
+INT
+Foreign Key
+Trip type
+VARCHAR
+status
+VARCHAR
+pnr
+VARCHAR
+Unique Key
+Total amount
+DECIMAL
+booking_session_id
+VARCHAR
+created_at
+DATETIME
+Table: PassengerInfo
+Field Name
+Data Type
+Key
+id
+INT (AUTO_INCREMENT)
+Primary Key
+first_name
+VARCHAR(100)
+last_name
+VARCHAR(100)
+title
+VARCHAR(10)
+(MR, MRS, MS)
+date_of_birth
+DATE
+passport_number
+VARCHAR(50)
+passenger_type
+VARCHAR(10)
+(Adult, Child, Infant)
+ph_discount_type
+VARCHAR(10)
+(Senior, PWD)
+Table: Seat
+Field Name
+Data Type
+Key
+id
+INT (AUTO_INCREMENT)
+Primary Key
+schedule_id
+INT
+Foreign Key (Schedule)
+seat_class_id
+INT
+Foreign Key (SeatClass)
+seat_number
+VARCHAR(10)
+row
+INT
+column
+VARCHAR(1)
+is_available
+BOOLEAN
+is_window
+BOOLEAN
+is_aisle
+BOOLEAN
+locked_by_session
+VARCHAR(100)
+Table: Route
+Field Name
+Data Type
+Key
+id
+INT (AUTO_INCREMENT)
+Primary Key
+origin_airport_id
+INT
+Foreign Key (Airport)
+destination_airport_id
+INT
+Foreign Key (Airport)
+base_price
+DECIMAL(10,2)
+Table: Flight
+Field Name
+Data Type
+Key
+id
+INT (AUTO_INCREMENT)
+Primary Key
+flight_number
+VARCHAR(20)
+Unique Key
+airline_id
+INT
+Foreign Key (Airline)
+aircraft_id
+INT
+Foreign Key (Aircraft)
+route_id
+INT
+Foreign Key (Route)
+total_stops
+INT
+Table: PassengerInfo
+Field Name
+Data Type
+Key
+id
+INT (AUTO_INCREMENT)
+Primary Key
+first_name
+VARCHAR(100)
+last_name
+VARCHAR(100)
+passenger_type
+VARCHAR(10)
+(Adult/Child/Infant)
+ph_discount_type
+VARCHAR(10)
+(Senior/PWD)
+passport_number
+VARCHAR(50)
+Table: BookingDetail
+Field Name
+Data Type
+Key
+id
+INT (AUTO_INCREMENT)
+Primary Key
+booking_id
+INT
+Foreign Key (Booking)
+passenger_id
+INT
+Foreign Key (PassengerInfo)
+schedule_id
+INT
+Foreign Key (Schedule)
+seat_id
+INT
+Foreign Key (Seat)
+price
+DECIMAL(10,2)
+tax_amount
+DECIMAL(10,2)
+status
+VARCHAR(20)
+Table: SeatClass
+Field Name
+Data Type
+Key
+id
+INT (AUTO_INCREMENT)
+Primary Key
+name
+VARCHAR(50)
+price_multiplier
+DECIMAL(5,2)
+airline_id
+INT
+Foreign Key (Airline)
+is_active
+BOOLEAN
+Table: Airline
+Field Name
+Data Type
+Key
+id
+INT (AUTO_INCREMENT)
+Primary Key
+name
+VARCHAR(100)
+code
+VARCHAR(10)
+Unique Key
+logo
+IMAGE / VARCHAR
+Table: Aircraft
+Field Name
+Data Type
+Key
+id
+INT (AUTO_INCREMENT)
+Primary Key
+model
+VARCHAR(100)
+capacity
+INT
+airline_id
+INT
+Foreign Key (Airline)
+layout_config
+JSON
+Table: FareBundle
+Field Name
+Data Type
+Key
+id
+INT (AUTO_INCREMENT)
+Primary Key
+seat_class_id
+INT
+Foreign
+Table: User (Django System)
+Field Name
+Data Type
+Key
+id
+INT (AUTO_INCREMENT)
+Primary Key
+username
+VARCHAR(150)
+Unique Key
+password
+VARCHAR(128)
+email
+VARCHAR(254)
+first_name
+VARCHAR(150)
+last_name
+VARCHAR(150)
+is_staff
+BOOLEAN
+(Admin Access)
+is_active
+BOOLEAN
+date_joined
+DATETIME
+Table: UserProfile (Extension)
+Field Name
+Data Type
+Key
+id
+INT (AUTO_INCREMENT)
+Primary Key
+user_id
+INT
+Foreign Key (User)
+role
+VARCHAR(20)
+(Student, Instructor, Admin)
+avatar
+IMAGE / VARCHAR
+Table: Students
+Field Name
+Data Type
+Key
+id
+INT (AUTO_INCREMENT)
+Primary Key
+user_id
+INT
+Foreign Key (User)
+student_number
+VARCHAR(50)
+Unique Key
+first_name
+VARCHAR(100)
+last_name
+VARCHAR(100)
+email
+VARCHAR(100)
+Unique Key
+gender
+VARCHAR(10)
+(Mr. / Mrs.)
+course
+VARCHAR(100)
+year_level
+VARCHAR(10)
+date_enrolled
+DATETIME
+E. Sample Survey Questionnaire
+SYSTEM QUALITY EVALUATION FORM
+Framework: ISO/IEC 25010:2011
+Target Product: A “SMART FLIGHT BOOKING SIMULATION PLATFORM FOR CTHM-CSUCC: AN INTERACTIVE AND DATA-DRIVEN TRAINING TOOL FOR TOURISM EDUCATION”
+Evaluator: __________________________ Date: _________________ Rating Scale: 5 – Excellent | 4 – Very Good | 3 – Good | 2 – Fair | 1 – Poor PART 1: PRODUCT QUALITY
+Quality Characteristic
+Sub-Characteristic/ Criteria
+Rating (1-5)
+1. Functional Suitability
+The system provides a complete and accurate simulation of the air travel reservation process, including seat selection, service add-ons, and secure transaction simulation.
+ 
+2. Performance
+Efficiency
+The platform maintains high responsiveness and low latency during peak usage, ensuring smooth transitions between search results and booking confirmations.
+ 
+3. Compatibility
+The web application demonstrates consistent formatting and full functional parity across all modern web browsers and desktop resolutions.
+ 
+4. Usability
+The user interface is designed with a clear navigational hierarchy, making it easy for students to complete complex reservation tasks with minimal guidance.
+ 
+5. Reliability
+The system ensures data persistence and prevents operational conflicts, such as duplicate seat assignments or lost booking records.
+ 
+6. Security
+Robust access control mechanisms safeguard user data and maintain strict privacy between student simulations and administrative records.
+ 
+7. Maintainability
+The system architecture supports modular updates and systematic debugging, ensuring long-term operational stability.
+ 
+8. Portability
+The application is optimized for deployment in diverse web environments, ensuring consistent behavior across different institutional hosting infrastructures.
+ 
+PART II: QUALITY IN USE (USER EXPERIENCE)
+Characteristic
+Definition
+Rating (1-5)
+Effectiveness
+Users can achieve complete and accurate results for all intended tasks, such as generating valid flight itineraries and administrative reports.
+ 
+Efficiency
+The platform minimizes the time and effort required to perform standard operations, such as class enrollment or multi-passenger flight bookings.
+ 
+Satisfaction
+The overall user experience is professional and engaging, meeting the high standards expected for academic and vocational training simulations.
+ 
+Freedom from Risk
+Potential user errors are mitigated through real-time validation and clear system feedback, ensuring a safe and accurate simulation environment.
+ 
+ 
+PART III: MY FINAL THOUGHTS (Additional Comments)
+What did I like most about the system?
+______________________________________________________________________________________________________________________________________What could be improved or added?
+______________________________________________________________________________________________________________________________________ Any other observations?
+______________________________________________________________________________________________________________________________________
+Evaluator's Signature: ________________________
+Thank you for your participation!
+F. Evaluation Process
+We conducted an evaluation at Caraga State University – Cabadbaran City, specifically within the College of Tourism and Hospitality Management (CTHM), as part of the system assessment phase for the study titled “A Smart Flight Booking Simulation Platform for CTHM-CSUCC: An Interactive and Data-Driven Training Tool for Tourism Education.” The purpose of this evaluation was to gather feedback from students and instructors regarding the system’s functionality, usability, and overall performance.
+The data collected helped identify the strengths of the system, as well as areas that need improvement. These insights ensured that the platform is efficient, accurate, and user-friendly, while also supporting better learning experiences and data-driven decision-making within the college.
+G. Grammarian Certificate
+H. Acceptance Certificate
+I. User’s Guide
+Step 1. Users sign in to the TourSim platform by entering their credentials into the secure login card and clicking the LOGIN button to access their training workspace. The interface provides a "Remember me" option for convenience, alongside quick links for password recovery and direct contact support, all while displaying a live simulation status to confirm system availability.
+Step 2. Once logged in, the user enters a comprehensive Student Dashboard designed for real-time progress tracking and activity management. They can monitor their performance through the Academic Achievement panel, which displays live metrics like grades and task completion, and visualizes their progress trends via the Score Evolution chart. Interaction is focused on the Activities section, where users can launch active training modules, and the Upcoming Schedule, which highlights looming deadlines for simulated bookings. Additionally, the dashboard facilitates social learning by allowing users to explore the Class Registry or view their standing on the Leaderboard, while the navigation sidebar and notification system keep them organized and informed of new updates.
+Step 3. The user interacts with the Activity Detail page to prepare for their flight booking simulation. They review the Detailed Instructions to understand the technical requirements, such as the 51-point value and the upcoming deadline. The core interaction involves analyzing the Trip Details and Route data—specifically noting the requirement for a one-way economy trip using the "VALUE" fare bundle from Manila to Puerto Princesa. This page serves as the instructional blueprint, ensuring the user has all the necessary parameters before launching the actual simulation tool to complete their assessment.
+Step 4. The user must complete an Activity Authorization process to unlock the simulation. A modal window appears requiring an Activity Code, which serves as a security layer to ensure only authorized students can begin the assessment. The user enters the unique alphanumeric code provided by their instructor into the text field and clicks the yellow START button. This interaction validates their access and officially begins the timed or graded portion of the flight booking activity, moving them from the instructional phase to the active simulation environment.
+Step 6. The user enters the Flight Simulation Engine, a high-fidelity interface that mimics a real-world airline booking system. Based on their earlier instructions, the user configures the search widget by selecting the trip type, origin, destination, and passenger details before clicking SEARCH FLIGHTS. Throughout this process, they must manage their time effectively using the Remaining Time countdown, which tracks their progress within the 60-minute session. The interface also provides essential controls like a Reset button for clearing errors and an End Activity button to finalize and submit their booking simulation for grading.
+Step 6. The user interacts with the Flight Selection interface, the first phase of a five-part booking funnel. Here, they evaluate the search results to find a flight that meets their assignment's criteria, utilizing the horizontal Date Selector to confirm availability for the required departure day. The user can refine their search using the Filters sidebar to sort by price or departure time, ensuring they identify the "Cheapest" or "Best" options as indicated by the system's tags. Once a suitable flight—such as the Cebu Pacific option shown—is identified, the user verifies the route details and prepares to advance to the next stage of the simulation.
+Step 7. The user deep-dives into Fare Selection by expanding a flight card to reveal its specific details and bundle options. They analyze the flight's schedule, aircraft type, and seat availability before comparing available bundles, such as Go Basic and Go Flexi. Following the "VALUE" fare bundle requirement from their Step 3 instructions, the user evaluates the amenities and price points to make an accurate selection. Clicking the appropriate Select button commits them to a specific fare type and prepares the system to move into the Details stage, where passenger information will be required.
+Step  8. The user advances to the Passenger Details phase to document traveler information for the booking. The primary interaction involves completing the Personal Information form, where the user must meticulously input the passenger's name and date of birth exactly as they appear on official identification. A side-panel checklist tracks the status of each traveler—noting "Adult 1" as "Pending" until all required fields are validated—providing a structured workflow for the simulation. This step emphasizes the importance of data integrity in the aviation industry, requiring the user to cross-reference their inputs against the provided instructional parameters before proceeding to the "Extras" stage.
+Step 9. The user interacts with the Trip Customization page to select ancillary services that enhance their travel experience. Navigating through tabs for Baggage, Seats, Meals, and Protection, the user reviews specific airline policies, such as Cebu Pacific’s baggage weight limits, to make informed selections based on their assignment. As they add these extras, they monitor the Price Breakdown in the sidebar to see how the total amount evolves beyond the base fare. With the session timer counting down, the user finalizes their custom selections and clicks "Continue to Review" to move toward the final verification stage of the booking process.
+Step 10. The user performs a final Verification on the Review Your Booking page. They cross-examine the generated Booking Reference (PNR) against their flight itinerary, ensuring that the departure terminal, gate assignment, and "Economy Go Basic" fare class align perfectly with their assigned task. The user also conducts a financial audit via the Payment Summary, reviewing the breakdown of base fares and taxes that lead to the final total. This critical interaction serves as the last quality-control checkpoint; once the user confirms all details are accurate, they click "PROCEED TO PAYMENT" to transition to the final settlement stage of the simulation.
+Step 11. The user performs a final Verification on the Review Your Booking page. They cross-examine the generated Booking Reference (PNR) against their flight itinerary, ensuring that the departure terminal, gate assignment, and "Economy Go Basic" fare class align perfectly with their assigned task. The user also conducts a financial audit via the Payment Summary, reviewing the breakdown of base fares and taxes that lead to the final total. This critical interaction serves as the last quality-control checkpoint; once the user confirms all details are accurate, they click "PROCEED TO PAYMENT" to transition to the final settlement stage of the simulation.
+Step 12. the user interacts with the external PayMongo Checkout Gateway, marking the transition from the training platform to a live payment processor. They perform a final verification of the Total Due (₱8,304.00) and the specific Booking ID before selecting their preferred Payment Method. In this simulation, the user chooses the GCash e-wallet from the available options and clicks the green Continue button to proceed to the provider's authentication stage. This interaction provides a realistic experience of the final financial "handshake" required to secure a flight reservation in a modern e-commerce environment.
+Step 13. the user receives a successful Transaction Confirmation via the PayMongo API, signified by the "GCash Payment Received" notification. This stage provides a unique Payment ID and a precise timestamp, serving as the official digital receipt for the ₱8,304.00 payment. The user's final interaction is clicking the "Return to Merchant" button, which triggers a callback URL redirection to the TourSim platform. This automated handshake communicates the successful payment status back to the LMS, allowing the system to transition the booking from "Pending" to "Confirmed" and officially closing the simulation loop with a finalized flight itinerary.
+Step 14. The user arrives at the Payment Confirmed fulfillment page, representing the successful completion of the booking simulation. Here, they are provided with their unique PNR Locator and a confirmed transaction status, confirming that their e-ticket has been generated and dispatched. The user's primary interactions involve clicking "DOWNLOAD E-TICKET" to secure their travel documents and reviewing the Journey Checklist to understand the post-booking milestones like airport check-in. Finally, clicking "RETURN TO DASHBOARD" closes the simulation loop, allowing the user to see their updated academic progress and completed activity status within the platform.
+J. Definition of Term
+1. Add-ons / Ancillary Services refers to the additional travel options that users can select during the booking simulation process, which include extra baggage allowance, specific seat assignments, in-flight meals, and travel insurance.
+2. Agile Methodology a modern software development approach utilized by the researchers. It involves working in iterative cycles, allowing for continuous improvement, adaptability, and regular feedback throughout the creation of the simulation platform.
+3. Check-in / Departure Control System (DCS) the module in the platform that simulates post-booking airport operations. It allows students to perform tasks such as passenger verification, seat assignment, baggage handling, and boarding pass generation.
+4. CTHM-CSUCC refers to the College of Tourism and Hospitality Management at Caraga State University Cabadbaran Campus, the primary beneficiary and target institution for the developed simulation tool.
+5. Django REST Framework (DRF) the back-end web framework used in the platform to manage server-side logic, secure application programming interfaces (APIs), and process complex data efficiently.
+6. Dynamic Pricing is a simulated pricing strategy within the platform where airfare costs fluctuate based on various data-driven factors (e.g., seat class, availability), mirroring the real-world pricing behavior of commercial airlines.
+7. E-ticket (Electronic Ticket) a digital document generated by the system and sent via simulated email upon successful payment. It serves as proof of a confirmed flight reservation and contains the passenger's itinerary details.
+8. Machine Learning (XGBoost) advanced computational algorithms integrated into the platform’s pricing engine. It is used to simulate and predict dynamic airline fare calculations based on complex market variables.
+9. Passenger Name Record (PNR) a unique alphanumeric booking reference code generated by the system upon confirmation of a flight. It is used to identify a specific flight reservation and retrieve passenger details during the check-in process.
+10. PayMongo an external third-party payment gateway API integrated into the platform to simulate realistic and secure financial transactions during the checkout process, without processing actual money.
+11. PostgreSQL the advanced relational database management system used to securely store and manage the platform’s core operational data, including flight schedules, student records, and booking transactions.
+12. Simulation-Based Learning an educational approach utilized by the platform that replicates real-world airline operations. It provides a risk-free, interactive environment for students to practice decision-making and digital booking skills.
+13. User Acceptance Testing (UAT) the evaluation phase where selected students, instructors, and administrators tested the platform. It utilized the ISO/IEC 25010 software quality model to measure the system's functionality, usability, and overall effectiveness.
+14. Vue.js The progressive JavaScript framework used to build the front-end user interface of the platform, ensuring a highly interactive, responsive, and modern web experience for the users.
+     CURRICULUM VITAE
+John Rey B. Siman
+P-6A La Union Cabadbaran City Agusan Del Norte
+Mobile: 0905-848-9027
+Email: simanjohnrey@gmail.com
+______________________________________________
+OBJECTIVE
+Highly motivated and eager to learn Information Technology students seeking an On the Job to enhance my skills. I already have as well as to provide the opportunity for personal and professional growth and advancement opportunities.
+ 
+B. PERSONAL DETAIL
+Date of Birth: January 31, 2000
+Age: 25 years old
+Place of Birth: Cabadbaran, Agusan del Norte
+Civil Status: Single
+Citizenship: Filipino
+Religion: Pentecost
+Height: 5’6
+Weight: 50 kg
+ 
+C. EDUCATIONAL BACKGROUND
+ Bachelor of Science in Information Technology – Caraga State University, Cabadbaran
+ Campus (Currently 4th Year)
+ Senior High School – La Union Senior High School (2017 – 2019)
+ Junior High School – La Union National High School (2014 – 2017)
+ Elementary – La Union Elementary School (2014)
+ 
+D. SKILLS
+Problem Solving and Critical Thinking
+Adobe Photoshop
+ Basic Knowledge of Microsoft Office (Word, Excel, PowerPoint)
+Troubleshooting
+      
+CURRICULUM VITAE
+Jobelyn Rose R. Japos
+ P-4 Brgy Caloc-An Magallanes, Agusan del Norte
+ Mobile: 09639730726
+ Email: jobelynrosejapos@gmail.com
+______________________________________________
+I am an Information Technology student who is motivated and eager to learn. I am looking for an opportunity where I can use my technical skills, gain practical experience, and contribute to the company while continuing to grow and improve professionally.
+B. PERSONAL DETAIL
+Date of Birth: May 31, 2003
+ Age: 22  years old
+Place of Birth: Caloc-an Magallanes Agusan del Norte
+Civil Status: Single
+Citizenship: Filipino
+Religion: Catholic
+Height: 5’0
+Weight: 40 kg
+C.  EDUCATIONAL BACKGROUND
+ Bachelor of Science in Information Technology – Caraga State University, Cabadbaran Campus (Currently 4th Year)
+Senior High School – Magallanes National High School Graduated With Honors (2020 – 2022)
+Junior High School – Magallanes National High School  School Graduated With Honors (2016 – 2020)Elementary – Caloc-An Elementary School School Graduated With Honors (2010-2016)
+SKILLS
+Team Collaboration and Communication
+ Basic Knowledge of Microsoft Office (Word, Excel, PowerPoint)
+ Comfortable with email and online communication tools 
+Troubleshooting (Hardware)
+ 
+ 
+CURRICULUM VITAE
+Florence Cris L Solayao
+ P-8 Brgy Buhang Magallanes, Agusan del Norte
+ Mobile: 09925450721
+ Email: solayaoflorence@gmail.com
+______________________________________________
+OBJECTIVE
+Motivated and detail-oriented Information Technology student seeking an opportunity to apply technical skills, problem-solving abilities, and passion for technology in a dynamic organization while gaining hands-on industry experience.
+B. PERSONAL DETAIL
+Date of Birth: November 4, 2003
+ Age: 22  years old
+Place of Birth: Sta. Maria
+Civil Status: Single
+Citizenship: Filipino
+Religion: Catholic
+Height: 5’8
+Weight: 70 kg
+C.  EDUCATIONAL BACKGROUND
+ Bachelor of Science in Information Technology – Caraga State University, Cabadbaran Campus (Currently 4th Year)
+Senior High School – Magallanes National High School Graduated With Honors (2020 – 2022)
+Junior High School – Magallanes National High School  School Graduated With Honors (2016 – 2020)Elementary – Buhang Elementary School School Graduated With Honors (2010-2016)
+SKILLS
+Team Collaboration and Communication
+Adaptability Problem-Solving 
+ Basic Knowledge of Microsoft Office (Word, Excel, PowerPoint)
+Technical Skills 
+Troubleshooting (Hardware)
+Web Development (HTML, CSS, JavaScript)

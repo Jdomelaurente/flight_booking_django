@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Confirmation - {{ booking_reference }}</title>
+</head>
+
+<body
+    style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5; -webkit-font-smoothing: antialiased;">
+
+    <!-- Wrapper -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+        style="background-color: #f5f5f5; padding: 40px 0;">
+        <tr>
+            <td align="center">
+
+                <!-- Main Container -->
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="680"
+                    style="max-width: 680px; background-color: #ffffff; border-radius: 4px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.06);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td
+                            style="background-color: #FF579A; padding: 48px 40px; text-align: center; border-bottom: 4px solid #db2777;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                <tr>
+                                    <td
+                                        style="font-size: 14px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: #fce7f3; padding-bottom: 16px;">
+                                        {{ airline_name }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-bottom: 20px;">
+                                        <span
+                                            style="display: inline-block; background-color: rgba(255,255,255,0.2); color: #ffffff; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">
+                                            ✓ Booking Confirmed
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td
+                                        style="font-size: 32px; font-weight: 700; color: #ffffff; letter-spacing: -0.02em; padding-bottom: 8px;">
+                                        Your journey is booked
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="font-size: 16px; color: #fce7f3;">
+                                        Thank you for choosing {{ airline_name }}
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px;">
+
+                            <!-- Document Alert -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+                                style="background-color: rgba(255,87,154,0.05); border: 1px solid rgba(255,87,154,0.2); border-radius: 4px; margin-bottom: 32px;">
+                                <tr>
+                                    <td style="padding: 16px; text-align: center;">
+                                        <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #FF579A;">
+                                            This is your E-Ticket</h3>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Booking Reference Box -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+                                style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; margin-bottom: 32px;">
+                                <tr>
+                                    <td style="padding: 24px;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%">
+                                            <tr>
+                                                <td valign="middle">
+                                                    <h2
+                                                        style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
+                                                        PNR / RECORD LOCATOR</h2>
+                                                    <div
+                                                        style="font-family: 'Courier New', monospace; font-size: 28px; font-weight: 700; color: #0f172a; letter-spacing: 0.05em;">
+                                                        {{ booking_reference }}</div>
+                                                </td>
+                                                <td valign="middle" align="right" style="text-align: right;">
+                                                    <div style="font-size: 14px; color: #64748b; margin-bottom: 4px;">
+                                                        Booked on <strong style="color: #334155;">{{ booking_date|date:"F d, Y" }}</strong></div>
+                                                    <div style="font-size: 14px; color: #64748b;">{{ total_passengers }}
+                                                        Passenger{% if total_passengers > 1 %}s{% endif %}</div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Section Header: Contact -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+                                style="margin-bottom: 16px;">
+                                <tr>
+                                    <td
+                                        style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0;">
+                                        Contact Details
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+                                style="margin-bottom: 32px;">
+                                <tr>
+                                    <td width="33%" style="padding-bottom: 16px;">
+                                        <h4
+                                            style="margin: 0 0 4px 0; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em;">
+                                            Primary Contact</h4>
+                                        <p style="margin: 0; font-size: 14px; font-weight: 600; color: #334155;">{{ contact_name }}</p>
+                                    </td>
+                                    <td width="33%" style="padding-bottom: 16px;">
+                                        <h4
+                                            style="margin: 0 0 4px 0; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em;">
+                                            Email</h4>
+                                        <p style="margin: 0; font-size: 14px; font-weight: 600; color: #334155;">{{ contact_email }}</p>
+                                    </td>
+                                    <td width="33%" style="padding-bottom: 16px;">
+                                        <h4
+                                            style="margin: 0 0 4px 0; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em;">
+                                            Phone</h4>
+                                        <p style="margin: 0; font-size: 14px; font-weight: 600; color: #334155;">{{ contact_phone }}</p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Section Header: Flights -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+                                style="margin-bottom: 16px;">
+                                <tr>
+                                    <td
+                                        style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0;">
+                                        Flight Itinerary
+                                    </td>
+                                </tr>
+                            </table>
+
+                            {% for detail in outbound_details %}
+                            <!-- Outbound Flight Card -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+                                style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px; margin-bottom: 24px; overflow: hidden;">
+                                <tr>
+                                    <td
+                                        style="background-color: #f8fafc; padding: 16px 20px; border-bottom: 1px solid #e2e8f0;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%">
+                                            <tr>
+                                                <td
+                                                    style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #FF579A;">
+                                                    🛫 Outbound Flight
+                                                </td>
+                                                <td align="right"
+                                                    style="font-family: 'Courier New', monospace; font-size: 14px; font-weight: 600; color: #475569;">
+                                                    {{ detail.schedule.flight.flight_number }}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 24px;">
+                                        <!-- Route Display -->
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%"
+                                            style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #f1f5f9;">
+                                            <tr>
+                                                <td width="30%" align="center">
+                                                    <div
+                                                        style="font-size: 32px; font-weight: 700; color: #0f172a; line-height: 1;">
+                                                        {{ detail.schedule.flight.route.origin_airport.code }}</div>
+                                                    <div
+                                                        style="font-size: 12px; color: #64748b; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em;">
+                                                        {{ detail.schedule.flight.route.origin_airport.city }}</div>
+                                                </td>
+                                                <td width="40%" align="center" style="vertical-align: middle;">
+                                                    <table role="presentation" cellspacing="0" cellpadding="0"
+                                                        border="0" width="100%">
+                                                        <tr>
+                                                            <td height="2"
+                                                                style="background-color: #e2e8f0; font-size: 0; line-height: 0;">
+                                                                &nbsp;</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td align="center"
+                                                                style="padding: 8px 0; font-size: 12px; color: #64748b; font-weight: 500;">
+                                                                {% if detail.schedule.flight.total_stops == 0 %}
+                                                                Direct Flight
+                                                                {% else %}
+                                                                {{ detail.schedule.flight.total_stops }} Stop{% if detail.schedule.flight.total_stops > 1 %}s{% endif %}
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                                <td width="30%" align="center">
+                                                    <div
+                                                        style="font-size: 32px; font-weight: 700; color: #0f172a; line-height: 1;">
+                                                        {{ detail.schedule.flight.route.destination_airport.code }}
+                                                    </div>
+                                                    <div
+                                                        style="font-size: 12px; color: #64748b; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em;">
+                                                        {{ detail.schedule.flight.route.destination_airport.city }}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        <!-- Times -->
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%" style="margin-bottom: 20px;">
+                                            <tr>
+                                                <td width="50%" style="padding-right: 12px;">
+                                                    <h4
+                                                        style="margin: 0 0 4px 0; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em;">
+                                                        Departure</h4>
+                                                    <div style="font-size: 20px; font-weight: 700; color: #0f172a;">{{ detail.schedule.departure_time|date:"H:i" }}</div>
+                                                    <div style="font-size: 13px; color: #64748b; margin-top: 2px;">{{ detail.schedule.departure_time|date:"F d, Y" }}</div>
+                                                </td>
+                                                <td width="50%" style="padding-left: 12px;">
+                                                    <h4
+                                                        style="margin: 0 0 4px 0; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em;">
+                                                        Arrival</h4>
+                                                    <div style="font-size: 20px; font-weight: 700; color: #0f172a;">{{ detail.schedule.arrival_time|date:"H:i" }}</div>
+                                                    <div style="font-size: 13px; color: #64748b; margin-top: 2px;">{{ detail.schedule.arrival_time|date:"F d, Y" }}</div>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        {% if detail.schedule.flight.layovers_data %}
+                                        <!-- Layovers -->
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%" style="margin-bottom: 20px; padding: 12px; background-color: #f8fafc; border-radius: 4px;">
+                                            <tr>
+                                                <td style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; padding-bottom: 8px;">
+                                                    Flight Stops / Layovers
+                                                </td>
+                                            </tr>
+                                            {% for layover in detail.schedule.flight.layovers_data %}
+                                            <tr>
+                                                <td style="padding: 4px 0; border-top: 1px solid #e2e8f0;">
+                                                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                                        <tr>
+                                                            <td style="font-size: 13px; color: #334155; font-weight: 600;">
+                                                                Stop {{ forloop.counter }}: {{ layover.airport }} ({{ layover.city }})
+                                                            </td>
+                                                            <td align="right" style="font-size: 12px; color: #64748b;">
+                                                                Layover: {{ layover.duration }}
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </table>
+                                        {% endif %}
+
+                                        <!-- Flight Details -->
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%" style="padding-top: 20px; border-top: 1px solid #f1f5f9;">
+                                            <tr>
+                                                <td width="33%">
+                                                    <h4
+                                                        style="margin: 0 0 4px 0; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em;">
+                                                        Passenger</h4>
+                                                    <p
+                                                        style="margin: 0; font-size: 14px; font-weight: 600; color: #334155;">
+                                                        {{ detail.passenger.get_full_name }}</p>
+                                                </td>
+                                                <td width="33%">
+                                                    <h4
+                                                        style="margin: 0 0 4px 0; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em;">
+                                                        Class</h4>
+                                                    <p
+                                                        style="margin: 0; font-size: 14px; font-weight: 600; color: #334155;">
+                                                        {{ detail.fare_family_name|default:detail.seat_class.name|default:"Economy" }}</p>
+                                                </td>
+                                                {% if detail.seat %}
+                                                <td width="33%">
+                                                    <h4
+                                                        style="margin: 0 0 4px 0; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em;">
+                                                        Seat</h4>
+                                                    <p
+                                                        style="margin: 0; font-size: 14px; font-weight: 600; color: #334155;">
+                                                        {{ detail.seat.seat_number }}</p>
+                                                </td>
+                                                {% endif %}
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            {% endfor %}
+
+                            {% if is_round_trip %}
+                            {% for detail in return_details %}
+                            <!-- Return Flight Card -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+                                style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px; margin-bottom: 24px; overflow: hidden;">
+                                <tr>
+                                    <td
+                                        style="background-color: #f8fafc; padding: 16px 20px; border-bottom: 1px solid #e2e8f0;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%">
+                                            <tr>
+                                                <td
+                                                    style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #E84A88;">
+                                                    🛬 Return Flight
+                                                </td>
+                                                <td align="right"
+                                                    style="font-family: 'Courier New', monospace; font-size: 14px; font-weight: 600; color: #475569;">
+                                                    {{ detail.schedule.flight.flight_number }}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 24px;">
+                                        <!-- Route Display -->
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%"
+                                            style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #f1f5f9;">
+                                            <tr>
+                                                <td width="30%" align="center">
+                                                    <div
+                                                        style="font-size: 32px; font-weight: 700; color: #0f172a; line-height: 1;">
+                                                        {{ detail.schedule.flight.route.origin_airport.code }}</div>
+                                                    <div
+                                                        style="font-size: 12px; color: #64748b; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em;">
+                                                        {{ detail.schedule.flight.route.origin_airport.city }}</div>
+                                                </td>
+                                                <td width="40%" align="center" style="vertical-align: middle;">
+                                                    <table role="presentation" cellspacing="0" cellpadding="0"
+                                                        border="0" width="100%">
+                                                        <tr>
+                                                            <td height="2"
+                                                                style="background-color: #e2e8f0; font-size: 0; line-height: 0;">
+                                                                &nbsp;</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td align="center"
+                                                                style="padding: 8px 0; font-size: 12px; color: #64748b; font-weight: 500;">
+                                                                {% if detail.schedule.flight.total_stops == 0 %}
+                                                                Direct Flight
+                                                                {% else %}
+                                                                {{ detail.schedule.flight.total_stops }} Stop{% if detail.schedule.flight.total_stops > 1 %}s{% endif %}
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                                <td width="30%" align="center">
+                                                    <div
+                                                        style="font-size: 32px; font-weight: 700; color: #0f172a; line-height: 1;">
+                                                        {{ detail.schedule.flight.route.destination_airport.code }}
+                                                    </div>
+                                                    <div
+                                                        style="font-size: 12px; color: #64748b; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em;">
+                                                        {{ detail.schedule.flight.route.destination_airport.city }}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        <!-- Times -->
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%" style="margin-bottom: 20px;">
+                                            <tr>
+                                                <td width="50%" style="padding-right: 12px;">
+                                                    <h4
+                                                        style="margin: 0 0 4px 0; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em;">
+                                                        Departure</h4>
+                                                    <div style="font-size: 20px; font-weight: 700; color: #0f172a;">{{ detail.schedule.departure_time|date:"H:i" }}</div>
+                                                    <div style="font-size: 13px; color: #64748b; margin-top: 2px;">{{ detail.schedule.departure_time|date:"F d, Y" }}</div>
+                                                </td>
+                                                <td width="50%" style="padding-left: 12px;">
+                                                    <h4
+                                                        style="margin: 0 0 4px 0; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em;">
+                                                        Arrival</h4>
+                                                    <div style="font-size: 20px; font-weight: 700; color: #0f172a;">{{ detail.schedule.arrival_time|date:"H:i" }}</div>
+                                                    <div style="font-size: 13px; color: #64748b; margin-top: 2px;">{{ detail.schedule.arrival_time|date:"F d, Y" }}</div>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        {% if detail.schedule.flight.layovers_data %}
+                                        <!-- Layovers -->
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%" style="margin-bottom: 20px; padding: 12px; background-color: #f8fafc; border-radius: 4px;">
+                                            <tr>
+                                                <td style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; padding-bottom: 8px;">
+                                                    Flight Stops / Layovers
+                                                </td>
+                                            </tr>
+                                            {% for layover in detail.schedule.flight.layovers_data %}
+                                            <tr>
+                                                <td style="padding: 4px 0; border-top: 1px solid #e2e8f0;">
+                                                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                                        <tr>
+                                                            <td style="font-size: 13px; color: #334155; font-weight: 600;">
+                                                                Stop {{ forloop.counter }}: {{ layover.airport }} ({{ layover.city }})
+                                                            </td>
+                                                            <td align="right" style="font-size: 12px; color: #64748b;">
+                                                                Layover: {{ layover.duration }}
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </table>
+                                        {% endif %}
+
+                                        <!-- Flight Details -->
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%" style="padding-top: 20px; border-top: 1px solid #f1f5f9;">
+                                            <tr>
+                                                <td width="33%">
+                                                    <h4
+                                                        style="margin: 0 0 4px 0; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em;">
+                                                        Passenger</h4>
+                                                    <p
+                                                        style="margin: 0; font-size: 14px; font-weight: 600; color: #334155;">
+                                                        {{ detail.passenger.get_full_name }}</p>
+                                                </td>
+                                                <td width="33%">
+                                                    <h4
+                                                        style="margin: 0 0 4px 0; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em;">
+                                                        Class</h4>
+                                                    <p
+                                                        style="margin: 0; font-size: 14px; font-weight: 600; color: #334155;">
+                                                        {{ detail.fare_family_name|default:detail.seat_class.name|default:"Economy" }}</p>
+                                                </td>
+                                                {% if detail.seat %}
+                                                <td width="33%">
+                                                    <h4
+                                                        style="margin: 0 0 4px 0; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em;">
+                                                        Seat</h4>
+                                                    <p
+                                                        style="margin: 0; font-size: 14px; font-weight: 600; color: #334155;">
+                                                        {{ detail.seat.seat_number }}</p>
+                                                </td>
+                                                {% endif %}
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            {% endfor %}
+                            {% endif %}
+
+                            <!-- Passengers Section -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+                                style="margin-bottom: 16px;">
+                                <tr>
+                                    <td
+                                        style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0;">
+                                        Passengers ({{ total_passengers }})
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+                                style="margin-bottom: 32px;">
+                                {% for passenger in passengers %}
+                                <tr>
+                                    <td
+                                        style="padding: 16px 20px; background-color: #f8fafc; border-radius: 4px; border-left: 3px solid #FF579A; margin-bottom: 12px;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%">
+                                            <tr>
+                                                <td>
+                                                    <div style="font-weight: 600; color: #0f172a;">{{ passenger.get_full_name }}</div>
+                                                    <div style="font-size: 13px; color: #64748b; margin-top: 2px;">{{ passenger.title }} &bull; {{ passenger.nationality|default:"Philippines" }}</div>
+                                                </td>
+                                                <td align="right">
+                                                    <span
+                                                        style="font-size: 12px; font-weight: 600; color: #FF579A; text-transform: uppercase; letter-spacing: 0.05em;">{{ passenger.passenger_type }}</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+
+                            {% if addons_summary %}
+                            <!-- Add-ons Section -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+                                style="margin-bottom: 16px;">
+                                <tr>
+                                    <td
+                                        style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0;">
+                                        Add-ons & Travel Benefits
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+                                style="margin-bottom: 32px;">
+                                {% for addon in addons_summary %}
+                                <tr>
+                                    <td
+                                        style="padding: 12px 16px; background-color: #fff0f5; border-radius: 2px; border-left: 2px solid #FF579A; margin-bottom: 8px;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%">
+                                            <tr>
+                                                <td>
+                                                    <div style="font-size: 13px; font-weight: 600; color: #E84A88;">{{ addon.item }}</div>
+                                                    <div style="font-size: 11px; color: #FF579A; margin-top: 2px;">Passenger: {{ addon.passenger }}</div>
+                                                </td>
+                                                <td align="right">
+                                                    <span
+                                                        style="font-size: 12px; font-weight: 700; color: #E84A88;">
+                                                        {% if addon.price > 0 %}₱{{ addon.price|floatformat:2 }}{% else %}Included{% endif %}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                            {% endif %}
+
+                            <!-- Payment Summary -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+                                style="background-color: #f8fafc; border-radius: 4px; margin-bottom: 32px;">
+                                <tr>
+                                    <td style="padding: 24px;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%" style="margin-bottom: 16px;">
+                                            <tr>
+                                                <td
+                                                    style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0;">
+                                                    Payment Summary
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%">
+                                            <tr>
+                                                <td
+                                                    style="padding: 12px 0; font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0;">
+                                                    Base Fare
+                                                </td>
+                                                <td align="right"
+                                                    style="padding: 12px 0; font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0;">
+                                                    ₱{{ base_fare|floatformat:2 }}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td
+                                                    style="padding: 12px 0; font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0;">
+                                                    Taxes & Fees
+                                                </td>
+                                                <td align="right"
+                                                    style="padding: 12px 0; font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0;">
+                                                    ₱{{ tax_total|floatformat:2 }}
+                                                </td>
+                                            </tr>
+                                            {% if insurance_total > 0 %}
+                                            <tr>
+                                                <td
+                                                    style="padding: 12px 0; font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0;">
+                                                    Travel Insurance
+                                                </td>
+                                                <td align="right"
+                                                    style="padding: 12px 0; font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0;">
+                                                    ₱{{ insurance_total|floatformat:2 }}
+                                                </td>
+                                            </tr>
+                                            {% endif %}
+                                            <tr>
+                                                <td
+                                                    style="padding: 16px 0 12px 0; font-size: 18px; font-weight: 700; color: #0f172a; border-top: 2px solid #0f172a; margin-top: 8px;">
+                                                    Total Paid
+                                                </td>
+                                                <td align="right"
+                                                    style="padding: 16px 0 12px 0; font-size: 18px; font-weight: 700; color: #0f172a; border-top: 2px solid #0f172a;">
+                                                    ₱{{ amount_paid|floatformat:2 }}
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%"
+                                            style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                                            <tr>
+                                                <td width="50%" style="padding-bottom: 16px;">
+                                                    <h4
+                                                        style="margin: 0 0 4px 0; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em;">
+                                                        Payment Method</h4>
+                                                    <p
+                                                        style="margin: 0; font-size: 13px; font-weight: 600; color: #334155;">
+                                                        {{ payment_method }}</p>
+                                                </td>
+                                                <td width="50%" style="padding-bottom: 16px;">
+                                                    <h4
+                                                        style="margin: 0 0 4px 0; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em;">
+                                                        Transaction ID</h4>
+                                                    <p
+                                                        style="margin: 0; font-size: 13px; font-weight: 600; color: #334155; font-family: 'Courier New', monospace;">
+                                                        {{ transaction_id }}</p>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="2">
+                                                    <h4
+                                                        style="margin: 0 0 4px 0; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em;">
+                                                        Payment Date</h4>
+                                                    <p
+                                                        style="margin: 0; font-size: 13px; font-weight: 600; color: #334155;">
+                                                        {{ payment_date|date:"F d, Y" }}</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Important Info -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+                                style="background-color: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 4px 4px 0; margin-bottom: 32px;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <h4
+                                            style="margin: 0 0 12px 0; font-size: 14px; font-weight: 700; color: #92400e;">
+                                            ⚠ What You Need to Do Before Your Flight
+                                        </h4>
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%">
+                                            <tr>
+                                                <td style="font-size: 14px; color: #78350f; padding-bottom: 8px;">
+                                                    ✅ <strong>Done:</strong> Your booking is confirmed. Your PNR is
+                                                    <strong>{{ booking_reference }}</strong> — save this!
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="font-size: 14px; color: #78350f; padding-bottom: 8px;">
+                                                    ✈️ <strong>Next:</strong> Check in at the airport counter or kiosk
+                                                    <strong>24–48 hours before departure</strong>. Bring your PNR and a
+                                                    valid government-issued ID.
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="font-size: 14px; color: #78350f; padding-bottom: 8px;">
+                                                    🖨️ <strong>Then:</strong> After check-in, you will receive your
+                                                    <strong>Boarding Pass</strong> — the only document accepted at the
+                                                    security gate and boarding area. It will contain your seat number,
+                                                    gate, and QR code.
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="font-size: 14px; color: #78350f;">
+                                                    ⏰ Arrive at the airport at least <strong>2 hours before
+                                                        departure</strong> for domestic flights. The check-in counter
+                                                    closes <strong>45 minutes before departure</strong>.
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- CTA Buttons -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+                                style="margin-bottom: 32px;">
+                                <tr>
+                                    <td align="center">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            style="display: inline-block; margin-right: 12px;">
+                                            <tr>
+                                                <td
+                                                    style="background-color: #FF579A; border-radius: 4px; text-align: center;">
+                                                    <a href="{{ website_url }}/manage-booking?ref={{ booking_reference }}"
+                                                        style="display: inline-block; padding: 14px 28px; font-size: 14px; font-weight: 600; color: #ffffff; text-decoration: none; border-radius: 4px;">Manage
+                                                        Booking</a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            style="display: inline-block;">
+                                            <tr>
+                                                <td
+                                                    style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px; text-align: center;">
+                                                    <a href="{{ website_url }}/check-in?ref={{ booking_reference }}"
+                                                        style="display: inline-block; padding: 14px 28px; font-size: 14px; font-weight: 600; color: #0f172a; text-decoration: none; border-radius: 4px;">Online
+                                                        Check-in</a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td
+                            style="background-color: #f8fafc; padding: 32px 40px; text-align: center; border-top: 1px solid #e2e8f0;">
+                            <h4
+                                style="margin: 0 0 12px 0; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em;">
+                                Need Assistance?</h4>
+                            <p style="margin: 0 0 24px 0; font-size: 14px; color: #334155;">
+                                <a href="tel:{{ support_phone }}"
+                                    style="color: #334155; text-decoration: none; font-weight: 500;">{{ support_phone
+                                    }}</a>
+                                <span style="color: #cbd5e1; margin: 0 12px;">|</span>
+                                <a href="mailto:{{ support_email }}"
+                                    style="color: #334155; text-decoration: none; font-weight: 500;">{{ support_email
+                                    }}</a>
+                            </p>
+
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+                                style="border-top: 1px solid #e2e8f0; padding-top: 24px;">
+                                <tr>
+                                    <td style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
+                                        This is an automated confirmation. Please do not reply to this email.<br>
+                                        © {% now "Y" %} {{ airline_name }}. All rights reserved.
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                </table>
+
+            </td>
+        </tr>
+    </table>
+
+</body>
+
+</html>

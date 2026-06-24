@@ -1,0 +1,56 @@
+57 objects imported automatically (use -v 2 for details).
+
+[MODEL] Attempting to load XGBoost model from: C:\Users\user\OneDrive\Desktop\Fbs\fbs-vue\fbs_backend\flight_xgb.pkl
+[ERROR] Failed to load XGBoost model: No module named 'xgboost'
+[SUCCESS] Original Feature mapping loaded from feature_mapping.json
+   Loaded 39 feature columns
+[SEARCH] DEBUG: Raw request data: {'trip_type': 'one_way', 'passengers': [{'type': 'Adult', 'title': 'MR', 'first_name': 'Test', 'last_name': 'User', 'date_of_birth': '1990-01-01', 'key': 'pax_1', 'nationality': 'PH', 'passport_number': '123', 'passport_expiry': '2030-01-01'}], 'contact_info': {'email': 'test@test.com', 'phone': '1234', 'firstName': 'Test', 'lastName': 'User'}, 'passengerCount': {'adult': 1}, 'selectedOutbound': {'id': 109, 'schedule_id': 109, 'price': 16274.0, 'class_type': 'Premium Economy', 'fare_family': 'premium'}, 'addons': {'baggage': {}, 'meals': {}, 'wheelchair': {}, 'seats': {}}}
+DEBUG: Creating user with email: test@test.com
+DEBUG: Contact info for user: {'firstName': 'Test', 'lastName': 'User', 'email': 'test@test.com', 'phone': '1234'}
+[OK] Created new user: 77 - test@test.com
+   First name: Test
+   Last name: User
+DEBUG: Creating booking (total will be backend-calculated)
+DEBUG: Booking created with ID: 81 (total pending backend calculation)
+[OK] Booking contact created: 16
+DEBUG: Creating 1 passengers
+  Passenger 1 full data: {'first_name': 'Test', 'firstName': '', 'last_name': 'User', 'lastName': '', 'middle_name': '', 'middleName': '', 'title': 'MR', 'date_of_birth': '1990-01-01', 'dateOfBirth': '', 'nationality': 'PH', 'passport_number': '123', 'passportNumber': '', 'passport_expiry': '2030-01-01', 'passportExpiry': '', 'type': 'Adult', 'passenger_type': 'Adult', 'key': 'pax_1', 'ph_discount_type': 'none', 'phDiscountType': 'none'}
+    First Name: Test
+    Last Name: User
+    Middle Name: 
+    Type: Adult
+    Date of Birth: 1990-01-01
+    Discount Type: none
+    Date of birth parsed: 1990-01-01
+    Passport expiry parsed: 2030-01-01
+    Creating PassengerInfo...
+    Passenger created with ID: 134
+    Passenger full name: Test User
+DEBUG: Created 1 passengers successfully
+DEBUG: Created 1 passengers
+DEBUG: Creating booking details for passenger 1: Test User
+  Segment 1 flight data: {'id': 109, 'schedule_id': 109, 'price': Decimal('16274.000000000000000'), 'class_type': 'Premium Economy', 'fare_family': 'premium'}
+  Segment 1 Schedule ID: 109
+  Segment 1 schedule found: 109 - PR1000
+  Passenger key for addons: pax_1
+    [CREATE DETAIL] Using frontend quoted base price: PHP 16274.0
+DEBUG: Looking for addons for passenger key: pax_1
+DEBUG: Segment 1 booking detail created: 114
+DEBUG: Applying taxes for 1 booking details
+DEBUG: Applied fallback VAT for detail 114
+DEBUG: Updating booking totals
+
+
+=========== DEBUG: _update_booking_totals ===========
+DEBUG: In _update_booking_totals for booking 81
+  Base fare total: 16274.00
+  Insurance total: 0.00
+  Tax total: 2152.88
+  Addon total base: 0.00
+  [OK] Final Grand Total: 18427
+=========== END DEBUG: _update_booking_totals ===========
+
+
+DEBUG: Booking creation successful!
+Status: 201
+Data: b'{"success":true,"booking_id":81,"booking_reference":"OG3TXN","status":"pending","total_amount":18427.0,"payment_info":{"needs_payment":true,"amount":18427.0,"currency":"PHP","description":"Flight Booking 81"},"message":"Booking created successfully with pending payment status"}'

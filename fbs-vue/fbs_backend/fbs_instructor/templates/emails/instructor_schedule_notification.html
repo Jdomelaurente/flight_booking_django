@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLIGHT BOOKING - Today's Schedule</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #fff9fb;
+            color: #2d3748;
+            line-height: 1.6;
+        }
+
+        .letter-container {
+            max-width: 700px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            padding: 60px 80px;
+            border: 1px solid #f9a8d4;
+            box-shadow: 0 4px 20px rgba(190, 24, 93, 0.05);
+            position: relative;
+        }
+
+        .decor-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(to right, #db2777, #f472b6);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            border-bottom: 2px solid #fce7f3;
+            padding-bottom: 20px;
+        }
+
+        .university-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: #9d174d;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 0;
+        }
+
+        .department-name {
+            font-size: 14px;
+            color: #be185d;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .date {
+            text-align: right;
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 30px;
+        }
+
+        .letter-body {
+            font-size: 18px;
+            text-align: left;
+        }
+
+        .schedule-highlight {
+            margin: 25px 0;
+            padding: 20px;
+            background-color: #fff1f2;
+            border-left: 4px solid #db2777;
+            font-weight: 700;
+            color: #9d174d;
+        }
+
+        .closing {
+            margin-top: 50px;
+        }
+
+        .signature {
+            margin-top: 20px;
+            font-weight: 700;
+            color: #9d174d;
+        }
+
+        .footer-info {
+            margin-top: 60px;
+            padding-top: 20px;
+            font-size: 11px;
+            color: #a0aec0;
+            text-align: center;
+            border-top: 1px solid #edf2f7;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="letter-container">
+        <div class="decor-bar"></div>
+
+        <div class="header">
+            <h1 class="university-name">FLIGHT BOOKING</h1>
+            <div class="department-name">Cabagan State University | Faculty Notification</div>
+        </div>
+
+        <div class="date">Dated: {{ formal_date }}</div>
+
+        <div class="letter-body">
+            <p>GOOD DAY, {{ instructor_name }},</p>
+
+            <p>This is a formal reminder that you have a schedule today in <strong>{{ section_name }}</strong>. Please
+                ensure to attend your session on time for the students' progress.</p>
+
+            <div class="schedule-highlight">
+                <div style="font-size: 12px; text-transform: uppercase; color: #be185d; margin-bottom: 5px;">Today's
+                    Verified Schedule:</div>
+                <div style="font-size: 24px;">{{ display_schedule }}</div>
+            </div>
+
+            <p>Thank you for your dedication to the aviation program.</p>
+        </div>
+
+        <div class="closing">
+            <p>Respectfully yours,</p>
+            <div class="signature">
+                DIRECTORATE OF ACADEMIC AFFAIRS<br>
+                Cabagan State University
+            </div>
+        </div>
+
+        <div class="footer-info">
+            &copy; {{ current_year }} FBS Management | Official Academic Dispatch
+        </div>
+    </div>
+</body>
+
+</html>

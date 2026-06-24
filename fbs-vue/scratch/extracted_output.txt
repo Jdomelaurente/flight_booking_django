@@ -1,0 +1,851 @@
+================================================================================
+SECTION: 1.1 Project Context
+================================================================================
+1.1 Project Context
+The global tourism and hospitality industry is continuously evolving in response to technological advancements and increasing reliance on data-driven systems. In today’s digital environment, airline booking platforms, reservation systems, and customer management tools have become essential components of the sector. As a result, educational institutions must integrate innovative learning approaches, such as simulation-based platforms, to equip students with real-world competencies. Educational simulation systems provide an interactive, hands-on learning experience that allows students to practice decision-making, reservation processes, and customer interaction in a controlled and risk-free environment. This shift toward experiential and student-centered learning reflects modern trends in tourism education and prepares students to meet industry demands.[1]
+Despite the growing importance of simulation technologies, there are still significant gaps in existing studies and implementations. Many available systems are either designed for commercial use or lack alignment with academic objectives. Existing research often focuses on general e-learning tools rather than specialized platforms tailored for tourism and hospitality training. Furthermore, limited attention has been given to the development of flight booking simulation systems that incorporate realistic scenarios, user interaction, and performance evaluation features specifically for students. This indicates a clear need for a more focused and education-oriented solution.[2]. 
+In the current setting at Caraga State University Cabadbaran Campus (CSUCC), particularly within the College of Tourism and Hospitality Management (CTHM), teaching methods still rely heavily on theoretical instruction. While foundational knowledge is provided, students have limited exposure to actual airline booking procedures and real-world operational scenarios. The absence of an interactive simulation tool restricts their ability to apply learned concepts in practical situations. Consequently, students may struggle to understand complex booking systems, manage customer transactions, and develop the technical and interpersonal skills required in the tourism industry.[3]. 
+To address these challenges, the proposed Flight Booking Simulation Platform offers an innovative and practical solution. The system is designed to replicate real-world airline booking environments, enabling students to perform tasks such as searching flights, managing reservations, and handling customer interactions. By providing a secure and controlled learning environment, the platform bridges the gap between theory and practice. It enhances students’ technical skills, improves their confidence, and prepares them for professional roles in the tourism and hospitality sector. Ultimately, this solution supports the university’s commitment to academic excellence and aligns with global trends in technology-driven education.
+1.2 Purpose 
+
+
+================================================================================
+SECTION: 1.2 Purpose and Description
+================================================================================
+1.2 Purpose and Description  …………………………………….…...………
+3
+1.3 Objectives of the Study  ………………………………………………….
+3
+1.4 Scope and Limitation of the Stud  ………………………………..………
+4
+1.5 Significance of the Study  ……………………………………….………..
+5
+ll.
+REVIEW OF RELATED LITERATURE
+2.1 The Evolution of Internet Pedagogy in Tourism and Hospitality
+      Education   ………………………………..…………………………………
+6
+2.2 Simulation-Based Learning in Higher Education:
+     A meta Analysis   ……………………….…………………………….……
+6
+2.3 Information Technology and Consumer Behavior in
+     Travel and Tourism   ...……………………………………………….……
+7
+2.4 The Role of Information and Communication Technology
+     (ICT) in Tourism Education   …………..…………………………….……
+7
+2.5 Examining Instructional Technologies in Hospitality and
+     Tourism Education   …………………………………………....…….……
+7
+2.6 Perceived Usefulness of Simulation Learning in
+     Hospitality Education   ……………………………………………….……
+8
+2.7 Enhancing Hospitality Student Learning Through the
+     Use of a Business Simulation  ……………..…………..………….…….
+8
+2.8 Predicting Property Prices with Machine Learning
+     Algorithms   ………………………………………………….…………….
+8
+2.9 Airfare Prices Prediction Using Machine Learning
+     Techniques   ………………………………………………………………
+9
+2.10 Airline Booking System   ………………………….……………………
+9
+2.11 Developing Flight Booking Simulation Platform Backend
+      Using Django REST Framework  ……………..………….………………
+10
+2.12 Seat Reservation Allowing Seat Changes  ………………….…………
+10
+2.13 Embracing Agile  ………………………………………..………….…….
+11
+2.14 A Performance Benchmark for the PostgreSQL and
+   MySQL Databases  ………………………………………………..………
+11
+2.15 Performance Comparison of React, Angular, and
+      Vue.js Frameworks  ………………………………………………….……
+12
+ lll.
+METHODOLOGY
+3.1 Requirements Specification   ……………………………………..……..
+13
+3.1.1 Technical Feasibility  …………………………………………………..
+13
+3.2 Data Processing Model   …………………………………………………
+17
+IV.
+RESULT AND DISCUSSION
+4.1 Introduction   ………………………………………………………………
+30
+4.2 Requirements Modeling   ………………………………………………..
+30
+4.3 The Developed System   ………………………………………………..
+34
+4.4 Testing Results   …………………………………………………………
+53
+4.4.1 Technical Verification   ………………………………………………...
+54
+4.4.2 User Acceptance Testing   ……………………………………………
+57
+4.5 Discussion   ………………………………………………………………….
+65
+V.
+CONCLUSIONS AND RECOMMENDATIONS
+5.1 Conclusion   ………………………………………………………………..
+71
+5.2 Recommendation   …………………………………………………………
+72
+REFERENCES
+………………………………………………………………………
+75
+APPENDICES:
+A. Relevant Source Code……
+78
+B. Letter to Conduct Interview with Pictorial……
+86
+C. Work and Financial Plan………
+87
+D. Data Dictionary………………
+94
+E. Sample Survey Questionnaire……………………
+104
+F. Evaluation Process……………………
+109
+G. Grammarian Certificate……………………
+111
+H. Acceptance Certificate……… 
+112
+LIST OF FIGURES
+Chapter II
+Figure
+Description
+Page
+1.
+Structure Design  .…………………………………………..…
+17
+2.
+UML Use Case Diagram for the Flight Booking Simulation Platform for CTHM-CSUCC   …………………………………
+18
+3.
+Flow Chart for Students in Flight Booking Simulation Platform for CTHM-
+
+
+================================================================================
+SECTION: 1.3 Objectives
+================================================================================
+1.3 Objectives of the Study  ………………………………………………….
+3
+1.4 Scope and Limitation of the Stud  ………………………………..………
+4
+1.5 Significance of the Study  ……………………………………….………..
+5
+ll.
+REVIEW OF RELATED LITERATURE
+2.1 The Evolution of Internet Pedagogy in Tourism and Hospitality
+      Education   ………………………………..…………………………………
+6
+2.2 Simulation-Based Learning in Higher Education:
+     A meta Analysis   ……………………….…………………………….……
+6
+2.3 Information Technology and Consumer Behavior in
+     Travel and Tourism   ...……………………………………………….……
+7
+2.4 The Role of Information and Communication Technology
+     (ICT) in Tourism Education   …………..…………………………….……
+7
+2.5 Examining Instructional Technologies in Hospitality and
+     Tourism Education   …………………………………………....…….……
+7
+2.6 Perceived Usefulness of Simulation Learning in
+     Hospitality Education   ……………………………………………….……
+8
+2.7 Enhancing Hospitality Student Learning Through the
+     Use of a Business Simulation  ……………..…………..………….…….
+8
+2.8 Predicting Property Prices with Machine Learning
+     Algorithms   ………………………………………………….…………….
+8
+2.9 Airfare Prices Prediction Using Machine Learning
+     Techniques   ………………………………………………………………
+9
+2.10 Airline Booking System   ………………………….……………………
+9
+2.11 Developing Flight Booking Simulation Platform Backend
+      Using Django REST Framework  ……………..………….………………
+10
+2.12 Seat Reservation Allowing Seat Changes  ………………….…………
+10
+2.13 Embracing Agile  ………………………………………..………….…….
+11
+2.14 A Performance Benchmark for the PostgreSQL and
+   MySQL Databases  ………………………………………………..………
+11
+2.15 Performance Comparison of React, Angular, and
+      Vue.js Frameworks  ………………………………………………….……
+12
+ lll.
+METHODOLOGY
+3.1 Requirements Specification   ……………………………………..……..
+13
+3.1.1 Technical Feasibility  …………………………………………………..
+13
+3.2 Data Processing Model   …………………………………………………
+17
+IV.
+RESULT AND DISCUSSION
+4.1 Introduction   ………………………………………………………………
+30
+4.2 Requirements Modeling   ………………………………………………..
+30
+4.3 The Developed System   ………………………………………………..
+34
+4.4 Testing Results   …………………………………………………………
+53
+4.4.1 Technical Verification   ………………………………………………...
+54
+4.4.2 User Acceptance Testing   ……………………………………………
+57
+4.5 Discussion   ………………………………………………………………….
+65
+V.
+CONCLUSIONS AND RECOMMENDATIONS
+5.1 Conclusion   ………………………………………………………………..
+71
+5.2 Recommendation   …………………………………………………………
+72
+REFERENCES
+………………………………………………………………………
+75
+APPENDICES:
+A. Relevant Source Code……
+78
+B. Letter to Conduct Interview with Pictorial……
+86
+C. Work and Financial Plan………
+87
+D. Data Dictionary………………
+94
+E. Sample Survey Questionnaire……………………
+104
+F. Evaluation Process……………………
+109
+G. Grammarian Certificate……………………
+111
+H. Acceptance Certificate……… 
+112
+LIST OF FIGURES
+Chapter II
+Figure
+Description
+Page
+1.
+Structure Design  .…………………………………………..…
+17
+2.
+UML Use Case Diagram for the Flight Booking Simulation Platform for CTHM-CSUCC   …………………………………
+18
+3.
+Flow Chart for Students in Flight Booking Simulation Platform for CTHM-CSUCC   ……………….………..………
+20
+4.
+System Architecture of t
+
+
+================================================================================
+SECTION: 3.1.1. Technical Feasibility
+================================================================================
+3.1.1. Technical Feasibility 
+Table 1. Minimum Hardware Requirements
+Table 1. Estimated Project Cost
+Item Description 
+Technical Specifications 
+Quantity 
+Unit Price (PHP) 
+Total Cost (PHP) 
+System Unit 
+Core i5-10th Gen, 8GB DDR4 RAM, 477GB SSD 
+1 unit 
+25,000.00 
+25,000.00 
+Monitor 
+21.5" Full HD LED Display 
+1 unit 
+6,912.00
+6,912.00
+Peripherals 
+Standard Keyboard and Optical Mouse Bundle 
+1 set 
+748.00 
+748.00
+Network Interface 
+Built-in Realtek LAN / USB WiFi Adapter 
+1 unit 
+600.00 
+600.00 
+TOTAL INITIAL COST 
+₱ 33,260
+Table 3 The hardware investment for the platform is strategically budgeted to ensure the system unit provides the necessary computational power for the concurrent execution of the Django backend and PostgreSQL database. By allocating funds for a high-performance 12th Gen processor and 16GB of RAM, the platform maintains the responsiveness required for a data-driven simulation environment. The budget further accounts for essential visual and input components, such as the 21.5" LED monitor and a standard peripheral bundle, to ensure a complete and ergonomic workstation setup. Additionally, the inclusion of a versatile network interface supports seamless connectivity via local LAN or WiFi, which is vital for real-time system operations. These specific hardware selections prioritize long-term technical stability while keeping the initial capital outlay economically viable for institutional implementation. 
+Table 3. Software Requirements and Cost
+Item Description 
+Technical Specifications 
+Unit Price (Monthly) 
+Total Cost (Annual) 
+Front end 
+Tailwind CSS, Vue.js (JavaScript) 
+0.00 
+0.00 
+Front end Tool 
+Visual Studio Code 
+0.00 
+0.00 
+Back end 
+Django (Python) 
+0.00 
+0.00 
+Database 
+PostgreSQL (Managed Instance) 
+0.00 
+0.00 
+Cloud Hosting 
+Railway.app (Pro Tier / Team Plan) 
+1,150.00 
+13,800.00 
+Domain Name 
+Hostinger (Premium .com + SSL + Privacy) 
+165.00 
+1,980.00 
+TOTAL SOFTWARE COST 
+₱ 1,315.00 
+₱ 15,780.00 
+   Table 2 presents the software requirements and estimated costs for the proposed "SMART FLIGHT BOOKING SIMULATION PLATFORM FOR CTHM-CSUCC: AN INTERACTIVE AND DATA-DRIVEN TRAINING TOOL FOR HOSPITALITY AND TOURISM EDUCATION." The system utilizes a modern full-stack architecture, featuring a reactive front end built with Tailwind CSS for modular styling and Vue.js (JavaScript) to ensure a seamless, dynamic user interface for flight simulations. The back end is powered by Django (Python), selected for its robust security protocols and efficient data handling, while PostgreSQL serves as the managed database to maintain high data integrity for student records and flight schedules. To ensure professional-grade reliability and 24/7 accessibility for the CTHM department, the platform is deployed via the Railway.app Pro Plan ($20/month), providing superior resource allocation compared to trial tiers, and is paired with a custom Hostinger .com domain that includes SSL encryption and privacy protection. This integrated software suite, with a total estimated annual operating cost of ₱ 15,780.00, provides a scalable, secure, and industry-standard environment essential for high-fidelity hospitality and tourism training. 
+3.2 Data Processing Model
+Figure 1. Structure Design
+      Figure 1 illustrates the structure design based on the Agile Methodology, which guided the development of the “Smart Flight Booking Simulation Platform for CTHM-CSUCC: An Interactive and Data-Driven Training Tool for Tourism Education”. The Agile approach enabled the developers to work in iterative cycles, allowing continuous improvement of the system through regular feedback. The diagram highlights the flow of processes and key components involved in the platform’s development.
+Figure 2. UML Use Case Diagram for the Flight Booking Simulation Platform for CTHM-CSUCC
+    Figure 5 illustrates the UML use case diagram for the Flight Booking Simulation Platform for CTHM-CSUCC: A Training Tool for Tourism Education. The updated platform includes
+
+
+================================================================================
+SECTION: 3.2 Data Processing Model
+================================================================================
+3.2 Data Processing Model   …………………………………………………
+17
+IV.
+RESULT AND DISCUSSION
+4.1 Introduction   ………………………………………………………………
+30
+4.2 Requirements Modeling   ………………………………………………..
+30
+4.3 The Developed System   ………………………………………………..
+34
+4.4 Testing Results   …………………………………………………………
+53
+4.4.1 Technical Verification   ………………………………………………...
+54
+4.4.2 User Acceptance Testing   ……………………………………………
+57
+4.5 Discussion   ………………………………………………………………….
+65
+V.
+CONCLUSIONS AND RECOMMENDATIONS
+5.1 Conclusion   ………………………………………………………………..
+71
+5.2 Recommendation   …………………………………………………………
+72
+REFERENCES
+………………………………………………………………………
+75
+APPENDICES:
+A. Relevant Source Code……
+78
+B. Letter to Conduct Interview with Pictorial……
+86
+C. Work and Financial Plan………
+87
+D. Data Dictionary………………
+94
+E. Sample Survey Questionnaire……………………
+104
+F. Evaluation Process……………………
+109
+G. Grammarian Certificate……………………
+111
+H. Acceptance Certificate……… 
+112
+LIST OF FIGURES
+Chapter II
+Figure
+Description
+Page
+1.
+Structure Design  .…………………………………………..…
+17
+2.
+UML Use Case Diagram for the Flight Booking Simulation Platform for CTHM-CSUCC   …………………………………
+18
+3.
+Flow Chart for Students in Flight Booking Simulation Platform for CTHM-CSUCC   ……………….………..………
+20
+4.
+System Architecture of the Flight Booking Simulation Platform for CTHM-CSUCC   ……………….………….……
+22
+5.
+Core Flight Infrastructure Module ……….….…
+23
+6
+Seat & Pricing Module
+24
+7
+User & Passenger Management Module
+25
+8
+Booking & Operations Module
+26
+9
+Financial & Taxation Layer Module
+27
+10
+Add-on & Insurance System Module
+28
+11
+Educational Simulation Layer Module
+29
+Chapter IV
+1.
+Gmail Notification Enrollment   ………………………………
+36
+2.
+ Login Page and Landing Page   ………….…………………
+37
+3.
+Student Dashboard   …………….……………………………
+37
+4.
+Email Notification Activity Sent   ..……………………………
+38
+5.
+Activity Card, Instruction of the Activity and Start  Booking Activity   …….………………………………..…………………
+39
+6.
+Home Page and Search Flight of the 
+Flight Booking   ………………………………………………..
+40
+7.
+Flight Schedule, Itinerary Details, and 
+Select Flight   ……………………………….…………………
+41
+8.
+Passenger Details and Contact Details    .…………………
+44
+9.
+Add-ons   ………………………………………………………
+44
+10.
+Review Booking Summary   …..…………..…………………
+45
+11.
+Payment and API PayMongo   ………………………………
+46
+12.
+Interface of Itinerary (PDF) and E-ticket in Email   ..………
+47
+13.
+Booking Confirmed and Download E-ticket   ………………
+48
+14.
+Identification and Check the Passenger to 
+Check-in   ……………………………………………..………
+49
+15.
+Safety Declaration   …..……………………………………..
+50
+16.
+Review Journey Summary     …….…………………………
+51
+17.
+Passenger Contact Integration   ……………………………
+52
+18.
+Success Online Check-in and 
+Boarding Pass   …………………………..…………………
+53
+LIST OF TABLES
+Table
+Description
+Page
+1.
+Minimum Hardware Requirements   ……………..………………
+13
+2.
+Software Requirements   …………….……………………………
+15
+3.
+Functional Requirements Implementation Status   .……………
+30
+4.
+Non-Functional Requirements Verified   .………………….……
+32
+5.
+Test Summary   ……………………………………………………
+54
+6.
+UAT Protocol Used in this Study   …………………..……………
+58
+7.
+Analysis and Interpretation of ISO/IEC 25010 
+Evaluation Results  …………..……………………………………
+60
+8.
+Identified Problems, System Solutions Implemented,
+Evidence from Results and Confidence Level   ….……….……
+67
+CHAPTER IINTRODUCTION
+1.1 Project Context
+The global tourism and hospitality industry is continuously evolving in response to technological advancements and increasing reliance on data-driven systems. In today’s digital environment, airline booking platforms, reservation systems, and customer management tools have become essential components of the sector. As a result, educational institutions must integrate innovative learning approaches, such as simulation-based platforms, to equip students with real-world competencies. Educational simulation systems provide an interactive, hands-on learning experience that allows students to practice decision-making, reservation processes, and customer interaction in a controlled and risk-free environment. This shift toward experien
+
+
+================================================================================
+SECTION: 4.3 The Developed System
+================================================================================
+4.3 The Developed System   ………………………………………………..
+34
+4.4 Testing Results   …………………………………………………………
+53
+4.4.1 Technical Verification   ………………………………………………...
+54
+4.4.2 User Acceptance Testing   ……………………………………………
+57
+4.5 Discussion   ………………………………………………………………….
+65
+V.
+CONCLUSIONS AND RECOMMENDATIONS
+5.1 Conclusion   ………………………………………………………………..
+71
+5.2 Recommendation   …………………………………………………………
+72
+REFERENCES
+………………………………………………………………………
+75
+APPENDICES:
+A. Relevant Source Code……
+78
+B. Letter to Conduct Interview with Pictorial……
+86
+C. Work and Financial Plan………
+87
+D. Data Dictionary………………
+94
+E. Sample Survey Questionnaire……………………
+104
+F. Evaluation Process……………………
+109
+G. Grammarian Certificate……………………
+111
+H. Acceptance Certificate……… 
+112
+LIST OF FIGURES
+Chapter II
+Figure
+Description
+Page
+1.
+Structure Design  .…………………………………………..…
+17
+2.
+UML Use Case Diagram for the Flight Booking Simulation Platform for CTHM-CSUCC   …………………………………
+18
+3.
+Flow Chart for Students in Flight Booking Simulation Platform for CTHM-CSUCC   ……………….………..………
+20
+4.
+System Architecture of the Flight Booking Simulation Platform for CTHM-CSUCC   ……………….………….……
+22
+5.
+Core Flight Infrastructure Module ……….….…
+23
+6
+Seat & Pricing Module
+24
+7
+User & Passenger Management Module
+25
+8
+Booking & Operations Module
+26
+9
+Financial & Taxation Layer Module
+27
+10
+Add-on & Insurance System Module
+28
+11
+Educational Simulation Layer Module
+29
+Chapter IV
+1.
+Gmail Notification Enrollment   ………………………………
+36
+2.
+ Login Page and Landing Page   ………….…………………
+37
+3.
+Student Dashboard   …………….……………………………
+37
+4.
+Email Notification Activity Sent   ..……………………………
+38
+5.
+Activity Card, Instruction of the Activity and Start  Booking Activity   …….………………………………..…………………
+39
+6.
+Home Page and Search Flight of the 
+Flight Booking   ………………………………………………..
+40
+7.
+Flight Schedule, Itinerary Details, and 
+Select Flight   ……………………………….…………………
+41
+8.
+Passenger Details and Contact Details    .…………………
+44
+9.
+Add-ons   ………………………………………………………
+44
+10.
+Review Booking Summary   …..…………..…………………
+45
+11.
+Payment and API PayMongo   ………………………………
+46
+12.
+Interface of Itinerary (PDF) and E-ticket in Email   ..………
+47
+13.
+Booking Confirmed and Download E-ticket   ………………
+48
+14.
+Identification and Check the Passenger to 
+Check-in   ……………………………………………..………
+49
+15.
+Safety Declaration   …..……………………………………..
+50
+16.
+Review Journey Summary     …….…………………………
+51
+17.
+Passenger Contact Integration   ……………………………
+52
+18.
+Success Online Check-in and 
+Boarding Pass   …………………………..…………………
+53
+LIST OF TABLES
+Table
+Description
+Page
+1.
+Minimum Hardware Requirements   ……………..………………
+13
+2.
+Software Requirements   …………….……………………………
+15
+3.
+Functional Requirements Implementation Status   .……………
+30
+4.
+Non-Functional Requirements Verified   .………………….……
+32
+5.
+Test Summary   ……………………………………………………
+54
+6.
+UAT Protocol Used in this Study   …………………..……………
+58
+7.
+Analysis and Interpretation of ISO/IEC 25010 
+Evaluation Results  …………..……………………………………
+60
+8.
+Identified Problems, System Solutions Implemented,
+Evidence from Results and Confidence Level   ….……….……
+67
+CHAPTER IINTRODUCTION
+1.1 Project Context
+The global tourism and hospitality industry is continuously evolving in response to technological advancements and increasing reliance on data-driven systems. In today’s digital environment, airline booking platforms, reservation systems, and customer management tools have become essential components of the sector. As a result, educational institutions must integrate innovative learning approaches, such as simulation-based platforms, to equip students with real-world competencies. Educational simulation systems provide an interactive, hands-on learning experience that allows students to practice decision-making, reservation processes, and customer interaction in a controlled and risk-free environment. This shift toward experiential and student-centered learning reflects modern trends in tourism education and prepares students to meet industry demands.[1]
+Despite the growing importance of simulation technologies, there are still significant gaps in existing studies and implementations. Many available systems are either designed for commercial use or lack alignment with academic objectives. Existing research often focuses on general e-learning tools rather than specialized platforms tailored for tourism and hospitality training. Furthermore, limited attention has been given to the development of flight booking simulation systems that incorporate realistic scenarios, user interaction, and performance evaluation features specifically for students. This indicates a clear need for a more focused and education-oriented solution.[2]. 
+In the current setting at Caraga State University Cabadbaran Campus (CSUCC), particularly within the College of Tourism and Hospitality Management (CTHM), teaching methods still rely heavily on theoretical instruction. While foundational knowledge is provided, students have limited exposure to actual airline booking procedures and real-world operational scenarios. The absence of an interactive simulation tool restricts their ability to apply learned concepts in practical situations. Consequently, students may struggle to understand complex booking systems, manage customer transactions, and develop the technical and interpersonal skills required in the tourism industry.[3]. 
+To address these challenges, the proposed Flight Booking Simulation Platform offers an innovative and practical solution. The system is designed to replicate real-world airline booking environments, enabling students to perform tasks such as searching flights, managing reservations, and handling customer interactions. By providing a secure and controlled learning environment, the platform bridges the gap between theory and practice. It enhances students’ technical skills, improves their confidence, and prepares them for professional roles in the tourism and hospitality sector. Ultimately, this solution supports the university’s commitment to academic excellence and ali
+
+
+================================================================================
+SECTION: 4.4.1 Technical Verification
+================================================================================
+4.4.1 Technical Verification   ………………………………………………...
+54
+4.4.2 User Acceptance Testing   ……………………………………………
+57
+4.5 Discussion   ………………………………………………………………….
+65
+V.
+CONCLUSIONS AND RECOMMENDATIONS
+5.1 Conclusion   ………………………………………………………………..
+71
+5.2 Recommendation   …………………………………………………………
+72
+REFERENCES
+………………………………………………………………………
+75
+APPENDICES:
+A. Relevant Source Code……
+78
+B. Letter to Conduct Interview with Pictorial……
+86
+C. Work and Financial Plan………
+87
+D. Data Dictionary………………
+94
+E. Sample Survey Questionnaire……………………
+104
+F. Evaluation Process……………………
+109
+G. Grammarian Certificate……………………
+111
+H. Acceptance Certificate……… 
+112
+LIST OF FIGURES
+Chapter II
+Figure
+Description
+Page
+1.
+Structure Design  .…………………………………………..…
+17
+2.
+UML Use Case Diagram for the Flight Booking Simulation Platform for CTHM-CSUCC   …………………………………
+18
+3.
+Flow Chart for Students in Flight Booking Simulation Platform for CTHM-CSUCC   ……………….………..………
+20
+4.
+System Architecture of the Flight Booking Simulation Platform for CTHM-CSUCC   ……………….………….……
+22
+5.
+Core Flight Infrastructure Module ……….….…
+23
+6
+Seat & Pricing Module
+24
+7
+User & Passenger Management Module
+25
+8
+Booking & Operations Module
+26
+9
+Financial & Taxation Layer Module
+27
+10
+Add-on & Insurance System Module
+28
+11
+Educational Simulation Layer Module
+29
+Chapter IV
+1.
+Gmail Notification Enrollment   ………………………………
+36
+2.
+ Login Page and Landing Page   ………….…………………
+37
+3.
+Student Dashboard   …………….……………………………
+37
+4.
+Email Notification Activity Sent   ..……………………………
+38
+5.
+Activity Card, Instruction of the Activity and Start  Booking Activity   …….………………………………..…………………
+39
+6.
+Home Page and Search Flight of the 
+Flight Booking   ………………………………………………..
+40
+7.
+Flight Schedule, Itinerary Details, and 
+Select Flight   ……………………………….…………………
+41
+8.
+Passenger Details and Contact Details    .…………………
+44
+9.
+Add-ons   ………………………………………………………
+44
+10.
+Review Booking Summary   …..…………..…………………
+45
+11.
+Payment and API PayMongo   ………………………………
+46
+12.
+Interface of Itinerary (PDF) and E-ticket in Email   ..………
+47
+13.
+Booking Confirmed and Download E-ticket   ………………
+48
+14.
+Identification and Check the Passenger to 
+Check-in   ……………………………………………..………
+49
+15.
+Safety Declaration   …..……………………………………..
+50
+16.
+Review Journey Summary     …….…………………………
+51
+17.
+Passenger Contact Integration   ……………………………
+52
+18.
+Success Online Check-in and 
+Boarding Pass   …………………………..…………………
+53
+LIST OF TABLES
+Table
+Description
+Page
+1.
+Minimum Hardware Requirements   ……………..………………
+13
+2.
+Software Requirements   …………….……………………………
+15
+3.
+Functional Requirements Implementation Status   .……………
+30
+4.
+Non-Functional Requirements Verified   .………………….……
+32
+5.
+Test Summary   ……………………………………………………
+54
+6.
+UAT Protocol Used in this Study   …………………..……………
+58
+7.
+Analysis and Interpretation of ISO/IEC 25010 
+Evaluation Results  …………..……………………………………
+60
+8.
+Identified Problems, System Solutions Implemented,
+Evidence from Results and Confidence Level   ….……….……
+67
+CHAPTER IINTRODUCTION
+1.1 Project Context
+The global tourism and hospitality industry is continuously evolving in response to technological advancements and increasing reliance on data-driven systems. In today’s digital environment, airline booking platforms, reservation systems, and customer management tools have become essential components of the sector. As a result, educational institutions must integrate innovative learning approaches, such as simulation-based platforms, to equip students with real-world competencies. Educational simulation systems provide an interactive, hands-on learning experience that allows students to practice decision-making, reservation processes, and customer interaction in a controlled and risk-free environment. This shift toward experiential and student-centered learning reflects modern trends in tourism education and prepares students to meet industry demands.[1]
+Despite the growing importance of simulation technologies, there are still significant gaps in existing studies and implementations. Many available systems are either designed for commercial use or lack alignment with academic objectives. Existing research often focuses on general e-learning tools rather than specialized platforms tailored for tourism and hospitality training. Furthermore, limited attention has been given to the development of flight booking simulation systems that incorporate realistic scenarios, user interaction, and performance evaluation features specifically for students. This indicates a clear need for a more focused and education-oriented solution.[2]. 
+In the current setting at Caraga State University Cabadbaran Campus (CSUCC), particularly within the College of Tourism and Hospitality Management (CTHM), teaching methods still rely heavily on theoretical instruction. While foundational knowledge is provided, students have limited exposure to actual airline booking procedures and real-world operational scenarios. The absence of an interactive simulation tool restricts their ability to apply learned concepts in practical situations. Consequently, students may struggle to understand complex booking systems, manage customer transactions, and develop the technical and interpersonal skills required in the tourism industry.[3]. 
+To address these challenges, the proposed Flight Booking Simulation Platform offers an innovative and practical solution. The system is designed to replicate real-world airline booking environments, enabling students to perform tasks such as searching flights, managing reservations, and handling customer interactions. By providing a secure and controlled learning environment, the platform bridges the gap between theory and practice. It enhances students’ technical skills, improves their confidence, and prepares them for professional roles in the tourism and hospitality sector. Ultimately, this solution supports the university’s commitment to academic excellence and aligns with global trends in technology-driven education.
+1.2 Purpose and Description:
+The purpose of 
+
+

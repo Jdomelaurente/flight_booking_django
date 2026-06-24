@@ -1,0 +1,87 @@
+BOOKING CONFIRMATION - {{ booking_reference }}
+================================================
+
+THIS IS YOUR E-TICKET
+
+Attached: itinerary_{{ booking_reference }}.pdf
+
+
+BOOKING DETAILS
+---------------
+PNR / RECORD LOCATOR: {{ booking_reference }}
+Status: CONFIRMED
+Booking Date: {{ booking_date|date:"F d, Y H:i" }}
+
+Contact Information:
+Name: {{ contact_name }}
+Email: {{ contact_email }}
+Phone: {{ contact_phone }}
+
+
+FLIGHT ITINERARY
+----------------
+{% for detail in outbound_details %}
+OUTBOUND FLIGHT
+Flight Number: {{ detail.schedule.flight.flight_number }}
+Route: {{ detail.schedule.flight.route.origin_airport.code }} → {{ detail.schedule.flight.route.destination_airport.code }}
+Departure: {{ detail.schedule.departure_time|date:"F d, Y H:i" }}
+Arrival: {{ detail.schedule.arrival_time|date:"F d, Y H:i" }}
+Passenger: {{ detail.passenger.get_full_name }} ({{ detail.passenger.passenger_type }})
+{% if detail.seat %}Seat: {{ detail.seat.seat_number }}{% endif %}
+Class: {{ detail.fare_family_name|default:detail.seat_class.name|default:"Economy" }}
+
+{% endfor %}
+{% if is_round_trip %}{% for detail in return_details %}
+RETURN FLIGHT
+Flight Number: {{ detail.schedule.flight.flight_number }}
+Route: {{ detail.schedule.flight.route.origin_airport.code }} → {{ detail.schedule.flight.route.destination_airport.code }}
+Departure: {{ detail.schedule.departure_time|date:"F d, Y H:i" }}
+Arrival: {{ detail.schedule.arrival_time|date:"F d, Y H:i" }}
+Passenger: {{ detail.passenger.get_full_name }} ({{ detail.passenger.passenger_type }})
+{% if detail.seat %}Seat: {{ detail.seat.seat_number }}{% endif %}
+Class: {{ detail.fare_family_name|default:detail.seat_class.name|default:"Economy" }}
+
+{% endfor %}{% endif %}
+
+
+PASSENGERS ({{ total_passengers }})
+-----------------------------------
+{% for passenger in passengers %}{{ forloop.counter }}. {{ passenger.get_full_name }} - {{ passenger.passenger_type }}
+{% endfor %}
+
+
+ADD-ONS & TRAVEL BENEFITS
+-------------------------
+{% for addon in addons_summary %}- {{ addon.item }} (Passenger: {{ addon.passenger }}) - {% if addon.price > 0 %}₱{{ addon.price|floatformat:2 }}{% else %}Included{% endif %}
+{% empty %}No extra add-ons selected.
+{% endfor %}
+
+
+PAYMENT SUMMARY
+---------------
+Base Fare: ₱{{ base_fare|floatformat:2 }}
+Taxes & Fees: ₱{{ tax_total|floatformat:2 }}
+{% if insurance_total > 0 %}Travel Insurance: ₱{{ insurance_total|floatformat:2 }}{% endif %}
+TOTAL PAID: ₱{{ amount_paid|floatformat:2 }}
+
+Payment Method: {{ payment_method }}
+Transaction ID: {{ transaction_id }}
+Payment Date: {{ payment_date|date:"F d, Y H:i" }}
+
+
+WHAT YOU NEED TO DO BEFORE YOUR FLIGHT
+--------------------------------------
+✅ Done: Booking confirmed. Save your PNR: {{ booking_reference }}
+✈️ Next: Check in at the airport counter 24-48 hours before departure. Bring your PNR and a valid ID.
+🖨️ Then: After check-in, you will receive your BOARDING PASS with seat, gate, and QR code.
+⏰ Arrive at the airport at least 2 hours before departure. Counter closes 45 min before.
+
+
+Need Help?
+----------
+Phone: {{ support_phone }}
+Email: {{ support_email }}
+Website: {{ website_url }}
+
+This is an automated email. Please do not reply to this message.
+© {% now "Y" %} {{ airline_name }}. All rights reserved.

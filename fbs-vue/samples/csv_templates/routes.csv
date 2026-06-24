@@ -1,0 +1,6 @@
+Origin Airport,Destination Airport,Base Price
+MNL,CEB,2500.00
+CEB,MNL,2500.00
+MNL,DVO,3500.00
+MNL,TAC,2200.00
+CEB,DVO,2800.00

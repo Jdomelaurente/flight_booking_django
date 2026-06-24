@@ -1,0 +1,6 @@
+Schedules for TUG -> ZAM:
+ID: 21, Flight: PR300, Dep: 2026-02-25 07:50:00+00:00, Price: 5571.52
+ID: 22, Flight: PR300, Dep: 2026-02-25 07:51:00+00:00, Price: 4411.90
+ID: 24, Flight: PR300, Dep: 2026-02-25 07:54:00+00:00, Price: 5716.08
+ID: 1, Flight: PR300, Dep: 2026-03-14 16:22:55+00:00, Price: 4620.48
+ID: 23, Flight: PR300, Dep: 2026-03-24 07:52:00+00:00, Price: 5620.61

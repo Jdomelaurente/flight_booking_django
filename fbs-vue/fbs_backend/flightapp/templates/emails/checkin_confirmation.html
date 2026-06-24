@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Boarding Pass - {{ booking_reference }}</title>
+</head>
+
+<body
+    style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5; -webkit-font-smoothing: antialiased;">
+
+    <!-- Wrapper -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+        style="background-color: #f5f5f5; padding: 40px 0;">
+        <tr>
+            <td align="center">
+
+                <!-- Main Container -->
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="680"
+                    style="max-width: 680px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.06);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td
+                            style="background-color: #FF579A; padding: 48px 40px; text-align: center; border-bottom: 4px solid #db2777;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                <tr>
+                                    <td
+                                        style="font-size: 14px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: #fdf2f8; padding-bottom: 16px;">
+                                        {{ airline_name }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-bottom: 20px;">
+                                        <span
+                                            style="display: inline-block; background-color: rgba(255,255,255,0.2); color: #ffffff; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">
+                                            🎟️ Check-in Successful
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td
+                                        style="font-size: 32px; font-weight: 700; color: #ffffff; letter-spacing: -0.02em; padding-bottom: 8px;">
+                                        You're ready to fly!
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="font-size: 16px; color: #fbcfe8;">
+                                        Your digital boarding pass for {{ flight_number }} is attached.
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px;">
+
+                            <!-- Success Alert -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+                                style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; margin-bottom: 32px;">
+                                <tr>
+                                    <td style="padding: 24px;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%">
+                                            <tr>
+                                                <td width="48" valign="top" style="padding-right: 16px;">
+                                                    <div
+                                                        style="width: 48px; height: 48px; background-color: #22c55e; border-radius: 8px; text-align: center; line-height: 48px; color: white; font-size: 24px;">
+                                                        ✅
+                                                    </div>
+                                                </td>
+                                                <td valign="top">
+                                                    <h3
+                                                        style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #166534;">
+                                                        Check-in Complete</h3>
+                                                    <p style="margin: 0 0 12px 0; font-size: 14px; color: #15803d;">
+                                                        We have processed your check-in. Your official boarding pass has
+                                                        been generated and is attached to this email as a PDF. Please
+                                                        present the QR code in the attachment at the security gate and
+                                                        boarding area.</p>
+
+                                                    <!-- Attachment List -->
+                                                    <table role="presentation" cellspacing="0" cellpadding="0"
+                                                        border="0">
+                                                        <tr>
+                                                            <td
+                                                                style="font-size: 13px; color: #15803d; padding: 4px 0;">
+                                                                <span
+                                                                    style="color: #22c55e; margin-right: 8px;">📄</span>boarding_pass_{{ passenger_name|slugify }}.pdf
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Summary Card -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+                                style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 32px; overflow: hidden;">
+                                <tr>
+                                    <td style="padding: 24px;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%">
+                                            <tr>
+                                                <td width="50%">
+                                                    <div
+                                                        style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">
+                                                        {% if is_group %}Travel Party{% else %}Passenger{% endif %}
+                                                    </div>
+                                                    <div style="font-size: 16px; font-weight: 700; color: #0f172a;">
+                                                        {% if is_group %}{{ passengers|length }} Members{% else %}{{ passenger_name }}{% endif %}</div>
+                                                </td>
+                                                <td width="50%" align="right">
+                                                    <div
+                                                        style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">
+                                                        PNR / Reference</div>
+                                                    <div
+                                                        style="font-family: 'Courier New', monospace; font-size: 18px; font-weight: 700; color: #FF579A;">
+                                                        {{ booking_reference }}</div>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        <div style="margin: 20px 0; border-top: 1px dashed #cbd5e1;"></div>
+
+                                        {% if is_group %}
+                                        <!-- Multi-Passenger List -->
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%">
+                                            {% for p in passengers %}
+                                            <tr>
+                                                <td
+                                                    style="padding: 8px 0; font-size: 14px; color: #0f172a; font-weight: 600;">
+                                                    {{ p.name }}</td>
+                                                <td align="right"
+                                                    style="padding: 8px 0; font-family: 'Courier New', monospace; font-size: 14px; font-weight: 900; color: #FF579A;">
+                                                    SEAT {{ p.seat }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </table>
+                                        {% else %}
+                                        <!-- Single Passenger Layout -->
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+                                            width="100%">
+                                            <tr>
+                                                <td width="33%">
+                                                    <div
+                                                        style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">
+                                                        Flight</div>
+                                                    <div style="font-size: 15px; font-weight: 700; color: #0f172a;">{{ flight_number }}</div>
+                                                </td>
+                                                <td width="33%" align="center">
+                                                    <div
+                                                        style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">
+                                                        Seat</div>
+                                                    <div style="font-size: 24px; font-weight: 900; color: #0f172a;">{{ seat_number }}</div>
+                                                </td>
+                                                <td width="33%" align="right">
+                                                    <div
+                                                        style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">
+                                                        Route</div>
+                                                    <div style="font-size: 15px; font-weight: 700; color: #0f172a;">{{ origin }} -> {{ destination }}</div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+
+                            {% if is_group %}
+                            <div
+                                style="background-color: #fdf2f8; padding: 16px; border-radius: 8px; margin-bottom: 32px;">
+                                <div style="font-size: 13px; color: #be185d; text-align: center; font-weight: 600;">
+                                    📍 All {{ passengers|length }} boarding passes have been attached to this email as
+                                    individual PDF files.
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Instructions -->
+                            <h4
+                                style="margin: 0 0 16px 0; font-size: 14px; font-weight: 700; color: #334155; text-transform: uppercase; letter-spacing: 0.05em;">
+                                Travel Tips</h4>
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+                                style="margin-bottom: 32px;">
+                                <tr>
+                                    <td style="font-size: 14px; color: #475569; padding-bottom: 12px;">
+                                        📱 <strong>Digital Copy:</strong> You can show the PDF on your phone — no
+                                        printing required!
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="font-size: 14px; color: #475569; padding-bottom: 12px;">
+                                        ⏰ <strong>Gate Closing:</strong> Please be at the gate at least 45 minutes
+                                        before departure.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="font-size: 14px; color: #475569;">
+                                        💼 <strong>Baggage:</strong> If you dropped off bags at the counter, your
+                                        luggage receipts are pinned to your physical tag.
+                                    </td>
+                                </tr>
+                            </table>
+
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td
+                            style="background-color: #f8fafc; padding: 32px 40px; text-align: center; border-top: 1px solid #e2e8f0;">
+                            <p style="margin: 0 0 12px 0; font-size: 12px; color: #94a3b8;">
+                                © {% now "Y" %} {{ airline_name }}. Have a safe flight!
+                            </p>
+                            <p style="margin: 0; font-size: 11px; color: #cbd5e1;">
+                                This is a simulated system for educational purposes.
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+
+            </td>
+        </tr>
+    </table>
+
+</body>
+
+</html>

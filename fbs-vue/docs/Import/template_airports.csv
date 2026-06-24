@@ -1,0 +1,101 @@
+Airport Name,IATA Code,Type,City,Detailed Location
+Ninoy Aquino International Airport,MNL,International,Manila,Pasay/Parañaque
+Mactan–Cebu International Airport,CEB,International,Cebu,Lapu-Lapu City
+Francisco Bangoy International Airport,DVO,International,Davao,Davao City
+Clark International Airport,CRK,International,Angeles,Clark Freeport Zone
+Iloilo International Airport,ILO,International,Iloilo,Cabatuan
+Bacolod–Silay Airport,BCD,Domestic,Bacolod,Silay City
+Laguindingan Airport,CGY,Domestic,Cagayan de Oro,Misamis Oriental
+Puerto Princesa International Airport,PPS,International,Puerto Princesa,Palawan
+Daniel Z. Romualdez Airport,TAC,Domestic,Tacloban,Leyte
+Bohol–Panglao International Airport,TAG,International,Tagbilaran,Panglao Island
+Zamboanga International Airport,ZAM,International,Zamboanga,Zamboanga City
+General Santos International Airport,GES,International,General Santos,South Cotabato
+Kalibo International Airport,KLO,International,Kalibo,Aklan
+Godofredo P. Ramos Airport,MPH,Domestic,Caticlan,Malay Aklan
+Laoag International Airport,LAO,International,Laoag,Ilocos Norte
+Subic Bay International Airport,SFS,International,Morong,Subic Bay Freeport
+Bancasi Airport,BXU,Domestic,Butuan,Agusan del Norte
+Awang Airport,CBO,Domestic,Cotabato,Datu Odin Sinsuat
+Dipolog Airport,DPL,Domestic,Dipolog,Zamboanga del Norte
+Sibulan Airport,DGT,Domestic,Dumaguete,Sibulan Negros Oriental
+Sayak Airport,IAO,Domestic,Siargao,Del Carmen Surigao del Norte
+Cauayan Airport,CYZ,Domestic,Cauayan,Isabela
+Moises R. Espinosa Airport,MBT,Domestic,Masbate,Masbate City
+Naga Airport,WNP,Domestic,Naga,Pili Camarines Sur
+Pagadian Airport,PAG,Domestic,Pagadian,Zamboanga del Sur
+Labo Airport,OZC,Domestic,Ozamiz,Misamis Occidental
+Roxas Airport,RXS,Domestic,Roxas,Capiz
+San Jose Airport,SJI,Domestic,San Jose,Occidental Mindoro
+Tuguegarao Airport,TUG,Domestic,Tuguegarao,Cagayan
+Basco Airport,BSO,Domestic,Basco,Batanes
+Bicol International Airport,DRP,International,Legazpi,Daraga Albay
+Surigao Airport,SUG,Domestic,Surigao,Surigao del Norte
+Tandag Airport,TDG,Domestic,Tandag,Surigao del Sur
+Camiguin Airport,CGM,Domestic,Mambajao,Camiguin
+Calbayog Airport,CYP,Domestic,Calbayog,Samar
+Catarman National Airport,CRM,Domestic,Catarman,Northern Samar
+Ormoc Airport,OMC,Domestic,Ormoc,Leyte
+Maasin Airport,1,Domestic,Maasin,Southern Leyte
+Evelio Javier Airport,EUQ,Domestic,San Jose de Buenavista,Antique
+Marinduque Airport,MRQ,Domestic,Gasan,Marinduque
+Virac Airport,VRC,Domestic,Virac,Catanduanes
+Tugdan Airport,TBH,Domestic,Alcantara,Romblon
+Daet Airport,DET,Domestic,Daet,Camarines Norte
+Bagabag Airport,2,Domestic,Bagabag,Nueva Vizcaya
+Loakan Airport,BAG,Domestic,Baguio,Benguet
+San Fernando Airport,SFE,Domestic,San Fernando,La Union
+Alaminos Airport,3,Domestic,Alaminos,Pangasinan
+Lingayen Airport,4,Domestic,Lingayen,Pangasinan
+Iba Airport,5,Domestic,Iba,Zambales
+Plaridel Airport,6,Domestic,Plaridel,Bulacan
+Jomalig Airport,7,Domestic,Jomalig,Quezon
+Baler Airport,BQA,Domestic,Baler,Aurora
+Pinamalayan Airport,8,Domestic,Pinamalayan,Oriental Mindoro
+Lubang Airport,LBX,Domestic,Lubang,Occidental Mindoro
+Mamburao Airport,MBO,Domestic,Mamburao,Occidental Mindoro
+Calapan Airport,CPP,Domestic,Calapan,Oriental Mindoro
+Wasig Airport,9,Domestic,Mansalay,Oriental Mindoro
+Cuyo Airport,CYU,Domestic,Cuyo,Palawan
+Taytay Airport,RZP,Domestic,Taytay,Palawan
+San Vicente Airport,SWL,Domestic,San Vicente,Palawan
+Busuanga Airport,USU,Domestic,Coron,Palawan
+Cagayan de Sulu Airport,CDY,Domestic,Mapun,Tawi-Tawi
+Sanga-Sanga Airport,TWT,Domestic,Bongao,Tawi-Tawi
+Jolo Airport,JOL,Domestic,Jolo,Sulu
+Siquijor Airport,10,Domestic,Siquijor,Siquijor
+Ubay Airport,11,Domestic,Ubay,Bohol
+Hilongos Airport,12,Domestic,Hilongos,Leyte
+Biliran Airport,13,Domestic,Naval,Biliran
+Borongan Airport,14,Domestic,Borongan,Eastern Samar
+Guiuan Airport,15,Domestic,Guiuan,Eastern Samar
+Catbalogan Airport,16,Domestic,Catbalogan,Samar
+Palanan Airport,17,Domestic,Palanan,Isabela
+Maconacon Airport,18,Domestic,Maconacon,Isabela
+Itbayat Airport,19,Domestic,Itbayat,Batanes
+Sabtang Airport,20,Domestic,Sabtang,Batanes
+Pasuquin Airfield,21,Domestic,Pasuquin,Ilocos Norte
+Sual Airport,22,Domestic,Sual,Pangasinan
+Castillejos Airfield,23,Domestic,Castillejos,Zambales
+Lucena Airfield,24,Domestic,Lucena,Quezon
+Infanta Airfield,25,Domestic,Infanta,Quezon
+Paete Airfield,26,Domestic,Paete,Laguna
+Calatagan Airfield,27,Domestic,Calatagan,Batangas
+Lipas Airfield,28,Domestic,Lipa,Batangas
+Corregidor Airfield,29,Domestic,Corregidor,Cavite
+Sangley Point Airport,SGL,Domestic,Cavite City,Cavite
+Semirara Airport,30,Domestic,Semirara Island,Antique
+Sicogon Airport,ICO,Domestic,Carles,Iloilo
+Guimaras Airfield,31,Domestic,Jordan,Guimaras
+Carabao Island Airport,32,Domestic,San Jose,Romblon
+Bantayan Airport,33,Domestic,Bantayan Island,Cebu
+Camotes Airport,34,Domestic,San Francisco,Camotes Islands
+Malapascua Heliport,35,Domestic,Malapascua,Cebu
+Toledo Airstrip,36,Domestic,Toledo,Cebu
+Dumaguete South Airfield,37,Domestic,Zamboanguita,Negros Oriental
+Sipalay Airport,38,Domestic,Sipalay,Negros Occidental
+Kabankalan Airport,39,Domestic,Kabankalan,Negros Occidental
+San Carlos Airport,40,Domestic,San Carlos,Negros Occidental
+Lanuza Airstrip,41,Domestic,Lanuza,Surigao del Sur
+Bislig Airport,BPH,Domestic,Bislig,Surigao del Sur
+Impasug-ong Airfield,42,Domestic,Impasug-ong,Bukidnon

@@ -1,0 +1,11 @@
+Class Name,Price Multiplier,Color,Airline
+Economy Class,1.00,#3b82f6,PR
+Premium Economy,1.50,#10b981,PR
+Business Class,2.50,#8b5cf6,PR
+First Class,4.00,#f59e0b,PR
+Economy Class,1.00,#3b82f6,5J
+Premium Economy,1.40,#10b981,5J
+Business Class,2.30,#8b5cf6,5J
+Economy Class,1.00,#3b82f6,Z2
+Hot Seat,1.20,#ef4444,Z2
+Premium Flatbed,3.00,#ec4899,Z2

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLIGHT BOOKING - Section Schedule</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        .letter-container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .decor-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #FF579A, #db2777);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .university-name {
+            font-size: 20px;
+            font-weight: 800;
+            color: #db2777;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0;
+        }
+
+        .department-name {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background-color: #fdf2f8;
+            color: #db2777;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .date {
+            text-align: right;
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 24px;
+        }
+
+        .letter-body {
+            font-size: 16px;
+        }
+
+        .greeting {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 16px;
+        }
+
+        .schedule-card {
+            margin: 24px 0;
+            padding: 24px;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .schedule-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #db2777;
+            font-weight: 800;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .schedule-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .schedule-value {
+            font-size: 24px;
+            font-weight: 800;
+            color: #1e293b;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .detail-item label {
+            display: block;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 2px;
+            font-weight: 600;
+        }
+
+        .detail-item p {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .action-button {
+            display: block;
+            text-align: center;
+            margin: 32px 0;
+            padding: 14px 24px;
+            background-color: #FF579A;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            font-size: 12px;
+            color: #94a3b8;
+            text-align: center;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .support-info {
+            margin-top: 8px;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="letter-container">
+        <div class="decor-bar"></div>
+
+        <div class="header">
+            <h1 class="university-name">FLIGHT BOOKING</h1>
+            <div class="department-name">Cabagan State University | Student Dispatch</div>
+        </div>
+
+        <div class="date">{{ formal_date }}</div>
+
+        <div class="letter-body">
+            <div class="status-badge">Official Enrollment Notification</div>
+            <p class="greeting">Hello, {{ student_name }}!</p>
+
+            <p>We are pleased to inform you that you have been officially enrolled in the following section. Your access to the Flight Booking Simulation platform is now active.</p>
+
+            <div class="schedule-card">
+                <div class="schedule-label">Designated Schedule:</div>
+                <div class="schedule-value">{{ display_schedule }}</div>
+
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <label>Section Name</label>
+                        <p>{{ section_name }}</p>
+                    </div>
+                    <div class="detail-item">
+                        <label>Section Code</label>
+                        <p>{{ section_code }}</p>
+                    </div>
+                    <div class="detail-item">
+                        <label>Instructor</label>
+                        <p>Prof. {{ instructor_name }}</p>
+                    </div>
+                    <div class="detail-item">
+                        <label>Academic Year</label>
+                        <p>{{ academic_year }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <p>Please ensure you are present during your designated schedule to participate in class activities and flight simulations.</p>
+            
+            <a href="{{ dashboard_url }}" class="action-button">ACCESS STUDENT DASHBOARD</a>
+        </div>
+
+        <div class="footer">
+            <p>&copy; {{ current_year }} CSU Flight Booking System</p>
+            <div class="support-info">
+                This is an automated academic dispatch. Please coordinate with your instructor for specific class concerns.
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

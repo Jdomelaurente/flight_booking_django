@@ -1,0 +1,35 @@
+{
+  "trip_type": "one_way",
+  "passengers": [
+    {
+      "first_name": "June Dominiic",
+      "last_name": "Laurente",
+      "type": "Adult",
+      "key": "pax_1"
+    }
+  ],
+  "contact_info": {
+    "title": "MR",
+    "firstName": "JUNE",
+    "lastName": "Laurente",
+    "email": "junedominic.laurente@csucc.edu.ph",
+    "phone": "9925450721"
+  },
+  "passengerCount": { "adult": 1, "children": 0, "infant": 0 },
+  "is_practice": true,
+  "fare_families": { "depart": "flex", "return": "basic" },
+  "selectedOutbound": {
+    "id": 1549, "schedule_id": 1549, "flight_number": "5J 561", "price": 13371,
+    "class_type": "Economy GO Flexi", "origin": "MNL", "destination": "CEB"
+  },
+  "addons": {
+    "baggage": {},
+    "meals": {
+      "pax_1": [
+        { "id": null, "is_included": false, "price": 0 }
+      ]
+    },
+    "wheelchair": {},
+    "seats": {}
+  }
+}

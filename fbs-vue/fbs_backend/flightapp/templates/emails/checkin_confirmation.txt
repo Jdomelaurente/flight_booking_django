@@ -1,0 +1,18 @@
+Check-in Successful!
+
+Hi {{ passenger_name }},
+
+You're ready to fly! We have processed your check-in for flight {{ flight_number }}.
+
+FLIGHT DETAILS:
+PNR: {{ booking_reference }}
+Seat: {{ seat_number }}
+Route: {{ origin }} -> {{ destination }}
+
+ADVISORY:
+Your boarding pass is attached to this email as a PDF. You can show this digital copy on your phone at the airport. 
+
+Please arrive at your boarding gate at least 45 minutes before departure.
+
+Safe travels,
+{{ airline_name }}
