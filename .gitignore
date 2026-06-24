@@ -60,3 +60,6 @@ Thumbs.db
 
 # Student project (separate PHP app)
 student/
+
+# Stray artifact
+-w
